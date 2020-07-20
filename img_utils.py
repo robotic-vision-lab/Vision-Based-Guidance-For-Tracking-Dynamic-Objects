@@ -1,7 +1,17 @@
 from PIL import Image
 import cv2 as cv
 import os
+import numpy as np
+import logging
 
+# set the debug file name 
+logging.basicConfig(filename='debug.log',filemode='w', level=logging.DEBUG)
+
+def l_print(line):
+    """ custom log printer for debugging """
+    logging.debug(line)
+
+# initialise image path variable 
 DATASET_PATH = "./datasets/RubberWhale/"
 
 def get_image_shape(img):
@@ -39,3 +49,12 @@ def get_images(path=DATASET_PATH, image_type='png'):
     os.chdir(current_directory)
 
     return img_list
+
+def get_laplacian_kernel():
+    """ returns a laplacian kernel """
+    return np.array([[1/12, 1/6, 1/12], 
+                     [1/6, -1, 1/6], 
+                     [1/12, 1/6, 1/12]])
+
+
+
