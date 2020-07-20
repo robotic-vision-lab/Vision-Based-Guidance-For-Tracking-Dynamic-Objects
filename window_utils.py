@@ -6,8 +6,12 @@ class ImageWindow:
         Using ImageWindow it should become easier to handle images in a window in an object-oriented fashion.
     """
 
-    def __init__(self, window_name, callback=None):
+    def __init__(self, window_name, callback=None, window_flags=None):
         self.window_name = window_name
+        self.callback = callback
+        self.window_flags = window_flags
+        
+        self.create_window(self.window_flags)
         
     def create_window(self, window_flags=None):
         """ Creates a single window that can be a place holder for images and trackbars.
