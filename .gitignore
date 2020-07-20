@@ -3,3 +3,4 @@ __pycache__
 tutorial.py
 *.ipynb
 test*
+debug.log
