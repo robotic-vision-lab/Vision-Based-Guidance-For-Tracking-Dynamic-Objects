@@ -54,7 +54,7 @@ def get_laplacian_kernel():
     """ returns a laplacian kernel """
     return np.array([[1/12, 1/6, 1/12], 
                      [1/6, -1, 1/6], 
-                     [1/12, 1/6, 1/12]])
+                     [1/12, 1/6, 1/12]]).astype('float32')
 
 
 
