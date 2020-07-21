@@ -4,3 +4,4 @@ tutorial.py
 *.ipynb
 test*
 debug.log
+out_img_*
