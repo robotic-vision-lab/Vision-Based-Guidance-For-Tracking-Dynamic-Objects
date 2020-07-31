@@ -23,7 +23,10 @@ def create_dir(folder_name, path):
         os.mkdir(os.path.join(os.path.relpath(path), folder_name))
 
 
-def generate_synth_data(img_size=(20,20), path='./', num_images=4, folder_name='synth_data'):
+def generate_synth_data(img_size=(20,20), 
+                        path='./', 
+                        num_images=4, 
+                        folder_name='synth_data'):
     """ takes in size and path, creates synthetic data of given size in the given path """
 
     # create folder if the folder did not already exist in the path
@@ -51,7 +54,13 @@ def generate_synth_data(img_size=(20,20), path='./', num_images=4, folder_name='
         # increment radius for next image
         radius += 1
 
-def draw_radial_dots(img, radius, center, pixel_value, num_dots=8):
+    return os.path.join(os.path.relpath(path), folder_name)
+
+def draw_radial_dots(img, 
+                    radius, 
+                    center, 
+                    pixel_value, 
+                    num_dots=8):
     """ draws radial dots in a the given image and return the modified image """
     thetas = [t*np.pi*(2.0/num_dots) for t in range(num_dots)]
     for t in thetas:
