@@ -28,7 +28,13 @@ def get_image_paths(path=DATASET_PATH, image_type='png'):
 
 def convert_to_grayscale(img):
     """ returns grayscale of the input image """
-    return cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    # check if image shape has 3 dimensions before converting
+    if len(img.shape) == 3:
+        img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    else:
+        img_gray = img
+
+    return img_gray
     
 def get_images(path=DATASET_PATH, image_type='png'):
     """ returns list of PIL Image objects using files in the given location path """
@@ -56,5 +62,10 @@ def get_laplacian_kernel():
                      [1/6, -1, 1/6], 
                      [1/12, 1/6, 1/12]]).astype('float32')
 
+def get_average_kernel():
+    """ returns a average kernel """
+    return np.array([[1/12, 1/6, 1/12], 
+                     [1/6, 0, 1/6], 
+                     [1/12, 1/6, 1/12]]).astype('float32')
 
 
