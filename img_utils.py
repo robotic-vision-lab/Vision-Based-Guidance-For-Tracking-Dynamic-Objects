@@ -35,7 +35,15 @@ def convert_to_grayscale(img):
         img_gray = img
 
     return img_gray
-    
+
+def normalize_to_unit_range(img):
+    """ takes in an image and normalizes to range 0.0 to 1.0  """
+    return cv.normalize(img.astype('float32'), None, 0.0, 1.0, norm_type=cv.NORM_MINMAX)
+
+def normalize_to_255_range(img):
+    """ takes in an image and normalizes to range 0 to 255  """
+    return cv.normalize(img, None, 0, 255, norm_type=cv.NORM_MINMAX) 
+
 def get_images(path=DATASET_PATH, image_type='png'):
     """ returns list of PIL Image objects using files in the given location path """
     
