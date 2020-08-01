@@ -53,9 +53,25 @@ def preprocess_image(img, blur=True):
 
     return img
 
-def normalize_to_unit_range(img):
-    """ takes in an image and normalizes to range 0.0 to 1.0  """
-    return cv.normalize(img.astype('float32'), None, 0.0, 1.0, cv.NORM_MINMAX)
+def get_color_scheme(img_size=(512, 512)):
+    """ returns the color scheme used for optical flow representation """
+    # size validation
+    if not len(img_size)==2:
+        print(f'img_size needs two integers.')
+        return 
+    
+    # initialise u, v
+    u = np.zeros(img_size, dtype='float32')
+    v = np.zeros(img_size, dtype='float32')
+
+    # build u, v
+    for i in range(img_size[0]):
+        for j in range(img_size[1]):
+            u[i][j] = np.sign(j - img_size[1]//2) * (j - img_size[1]//2)**2
+            v[i][j] = np.sign(i - img_size[0]//2) * (i - img_size[0]//2)**2
+
+    # return the color code
+    return get_OF_color_encoded(u,v)
 
 def get_OF_color_encoded(u, v):
     """ Takes in u and v components of optical flow and draws color encoded image. 
@@ -78,18 +94,11 @@ def get_OF_color_encoded(u, v):
 
     # set image hue and value
     hsv[..., 0] = angle * 90 / np.pi    # angle is 0.0-2pi, we need 0-180
-    hsv[..., 2] = cv.normalize(magnitude, None, 0, 255, cv.NORM_MINMAX)
+    hsv[..., 2] = normalize_to_255_range(magnitude)
     
     # convert HSV to RGB (BGR in opencv)
     color_img = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
 
-    # show flow
-    # window_name = 'Optical flow'
-    # cv.imwrite('out_img_OF.jpg', color_img)
-    # cv.imshow(window_name, color_img)
-    # cv.waitKey(0)
-    # cv.destroyWindow(window_name) 
-    # plt.imshow(color_img)
     return color_img
 
 def compute_optical_flow_HS(img_1, 
@@ -129,9 +138,9 @@ if __name__ == "__main__":
     height = 20
     width = 20
     data_path = generate_synth_data(img_size=(height,width), 
-                                path='./', 
-                                num_images=4, 
-                                folder_name='synth_data')
+                                    path='./', 
+                                    num_images=4, 
+                                    folder_name='synth_data')
 
 
     synth_path_params = {'path':data_path, 'image_type':'jpg'}
@@ -145,8 +154,7 @@ if __name__ == "__main__":
                    'car':car_path_params}
     
     # list out the image path
-    img_paths = get_image_paths(**path_params['car'])
-
+    img_paths = get_image_paths(**path_params['synth'])
 
     # read and preprocess
     img_1 = preprocess_image(cv.imread(img_paths[0]))
@@ -158,7 +166,7 @@ if __name__ == "__main__":
 
     # get optical flow 
     u, v = compute_optical_flow_HS(img_1, img_2, alpha, num_iter)
-
+    
     # draw color encoded optical flow
     img_OF_color = get_OF_color_encoded(u, v)
     cv.imwrite('optical_flow_horn_schunk.jpg', img_OF_color)
