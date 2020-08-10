@@ -14,17 +14,21 @@ def l_print(line):
 # initialise image path variable 
 DATASET_PATH = "./datasets/RubberWhale/"
 
+
 def get_image_shape(img):
     """ returns the shape of the image """
     return img.shape
+
 
 def get_image_size(img):
     """ returns the size of the image """
     return img.size
 
+
 def get_image_paths(path=DATASET_PATH, image_type='png'):
     """ returns list of image filenames of type image_type in the given location path """
     return [os.path.join(path, item) for item in os.listdir(path) if item.split('.')[-1] == image_type]
+
 
 def convert_to_grayscale(img):
     """ returns grayscale of the input image """
@@ -36,13 +40,16 @@ def convert_to_grayscale(img):
 
     return img_gray
 
+
 def normalize_to_unit_range(img):
     """ takes in an image and normalizes to range 0.0 to 1.0  """
     return cv.normalize(img.astype('float32'), None, 0.0, 1.0, norm_type=cv.NORM_MINMAX)
 
+
 def normalize_to_255_range(img):
     """ takes in an image and normalizes to range 0 to 255  """
     return cv.normalize(img, None, 0, 255, norm_type=cv.NORM_MINMAX) 
+
 
 def get_images(path=DATASET_PATH, image_type='png'):
     """ returns list of PIL Image objects using files in the given location path """
@@ -64,11 +71,13 @@ def get_images(path=DATASET_PATH, image_type='png'):
 
     return img_list
 
+
 def get_laplacian_kernel():
     """ returns a laplacian kernel """
     return np.array([[1/12, 1/6, 1/12], 
                      [1/6, -1, 1/6], 
                      [1/12, 1/6, 1/12]]).astype('float32')
+
 
 def get_average_kernel():
     """ returns a average kernel """

@@ -1,6 +1,3 @@
-# create dummy test images 
-# 
-
 import cv2 as cv
 from math import sin, cos
 import numpy as np
@@ -55,6 +52,7 @@ def generate_synth_data(img_size=(20,20),
         radius += 1
 
     return os.path.join(os.path.relpath(path), folder_name)
+
 
 def draw_radial_dots(img, 
                     radius, 

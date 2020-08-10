@@ -50,6 +50,7 @@ def compute_optical_flow_HS(img_1,
 
     return u,v
 
+
 if __name__ == "__main__":
     # create dummy test images 
     height = 20
