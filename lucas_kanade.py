@@ -11,6 +11,9 @@ def compute_optical_flow_LK():
 
 
 if __name__ == "__main__":
-    pass
+    """ test Lucas Kanade implementation """
+    # get images 
+
+
 
 
