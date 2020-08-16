@@ -41,6 +41,11 @@ def convert_to_grayscale(img):
     return img_gray
 
 
+def convert_BGR_to_RGB(img):
+    """ converts the image from BGR (OpenCV) to RGB """
+    return cv.cvtColor(img, cv.COLOR_BGR2RGB)
+
+
 def normalize_to_unit_range(img):
     """ takes in an image and normalizes to range 0.0 to 1.0  """
     return cv.normalize(img.astype('float32'), None, 0.0, 1.0, norm_type=cv.NORM_MINMAX)
