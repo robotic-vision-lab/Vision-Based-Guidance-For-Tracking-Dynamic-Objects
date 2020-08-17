@@ -1,9 +1,23 @@
 import cv2 as cv
+import os
 
 class ImageWindow:
-    """ Defines a window object to handle image displaying tasks using opencv.
+    """ Defines a window object to handle image displaying tasks using Opencv.
         OpenCV image window displaying is not intuitive to work with.
-        Using ImageWindow it should become easier to handle images in a window in an object-oriented fashion.
+        Purpose of  ImageWindow is to make it easier to handle images in a window in a rather object-oriented fashion.
+        Usage:
+            (1)
+            # create a window
+            my_window = ImageWindow(window_name='My Window')
+
+            # display image 
+            my_window.show(image_1)         
+
+            # save the image in window
+            my_window.save()                # >>> Saving ./image_1.jpg.
+
+            # close the window
+            my_window.close()
     """
 
     def __init__(self, window_name, callback=None, window_flags=None):
@@ -33,9 +47,17 @@ class ImageWindow:
 
     def show(self, img):
         """ displays the image in the window """
+        self.img = img
         cv.imshow(self.window_name, img)
 
-    def destroy(self):
+    def save(self, path='./', image_type='jpg'):
+        """ saves the displayed image in an image file"""
+        filename = os.path.join(path, f'{self.window_name}.{image_type}')
+        cv.imwrite(filename, self.img)
+        print(f'Saving {filename}.')
+
+
+    def close(self):
         """ destroys window, de-allocates memory usage """
         cv.destroyWindow(self.window_name)
 
