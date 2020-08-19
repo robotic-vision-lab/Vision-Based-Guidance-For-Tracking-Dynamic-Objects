@@ -1,11 +1,12 @@
-from PIL import Image
 import cv2 as cv
 import os
 import numpy as np
 import logging
 
+from PIL import Image
+
 # set the debug file name 
-logging.basicConfig(filename='debug.log',filemode='w', level=logging.DEBUG)
+logging.basicConfig(filename='debug.log', filemode='w', level=logging.DEBUG)
 
 def l_print(line):
     """ custom log printer for debugging """
@@ -99,3 +100,56 @@ def preprocess_image(img, blur=True):
     img = normalize_to_unit_range(img)
 
     return img
+
+
+def scale_image(img, scale_factor=1.0):
+    """ takes in img and scale_factor and returns scaled image with aspect ratio preserved """
+    # choose appropriate interpolation model
+    if scale_factor < 1.0:
+        # image is to be shrunk
+        interpolation = cv.INTER_AREA
+    else:
+        # image is to be enlarged
+        interpolation = cv.INTER_CUBIC      # slow but looks good
+        # interpolation = cv.INTER_LINEAR   # faster and looks OK
+        
+    scaled_image = cv.resize( src=img,
+                              dst=None, 
+                              dsize=Size(), 
+                              fx=scale_factor, 
+                              fy=scale_factor, 
+                              interpolation=interpolation )
+
+    return scaled_image
+
+
+def add_border(img, border_color=[255,255,255], min_border=1):
+    """ inputs image and border parameters and returns image with added border.
+        Added border is of uniform thickness (≥ min_border)
+    """
+    # compute border thickness
+    border_thickness_ratio = 0.01
+    border_thickness = max(min_border, int(max(img.shape[0], img.shape[1])*border_thickness_ratio))
+
+    # set top, bottom, left, right border thickness
+    t = b = l = r = border_thickness
+
+    bordered_image = cv.copyMakeBorder( src=img,
+                                        top=t,
+                                        bottom=b,
+                                        left=l,
+                                        right=r,
+                                        borderType=cv.BORDER_CONSTANT,
+                                        dst=None,
+                                        value=border_color )
+    
+    return bordered_image
+    
+
+
+
+def images_assemble(images, scale_factor=1.0):
+    """ Assembles an array of images into a single image grid.
+        Also, scale all images by the scale_factor
+    """
+    pass
