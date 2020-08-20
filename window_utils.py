@@ -27,6 +27,7 @@ class ImageWindow:
         
         self.create_window(self.window_flags)
         
+
     def create_window(self, window_flags=None):
         """ Creates a single window that can be a place holder for images and trackbars.
             Created window will be referred to by the window name.
@@ -37,18 +38,25 @@ class ImageWindow:
             For window flags check 
             https://docs.opencv.org/3.4/d7/dfc/group__highgui.html#gabf7d2c5625bc59ac130287f925557ac3
         """
-        cv.namedWindow(self.window_name, window_flags)
+        if window_flags is not None:
+            cv.namedWindow(self.window_name, window_flags)
+        else:
+            cv.namedWindow(self.window_name)
+
         if self.window_exists(self.window_name):
             print(f'Window {self.window_name} already exists.')
+
 
     def window_exists(self, window_name):
         """ Checks if a window by the given name exists and is visible """
         return True if cv.getWindowProperty(window_name, cv.WND_PROP_VISIBLE)==1.0 else False
 
+
     def show(self, img):
         """ displays the image in the window """
         self.img = img
         cv.imshow(self.window_name, img)
+
 
     def save(self, path='./', image_type='jpg'):
         """ saves the displayed image in an image file"""
@@ -60,6 +68,7 @@ class ImageWindow:
     def close(self):
         """ destroys window, de-allocates memory usage """
         cv.destroyWindow(self.window_name)
+
 
     def handle_events(self):
         """ calls the waitKey() to process events and calls callback if it exists """
