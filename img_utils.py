@@ -104,6 +104,10 @@ def preprocess_image(img, blur=True):
 
 def scale_image(img, scale_factor=1.0):
     """ takes in img and scale_factor and returns scaled image with aspect ratio preserved """
+    # compute dsize
+    width = int(img.shape[1] * scale_factor)
+    height = int(img.shape[0] * scale_factor)
+    
     # choose appropriate interpolation model
     if scale_factor < 1.0:
         # image is to be shrunk
@@ -115,21 +119,22 @@ def scale_image(img, scale_factor=1.0):
         
     scaled_image = cv.resize( src=img,
                               dst=None, 
-                              dsize=Size(), 
-                              fx=scale_factor, 
-                              fy=scale_factor, 
+                              dsize=(width, height), 
                               interpolation=interpolation )
 
     return scaled_image
 
 
-def add_border(img, border_color=[255,255,255], min_border=1):
+def add_border(img, border_color=[255,255,255], thickness=None, min_border=1):
     """ inputs image and border parameters and returns image with added border.
         Added border is of uniform thickness (≥ min_border)
     """
     # compute border thickness
     border_thickness_ratio = 0.01
-    border_thickness = max(min_border, int(max(img.shape[0], img.shape[1])*border_thickness_ratio))
+    if thickness is None:
+        border_thickness = max(min_border, int(max(img.shape[0], img.shape[1])*border_thickness_ratio))
+    else:
+        border_thickness = thickness
 
     # set top, bottom, left, right border thickness
     t = b = l = r = border_thickness
@@ -146,10 +151,83 @@ def add_border(img, border_color=[255,255,255], min_border=1):
     return bordered_image
     
 
-
-
-def images_assemble(images, scale_factor=1.0):
+def images_assemble(images, grid_shape, scale_factor=1.0, border=True, scale_to_fit=False):
     """ Assembles an array of images into a single image grid.
-        Also, scale all images by the scale_factor
+        Also, scale all images by the scale_factor.
+        Images (1D list) of different sizes may be scaled to fit the row.
+
     """
-    pass
+    # validate grid_shape and num of elements in images
+    if not len(grid_shape) == 2:
+        print(f'grid_shape needs to be a tuple with 2 elements (height, width).')
+        return
+    elif not len(images) == grid_shape[0]*grid_shape[1]:
+        print(f'length of the list images (1D list) needs to be same as area of grid_shape (height*width). ')
+    
+    # extract height and width
+    height = grid_shape[0]
+    width = grid_shape[1]
+
+    # add border
+    if border:
+        images = [add_border(img, thickness=5) for img in images]
+
+    # compute max heights and widths
+    max_heights = np.zeros((height,))
+    max_widths = np.zeros((width,))
+    for row in range(height):
+        for col in range(width):
+            # select appropriate image
+            img = images[width * row + col]
+            
+            # update max_height
+            max_heights[row] = max(max_heights[row], img.shape[0])
+
+    for col in range(width):
+        for row in range(height):
+            # select appropriate image
+            img = images[width * row + col]
+            
+            # update max_width
+            max_widths[col] = max(max_widths[col], img.shape[1])
+
+    # initialise the aggregate image with zeros
+    img_assembled = np.ones((int(sum(max_heights)), int(sum(max_widths)), 3), dtype='uint8') * 255
+
+    for r in range(height):
+        for c in range(width):
+            # select appropriate image
+            img = images[width * r + c]
+
+            # make sure that image has 3 channels
+            if len(img.shape) < 3:
+                img = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
+
+            # compute offset for image placement
+            img_h = img.shape[0]
+            img_w = img.shape[1]
+            cell_h = max_heights[r]
+            cell_w = max_widths[c]
+
+            y = sum(max_heights[:r]) + max_heights[r] // 2
+            x = sum(max_widths[:c]) + max_widths[c] // 2
+
+            img_y = int(y - img_h // 2)
+            img_x = int(x - img_w // 2)
+
+            # place the image
+            img_assembled[img_y:img_y+img_h, img_x:img_x+img_w, ...] = img
+
+    return scale_image(img_assembled, scale_factor)
+
+
+if __name__ == "__main__":
+    print('Main called')
+    img = cv.imread(get_image_paths('./datasets/Dimetrodon')[0])   
+    img_b = np.hstack((img, img))
+
+    imgs = [img, img_b, img_b, img_b, img, img_b]
+    a = images_assemble(imgs, (2,3), scale_factor=0.4)
+    cv.imshow('assembled', a)
+    cv.waitKey(0)
+    cv.destroyAllWindows() 
