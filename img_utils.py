@@ -200,7 +200,7 @@ def images_assemble(images, grid_shape, scale_factor=1.0, border=True, scale_to_
             img = images[width * r + c]
 
             # make sure that image has 3 channels
-            if len(img.shape) < 3:
+            if len(img.shape) == 2:
                 img = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
 
             # compute offset for image placement
