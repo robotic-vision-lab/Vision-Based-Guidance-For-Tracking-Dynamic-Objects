@@ -8,15 +8,6 @@ from window_utils import *
 from synth_data import generate_synth_data
 
 
-def preprocess_image(img, blur=True):
-    """ returns grayscaled, gaussian blurred and normalised image """
-    img = convert_to_grayscale(img)
-    if blur:
-        img = cv.GaussianBlur(img, (3,3), 0)
-    img = normalize_to_unit_range(img)
-
-    return img
-
 
 def compute_optical_flow_HS(img_1, 
                             img_2, 
@@ -55,10 +46,12 @@ if __name__ == "__main__":
     # create dummy test images 
     height = 20
     width = 20
+
     data_path = generate_synth_data( img_size=(height,width), 
                                      path='./', 
                                      num_images=4, 
                                      folder_name='synth_data' )
+
 
     # set some path paramaters as dictionaries, holding image path and types
     synth_path_params = {'path':data_path, 'image_type':'jpg'}
@@ -73,7 +66,7 @@ if __name__ == "__main__":
                    'car':car_path_params}
     
     # list out the image path
-    img_paths = get_image_paths(**path_params['synth'])
+    img_paths = get_image_paths(**path_params['car'])
 
     # read and preprocess
     img_1 = preprocess_image(cv.imread(img_paths[0]))

@@ -4,4 +4,4 @@ tutorial.py
 test_OF.py
 debug.log
 out_img_*
-optical_flow_horn_schunk.jpg
+optical_flow_*.jpg

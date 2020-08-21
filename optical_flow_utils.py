@@ -13,6 +13,7 @@ def compute_horizontal_gradient(img_1, img_2):
 
     return d_dx_img/2
 
+
 def compute_vertical_gradient(img_1, img_2):
     """ returns gradient of the image (I_y) along the vertical direction """
     kernel_y = 0.25 * np.array([[-1, -1], [1, 1]]).astype('float32')
@@ -22,6 +23,7 @@ def compute_vertical_gradient(img_1, img_2):
     d_dy_img = d_dy_img_1 + d_dy_img_2
 
     return d_dy_img/2
+
 
 def compute_temporal_gradient(img_1, img_2):
     """ returns temporal gradient between two frames """
@@ -33,6 +35,7 @@ def compute_temporal_gradient(img_1, img_2):
 
     return d_dt_img/2
 
+
 def compute_gradients(img_1, img_2):
     """ returns gradients of image I(x,y,t) along x, y, t as tuple """
     I_x = compute_horizontal_gradient(img_1, img_2)
@@ -40,6 +43,7 @@ def compute_gradients(img_1, img_2):
     I_t = compute_temporal_gradient(img_1, img_2)
 
     return (I_x, I_y, I_t)
+
 
 def get_OF_color_encoded(u, v):
     """ Takes in u and v components of optical flow and draws color encoded image. 
