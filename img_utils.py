@@ -151,7 +151,12 @@ def add_border(img, border_color=[255,255,255], thickness=None, min_border=1):
     return bordered_image
     
 
-def images_assemble(images, grid_shape, scale_factor=1.0, border=True, scale_to_fit=False):
+def images_assemble(images, 
+                    grid_shape, 
+                    scale_factor=1.0, 
+                    bg_color=[255, 255, 255], 
+                    border=True, 
+                    scale_to_fit=False):
     """ Assembles an array of images into a single image grid.
         Also, scale all images by the scale_factor.
         Images (1D list) of different sizes may be scaled to fit the row.
@@ -192,8 +197,12 @@ def images_assemble(images, grid_shape, scale_factor=1.0, border=True, scale_to_
             max_widths[col] = max(max_widths[col], img.shape[1])
 
     # initialise the aggregate image with zeros
-    img_assembled = np.ones((int(sum(max_heights)), int(sum(max_widths)), 3), dtype='uint8') * 255
+    img_assembled = np.zeros((int(sum(max_heights)), int(sum(max_widths)), 3), dtype='uint8') 
+    
+    # set background color
+    img_assembled[..., :] = bg_color
 
+    # assemble images into one by placing them at appropriate offsets
     for r in range(height):
         for c in range(width):
             # select appropriate image
@@ -203,7 +212,7 @@ def images_assemble(images, grid_shape, scale_factor=1.0, border=True, scale_to_
             if len(img.shape) == 2:
                 img = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
 
-            # compute offset for image placement
+            # compute offset (img_x, img_y) for image placement
             img_h = img.shape[0]
             img_w = img.shape[1]
             cell_h = max_heights[r]
