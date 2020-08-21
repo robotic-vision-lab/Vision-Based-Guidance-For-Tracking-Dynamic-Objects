@@ -231,12 +231,19 @@ def images_assemble(images,
 
 
 if __name__ == "__main__":
-    print('Main called')
+    # ---------------------------------------------------------------
+    # test images_assemble() usage
+    # ---------------------------------------------------------------
+    # make a list of images
     img = cv.imread(get_image_paths('./datasets/Dimetrodon')[0])   
     img_b = np.hstack((img, img))
-
     imgs = [img, img_b, img_b, img_b, img, img_b]
+
+    # assemble images
     a = images_assemble(imgs, (2,3), scale_factor=0.4)
+
+    # display
     cv.imshow('assembled', a)
     cv.waitKey(0)
     cv.destroyAllWindows() 
+    # ---------------------------------------------------------------
