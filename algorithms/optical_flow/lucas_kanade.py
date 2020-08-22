@@ -19,7 +19,7 @@ if __name__ == "__main__":
     data_path = generate_synth_data( img_size=(height, width), 
                                      path='./', 
                                      num_images=4, 
-                                     folder_name='synth_data' )
+                                     folder_name='./datasets/synth_data' )
 
     # gather the path params needed in a dictionary
     synth_path_params = {'path':data_path, 'image_type':'jpg'}
