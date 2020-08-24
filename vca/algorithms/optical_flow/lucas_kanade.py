@@ -1,10 +1,8 @@
 import cv2 as cv
 import numpy as np
 
-from img_utils import *
-from window_utils import *
-from optical_flow_utils import *
-from synth_data import generate_synth_data
+from utils import *
+
 
 def compute_optical_flow_LK():
     pass
@@ -17,16 +15,16 @@ if __name__ == "__main__":
     height = 20
     width = 20
     data_path = generate_synth_data( img_size=(height, width), 
-                                     path='./', 
+                                     path='../../datasets', 
                                      num_images=4, 
-                                     folder_name='./datasets/synth_data' )
+                                     folder_name='synth_data' )
 
     # gather the path params needed in a dictionary
     synth_path_params = {'path':data_path, 'image_type':'jpg'}
-    dimetrodon_path_params = {'path':'./datasets/Dimetrodon', 'image_type':'png'}
-    rubber_path_params = {'path':'./datasets/RubberWhale', 'image_type':'png'}
+    dimetrodon_path_params = {'path':'../../datasets/Dimetrodon', 'image_type':'png'}
+    rubber_path_params = {'path':'../../datasets/RubberWhale', 'image_type':'png'}
     car_path_params = {'path':'C:\MY DATA\Code Valley\MATLAB\determining-optical-flow-master\horn-schunck', 'image_type':'png'}
-    venus_path_params = {'path':'./datasets/Venus', 'image_type':'png'}
+    venus_path_params = {'path':'../../datasets/Venus', 'image_type':'png'}
 
     path_params = { 'synth':synth_path_params, 
                     'dimetrodon':dimetrodon_path_params, 

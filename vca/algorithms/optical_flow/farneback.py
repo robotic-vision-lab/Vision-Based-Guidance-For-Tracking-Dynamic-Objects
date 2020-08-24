@@ -2,10 +2,8 @@ import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 
-from img_utils import *
-from optical_flow_utils import *
-from window_utils import *
-from synth_data import generate_synth_data
+from utils import *
+
 
 """ 
 calcOpticalFlowFarneback(prev, next, flow, pyr_scale, levels, winsize, iterations, poly_n, poly_sigma, flags) -> flow
@@ -55,9 +53,9 @@ if __name__ == "__main__":
     height = 20
     width = 20
     data_path = generate_synth_data(img_size=(height, width), 
-                                    path='./', 
+                                    path='../../datasets', 
                                     num_images=4, 
-                                    folder_name='./datasets/synth_data')
+                                    folder_name='synth_data')
 
 
     synth_path_params = {'path':data_path, 'image_type':'jpg'}
@@ -100,7 +98,7 @@ if __name__ == "__main__":
     
     # draw color encoded optical flow
     img_OF_color = get_OF_color_encoded(u, v)
-    cv.imwrite('optical_flow_farneback.jpg', img_OF_color)
+    cv.imwrite('../../out_imgs/optical_flow_farneback.jpg', img_OF_color)
 
     # display optical flow 
     cv.imshow('Optical Flow color encoded', img_OF_color)
