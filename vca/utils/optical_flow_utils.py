@@ -1,7 +1,10 @@
 import numpy as np
-from img_utils import *
 import cv2 as cv
 
+if __name__ == "__main__":
+    from img_utils import *
+else:
+    from .img_utils import *
 
 def compute_horizontal_gradient(img_1, img_2):
     """ returns gradient of the image (I_x) along the horizontal direction """

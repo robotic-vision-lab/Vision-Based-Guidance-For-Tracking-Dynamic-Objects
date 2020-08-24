@@ -1,7 +1,8 @@
 import cv2 as cv
-from math import sin, cos
 import numpy as np
 import os
+
+from math import sin, cos
 
 
 def get_blank_image(size, value=0, dtype=np.uint8):
