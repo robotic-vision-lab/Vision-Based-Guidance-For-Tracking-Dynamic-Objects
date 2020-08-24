@@ -6,7 +6,7 @@ import logging
 from PIL import Image
 
 # set the debug file name 
-logging.basicConfig(filename='debug.log', filemode='w', level=logging.DEBUG)
+logging.basicConfig(filename='../logs/debug.log', filemode='w', level=logging.DEBUG)
 
 def l_print(line):
     """ custom log printer for debugging """
