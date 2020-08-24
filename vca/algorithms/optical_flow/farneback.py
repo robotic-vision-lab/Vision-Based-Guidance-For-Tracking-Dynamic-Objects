@@ -57,12 +57,13 @@ if __name__ == "__main__":
                                     num_images=4, 
                                     folder_name='synth_data')
 
-
+    # set some path paramaters as dictionaries, holding image path and types
     synth_path_params = {'path':data_path, 'image_type':'jpg'}
-    dimetrodon_path_params = {'path':'./datasets/Dimetrodon', 'image_type':'png'}
-    rubber_path_params = {'path':'./datasets/RubberWhale', 'image_type':'png'}
+    dimetrodon_path_params = {'path':'../../datasets/Dimetrodon', 'image_type':'png'}
+    rubber_path_params = {'path':'../../datasets/RubberWhale', 'image_type':'png'}
     car_path_params = {'path':'C:\MY DATA\Code Valley\MATLAB\determining-optical-flow-master\horn-schunck', 'image_type':'png'}
 
+    # keep a dictionary of path parameters
     path_params = {'synth':synth_path_params, 
                    'dimetrodon':dimetrodon_path_params, 
                    'rubber':rubber_path_params, 
