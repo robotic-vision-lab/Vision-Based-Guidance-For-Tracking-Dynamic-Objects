@@ -3,11 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from utils import *
-# from img_utils import *
-# from optical_flow_utils import *
-# from window_utils import *
-# from data_synth_utils import generate_synth_data
-
 
 
 def compute_optical_flow_HS(img_1, 
