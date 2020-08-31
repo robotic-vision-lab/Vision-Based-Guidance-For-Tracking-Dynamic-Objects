@@ -5,8 +5,11 @@ import logging
 
 from PIL import Image
 
+
+DEBUG_LOG_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../logs/debug.log')
+
 # set the debug file name 
-logging.basicConfig(filename='../logs/debug.log', filemode='w', level=logging.DEBUG)
+logging.basicConfig(filename=DEBUG_LOG_PATH, filemode='w', level=logging.DEBUG)
 
 def l_print(line):
     """ custom log printer for debugging """
