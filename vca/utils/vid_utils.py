@@ -18,6 +18,9 @@ def create_video_from_images(path, image_type, video_name, fps, fourcc_codec='DI
         fourcc_codec (str): 4-character code of codec used to compress the frames. Default 'DIVX'
                             For example, 'PIM1' is a MPEG-1 codec, 'MJPG' is a motion-jpeg codec etc. 
                             List of codes can be obtained here http://www.fourcc.org/codecs.php
+
+    Usage:
+        create_video_from_images('./', 'jpg', 'vid_1.avi', 30)
     """
     # collect image paths
     img_paths = get_image_paths(path=path, image_type=image_type)
