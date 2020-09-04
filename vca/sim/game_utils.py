@@ -1,4 +1,5 @@
 import os
+import shutil
 import pygame
 
 from pygame.locals import *
@@ -33,3 +34,31 @@ def load_image(img_name, colorkey=None, alpha=True):
         image.set_colorkey(colorkey, RLEACCEL)
 
     return image, image.get_rect()
+
+
+def screen_saver(screen, path):
+    """ generator function saves the frame from given screen as .jpg image file """
+    # prep folder path 
+    _prep_temp_folder(path)
+    
+    frame_num = 0
+    while True:
+        frame_num += 1
+        image_name = f'frame_{str(frame_num).zfill(4)}.jpg'
+        file_path = os.path.join(path, image_name)
+        pygame.image.save(screen, file_path)
+        yield
+
+def _prep_temp_folder(folder_path):
+    """Prep the temp folder for next screen dump.
+        If folder didn't exist before, make it.
+        If it exists then remove it and make it.
+    """
+    # make dir if it doesnot exist
+    if not os.path.isdir(folder_path):
+        os.mkdir(folder_path)
+    else:
+        shutil.rmtree(folder_path)
+        os.mkdir(folder_path)
+
+    
