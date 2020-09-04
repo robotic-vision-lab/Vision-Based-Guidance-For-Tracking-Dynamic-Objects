@@ -4,7 +4,7 @@ import pygame
 from settings import *
 
 # helper function to load images
-def load_image(img_name, colorkey=None):
+def load_image(img_name, colorkey=None, alpha=True):
     """loads pygame image and its rect and returns them as a tuple
 
     Args:
@@ -22,7 +22,7 @@ def load_image(img_name, colorkey=None):
         raise SystemExit(str(geterror()))
 
     # convert image for pygame compatibility
-    image = image.convert()
+    image = image.convert_alpha() if alpha else image.convert()
 
     # adjust according to colorkey
     if colorkey is not None:
