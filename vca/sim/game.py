@@ -5,7 +5,7 @@ import pygame
 from pygame.locals import *
 from settings import *
 from car import Car
-from game_utils import load_image
+from game_utils import *
 
 class Game:
     """Simulation Game
@@ -22,9 +22,14 @@ class Game:
         # initialize images for Sprites
         self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True)
 
+        self.save_screen = False
+
     def start_new(self):
         """helper function to perform tasks when we start a new game.
         """
+        # initiate screen shot generator
+        self.screen_shot = screen_saver(self.screen_surface, TEMP_FOLDER)
+
         # create Groups
         self.all_sprites = pygame.sprite.Group()
 
@@ -45,6 +50,10 @@ class Game:
             if event.type == pygame.QUIT or \
                 event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.quit()
+
+            # check for s keypress (toggle screen saving on/off)
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
+                self.save_screen = not self.save_screen
 
     def update(self):
         """Helper function to update game objects. 
@@ -82,6 +91,10 @@ class Game:
 
             # draw stuffs
             self.draw()
+
+            # save screen 
+            if self.save_screen:
+                next(self.screen_shot)
 
 
 
