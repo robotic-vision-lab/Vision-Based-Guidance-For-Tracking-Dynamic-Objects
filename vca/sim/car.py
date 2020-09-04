@@ -44,10 +44,26 @@ def load_image(img_name, colorkey=None):
 class Car(pygame.sprite.Sprite):
     """Defines a car sprite.
     """
-    def __init__(self):
+    def __init__(self, game, x, y):
         pygame.sprite.Sprite.__init__(self) # call Sprite initializer
         
-        # assign Sprite.image and Sprite.rect attributes
+        # assign Sprite.image and Sprite.rect attributes for this Sprite
         self.image, self.rect = load_image(img_name='car.png', colorkey=BLACK)
+
+        # set initial rect position
+        # self.rect.center = 
+        self.position = pygame.Vector2(x, y)
+        self.velocity = pygame.Vector2()
+        self.acceleration = pygame.Vector2()
+
+        self.game = game
+
+    def update(self):
+        """ update sprite attributes
+        """
+        # update velocity and position
+        self.velocity = self.velocity + self.acceleration * self.game.dt
+         
+
 
         
