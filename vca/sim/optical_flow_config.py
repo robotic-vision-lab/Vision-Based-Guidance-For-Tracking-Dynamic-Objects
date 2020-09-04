@@ -1,3 +1,4 @@
+import os
 import cv2 as cv
 
 #   F A R N E B A C K   P A R A M S 
@@ -51,5 +52,5 @@ LK_PARAMS = dict( winSize  = (15,15),
 
 
 # FOLDERS
-FARN_TEMP_FOLDER = ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'tmp_farn')
-LK_TEMP_FOLDER = ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'tmp_lk')
+FARN_TEMP_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'tmp_farn')
+LK_TEMP_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'tmp_lk')
