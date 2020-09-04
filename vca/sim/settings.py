@@ -17,7 +17,7 @@ YELLOW = (255, 255, 0)
 # screen settings
 SCREEN_SIZE = WIDTH, HEIGHT = 512, 512
 SCREEN_DISPLAY_TITLE = "Car Simulation"
-BG_COLOR = DARK_GRAY
+SCREEN_BG_COLOR = DARK_GRAY
 
 # frame settings
 FPS = 30
