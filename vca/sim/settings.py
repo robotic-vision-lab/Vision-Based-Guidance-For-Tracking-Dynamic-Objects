@@ -27,4 +27,7 @@ ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets'
 
 # car settings
 CAR_IMG = 'car.png'
+CAR_INITIAL_POSITION = (0, WIDTH//2)
+CAR_INITIAL_VELOCITY = (30, 0)
+CAR_ACCELERATION = (0, 0)
 
