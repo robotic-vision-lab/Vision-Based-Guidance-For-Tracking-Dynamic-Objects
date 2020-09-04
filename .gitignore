@@ -5,3 +5,4 @@ test_OF.py
 debug.log
 out_img_*
 optical_flow_*.jpg
+tmp
