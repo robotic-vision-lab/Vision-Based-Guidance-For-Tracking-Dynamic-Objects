@@ -6,4 +6,4 @@ debug.log
 out_img_*
 optical_flow_*.jpg
 tmp*
-vid_out*.avi
+*vid_out*.avi
