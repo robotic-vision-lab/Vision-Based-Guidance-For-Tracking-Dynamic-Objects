@@ -28,6 +28,9 @@ class Game:
         # create Groups
         self.all_sprites = pygame.sprite.Group()
 
+        # spawn car
+        self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION)
+
     def quit(self):
         """quits game, exits application
         """
