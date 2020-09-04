@@ -1,3 +1,4 @@
+import os
 import pygame
 
 # define some colors to be used with pygame 
@@ -18,8 +19,12 @@ WIDTH, HEIGHT = 512, 512
 TITLE = "Car Simulation"
 BG_COLOR = DARK_GRAY
 
-# frame setting
+# frame settings
 FPS = 30
 
-# car setting
+# resources settings
+ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets')
+
+# car settings
 CAR_IMG = 'car.png'
+
