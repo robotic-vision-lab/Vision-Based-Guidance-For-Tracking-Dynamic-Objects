@@ -39,8 +39,9 @@ class Game:
     def quit(self):
         """quits game, exits application
         """
+        self.running = False
         pygame.quit()
-        sys.exit()
+        # sys.exit()
 
     def handle_events(self):
         """handles events in event queue while running game loop
@@ -85,6 +86,8 @@ class Game:
 
             # handle events
             self.handle_events()
+            if not self.running:
+                break
 
             # update game objects
             self.update()
