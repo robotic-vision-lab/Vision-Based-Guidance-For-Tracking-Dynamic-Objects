@@ -6,7 +6,6 @@ import pygame
 from pygame.locals import *
 
 from settings import CAR_IMG
-from game_utils import load_image
 
 class Car(pygame.sprite.Sprite):
     """Defines a car sprite.
@@ -15,21 +14,33 @@ class Car(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self) # call Sprite initializer
         
         # assign Sprite.image and Sprite.rect attributes for this Sprite
-        self.image, self.rect = load_image(img_name=CAR_IMG, colorkey=BLACK)
+        self.image = game.car_img
+        self.rect = self.image.rect()
 
-        # set initial rect position
-        # self.rect.center = 
         self.position = pygame.Vector2(x, y)
         self.velocity = pygame.Vector2()
         self.acceleration = pygame.Vector2()
 
+        # set initial rect position
+        self.rect.center = self.position
+
         self.game = game
 
-    def update(self):
-        """ update sprite attributes
+    def update_kinematics(self):
+        """helper function to update kinematics of object
         """
         # update velocity and position
-        self.velocity = self.velocity + self.acceleration * self.game.dt
+        self.velocity += self.acceleration * self.game.dt
+        self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+
+
+    def update(self):
+        """ update sprite attributes. 
+            This will get called in game loop for every frame
+        """
+        self.update_kinematics()
+        self.rect.center = self.position
+    
          
 
 
