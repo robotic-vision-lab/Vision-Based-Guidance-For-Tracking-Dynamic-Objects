@@ -115,3 +115,9 @@ if __name__ == "__main__":
 
     # create the video file
     make_video('farn_vid_out_car.avi', FARN_TEMP_FOLDER)
+
+    # create lucas-kanade output 
+    run_lk('vid_out_car.avi')
+
+    # create the video file
+    make_video('lk_vid_out_car.avi', LK_TEMP_FOLDER)
