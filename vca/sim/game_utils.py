@@ -5,7 +5,8 @@ from settings import *
 
 # helper function to load images
 def load_image(img_name, colorkey=None, alpha=True):
-    """loads pygame image and its rect and returns them as a tuple
+    """loads pygame image and its rect and returns them as a tuple.
+        It will look into the ASSET_FOLDER for the img_name
 
     Args:
         img_name (str): name of the image file
