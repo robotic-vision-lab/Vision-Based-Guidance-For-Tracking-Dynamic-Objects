@@ -24,6 +24,7 @@ FPS = 30
 
 # resources settings
 ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets')
+TEMP_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'tmp')
 
 # car settings
 CAR_IMG = 'car.png'
