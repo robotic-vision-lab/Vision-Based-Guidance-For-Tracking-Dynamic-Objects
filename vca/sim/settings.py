@@ -15,8 +15,8 @@ YELLOW = (255, 255, 0)
 #   S E T T I N G S  #
 
 # screen settings
-WIDTH, HEIGHT = 512, 512
-TITLE = "Car Simulation"
+SCREEN_SIZE = WIDTH, HEIGHT = 512, 512
+SCREEN_DISPLAY_TITLE = "Car Simulation"
 BG_COLOR = DARK_GRAY
 
 # frame settings
