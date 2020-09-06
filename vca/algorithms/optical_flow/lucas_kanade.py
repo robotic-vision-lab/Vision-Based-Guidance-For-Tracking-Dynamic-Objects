@@ -1,5 +1,13 @@
+import os
+import sys
 import cv2 as cv
 import numpy as np
+
+
+# add vca\ to sys.path
+vca_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if vca_path not in sys.path:
+    sys.path.append(vca_path)
 
 from utils import *
 
@@ -15,16 +23,16 @@ if __name__ == "__main__":
     height = 20
     width = 20
     data_path = generate_synth_data( img_size=(height, width), 
-                                     path='../../datasets', 
+                                     path=os.path.join(vca_path,'../datasets'), 
                                      num_images=4, 
                                      folder_name='synth_data' )
 
     # gather the path params needed in a dictionary
     synth_path_params = {'path':data_path, 'image_type':'jpg'}
-    dimetrodon_path_params = {'path':'../../datasets/Dimetrodon', 'image_type':'png'}
-    rubber_path_params = {'path':'../../datasets/RubberWhale', 'image_type':'png'}
+    dimetrodon_path_params = {'path':os.path.join(vca_path, '../datasets/Dimetrodon'), 'image_type':'png'}
+    rubber_path_params = {'path':os.path.join(vca_path,'../datasets/RubberWhale'), 'image_type':'png'}
     car_path_params = {'path':'C:\MY DATA\Code Valley\MATLAB\determining-optical-flow-master\horn-schunck', 'image_type':'png'}
-    venus_path_params = {'path':'../../datasets/Venus', 'image_type':'png'}
+    venus_path_params = {'path':os.path.join(vca_path, '../datasets/Venus'), 'image_type':'png'}
 
     path_params = { 'synth':synth_path_params, 
                     'dimetrodon':dimetrodon_path_params, 
@@ -36,8 +44,8 @@ if __name__ == "__main__":
     img_paths = get_image_paths(**path_params['car'])
 
     # read and preprocess
-    img_1 = preprocess_image(cv.imread(img_paths[0]))
-    img_2 = preprocess_image(cv.imread(img_paths[1]))
+    img_1 = normalize_to_255_range(preprocess_image(cv.imread(img_paths[0])))
+    img_2 = normalize_to_255_range(preprocess_image(cv.imread(img_paths[1])))
 
     # set params for ShiTomasi corner detection
     feature_params = dict( maxCorners = 100,
@@ -47,7 +55,7 @@ if __name__ == "__main__":
 
     # set parameters for lucas kanade optical flow
     lk_params = dict( winSize  = (15,15),
-                      maxLevel = 2,
+                      maxLevel = 3,
                       criteria = (cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03) )
 
     # Create some random colors
@@ -58,14 +66,14 @@ if __name__ == "__main__":
     p1 = cv.goodFeaturesToTrack(img_gray_1, mask = None, **feature_params)
 
     # Create a mask image for drawing purposes
-    mask = np.zeros_like(img_1)
+    mask = np.zeros_like(cv.cvtColor(img_1, cv.COLOR_GRAY2BGR))
 
     img_gray_2 = convert_to_grayscale(img_2)
-
+    
     # calculate optical flow
     p2, st, err = cv.calcOpticalFlowPyrLK( prevImg=img_gray_1, 
                                            nextImg=img_gray_2, 
-                                           prevPts=p0, 
+                                           prevPts=p1, 
                                            nextPts=None,
                                            **lk_params )
 
@@ -78,7 +86,7 @@ if __name__ == "__main__":
         a,b = new.ravel()
         c,d = old.ravel()
         mask = cv.line(mask, (a,b), (c,d), color[i].tolist(), 2) 
-        frame = cv.circle(img_2, (a,b), 5, color[i].tolist(), -1)
+        frame = cv.circle(cv.cvtColor(img_2, cv.COLOR_GRAY2BGR), (a,b), 5, color[i].tolist(), -1)
     img = cv.add(frame, mask)
 
     cv.imshow('frame', img)
