@@ -1,6 +1,14 @@
+import os
+import sys
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
+
+
+# add vca\ to sys.path
+vca_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if vca_path not in sys.path:
+    sys.path.append(vca_path)
 
 from utils import *
 
@@ -53,14 +61,14 @@ if __name__ == "__main__":
     height = 20
     width = 20
     data_path = generate_synth_data(img_size=(height, width), 
-                                    path='../../datasets', 
+                                    path=os.path.join(vca_path,'../datasets'), 
                                     num_images=4, 
                                     folder_name='synth_data')
 
     # set some path paramaters as dictionaries, holding image path and types
     synth_path_params = {'path':data_path, 'image_type':'jpg'}
-    dimetrodon_path_params = {'path':'../../datasets/Dimetrodon', 'image_type':'png'}
-    rubber_path_params = {'path':'../../datasets/RubberWhale', 'image_type':'png'}
+    dimetrodon_path_params = {'path':os.path.join(vca_path,'../datasets/Dimetrodon'), 'image_type':'png'}
+    rubber_path_params = {'path':os.path.join(vca_path,'../datasets/RubberWhale'), 'image_type':'png'}
     car_path_params = {'path':'C:\MY DATA\Code Valley\MATLAB\determining-optical-flow-master\horn-schunck', 'image_type':'png'}
 
     # keep a dictionary of path parameters
@@ -70,24 +78,24 @@ if __name__ == "__main__":
                    'car':car_path_params}
     
     # list out the image path
-    img_paths = get_image_paths(**path_params['car'])
+    img_paths = get_image_paths(**path_params['dimetrodon'])
 
     # read and preprocess
     img_1 = preprocess_image(cv.imread(img_paths[0]))
     img_2 = preprocess_image(cv.imread(img_paths[1]))
 
-    # set farnback parameters
-    PYRAMID_SCALE = 0.5         
-    NUM_LEVELS = 3
+    # set farneback parameters
+    PYR_SCALING_RATIO = 0.5         
+    PYR_NUM_LEVELS = 3
     WINDOW_SIZE = 15
     NUM_ITER = 3
     POLY_NEIGHBORHOOD = 5
-    POLY_SIGMA = 1.2
+    POLY_SIGMA = 1.1
     OPERATION_FLAGS = 0
 
     # create dictionary of farneback params
-    farneback_params = dict( pyr_scale=PYRAMID_SCALE,
-                             levels=NUM_LEVELS,
+    farneback_params = dict( pyr_scale=PYR_SCALING_RATIO,
+                             levels=PYR_NUM_LEVELS,
                              winsize=WINDOW_SIZE,
                              iterations=NUM_ITER,
                              poly_n=POLY_NEIGHBORHOOD,
@@ -99,7 +107,7 @@ if __name__ == "__main__":
     
     # draw color encoded optical flow
     img_OF_color = get_OF_color_encoded(u, v)
-    cv.imwrite('../../out_imgs/optical_flow_farneback.jpg', img_OF_color)
+    cv.imwrite(os.path.join(vca_path,'out_imgs/optical_flow_farneback.jpg'), img_OF_color)
 
     # display optical flow 
     cv.imshow('Optical Flow color encoded', img_OF_color)
