@@ -1,6 +1,7 @@
 import os
 import sys
 import cv2 as cv
+import numpy as np
 import shutil
 import pygame 
 
@@ -13,9 +14,9 @@ from optical_flow_config import (FARNEBACK_PARAMS,
                                  LK_TEMP_FOLDER)
 
 # add vca\ to sys.path
-cur_path = os.path.abspath(os.path.join('..'))
-if cur_path not in sys.path:
-    sys.path.append(cur_path)
+vca_path = os.path.abspath(os.path.join('..'))
+if vca_path not in sys.path:
+    sys.path.append(vca_path)
 
 from game import Game
 from game_utils import _prep_temp_folder
@@ -85,7 +86,7 @@ def run_farneback(video_name):
         img_path = os.path.join(FARN_TEMP_FOLDER, img_name)
         cv.imwrite(img_path, img_flow_color)
 
-        cur = nxt
+        cur = nxt # .copy() ?
 
     vid_cap.release()
 
@@ -97,27 +98,81 @@ def run_lk(video_name):
     Args:
         video_name (str): name of input video file. eg: 'vid_out_car.avi'
     """
-    
+    # prep temp folder
+    _prep_temp_folder(LK_TEMP_FOLDER)
+
+    # create some random colors
+    color = np.random.randint(0, 255, (FEATURE_PARAMS['maxCorners'], 3))
+
+    # create video capture and capture first frame
+    vid_cap = cv.VideoCapture(video_name)
+    ret, frame_1 = vid_cap.read()
+    cur = convert_to_grayscale(frame_1)
+    cur_points = cv.goodFeaturesToTrack(cur, mask=None, **FEATURE_PARAMS)
+
+    # create a mask for drawing tracks
+    mask = np.zeros_like(frame_1)
+
+    # capture frames from video, compute OF, save flow images
+    _frame_num = 0
+    while True:
+        ret, frame_2 = vid_cap.read()
+        if not ret:
+            break
+        nxt = convert_to_grayscale(frame_2)
+
+        # compute optical flow between current and next frame
+        nxt_points, stdev, err = cv.calcOpticalFlowPyrLK(cur, nxt, cur_points, None, **LK_PARAMS)
+
+        # select good points
+        good_nxt = nxt_points[stdev==1]
+        good_cur = cur_points[stdev==1]
+
+        # draw tracks for all points
+        for i, (new, old) in enumerate(zip(good_nxt, good_cur)):
+            x1, y1 = new.ravel()
+            x0, y0 = old.ravel()
+            mask = cv.line(mask, (x1, y1), (x0, y0), color[i].tolist(), 2)
+            frame = cv.circle(frame_2, (x1, y1), 5, color[i].tolist(), -1)
+        img = cv.add(frame, mask)
+
+        # save image
+        _frame_num += 1
+        img_name = f'frame_{str(_frame_num).zfill(4)}.jpg'
+        img_path = os.path.join(LK_TEMP_FOLDER, img_name)
+        cv.imwrite(img_path, img)
+
+        cur = nxt.copy()
+        cur_points = good_nxt.reshape(-1, 1, 2)
+
+    vid_cap.release()  
 
 if __name__ == "__main__":
     # note :
     # while the game runs press key 's' to toggle screenshot mechanism on/off
     # initially screen saving is set to False
 
-    # start game simulation
-    # run_simulation()
+    RUN_SIM = False
+    RUN_FARN = False
+    RUN_LK = False
 
-    # create the video from saved screenshots
-    # make_video('vid_out_car.avi', TEMP_FOLDER)
+    if RUN_SIM:
+        # start game simulation
+        run_simulation()
 
-    # create farneback output 
-    run_farneback('vid_out_car.avi')
+        # create the video from saved screenshots
+        make_video('vid_out_car.avi', TEMP_FOLDER)
 
-    # create the video file
-    make_video('farn_vid_out_car.avi', FARN_TEMP_FOLDER)
+    if RUN_FARN:
+        # # create farneback output 
+        run_farneback('vid_out_car.avi')
 
-    # create lucas-kanade output 
-    run_lk('vid_out_car.avi')
+        # # create the video file
+        make_video('farn_vid_out_car.avi', FARN_TEMP_FOLDER)
 
-    # create the video file
-    make_video('lk_vid_out_car.avi', LK_TEMP_FOLDER)
+    if RUN_LK:
+        # create lucas-kanade output 
+        run_lk('vid_out_car.avi')
+
+        # create the video file
+        make_video('lk_vid_out_car.avi', LK_TEMP_FOLDER)
