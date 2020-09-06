@@ -57,7 +57,7 @@ def normalize_to_unit_range(img):
 
 def normalize_to_255_range(img):
     """ takes in an image and normalizes to range 0 to 255  """
-    return cv.normalize(img, None, 0, 255, norm_type=cv.NORM_MINMAX) 
+    return cv.normalize(img, None, 0, 255, norm_type=cv.NORM_MINMAX).astype('uint8') 
 
 
 def get_images(path=DATASET_PATH, image_type='png'):
