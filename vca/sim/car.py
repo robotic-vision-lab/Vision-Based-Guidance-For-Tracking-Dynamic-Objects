@@ -47,7 +47,4 @@ class Car(pygame.sprite.Sprite):
         self.update_kinematics()
         self.rect.center = self.position
     
-         
 
-
-        

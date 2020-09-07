@@ -74,5 +74,6 @@ def generate_sim_data():
     """ Creates a video file  """
     pass
 
+
 if __name__ == "__main__":
     generate_synth_data()

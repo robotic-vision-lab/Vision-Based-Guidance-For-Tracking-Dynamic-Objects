@@ -49,6 +49,7 @@ def screen_saver(screen, path):
         pygame.image.save(screen, file_path)
         yield
 
+
 def _prep_temp_folder(folder_path):
     """Prep the temp folder for next screen dump.
         If folder didn't exist before, make it.

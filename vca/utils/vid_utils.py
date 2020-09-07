@@ -39,3 +39,4 @@ def create_video_from_images(path, image_type, video_name, fps, fourcc_codec='DI
 
     # release the video writer
     vid_out.release()
+

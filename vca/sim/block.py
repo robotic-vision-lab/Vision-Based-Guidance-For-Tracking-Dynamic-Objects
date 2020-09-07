@@ -35,6 +35,7 @@ class Block(pygame.sprite.Sprite):
        self.velocity = pygame.Vector2()
        self.acceleration = pygame.Vector2()
 
+
     def update(self):
         """Overwrites Sprite.update()
             When we call update() on a group this methods gets called.
