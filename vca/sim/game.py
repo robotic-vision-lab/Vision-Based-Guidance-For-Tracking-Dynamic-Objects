@@ -6,6 +6,7 @@ from pygame.locals import *
 from settings import *
 from car import Car
 from block import Block
+from drone_camera import DroneCamera
 from game_utils import *
 
 class Game:
@@ -40,8 +41,13 @@ class Game:
 
         # spawn block, instantiating the sprite would add itself to all_sprites
         self.blocks = []
-        for i in range(8):
+        num_blocks = 8
+        for i in range(num_blocks):
             self.blocks.append(Block(self))
+
+        # create camera
+        self.camera = DroneCamera(self)
+        self.cam_accel_command = pygame.Vector2(0,0)
             
 
     def quit(self):
@@ -60,10 +66,23 @@ class Game:
             if event.type == pygame.QUIT or \
                 event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.quit()
+                break
 
             # check for s keypress (toggle screen saving on/off)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
                 self.save_screen = not self.save_screen
+
+            # read acceleration commands
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT]:
+                self.cam_accel_command.x = -1
+            if keys[pygame.K_RIGHT]:
+                self.cam_accel_command.x = 1
+            if keys[pygame.K_UP]:
+                self.cam_accel_command.y = -1
+            if keys[pygame.K_DOWN]:
+                self.cam_accel_command.y = 1
+
 
 
     def update(self):
@@ -72,15 +91,17 @@ class Game:
         """
         # update Group to update all sprites in it
         self.all_sprites.update()
-
+        self.camera.move(self.cam_accel_command)
 
     def draw(self):
         """helper function to draw/render each frame
         """
         # fill background 
         self.screen_surface.fill(SCREEN_BG_COLOR)
-
+        pygame.display.set_caption(f'car position {self.car.position} | cam position {self.camera.position}')
         # draw the sprites
+        for sprite in self.all_sprites:
+            self.camera.compensate_camera_motion(sprite)
         self.all_sprites.draw(self.screen_surface)
 
         # flip drawing board
