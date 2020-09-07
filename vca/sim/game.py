@@ -5,6 +5,7 @@ import pygame
 from pygame.locals import *
 from settings import *
 from car import Car
+from block import Block
 from game_utils import *
 
 class Game:
@@ -20,9 +21,10 @@ class Game:
         self.clock = pygame.time.Clock()
 
         # initialize images for Sprites
-        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True)
+        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=0.3)
 
         self.save_screen = False
+
 
     def start_new(self):
         """helper function to perform tasks when we start a new game.
@@ -30,11 +32,17 @@ class Game:
         # initiate screen shot generator
         self.screen_shot = screen_saver(self.screen_surface, TEMP_FOLDER)
 
-        # create Groups
+        # create Group
         self.all_sprites = pygame.sprite.Group()
 
-        # spawn car
+        # spawn car, instantiating the sprite would add itself to all_sprites
         self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION)
+
+        # spawn block, instantiating the sprite would add itself to all_sprites
+        self.blocks = []
+        for i in range(8):
+            self.blocks.append(Block(self))
+            
 
     def quit(self):
         """quits game, exits application
@@ -42,6 +50,7 @@ class Game:
         self.running = False
         pygame.quit()
         # sys.exit()
+
 
     def handle_events(self):
         """handles events in event queue while running game loop
@@ -56,12 +65,14 @@ class Game:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
                 self.save_screen = not self.save_screen
 
+
     def update(self):
         """Helper function to update game objects. 
             This method will be run in the game loop every frame
         """
         # update Group to update all sprites in it
         self.all_sprites.update()
+
 
     def draw(self):
         """helper function to draw/render each frame
@@ -74,6 +85,7 @@ class Game:
 
         # flip drawing board
         pygame.display.flip()
+
 
     def run(self):
         """the game loop
