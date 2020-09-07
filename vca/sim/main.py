@@ -124,6 +124,7 @@ def run_lk(video_name):
             break
         nxt = convert_to_grayscale(frame_2)
 
+
         # compute optical flow between current and next frame
         nxt_points, stdev, err = cv.calcOpticalFlowPyrLK(cur, nxt, cur_points, None, **LK_PARAMS)
 
@@ -148,6 +149,13 @@ def run_lk(video_name):
         cur = nxt.copy()
         cur_points = good_nxt.reshape(-1, 1, 2)
 
+        # every n seconds (30 frames since we run at FPS =30), get good points
+        num_seconds = 1
+        if _frame_num%(num_seconds*FPS) == 0:
+            good_points = cv.goodFeaturesToTrack(cur, mask=None, **FEATURE_PARAMS)
+            # for every point in good point if its not there in cur points, add , update color too
+            
+
     vid_cap.release()  
 
 
@@ -158,7 +166,7 @@ if __name__ == "__main__":
 
     RUN_SIM = True
     RUN_FARN = False
-    RUN_LK = False
+    RUN_LK = True
 
     if RUN_SIM:
         # start game simulation
