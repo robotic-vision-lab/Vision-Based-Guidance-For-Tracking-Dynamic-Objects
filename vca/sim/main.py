@@ -27,6 +27,7 @@ from algorithms.optical_flow import (compute_optical_flow_farneback,
                                      compute_optical_flow_HS, 
                                      compute_optical_flow_LK)
 
+
 def run_simulation():
     """Runs the game simulation. 
     Let's us record the frames into the temp folder set in settings.
@@ -40,6 +41,7 @@ def run_simulation():
     # run
     car_sim_game.run()
 
+
 def make_video(video_name, folder_path):
     """Looks for frames in temp folder (set in settings module), 
     writes them into a video, with the given name. 
@@ -50,6 +52,7 @@ def make_video(video_name, folder_path):
 
         # delete temp folder
         shutil.rmtree(folder_path)
+
 
 def run_farneback(video_name):
     """uses farneback to compute optical flow of video.
@@ -147,12 +150,13 @@ def run_lk(video_name):
 
     vid_cap.release()  
 
+
 if __name__ == "__main__":
     # note :
     # while the game runs press key 's' to toggle screenshot mechanism on/off
     # initially screen saving is set to False
 
-    RUN_SIM = False
+    RUN_SIM = True
     RUN_FARN = False
     RUN_LK = False
 
@@ -164,6 +168,7 @@ if __name__ == "__main__":
         make_video('vid_out_car.avi', TEMP_FOLDER)
 
     if RUN_FARN:
+        print("Performing farneback flow computation on saved sequence.")
         # # create farneback output 
         run_farneback('vid_out_car.avi')
 
@@ -171,6 +176,7 @@ if __name__ == "__main__":
         make_video('farn_vid_out_car.avi', FARN_TEMP_FOLDER)
 
     if RUN_LK:
+        print("Performing lucas-kanade (pyr) flow computation and tracking on saved sequence.")
         # create lucas-kanade output 
         run_lk('vid_out_car.avi')
 
