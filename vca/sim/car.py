@@ -21,12 +21,14 @@ class Car(pygame.sprite.Sprite):
         self.image, self.rect = game.car_img
 
         # set kinematics
+        # note the velocity and acceleration we assign below 
+        # will be interpreted as pixels/sec
         self.position = pygame.Vector2(x, y)
         self.velocity = pygame.Vector2(vx, vy)
         self.acceleration = pygame.Vector2(ax, ay)
 
         # set initial rect location to position
-        self.rect.center = self.position
+        self.rect.topleft = self.position
 
         # hold onto the game reference
         self.game = game
@@ -45,6 +47,6 @@ class Car(pygame.sprite.Sprite):
             This will get called in game loop for every frame
         """
         self.update_kinematics()
-        self.rect.center = self.position
+        self.rect.topleft = self.position
     
 
