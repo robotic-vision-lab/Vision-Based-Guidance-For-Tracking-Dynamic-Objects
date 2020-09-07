@@ -6,7 +6,7 @@ from pygame.locals import *
 from settings import *
 
 # helper function to load images
-def load_image(img_name, colorkey=None, alpha=True):
+def load_image(img_name, colorkey=None, alpha=True, scale=1.0):
     """loads pygame image and its rect and returns them as a tuple.
         It will look into the ASSET_FOLDER for the img_name.
 
@@ -26,6 +26,11 @@ def load_image(img_name, colorkey=None, alpha=True):
 
     # convert image for pygame compatibility
     image = image.convert_alpha() if alpha else image.convert()
+
+    if not scale == 1.0:
+        new_width = int(image.get_width() * scale)
+        new_height = int(image.get_height() * scale)
+        image = pygame.transform.scale(image, (new_width, new_height))
 
     # adjust according to colorkey
     if colorkey is not None:
