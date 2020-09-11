@@ -24,16 +24,11 @@ This directory contains main code files with tests, experiments and implementati
  ┃ ┣ 📜block.py
  ┃ ┣ 📜car.py
  ┃ ┣ 📜drone_camera.py
- ┃ ┣ 📜farn_vid_out_car.avi
  ┃ ┣ 📜game.py
  ┃ ┣ 📜game_utils.py
- ┃ ┣ 📜lk_vid_out_car_after_bug_fix.avi
- ┃ ┣ 📜lk_vid_out_car_before_bug_fix.avi
  ┃ ┣ 📜main.py
  ┃ ┣ 📜optical_flow_config.py
  ┃ ┣ 📜settings.py
- ┃ ┣ 📜vid_out_car.avi
- ┃ ┗ 📜__init__.py
  ┣ 📂utils
  ┃ ┣ 📜data_synth_utils.py
  ┃ ┣ 📜img_utils.py
