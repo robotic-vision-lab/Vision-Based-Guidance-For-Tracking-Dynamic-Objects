@@ -7,3 +7,4 @@ out_img_*
 optical_flow_*.jpg
 tmp*
 *vid_out*.avi
+references.bib
