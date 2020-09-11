@@ -9,7 +9,7 @@ bibliography: [references.bib]
 ### Overview
 One of several key applications of computer vision algorithms is performing navigation tasks with robots around obstacles, primarily using visual information to avoid collisions.
 
-#### Purpose
+### Purpose
 Contain computer vision algorithms needed to perform Vision-based Collision Avoidance. These algorithms may be used in various combinations, pipelines or standalone depending upon the complexity and/or requirement of fulfillment of a task.
 
 
