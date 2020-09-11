@@ -95,7 +95,7 @@ def run_farneback(video_name):
 
 
 def run_lk(video_name):
-    """uses lucas kanade to computer optical flow from video file,
+    """uses lucas kanade to compute optical flow from video file,
     Also tracks good features, save results in temp folder
 
     Args:
@@ -136,8 +136,8 @@ def run_lk(video_name):
         for i, (new, old) in enumerate(zip(good_nxt, good_cur)):
             x1, y1 = new.ravel()
             x0, y0 = old.ravel()
-            mask = cv.line(mask, (x1, y1), (x0, y0), color[i].tolist(), 2)
-            frame = cv.circle(frame_2, (x1, y1), 5, color[i].tolist(), -1)
+            mask = cv.line(mask, (x1, y1), (x0, y0), WHITE, 2)
+            frame = cv.circle(frame_2, (x1, y1), 5, WHITE, -1)
         img = cv.add(frame, mask)
 
         # save image
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     # while the game runs press key 's' to toggle screenshot mechanism on/off
     # initially screen saving is set to False
 
-    RUN_SIM = True
+    RUN_SIM = False
     RUN_FARN = False
     RUN_LK = True
 
