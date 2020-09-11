@@ -45,7 +45,7 @@ class DroneCamera:
         if abs(self.acceleration.length()) > self.acc_limit:
             self.acceleration -= command_vec
         self.update_kinematics()
-        # print(f'Kinematics {self.position} | {self.velocity} | {self.acceleration}')
+        print(f'Kinematics {self.position} | {self.velocity} | {self.acceleration}')
         x = int(self.position.x)
         y = int(self.position.y)
         # print(x,y)
