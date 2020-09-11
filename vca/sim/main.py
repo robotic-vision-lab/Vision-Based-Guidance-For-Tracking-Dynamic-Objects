@@ -164,9 +164,9 @@ if __name__ == "__main__":
     # while the game runs press key 's' to toggle screenshot mechanism on/off
     # initially screen saving is set to False
 
-    RUN_SIM = False
-    RUN_FARN = False
-    RUN_LK = True
+    RUN_SIM     = 1
+    RUN_FARN    = 0
+    RUN_LK      = 0
 
     if RUN_SIM:
         # start game simulation
