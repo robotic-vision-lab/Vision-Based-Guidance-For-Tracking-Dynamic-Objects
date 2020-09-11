@@ -1,5 +1,4 @@
 ---
-csl: chicago-author-date.csl
 bibliography: [references.bib]
 ---
 
@@ -18,9 +17,11 @@ Contain computer vision algorithms needed to perform Vision-based Collision Avoi
 ### Papers
 
 #### Optical Flow
-* [Determining Optical Flow](http://image.diku.dk/imagecanon/material/HornSchunckOptical_Flow.pdf)
-* [An iterative image registration technique with an application to stereo vision](https://cecas.clemson.edu/~stb/klt/lucas_bruce_d_1981_1.pdf)
-* [Good Features to Track](http://www.ai.mit.edu/courses/6.891/handouts/shi94good.pdf)
+* **1981**
+    * [Determining Optical Flow](http://image.diku.dk/imagecanon/material/HornSchunckOptical_Flow.pdf)
+    * [An iterative image registration technique with an application to stereo vision](https://cecas.clemson.edu/~stb/klt/lucas_bruce_d_1981_1.pdf)
+* **1993**
+    * [Good Features to Track](http://www.ai.mit.edu/courses/6.891/handouts/shi94good.pdf)
 
 
 ### License
