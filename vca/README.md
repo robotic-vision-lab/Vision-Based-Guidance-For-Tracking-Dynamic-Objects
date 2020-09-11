@@ -29,6 +29,7 @@ This directory contains main code files with tests, experiments and implementati
  ┃ ┣ 📜main.py  
  ┃ ┣ 📜optical_flow_config.py  
  ┃ ┣ 📜settings.py  
+ ┃ ┗ 📜__init__.py  
  ┣ 📂utils  
  ┃ ┣ 📜data_synth_utils.py  
  ┃ ┣ 📜img_utils.py  
