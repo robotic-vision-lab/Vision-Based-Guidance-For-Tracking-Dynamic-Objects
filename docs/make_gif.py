@@ -72,7 +72,7 @@ def vid_to_gif(vid_path, gif_name=None, fps=30.0):
     imageio.mimwrite(gif_path, video_read, fps=fps)
 
     # optimize gif
-    # pygifsicle.optimize(gif_path) # it is not working
+    # pygifsicle.optimize(gif_path) # TODO fix file not found error with gifsicle
 
 
 if __name__ == "__main__":
