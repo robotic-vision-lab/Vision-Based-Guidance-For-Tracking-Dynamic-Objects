@@ -21,7 +21,7 @@ if vca_path not in sys.path:
 from game import Game
 from game_utils import _prep_temp_folder
 from utils.vid_utils import create_video_from_images
-from utils.optical_flow_utils import get_OF_color_encoded
+from utils.optical_flow_utils import get_OF_color_encoded, draw_sparse_optical_flow_arrows
 from utils.img_utils import convert_to_grayscale
 from algorithms.optical_flow import (compute_optical_flow_farneback, 
                                      compute_optical_flow_HS, 
@@ -104,10 +104,10 @@ def run_lk(video_name):
     # prep temp folder
     _prep_temp_folder(LK_TEMP_FOLDER)
 
-    # create some random colors
+    # create some random colors one for each corner
     color = np.random.randint(0, 255, (FEATURE_PARAMS['maxCorners'], 3))
 
-    # create video capture and capture first frame
+    # create video capture; capture first frame
     vid_cap = cv.VideoCapture(video_name)
     ret, frame_1 = vid_cap.read()
     cur = convert_to_grayscale(frame_1)
@@ -132,13 +132,14 @@ def run_lk(video_name):
         good_nxt = nxt_points[stdev==1]
         good_cur = cur_points[stdev==1]
 
-        # draw tracks for all points
+        # add tracks for all points
         for i, (new, old) in enumerate(zip(good_nxt, good_cur)):
             x1, y1 = new.ravel()
             x0, y0 = old.ravel()
-            mask = cv.line(mask, (x1, y1), (x0, y0), WHITE, 2)
-            frame = cv.circle(frame_2, (x1, y1), 5, WHITE, -1)
+            mask = cv.line(mask, (x1, y1), (x0, y0), GREEN_CV, 1)
+            frame = cv.circle(frame_2, (x1, y1), 3, GREEN_CV, -1)
         img = cv.add(frame, mask)
+        img = draw_sparse_optical_flow_arrows(img, cur_points, nxt_points, thickness=1, arrow_scale=10.0, color=RED_CV)
 
         # save image
         _frame_num += 1
@@ -152,7 +153,7 @@ def run_lk(video_name):
         # every n seconds (30 frames since we run at FPS =30), get good points
         num_seconds = 1
         if _frame_num%(num_seconds*FPS) == 0:
-            good_points = cv.goodFeaturesToTrack(cur, mask=None, **FEATURE_PARAMS)
+            cur_points = cv.goodFeaturesToTrack(cur, mask=None, **FEATURE_PARAMS)
             # for every point in good point if its not there in cur points, add , update color too
             
 
@@ -164,9 +165,9 @@ if __name__ == "__main__":
     # while the game runs press key 's' to toggle screenshot mechanism on/off
     # initially screen saving is set to False
 
-    RUN_SIM     = 1
+    RUN_SIM     = 0
     RUN_FARN    = 0
-    RUN_LK      = 0
+    RUN_LK      = 1
 
     if RUN_SIM:
         # start game simulation
