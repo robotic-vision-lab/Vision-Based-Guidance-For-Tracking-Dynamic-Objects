@@ -66,10 +66,14 @@ def vid_to_gif(vid_path, gif_name=None, fps=30.0):
     gif_path = os.path.join(gif_folder, gif_name)
 
     # read the video file using the 
-    video_read = imageio.mimread(vid_path)
+    video_reader = imageio.get_reader(vid_path) # mimread(vid_path)
 
     # write into a gif
-    imageio.mimwrite(gif_path, video_read, fps=fps)
+    # imageio.mimwrite(gif_path, video_read, fps=fps)
+    writer = imageio.get_writer(gif_path, fps=fps)
+    for f in video_reader:
+        writer.append_data(f)
+    writer.close()
 
     # optimize gif
     # pygifsicle.optimize(gif_path) # TODO fix file not found error with gifsicle
