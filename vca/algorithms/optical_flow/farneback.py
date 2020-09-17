@@ -78,7 +78,8 @@ if __name__ == "__main__":
                    'car':car_path_params}
     
     # list out the image path
-    img_paths = get_image_paths(**path_params['dimetrodon'])
+    path_params_key = 'car'
+    img_paths = get_image_paths(**path_params[path_params_key])
 
     # read and preprocess
     img_1 = preprocess_image(cv.imread(img_paths[0]))
@@ -107,7 +108,7 @@ if __name__ == "__main__":
     
     # draw color encoded optical flow
     img_OF_color = get_OF_color_encoded(u, v)
-    cv.imwrite(os.path.join(vca_path,'out_imgs/optical_flow_farneback.jpg'), img_OF_color)
+    cv.imwrite(os.path.join(vca_path, f'algorithms/optical_flow/results/optical_flow_farn_{path_params_key}.jpg'), img_OF_color)
 
     # display optical flow 
     cv.imshow('Optical Flow color encoded', img_OF_color)
