@@ -1,4 +1,3 @@
-## Optical Flow Algorithms
 
 ### Module usage by example
 
@@ -18,6 +17,16 @@ flow = u, v = compute_optical_flow_HS(img_1, img_2, alpha, num_iter)
 
 # ...
 ```
+
+#### horn_schunk results
+<table>
+    <tr>
+        <td><img src='results/optical_flow_HS_synth.jpg' height=100></td>
+        <td><img src='results/optical_flow_HS_car.jpg' height=100></td>
+        <td><img src='results/optical_flow_HS_dimetrodon.jpg' height=100></td>
+        <td><img src='results/optical_flow_HS_rubber.jpg' height=100></td>
+    </tr>
+</table>
 
 #### [farneback](./farneback.py)
 ```python
@@ -48,3 +57,13 @@ u, v = compute_optical_flow_farneback(img_1, img_2, farneback_params)
 
 # ...
 ```
+
+#### Farneback results
+<table>
+    <tr>
+        <td><img src='results/optical_flow_farn_synth.jpg' height=100></td>
+        <td><img src='results/optical_flow_farn_car.jpg' height=100></td>
+        <td><img src='results/optical_flow_farn_dimetrodon.jpg' height=100></td>
+        <td><img src='results/optical_flow_farn_rubber.jpg' height=100></td>
+    </tr>
+</table>
