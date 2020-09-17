@@ -64,12 +64,12 @@ def get_OF_color_encoded(u, v):
     # get polar representation of the optical flow components
     magnitude, angle = cv.cartToPolar(u, v)
 
-    # set saturation to maximum
-    hsv[..., 1] = 255
+    # set value to maximum
+    hsv[..., 2] = 255
 
-    # set image hue and value
+    # set image hue and saturation
     hsv[..., 0] = angle * 90 / np.pi    # angle is 0.0-2pi, we need 0-180
-    hsv[..., 2] = normalize_to_255_range(magnitude)
+    hsv[..., 1] = normalize_to_255_range(magnitude)
     
     # convert HSV to RGB (BGR in opencv)
     color_img = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
@@ -91,8 +91,59 @@ def get_color_scheme(img_size=(512, 512)):
     # build u, v
     for i in range(img_size[0]):
         for j in range(img_size[1]):
-            u[i][j] = np.sign(j - img_size[1]//2) * (j - img_size[1]//2)**2
-            v[i][j] = np.sign(i - img_size[0]//2) * (i - img_size[0]//2)**2
+            u[i][j] = (j - img_size[1]//2)**1  #* np.sign(j - img_size[1]//2)**2 
+            v[i][j] = (i - img_size[0]//2)**1  #* np.sign(i - img_size[0]//2)**2 
 
     # return the color code
     return get_OF_color_encoded(u,v)
+
+
+def draw_sparse_optical_flow_arrows(img, prev_points, cur_points, thickness=1, arrow_scale=3.0, color=(0, 255, 255)):
+    """takes in image alongwith previous and current points (tracked features).
+        returns the image with arrows drawn on it
+        For instance, prev_point was (1, 2), cur_point is (2, 2)
+        returned image should have an arrow representing flow
+        (cur_point - prev_point) i.e., (1, 0) drawn at (2, 2). 
+
+    Args:
+        img (np.ndarray): img over which to draw the arrows
+        prev_points (np.ndarray): vector of 2D points (float32)
+        cur_points (np.ndarray): output vector of 2D points (float32)
+    """
+    for i, (cur_point, prev_point) in enumerate(zip(cur_points, prev_points)):
+        c1, c2 = cur_point.ravel()
+        p1, p2 = prev_point.ravel()
+        from_point = (int(c1), int(c2))
+        to_point = (int(arrow_scale*(c1-p1) + c1), int(arrow_scale*(c2-p2) + c2))
+        img = cv.arrowedLine(img=img, 
+                             pt1=from_point, 
+                             pt2=to_point, 
+                             color=color, 
+                             thickness=thickness, 
+                             line_type=None, 
+                             shift=None, 
+                             tipLength=0.2)
+    return img
+
+    
+
+
+
+if __name__ == "__main__":
+    import os
+
+    # make the color_scheme_path i.e., uri for color scheme image 
+    out_imgs_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '../out_imgs'))
+    color_scheme_path = os.path.join(out_imgs_path, 'color_scheme.jpg')
+
+    # get the color_scheme
+    color_scheme = get_color_scheme()
+
+    # write the scheme image, show it 
+    cv.imwrite(color_scheme_path, color_scheme)
+    cv.imshow('scheme', color_scheme)
+
+    cv.waitKey(0)
+    cv.destroyAllWindows()
+    
+    
