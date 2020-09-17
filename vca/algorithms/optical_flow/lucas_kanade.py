@@ -63,9 +63,9 @@ if __name__ == "__main__":
 
     # Take first frame and find corners in it
     img_gray_1 = convert_to_grayscale(img_1)
-    p1 = cv.goodFeaturesToTrack(img_gray_1, mask = None, **feature_params)
+    p1 = cv.goodFeaturesToTrack(img_gray_1, mask=None, **feature_params)
 
-    # Create a mask image for drawing purposes
+    # Create a mask image for drawing purposes later
     mask = np.zeros_like(cv.cvtColor(img_1, cv.COLOR_GRAY2BGR))
 
     img_gray_2 = convert_to_grayscale(img_2)
@@ -87,8 +87,11 @@ if __name__ == "__main__":
         c,d = old.ravel()
         mask = cv.line(mask, (a,b), (c,d), color[i].tolist(), 2) 
         frame = cv.circle(cv.cvtColor(img_2, cv.COLOR_GRAY2BGR), (a,b), 5, color[i].tolist(), -1)
-    img = cv.add(frame, mask)
-
+    img = cv.add(frame, mask)   # lines and circles drawn on img_2
+    cv.imshow('before', img)
+    # draw arrows
+    img = draw_optical_flow_arrows(img, good_1, good_2)
+    
     cv.imshow('frame', img)
     k = cv.waitKey(0)
 
