@@ -7,6 +7,15 @@ This directory contains main code files with tests, experiments and implementati
 📦vca  
  ┣ 📂algorithms  
  ┃ ┣ 📂optical_flow  
+ ┃ ┃ ┣ 📂results  
+ ┃ ┃ ┃ ┣ 📜optical_flow_farn_car.jpg  
+ ┃ ┃ ┃ ┣ 📜optical_flow_farn_dimetrodon.jpg  
+ ┃ ┃ ┃ ┣ 📜optical_flow_farn_rubber.jpg  
+ ┃ ┃ ┃ ┣ 📜optical_flow_farn_synth.jpg  
+ ┃ ┃ ┃ ┣ 📜optical_flow_HS_car.jpg  
+ ┃ ┃ ┃ ┣ 📜optical_flow_HS_dimetrodon.jpg  
+ ┃ ┃ ┃ ┣ 📜optical_flow_HS_rubber.jpg  
+ ┃ ┃ ┃ ┗ 📜optical_flow_HS_synth.jpg  
  ┃ ┃ ┣ 📜farneback.py  
  ┃ ┃ ┣ 📜horn_schunk.py  
  ┃ ┃ ┣ 📜lucas_kanade.py  
@@ -15,9 +24,7 @@ This directory contains main code files with tests, experiments and implementati
  ┃ ┣ 📜README.md  
  ┃ ┗ 📜__init__.py  
  ┣ 📂logs  
- ┃ ┗ 📜debug.log  
  ┣ 📂notebooks  
- ┃ ┣ 📜debug.log  
  ┃ ┣ 📜test_OF_farneback.ipynb  
  ┃ ┣ 📜test_OF_HS.ipynb  
  ┃ ┣ 📜test_OF_LK.ipynb  
@@ -27,7 +34,7 @@ This directory contains main code files with tests, experiments and implementati
  ┃ ┃ ┗ 📜car.png  
  ┃ ┣ 📜block.py  
  ┃ ┣ 📜car.py  
- ┃ ┣ 📜drone_camera.py  
+ ┃ ┣ 📜drone_camera.py   
  ┃ ┣ 📜game.py  
  ┃ ┣ 📜game_utils.py  
  ┃ ┣ 📜main.py  
