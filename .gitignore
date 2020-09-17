@@ -3,7 +3,7 @@ __pycache__
 tutorial.py
 test_OF.py
 debug.log
-out_img_*
+out_imgs*
 tmp*
 *vid_out*.avi
 references.bib
