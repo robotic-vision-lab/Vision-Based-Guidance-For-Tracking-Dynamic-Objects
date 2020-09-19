@@ -2,26 +2,51 @@ import pygame
 
 from pygame.locals import *
 from settings import *
+from math import copysign
 
 
-
-class DroneCamera:
+class DroneCamera(pygame.sprite.Sprite):
     def __init__(self, game):
-        self.drone = pygame.Rect(0, 0, WIDTH, HEIGHT)
+        self.groups = game.all_sprites
+
+        # call the parent class (Sprite) constructor
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
+        # self.drone = pygame.Rect(0, 0, WIDTH, HEIGHT)
+        self.image = pygame.Surface((20, 20))
+        self.image.fill(BLUE)
+        self.rect = self.image.get_rect()
+        
+        self.reset_kinematics()
+        
+        self.rect.center = self.position
+        self.game = game
+        
+        self.vel_limit = DRONE_VELOCITY_LIMIT
+        self.acc_limit = DRONE_ACCELERATION_LIMIT
+
+    def update(self):
+        """[summary]
+        """
+        self.rect.center = self.position
+
+    def reset_kinematics(self):
+        """[summary]
+        """
         self.position = pygame.Vector2(0, 0)
         self.velocity = pygame.Vector2(0, 0)
         self.acceleration = pygame.Vector2(0, 0)
-        self.game = game
-        self.vel_limit = 500.0
-        self.acc_limit = 100.0
+
 
     def update_kinematics(self):
         """helper function to update kinematics of object
         """
-
         # set a drag coefficient
         # COEFF = 0.1
-        # self.acceleration -= self.velocity * COEFF 
+        # print(f'a {self.acceleration}, v {self.velocity}, dt {self.game.dt}')
+        # self.acceleration -= self.acceleration * COEFF
+        # print(f'a {self.acceleration}, v {self.velocity}')
+        
         # update velocity and position
         self.velocity += self.acceleration * self.game.dt
         if abs(self.velocity.length()) > self.vel_limit:
@@ -31,21 +56,27 @@ class DroneCamera:
         else:
             self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
 
+        self.rect.center = self.position
 
     def compensate_camera_motion(self, sprite_obj):
-        sprite_obj.position -= self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+        """[summary]
+
+        Args:
+            sprite_obj ([type]): [description]
+        """
+        sprite_obj.position -= self.position #self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
 
     def move(self, command_vec):
-        if not (command_vec.x == 0 or command_vec.y == 0):
-            command_vec *= 0.7071
 
-        COMMAND_SENSITIVITY = 0.8
+        COMMAND_SENSITIVITY = 0.5
         command_vec *= COMMAND_SENSITIVITY
         self.acceleration += command_vec
+        
+
         if abs(self.acceleration.length()) > self.acc_limit:
             self.acceleration -= command_vec
         self.update_kinematics()
-        print(f'Kinematics {self.position} | {self.velocity} | {self.acceleration}')
+        print(f'Kinematics: x:{self.position} | v:{self.velocity} | a:{self.acceleration} | command:{command_vec}')
         x = int(self.position.x)
         y = int(self.position.y)
         # print(x,y)
