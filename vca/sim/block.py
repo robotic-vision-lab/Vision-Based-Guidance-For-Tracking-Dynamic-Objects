@@ -33,10 +33,8 @@ class Block(pygame.sprite.Sprite):
 
         # Create an image of the block, and fill it with a color.
         # This could also be an image loaded from the disk.
-        w, h = 8, 12
-        color = YELLOW
-        self.image = pygame.Surface((w, h))
-        self.image.fill(color)
+        self.image = pygame.Surface(BLOCK_SIZE)
+        self.image.fill(BLOCK_COLOR)
 
         # Fetch the rectangle object that has the dimensions of the image
         self.rect = self.image.get_rect()
@@ -50,8 +48,8 @@ class Block(pygame.sprite.Sprite):
         """
         # set vectors representing the position, velocity and acceleration
         # note the velocity we assign below will be interpreted as pixels/sec
-        self.position = pygame.Vector2(randrange(WIDTH - self.rect.width), -self.rect.height)
-        self.velocity = pygame.Vector2(randrange(-30, 30), randrange(30, 50))
+        self.position = pygame.Vector2(randrange(WIDTH - self.rect.width), randrange(HEIGHT - self.rect.height))
+        self.velocity = pygame.Vector2(30,0) #(randrange(-50, 50), randrange(-50, 50))
         self.acceleration = pygame.Vector2(0, 0)
 
 
