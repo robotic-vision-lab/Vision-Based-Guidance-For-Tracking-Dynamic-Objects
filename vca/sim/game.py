@@ -1,6 +1,7 @@
 import os
 import sys
 import pygame
+from copy import deepcopy
 
 from pygame.locals import *
 from settings import *
@@ -22,9 +23,12 @@ class Game:
         self.clock = pygame.time.Clock()
 
         # initialize images for Sprites
-        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=0.3)
+        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
 
+        # set screen saving mode to OFF
         self.save_screen = False
+
+        self.eucildean_factor = 1.0
 
 
     def start_new(self):
@@ -33,13 +37,13 @@ class Game:
         # initiate screen shot generator
         self.screen_shot = screen_saver(self.screen_surface, TEMP_FOLDER)
 
-        # create Group
+        # create a Group with all sprites 
         self.all_sprites = pygame.sprite.Group()
 
-        # spawn car, instantiating the sprite would add itself to all_sprites
+        # spawn car, instantiating the Car sprite would add itself to all_sprites
         self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION)
 
-        # spawn block, instantiating the sprite would add itself to all_sprites
+        # spawn block, instantiating the Block sprite would add itself to all_sprites
         self.blocks = []
         num_blocks = 8
         for i in range(num_blocks):
@@ -83,6 +87,9 @@ class Game:
             if keys[pygame.K_DOWN]:
                 self.cam_accel_command.y = 1
 
+            self.eucildean_factor = 0.7071 if not (self.cam_accel_command.x == 0 or self.cam_accel_command.y == 0) else 1.0
+            pygame.event.pump()
+
 
 
     def update(self):
@@ -91,7 +98,8 @@ class Game:
         """
         # update Group to update all sprites in it
         self.all_sprites.update()
-        self.camera.move(self.cam_accel_command)
+        self.camera.move(deepcopy(self.eucildean_factor * self.cam_accel_command))
+        self.cam_accel_command = pygame.Vector2(0, 0)
 
     def draw(self):
         """helper function to draw/render each frame
