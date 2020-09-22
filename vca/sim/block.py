@@ -49,7 +49,7 @@ class Block(pygame.sprite.Sprite):
         # set vectors representing the position, velocity and acceleration
         # note the velocity we assign below will be interpreted as pixels/sec
         self.position = pygame.Vector2(randrange(WIDTH - self.rect.width), randrange(HEIGHT - self.rect.height))
-        self.velocity = pygame.Vector2(30,0) #(randrange(-50, 50), randrange(-50, 50))
+        self.velocity = pygame.Vector2(randrange(-50, 50), randrange(-50, 50))
         self.acceleration = pygame.Vector2(0, 0)
 
 
