@@ -24,6 +24,7 @@ class Game:
 
         # initialize images for Sprites
         self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+        self.drone_img = load_image(DRONE_IMG, colorkey=BLACK, alpha=True, scale=DRONE_SCALE)
 
         # set screen saving mode to OFF
         self.save_screen = False
