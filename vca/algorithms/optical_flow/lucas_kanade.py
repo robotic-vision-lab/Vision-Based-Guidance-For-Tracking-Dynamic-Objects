@@ -12,8 +12,45 @@ if vca_path not in sys.path:
 from utils import *
 
 
-def compute_optical_flow_LK():
-    pass
+def compute_optical_flow_LK(img_1,
+                            img_2,
+                            pts_1=None,
+                            lk_params=None,
+                            feature_params=None):
+    """Implements Lucas-Kanade. Takes in images I_1 and I_2
+
+    Args:
+        img_1 (np.ndarray): Previous frame image 
+        img_2 (np.ndarray): Current frame image
+        lk_params (dict): Parameters to be fed to LK optical flow function. Defaults to None.
+        pts_1 (np.ndarray): Good feature points in previous image. Defaults to None.
+        feature_params (dict): Parameters to be fed to the goodFeaturesToTrack function. Defaults to None.
+    """
+    # if previous feature points for previous frame are not given, compute them!
+    if pts_1 is None:
+        # if feature_params are not given the initialise a default one
+        if feature_params is None:
+            feature_params = dict( maxCorners = 100,
+                                   qualityLevel = 0.3,
+                                   minDistance = 7,
+                                   blockSize = 7 )
+        
+        # compute good feature points
+        pts_1 = cv.goodFeaturesToTrack(img_1, mask=None, **feature_params)
+    
+    # compute LK optical flow
+    if lk_params is None:
+        lk_params = dict( winSize  = (15,15),
+                          maxLevel = 3,
+                          criteria = (cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03) )
+
+    pts_2, st, err = cv.calcOpticalFlowPyrLK( prevImg=img_1, 
+                                              nextImg=img_2, 
+                                              prevPts=pts_1, 
+                                              nextPts=None,
+                                              **lk_params )
+
+    return pts_1, pts_2, st, err
 
 
 if __name__ == "__main__":
@@ -63,23 +100,22 @@ if __name__ == "__main__":
 
     # Take first frame and find corners in it
     img_gray_1 = convert_to_grayscale(img_1)
-    p1 = cv.goodFeaturesToTrack(img_gray_1, mask=None, **feature_params)
+    img_gray_2 = convert_to_grayscale(img_2)
 
     # Create a mask image for drawing purposes later
     mask = np.zeros_like(cv.cvtColor(img_1, cv.COLOR_GRAY2BGR))
 
-    img_gray_2 = convert_to_grayscale(img_2)
     
     # calculate optical flow
-    p2, st, err = cv.calcOpticalFlowPyrLK( prevImg=img_gray_1, 
-                                           nextImg=img_gray_2, 
-                                           prevPts=p1, 
-                                           nextPts=None,
-                                           **lk_params )
+    pts_1 = cv.goodFeaturesToTrack(img_gray_1, mask=None, **feature_params)
+    _, pts_2, st, err = compute_optical_flow_LK( img_1=img_gray_1, 
+                                                 img_2=img_gray_2, 
+                                                 pts_1=p1, 
+                                                 lk_params=lk_params )
 
     # select good points
-    good_1 = p1[st==1]
-    good_2 = p2[st==1]
+    good_1 = pts_1[st==1]
+    good_2 = pts_2[st==1]
 
     # draw tracks
     for i, (new, old) in enumerate(zip(good_2, good_1)):
