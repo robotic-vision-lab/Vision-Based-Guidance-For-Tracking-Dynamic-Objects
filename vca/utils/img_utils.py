@@ -45,6 +45,17 @@ def convert_to_grayscale(img):
     return img_gray
 
 
+def convert_grayscale_to_BGR(img):
+    """ returns BGR image given a grayscale image """
+    # check if image shape has 2 dimensions before converting
+    if len(img.shape) == 2:
+        img_BGR = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
+    else:
+        img_BGR = img
+
+    return img_BGR
+
+
 def convert_BGR_to_RGB(img):
     """ converts the image from BGR (OpenCV) to RGB """
     return cv.cvtColor(img, cv.COLOR_BGR2RGB)
