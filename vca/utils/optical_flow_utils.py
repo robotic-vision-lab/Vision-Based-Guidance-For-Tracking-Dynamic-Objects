@@ -125,8 +125,42 @@ def draw_sparse_optical_flow_arrows(img, prev_points, cur_points, thickness=1, a
                              tipLength=0.2)
     return img
 
-    
 
+def draw_tracks(img, old_pts, new_pts, colors=None, mask=None, track_thickness=1, radius=3):
+    """Draw tracks on a mask, circles on the image, adds them and returns it. 
+        Given new and old points, 
+        draws a track between each pair of a new point and old point.
+        Also, draws a filled circle at each new point.
+
+    Args:
+        img (np.ndarray): Image over which tracks are to be drawn
+        new_pts (np.ndarray): Vector coordinates of new points
+        old_pts (np.ndarray): Vector coordinates of old points
+        colors (np.ndarray): Corresponding colors for each pair of new and old points
+        mask (np.ndarray): Mask on which lines are to be drawn or already drawn previously
+        track_thickness (int): Thickness of track lines
+        radius (int): Radius of filled circle to be drawn on img
+
+    """
+    # if image is grayscale it need to be converted to BGR
+    img = convert_grayscale_to_BGR(img)
+
+    # create a mask if not provided
+    if mask is None:
+        mask = np.zeros_like(img)
+
+    # add tracks on mask, circles on img
+    for i, (new, old) in enumerate(zip(new_pts, old_pts)):
+        a, b = new.ravel()
+        c, d = old.ravel()
+        color = (102, 255, 102) if colors is None else colors[i].tolist()
+        mask = cv.line(mask, (a,b), (c,d), color, track_thickness)
+        img = cv.circle(img, (a,b), radius, color, -1)
+
+    # add img and mask
+    img = cv.add(img, mask)
+
+    return img, mask
 
 
 if __name__ == "__main__":
