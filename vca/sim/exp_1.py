@@ -55,7 +55,8 @@ or in other words have the car right in the center of it's view.
 """
 
 class Simulator:
-    def __init__(self):
+    def __init__(self, manager):
+        self.manager = manager
         # initialize screen
         pygame.init()
         self.screen_surface = pygame.display.set_mode(SCREEN_SIZE)
@@ -124,14 +125,28 @@ class Simulator:
     def quit(self):
         pass
 
+class Tracker:
+    def __init__(self, manager):
+        self.manager = manager
+
+class Controller:
+    def __init__(self, manager):
+        self.manager = manager
 
 class ExperimentManager:
     """
+    Experiment:
+
+    - Run the game simulator with car. 
+    - Let user select a bounding box for the car to be tracked.
+        - 
     The manager is responsible for running the simulator and controller in separate threads.
     The manager can start and stop both applications.
     """
     def __init__(self):
-        pass
+        simulator = Simulator(self)
+        tracker = Tracker(self)
+        controller = Controller(self)
 
 
     def run_simulator(self):
