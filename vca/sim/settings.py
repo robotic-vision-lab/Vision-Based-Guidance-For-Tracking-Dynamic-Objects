@@ -5,6 +5,7 @@ import pygame
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 DARK_GRAY = (31, 31, 31)
+DARK_GRAY_2 = (40, 40, 40)
 LIGHT_GRAY = (128, 128, 128)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
@@ -41,8 +42,9 @@ CAR_INITIAL_VELOCITY = (30, 0)
 CAR_ACCELERATION = (0, 0)
 
 # block settings
-BLOCK_COLOR = YELLOW
-BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 8, 12
+BLOCK_COLOR = DARK_GRAY_2
+BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 12, 8
+NUM_BLOCKS = 100
 
 # drone camera settings
 DRONE_IMG = 'cross_hair2.png'
