@@ -115,7 +115,6 @@ class Game:
             pygame.event.pump()
 
 
-
     def update(self):
         """Helper function to update game objects. 
             This method will be run in the game loop every frame
@@ -124,6 +123,7 @@ class Game:
         self.all_sprites.update()
         self.camera.move(deepcopy(self.eucildean_factor * self.cam_accel_command))
         self.cam_accel_command = pygame.Vector2(0, 0)
+
 
     def draw(self):
         """helper function to draw/render each frame
@@ -163,6 +163,7 @@ class Game:
             # save screen 
             if self.save_screen:
                 next(self.screen_shot)
+
 
 
 def run_simulation():
