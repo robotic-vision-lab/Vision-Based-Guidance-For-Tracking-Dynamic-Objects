@@ -42,7 +42,7 @@ def load_image(img_name, colorkey=None, alpha=True, scale=1.0):
 
 
 def screen_saver(screen, path):
-    """ generator function saves the frame from given screen as .jpg image file """
+    """ generator function saves current frame on given screen as .jpg image file """
     # prep folder path 
     _prep_temp_folder(path)
     
