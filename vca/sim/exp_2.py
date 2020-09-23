@@ -4,7 +4,10 @@ import cv2 as cv
 import numpy as np
 import shutil
 import pygame 
-import threading
+import threading as th
+from queue import Queue
+from PIL import Image
+from copy import deepcopy
 
 from pygame.locals import *
 from settings import *
@@ -74,12 +77,16 @@ class Simulator:
         self.save_screen = False
 
         self.cam_accel_command = pygame.Vector2(0,0)
+        self.euc_factor = 1.0
 
 
     def start_new(self):
         # initiate screen shot generator
         self.screen_shot = screen_saver(screen=self.screen_surface, path=TEMP_FOLDER)
 
+        # create default Group for all sprites
+        self.all_sprites = pygame.sprite.Group()
+        
         # spawn blocks
         self.blocks = []
         for i in range(NUM_BLOCKS):
@@ -110,10 +117,12 @@ class Simulator:
             # draw stuffs
             self.draw()
 
+            # put the screen into image_queue
+            self.put_image()
+
             # save screen
             if self.save_screen:
                 next(self.screen_shot)
-
 
         
     def handle_events(self):
@@ -132,21 +141,42 @@ class Simulator:
 
             key_state = pygame.key.get_pressed()
             if key_state[pygame.K_LEFT]:
-                pass
+                self.cam_accel_command.x = -1
             if key_state[pygame.K_RIGHT]:
-                pass
+                self.cam_accel_command.x = 1
             if key_state[pygame.K_UP]:
-                pass
+                self.cam_accel_command.y = -1
             if key_state[pygame.K_DOWN]:
-                pass
+                self.cam_accel_command.y = 1
+
+            self.euc_factor = 0.7071 if self.cam_accel_command == (1, 1) else 1.0
 
 
     def update(self):
-        pass
+        # update Group. (All sprites in it will get updated)
+        self.all_sprites.update()
+        self.camera.move(deepcopy(self.euc_factor * self.cam_accel_command))
+        self.cam_accel_command = pygame.Vector2(0, 0)
 
 
     def draw(self):
-        pass
+        # fill background
+        self.screen_surface.fill(SCREEN_BG_COLOR)
+        pygame.display.set_caption(f'car position {self.car.position} | cam velocity {self.camera.velocity} | FPS {1/self.dt:.2f}')
+
+        for sprite in self.all_sprites:
+            self.camera.compensate_camera_motion(sprite)
+        self.all_sprites.draw(self.screen_surface)
+
+        # show drawing board
+        pygame.display.flip()
+
+
+    def put_image(self):
+        data = pygame.image.tostring(self.screen_surface, 'RGB')
+        img = np.frombuffer(data, np.uint8).reshape(*SCREEN_SIZE,3)
+        img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
+        self.manager.image_queue.put(img)
 
     
     def quit(self):
@@ -154,13 +184,18 @@ class Simulator:
         pygame.quit()
         
 
+
 class Tracker:
     def __init__(self, manager):
         self.manager = manager
 
+
+
 class Controller:
     def __init__(self, manager):
         self.manager = manager
+
+
 
 class ExperimentManager:
     """
@@ -173,20 +208,42 @@ class ExperimentManager:
     The manager can start and stop both applications.
     """
     def __init__(self):
-        simulator = Simulator(self)
-        tracker = Tracker(self)
-        controller = Controller(self)
+        self.simulator = Simulator(self)
+        self.tracker = Tracker(self)
+        self.controller = Controller(self)
 
+        self.image_queue = Queue(10)
+        self.command_queue = Queue(10)
 
     def run_simulator(self):
         """
         this method keeps the simulator running 
         """
-        pass
+        self.simulator.start_new()
+        self.simulator.run()
 
 
     def run_controller(self):
         """
         this method keeps the controller running
         """
-        pass
+        
+        while True:
+            if not self.image_queue.empty():
+                cv.imshow('Controllers sees', self.image_queue.get())
+                cv.waitKey(0)
+
+        cv.destroyAllWindows()
+
+
+    def run_experiment(self):
+        self.controller_thread = th.Thread(target=self.run_controller, daemon=True)
+        self.controller_thread.start()
+        self.run_simulator()
+
+
+
+
+if __name__ == "__main__":
+    experiment_manager = ExperimentManager()
+    experiment_manager.run_experiment()
