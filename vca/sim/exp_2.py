@@ -129,7 +129,8 @@ class Simulator:
         for event in pygame.event.get():
             if event.type == pygame.QUIT or     \
                 event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                pygame.quit()
+                self.quit()
+                break
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
@@ -150,7 +151,7 @@ class Simulator:
                 self.cam_accel_command.y = 1
 
             self.euc_factor = 0.7071 if self.cam_accel_command == (1, 1) else 1.0
-
+            pygame.event.pump()
 
     def update(self):
         # update Group. (All sprites in it will get updated)
@@ -174,9 +175,9 @@ class Simulator:
 
     def put_image(self):
         data = pygame.image.tostring(self.screen_surface, 'RGB')
-        img = np.frombuffer(data, np.uint8).reshape(*SCREEN_SIZE,3)
+        img = np.frombuffer(data, np.uint8).reshape(HEIGHT, WIDTH, 3)
         img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
-        self.manager.image_queue.put(img)
+        self.manager.add_to_image_queue(img)
 
     
     def quit(self):
@@ -212,8 +213,12 @@ class ExperimentManager:
         self.tracker = Tracker(self)
         self.controller = Controller(self)
 
-        self.image_queue = Queue(10)
-        self.command_queue = Queue(10)
+        self.image_queue = Queue(100)
+        self.command_queue = Queue(100)
+
+
+    def add_to_image_queue(self, img):
+        self.image_queue.put_nowait(img)
 
     def run_simulator(self):
         """
@@ -230,8 +235,9 @@ class ExperimentManager:
         
         while True:
             if not self.image_queue.empty():
+                print("hit")
                 cv.imshow('Controllers sees', self.image_queue.get())
-                cv.waitKey(0)
+                cv.waitKey(1)
 
         cv.destroyAllWindows()
 
