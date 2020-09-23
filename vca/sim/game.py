@@ -8,7 +8,7 @@ from settings import *
 from car import Car
 from block import Block
 from drone_camera import DroneCamera
-from game_utils import *
+from game_utils import load_image, screen_saver
 
 class Game:
     """Simulation Game
