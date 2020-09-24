@@ -12,7 +12,7 @@ class Car(pygame.sprite.Sprite):
     """
     def __init__(self, game, x, y, vx=0, vy=0, ax=0, ay=0):
         # assign itself to the all_sprites group 
-        self.groups = game.all_sprites
+        self.groups = [game.all_sprites, game.car_block_sprites]
 
         # call Sprite initializer with group info
         pygame.sprite.Sprite.__init__(self, self.groups) 

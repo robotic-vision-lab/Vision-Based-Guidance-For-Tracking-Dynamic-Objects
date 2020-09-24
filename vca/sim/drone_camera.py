@@ -7,7 +7,7 @@ from math import copysign
 
 class DroneCamera(pygame.sprite.Sprite):
     def __init__(self, game):
-        self.groups = game.all_sprites
+        self.groups = [game.all_sprites, game.drone_sprite]
 
         # call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self, self.groups)

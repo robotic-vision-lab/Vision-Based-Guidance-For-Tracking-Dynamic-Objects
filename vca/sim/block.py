@@ -26,7 +26,7 @@ class Block(pygame.sprite.Sprite):
     # Constructor. Pass in the color of the block,
     # and its x and y position
     def __init__(self, game):
-        self.groups = game.all_sprites
+        self.groups = [game.all_sprites, game.car_block_sprites]
         
         # Call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self, self.groups)
