@@ -244,6 +244,21 @@ def images_assemble(images,
     return scale_image(img_assembled, scale_factor)
 
 
+def put_text(img, 
+             text, 
+             coords, 
+             font=cv.FONT_HERSHEY_SIMPLEX, 
+             font_scale=1, 
+             color=(51, 255, 51),
+             thickness=2 ):
+    """
+    helper method lets put text on images
+    """
+    img = cv.putText(img, text, coords, font, font_scale, color, thickness, cv.LINE_AA)
+
+    return img
+
+
 if __name__ == "__main__":
     # ---------------------------------------------------------------
     # test images_assemble() usage
