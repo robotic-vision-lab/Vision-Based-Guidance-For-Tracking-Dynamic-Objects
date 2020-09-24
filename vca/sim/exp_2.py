@@ -81,6 +81,10 @@ class Simulator:
         self.euc_factor = 1.0
         self.pause = False
         self.time_font = pygame.font.SysFont(TIME_FONT, 16, False, False)
+        self.bb_start = None
+        self.bb_end = None
+        self.bb_drag = False
+
 
     def start_new(self):
         self.time = 0.0
@@ -108,7 +112,9 @@ class Simulator:
         self.running = True
         while self.running:
             # make clock tick and measure time elapsed
-            self.dt = self.clock.tick(FPS) / 1000.0
+            self.dt = self.clock.tick(FPS) / 1000.0 
+            if self.pause:
+                self.dt = 0
             self.time += self.dt
 
             # handle events
@@ -116,12 +122,13 @@ class Simulator:
             if not self.running:
                 break
 
-            if self.pause:
-                self.time -= self.dt
-                continue
-
-            # update game objects
-            self.update()
+            # if self.pause:
+            #     self.dt = 0.0
+            #     continue
+            # else:
+            if not self.pause:
+                # update game objects
+                self.update()
 
             # draw stuffs
             self.draw()
@@ -139,7 +146,6 @@ class Simulator:
             if self.save_screen:
                 next(self.screen_shot)
                 
-
         
     def handle_events(self):
         for event in pygame.event.get():
@@ -173,7 +179,19 @@ class Simulator:
                 self.cam_accel_command.y = 1
 
             self.euc_factor = 0.7071 if self.cam_accel_command == (1, 1) else 1.0
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                self.bb_start = self.bb_end = pygame.mouse.get_pos()
+                self.bb_drag = True
+            if self.bb_drag and event.type == pygame.MOUSEMOTION:
+                self.bb_end = pygame.mouse.get_pos()
+
+            if event.type == pygame.MOUSEBUTTONUP:
+                self.bb_end = pygame.mouse.get_pos()
+                self.bb_drag = False
+
             pygame.event.pump()
+
 
     def update(self):
         # update Group. (All sprites in it will get updated)
@@ -185,12 +203,13 @@ class Simulator:
     def draw(self):
         # fill background
         self.screen_surface.fill(SCREEN_BG_COLOR)
-        pygame.display.set_caption(f'car position {self.car.position} | cam velocity {self.camera.velocity} | FPS {1/self.dt:.2f}')
+        sim_fps = 'NA' if self.dt == 0 else f'{1/self.dt:.2f}'
+        
+        pygame.display.set_caption(f'car position {self.car.position} | cam velocity {self.camera.velocity} | FPS {sim_fps}')
 
         for sprite in self.all_sprites:
             self.camera.compensate_camera_motion(sprite)
         self.all_sprites.draw(self.screen_surface)
-
 
 
     def draw_extra(self):
@@ -198,8 +217,15 @@ class Simulator:
         print(time_str)
         time_surf = self.time_font.render(time_str, True, TIME_COLOR)
         time_rect = time_surf.get_rect()
-        self.screen_surface.blit(time_surf, (WIDTH - 10 - time_rect.width, HEIGHT - 25))
+        self.screen_surface.blit(time_surf, (WIDTH - 12 - time_rect.width, HEIGHT - 25))
 
+        if self.bb_start and self.bb_end and self.pause:
+            x = min(self.bb_start[0], self.bb_end[0])
+            y = min(self.bb_start[1], self.bb_end[1])
+            w = abs(self.bb_start[0] - self.bb_end[0])
+            h = abs(self.bb_start[1] - self.bb_end[1])
+            print(x,y,w,h)
+            pygame.draw.rect(self.screen_surface, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
 
 
     def put_image(self):
