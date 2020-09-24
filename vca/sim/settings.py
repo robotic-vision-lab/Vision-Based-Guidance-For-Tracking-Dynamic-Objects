@@ -58,3 +58,5 @@ TIME_FONT = 'consolas'
 TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY
 
+# Bounding box settings
+BB_COLOR = BLUE
