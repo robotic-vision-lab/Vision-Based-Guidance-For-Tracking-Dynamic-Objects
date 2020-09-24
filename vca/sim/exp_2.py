@@ -28,7 +28,7 @@ from utils.vid_utils import create_video_from_images
 from utils.optical_flow_utils import (get_OF_color_encoded, 
                                       draw_sparse_optical_flow_arrows,
                                       draw_tracks)
-from utils.img_utils import convert_to_grayscale
+from utils.img_utils import convert_to_grayscale, put_text
 from algorithms.optical_flow import (compute_optical_flow_farneback, 
                                      compute_optical_flow_HS, 
                                      compute_optical_flow_LK)
@@ -118,6 +118,7 @@ class Simulator:
             if self.pause:
                 self.dt = 0
             self.time += self.dt
+            self.manager.sim_dt = self.dt
 
             # handle events
             self.handle_events()
@@ -251,8 +252,100 @@ class Simulator:
 class Tracker:
     def __init__(self, manager):
         self.manager = manager
+        self.velocities = deque()
 
 
+    def run(self):
+        # get first frame
+        while True:# len(self.image_deque) <= 1:
+            print("inside")
+            if not (self.manager.simulator.bb_start and self.manager.simulator.bb_end) or self.manager.simulator.pause:
+                continue
+            if len(self.manager.image_deque) > 0:
+                frame_1 = self.manager.image_deque.popleft()
+                cur_frame = convert_to_grayscale(frame_1)
+                print("First frame")
+                break
+        
+        # compute good feature points to track
+        feature_mask = np.zeros_like(cur_frame)
+        x,y,w,h = self.manager.simulator.bounding_box
+        feature_mask[y:y+h+1, x:x+w+1] = 1
+        cur_points = cv.goodFeaturesToTrack(cur_frame, mask=feature_mask, **FEATURE_PARAMS)
+
+        # create mask for drawing tracks
+        mask = np.zeros_like(frame_1)
+
+        frame_num = 0
+        while True:
+            if len(self.manager.image_deque) < 1:
+                continue
+            frame_2 = self.manager.image_deque.popleft()
+            nxt_frame = convert_to_grayscale(frame_2)
+
+            # compute optical flow between current and next frame
+            cur_points, nxt_points, stdev, err = compute_optical_flow_LK(cur_frame, nxt_frame, cur_points, LK_PARAMS)
+
+            # select good points, with standard deviation 1. use numpy index trick
+            good_cur = cur_points[stdev==1]
+            good_nxt = nxt_points[stdev==1]
+
+            # compute velocity
+            velocity = self.compute_velocity(good_cur, good_nxt)
+
+            # create img with added tracks for all point pairs on next frame
+            img, mask = draw_tracks(frame_2, good_cur, good_nxt, None, mask, track_thickness=2)
+
+            # add optical flow arrows 
+            img = draw_sparse_optical_flow_arrows(img, good_cur, good_nxt, thickness=2, arrow_scale=10.0, color=RED_CV)
+
+            # put velocity text 
+            img = self.put_velocity_text(img, velocity)
+            
+            cv.imshow('Tracker work in progress', img)
+            # save image
+            frame_num += 1
+            # img_name = f'frame_{str(_frame_num).zfill(4)}.jpg'
+            # img_path = os.path.join(LK_TEMP_FOLDER, img_name)
+            # cv.imwrite(img_path, img)
+
+            # ready for next iteration
+            cur_frame = nxt_frame.copy()
+            cur_points = good_nxt.reshape(-1, 1, 2) # -1 indicates to infer that dim size
+
+            # every n seconds (n*FPS frames), get good points
+            num_seconds = 1
+            if frame_num % (num_seconds*FPS) == 0:
+                pass#cur_points = cv.goodFeaturesToTrack(cur_frame, mask=None, **FEATURE_PARAMS)
+                # for every point in good point if its not there in cur points, add , update color too
+                
+
+            cv.waitKey(1)
+
+        cv.destroyAllWindows()
+
+
+    def compute_velocity(self, cur_pts, nxt_pts):
+        vx = 0
+        vy = 0
+        for cur_pt, nxt_pt in zip(cur_pts, nxt_pts):
+            vx += nxt_pt[0] - cur_pt[0]
+            vy += nxt_pt[1] - cur_pt[1]
+
+        num_pts = len(cur_pts)
+        # converting from px/frame to px/secs. Averaging
+        vx /= self.manager.sim_dt * num_pts
+        vy /= self.manager.sim_dt * num_pts
+
+        return (vx, vy)
+
+    
+    def put_velocity_text(self, img, velocity):
+        img = put_text(img, f'computed velocity: ', (WIDTH - 250, 25), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, f'vx = {velocity[0]:.2f} ', (WIDTH - 200, 50), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, f'vy = {velocity[1]:.2f} ', (WIDTH - 200, 75), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+
+        return img
 
     
 
@@ -282,6 +375,8 @@ class ExperimentManager:
         self.image_deque = deque(maxlen=100)
         self.command_deque = deque(maxlen=100)
 
+        self.sim_dt = 0
+
 
     def add_to_image_deque(self, img):
         self.image_deque.append(img)
@@ -300,76 +395,19 @@ class ExperimentManager:
         """
         this method keeps the controller running
         """
-        # get first frame
-        while True:# len(self.image_deque) <= 1:
-            print("inside")
-            if not (self.simulator.bb_start and self.simulator.bb_end) or self.simulator.pause:
-                continue
-            if len(self.image_deque) > 0:
-                frame_1 = self.image_deque.popleft()
-                cur_frame = convert_to_grayscale(frame_1)
-                print("First frame")
-                break
+
+    
+    def run_tracker(self):
+        """
+        this method keeps the tracker running
+        """
+        self.tracker.run()
         
-        # compute good feature points to track
-        feature_mask = np.zeros_like(cur_frame)
-        x,y,w,h = self.simulator.bounding_box
-        feature_mask[y:y+h+1, x:x+w+1] = 1
-        cur_points = cv.goodFeaturesToTrack(cur_frame, mask=feature_mask, **FEATURE_PARAMS)
-
-        # create mask for drawing tracks
-        mask = np.zeros_like(frame_1)
-
-        frame_num = 0
-        while True:
-            if len(self.image_deque) < 1:
-                continue
-            print("Here")
-            frame_2 = self.image_deque.popleft()
-            nxt_frame = convert_to_grayscale(frame_2)
-
-            # compute optical flow between current and next frame
-            cur_points, nxt_points, stdev, err = compute_optical_flow_LK(cur_frame, nxt_frame, cur_points, LK_PARAMS)
-
-            # select good points, with standard deviation 1. use numpy index trick
-            good_cur = cur_points[stdev==1]
-            good_nxt = nxt_points[stdev==1]
-
-            # create img with added tracks for all point pairs on next frame
-            img, mask = draw_tracks(frame_2, good_cur, good_nxt, None, mask, track_thickness=2)
-
-            # add optical flow arrows 
-            img = draw_sparse_optical_flow_arrows(img, good_cur, good_nxt, thickness=2, arrow_scale=10.0, color=RED_CV)
-
-            cv.imshow('Controllers sees', img)
-            # save image
-            frame_num += 1
-            # img_name = f'frame_{str(_frame_num).zfill(4)}.jpg'
-            # img_path = os.path.join(LK_TEMP_FOLDER, img_name)
-            # cv.imwrite(img_path, img)
-
-            # ready for next iteration
-            cur_frame = nxt_frame.copy()
-            cur_points = good_nxt.reshape(-1, 1, 2) # -1 indicates to infer that dim size
-
-            # every n seconds (n*FPS frames), get good points
-            num_seconds = 1
-            if frame_num % (num_seconds*FPS) == 0:
-                pass#cur_points = cv.goodFeaturesToTrack(cur_frame, mask=None, **FEATURE_PARAMS)
-                # for every point in good point if its not there in cur points, add , update color too
-                
-
-
-            
-
-            cv.waitKey(1)
-
-        cv.destroyAllWindows()
 
 
     def run_experiment(self):
-        self.controller_thread = th.Thread(target=self.run_controller, daemon=True)
-        self.controller_thread.start()
+        self.tracker_thread = th.Thread(target=self.run_tracker, daemon=True)
+        self.tracker_thread.start()
         self.run_simulator()
 
 
