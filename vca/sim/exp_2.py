@@ -5,7 +5,7 @@ import numpy as np
 import shutil
 import pygame 
 import threading as th
-from queue import Queue
+from queue import deque
 from PIL import Image
 from copy import deepcopy
 from datetime import timedelta
@@ -133,10 +133,11 @@ class Simulator:
             # draw stuffs
             self.draw()
 
-            # put the screen capture into image_queue
-            self.put_image()
+            if not self.pause:
+                # put the screen capture into image_deque
+                self.put_image()
 
-            # draw extra parts like time
+            # draw extra parts like simulation time, bounding box etc
             self.draw_extra()
 
             # show drawing board
@@ -224,7 +225,7 @@ class Simulator:
             y = min(self.bb_start[1], self.bb_end[1])
             w = abs(self.bb_start[0] - self.bb_end[0])
             h = abs(self.bb_start[1] - self.bb_end[1])
-            print(x,y,w,h)
+            self.bounding_box = (x,y,w,h)
             pygame.draw.rect(self.screen_surface, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
 
 
@@ -232,7 +233,7 @@ class Simulator:
         data = pygame.image.tostring(self.screen_surface, 'RGB')
         img = np.frombuffer(data, np.uint8).reshape(HEIGHT, WIDTH, 3)
         img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
-        self.manager.add_to_image_queue(img)
+        self.manager.add_to_image_deque(img)
 
     
     def quit(self):
@@ -244,6 +245,10 @@ class Simulator:
 class Tracker:
     def __init__(self, manager):
         self.manager = manager
+
+
+
+    
 
 
 
@@ -268,12 +273,14 @@ class ExperimentManager:
         self.tracker = Tracker(self)
         self.controller = Controller(self)
 
-        self.image_queue = Queue(100)
-        self.command_queue = Queue(100)
+        self.image_deque = deque(maxlen=100)
+        self.command_deque = deque(maxlen=100)
 
 
-    def add_to_image_queue(self, img):
-        self.image_queue.put_nowait(img)
+    def add_to_image_deque(self, img):
+        self.image_deque.append(img)
+
+
 
     def run_simulator(self):
         """
@@ -287,12 +294,69 @@ class ExperimentManager:
         """
         this method keeps the controller running
         """
+        # get first frame
+        while True:# len(self.image_deque) <= 1:
+            print("inside")
+            if not (self.simulator.bb_start and self.simulator.bb_end) or self.simulator.pause:
+                continue
+            if len(self.image_deque) > 0:
+                frame_1 = self.image_deque.popleft()
+                cur_frame = convert_to_grayscale(frame_1)
+                print("First frame")
+                break
         
+        # compute good feature points to track
+        feature_mask = np.zeros_like(cur_frame)
+        x,y,w,h = self.simulator.bounding_box
+        feature_mask[y:y+h+1, x:x+w+1] = 1
+        cur_points = cv.goodFeaturesToTrack(cur_frame, mask=feature_mask, **FEATURE_PARAMS)
+
+        # create mask for drawing tracks
+        mask = np.zeros_like(frame_1)
+
+        frame_num = 0
         while True:
-            if not self.image_queue.empty():
-                print("hit")
-                cv.imshow('Controllers sees', self.image_queue.get())
-                cv.waitKey(1)
+            if len(self.image_deque) < 1:
+                continue
+            print("Here")
+            frame_2 = self.image_deque.popleft()
+            nxt_frame = convert_to_grayscale(frame_2)
+
+            # compute optical flow between current and next frame
+            cur_points, nxt_points, stdev, err = compute_optical_flow_LK(cur_frame, nxt_frame, cur_points, LK_PARAMS)
+
+            # select good points, with standard deviation 1. use numpy index trick
+            good_cur = cur_points[stdev==1]
+            good_nxt = nxt_points[stdev==1]
+
+            # create img with added tracks for all point pairs on next frame
+            img, mask = draw_tracks(frame_2, good_cur, good_nxt, None, mask, track_thickness=2)
+
+            # add optical flow arrows 
+            img = draw_sparse_optical_flow_arrows(img, good_cur, good_nxt, thickness=2, arrow_scale=10.0, color=RED_CV)
+
+            cv.imshow('Controllers sees', img)
+            # save image
+            frame_num += 1
+            # img_name = f'frame_{str(_frame_num).zfill(4)}.jpg'
+            # img_path = os.path.join(LK_TEMP_FOLDER, img_name)
+            # cv.imwrite(img_path, img)
+
+            # ready for next iteration
+            cur_frame = nxt_frame.copy()
+            cur_points = good_nxt.reshape(-1, 1, 2) # -1 indicates to infer that dim size
+
+            # every n seconds (n*FPS frames), get good points
+            num_seconds = 1
+            if frame_num % (num_seconds*FPS) == 0:
+                pass#cur_points = cv.goodFeaturesToTrack(cur_frame, mask=None, **FEATURE_PARAMS)
+                # for every point in good point if its not there in cur points, add , update color too
+                
+
+
+            
+
+            cv.waitKey(1)
 
         cv.destroyAllWindows()
 
