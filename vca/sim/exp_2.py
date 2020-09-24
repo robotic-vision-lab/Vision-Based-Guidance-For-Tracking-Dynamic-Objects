@@ -8,6 +8,7 @@ import threading as th
 from queue import Queue
 from PIL import Image
 from copy import deepcopy
+from datetime import timedelta
 
 from pygame.locals import *
 from settings import *
@@ -78,9 +79,12 @@ class Simulator:
 
         self.cam_accel_command = pygame.Vector2(0,0)
         self.euc_factor = 1.0
-
+        self.pause = False
+        self.time_font = pygame.font.SysFont(TIME_FONT, 16, False, False)
 
     def start_new(self):
+        self.time = 0.0
+
         # initiate screen shot generator
         self.screen_shot = screen_saver(screen=self.screen_surface, path=TEMP_FOLDER)
 
@@ -105,11 +109,16 @@ class Simulator:
         while self.running:
             # make clock tick and measure time elapsed
             self.dt = self.clock.tick(FPS) / 1000.0
+            self.time += self.dt
 
             # handle events
             self.handle_events()
             if not self.running:
                 break
+
+            if self.pause:
+                self.time -= self.dt
+                continue
 
             # update game objects
             self.update()
@@ -117,12 +126,19 @@ class Simulator:
             # draw stuffs
             self.draw()
 
-            # put the screen into image_queue
+            # put the screen capture into image_queue
             self.put_image()
+
+            # draw extra parts like time
+            self.draw_extra()
+
+            # show drawing board
+            pygame.display.flip()
 
             # save screen
             if self.save_screen:
                 next(self.screen_shot)
+                
 
         
     def handle_events(self):
@@ -139,6 +155,12 @@ class Simulator:
                         print("Screen recording started.")
                     else:
                         print("Screen recording stopped.")
+                if event.key == pygame.K_p:
+                    self.pause = not self.pause
+                    if self.pause:
+                        print("Simulation paused.")
+                    else:
+                        print("Simulation running.")
 
             key_state = pygame.key.get_pressed()
             if key_state[pygame.K_LEFT]:
@@ -169,8 +191,15 @@ class Simulator:
             self.camera.compensate_camera_motion(sprite)
         self.all_sprites.draw(self.screen_surface)
 
-        # show drawing board
-        pygame.display.flip()
+
+
+    def draw_extra(self):
+        time_str = f'Simulation Time - {str(timedelta(seconds=self.time))}'
+        print(time_str)
+        time_surf = self.time_font.render(time_str, True, TIME_COLOR)
+        time_rect = time_surf.get_rect()
+        self.screen_surface.blit(time_surf, (WIDTH - 10 - time_rect.width, HEIGHT - 25))
+
 
 
     def put_image(self):
