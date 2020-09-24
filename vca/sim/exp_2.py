@@ -92,8 +92,10 @@ class Simulator:
         # initiate screen shot generator
         self.screen_shot = screen_saver(screen=self.screen_surface, path=TEMP_FOLDER)
 
-        # create default Group for all sprites
+        # create default Group for all sprites, but drone
         self.all_sprites = pygame.sprite.Group()
+        self.drone_sprite = pygame.sprite.Group()
+        self.car_block_sprites = pygame.sprite.Group()
         
         # spawn blocks
         self.blocks = []
@@ -137,7 +139,7 @@ class Simulator:
                 # put the screen capture into image_deque
                 self.put_image()
 
-            # draw extra parts like simulation time, bounding box etc
+            # draw extra parts like drone cross hair, simulation time, bounding box etc
             self.draw_extra()
 
             # show drawing board
@@ -210,15 +212,19 @@ class Simulator:
 
         for sprite in self.all_sprites:
             self.camera.compensate_camera_motion(sprite)
-        self.all_sprites.draw(self.screen_surface)
+        self.car_block_sprites.draw(self.screen_surface)
 
 
     def draw_extra(self):
+        # draw drone cross hair
+        self.drone_sprite.draw(self.screen_surface)
+
+        # draw simulation time
         time_str = f'Simulation Time - {str(timedelta(seconds=self.time))}'
-        print(time_str)
         time_surf = self.time_font.render(time_str, True, TIME_COLOR)
         time_rect = time_surf.get_rect()
         self.screen_surface.blit(time_surf, (WIDTH - 12 - time_rect.width, HEIGHT - 25))
+
 
         if self.bb_start and self.bb_end and self.pause:
             x = min(self.bb_start[0], self.bb_end[0])
