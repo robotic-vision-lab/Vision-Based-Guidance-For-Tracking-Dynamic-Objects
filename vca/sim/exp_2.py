@@ -23,12 +23,12 @@ vca_path = os.path.abspath(os.path.join('..'))
 if vca_path not in sys.path:
     sys.path.append(vca_path)
 
-from game_utils import load_image, screen_saver
+from game_utils import load_image, _prep_temp_folder
 from utils.vid_utils import create_video_from_images
 from utils.optical_flow_utils import (get_OF_color_encoded, 
                                       draw_sparse_optical_flow_arrows,
                                       draw_tracks)
-from utils.img_utils import convert_to_grayscale, put_text
+from utils.img_utils import convert_to_grayscale, put_text, images_assemble
 from algorithms.optical_flow import (compute_optical_flow_farneback, 
                                      compute_optical_flow_HS, 
                                      compute_optical_flow_LK)
@@ -90,7 +90,7 @@ class Simulator:
         self.time = 0.0
 
         # initiate screen shot generator
-        self.screen_shot = screen_saver(screen=self.screen_surface, path=TEMP_FOLDER)
+        self.screen_shot = self.screen_saver(path=TEMP_FOLDER)
 
         # create default Group for all sprites, but drone
         self.all_sprites = pygame.sprite.Group()
@@ -132,6 +132,7 @@ class Simulator:
             if not self.pause:
                 # update game objects
                 self.update()
+                self.manager.true_rel_vel = self.car.velocity - self.camera.velocity
 
             # draw stuffs
             self.draw()
@@ -168,6 +169,7 @@ class Simulator:
                 if event.key == pygame.K_p:
                     self.pause = not self.pause
                     if self.pause:
+                        self.bb_start = self.bb_end = None
                         print("Simulation paused.")
                     else:
                         print("Simulation running.")
@@ -226,7 +228,7 @@ class Simulator:
         time_rect = time_surf.get_rect()
         self.screen_surface.blit(time_surf, (WIDTH - 12 - time_rect.width, HEIGHT - 25))
 
-
+        # draw bounding box
         if self.bb_start and self.bb_end and self.pause:
             x = min(self.bb_start[0], self.bb_end[0])
             y = min(self.bb_start[1], self.bb_end[1])
@@ -234,12 +236,37 @@ class Simulator:
             h = abs(self.bb_start[1] - self.bb_end[1])
             self.bounding_box = (x,y,w,h)
             pygame.draw.rect(self.screen_surface, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
+            
 
 
-    def put_image(self):
+    def screen_saver(self, path):
+        _prep_temp_folder(path)
+
+        frame_num = 0
+        while True:
+            frame_num += 1
+            image_name = f'frame_{str(frame_num).zfill(4)}.jpg'
+            file_path = os.path.join(path, image_name)
+            img_sim = self.get_screen_capture()
+            img_track = self.manager.tracker.cur_img
+            if img_track is None:
+                img_track = np.ones_like(img_sim, dtype='uint8') * 31
+            img = images_assemble([img_sim, img_track], (1,2))
+            cv.imwrite(file_path, img)
+            # pygame.image.save(screen, file_path)
+            yield
+        
+
+
+    def get_screen_capture(self):
         data = pygame.image.tostring(self.screen_surface, 'RGB')
         img = np.frombuffer(data, np.uint8).reshape(HEIGHT, WIDTH, 3)
         img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
+        return img
+
+
+    def put_image(self):
+        img = self.get_screen_capture()
         self.manager.add_to_image_deque(img)
 
     
@@ -253,6 +280,8 @@ class Tracker:
     def __init__(self, manager):
         self.manager = manager
         self.velocities = deque()
+        self.vel_file = 'track.txt'
+        self.cur_img = None
 
 
     def run(self):
@@ -276,6 +305,8 @@ class Tracker:
         # create mask for drawing tracks
         mask = np.zeros_like(frame_1)
 
+        f = open(self.vel_file, '+w')
+
         frame_num = 0
         while True:
             if len(self.manager.image_deque) < 1:
@@ -294,15 +325,17 @@ class Tracker:
             velocity = self.compute_velocity(good_cur, good_nxt)
 
             # create img with added tracks for all point pairs on next frame
-            img, mask = draw_tracks(frame_2, good_cur, good_nxt, None, mask, track_thickness=2)
+            img, mask = draw_tracks(frame_2, good_cur, good_nxt, None, mask, track_thickness=1)
 
             # add optical flow arrows 
-            img = draw_sparse_optical_flow_arrows(img, good_cur, good_nxt, thickness=2, arrow_scale=10.0, color=RED_CV)
+            img = draw_sparse_optical_flow_arrows(img, good_cur, good_nxt, thickness=1, arrow_scale=10.0, color=RED_CV)
 
             # put velocity text 
             img = self.put_velocity_text(img, velocity)
+            f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {velocity[0]:.2f} {velocity[1]:.2f}\n')
+            self.cur_img = img
+            cv.imshow('Tracking in progress', img)
             
-            cv.imshow('Tracker work in progress', img)
             # save image
             frame_num += 1
             # img_name = f'frame_{str(_frame_num).zfill(4)}.jpg'
@@ -323,6 +356,7 @@ class Tracker:
             cv.waitKey(1)
 
         cv.destroyAllWindows()
+        f.close()
 
 
     def compute_velocity(self, cur_pts, nxt_pts):
@@ -341,9 +375,9 @@ class Tracker:
 
     
     def put_velocity_text(self, img, velocity):
-        img = put_text(img, f'computed velocity: ', (WIDTH - 250, 25), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, f'vx = {velocity[0]:.2f} ', (WIDTH - 200, 50), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, f'vy = {velocity[1]:.2f} ', (WIDTH - 200, 75), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, f'computed velocity: ', (WIDTH - 180, 25), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, f'vx = {velocity[0]:.2f} ', (WIDTH - 130, 50), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, f'vy = {velocity[1]:.2f} ', (WIDTH - 130, 75), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
 
         return img
 
@@ -376,6 +410,7 @@ class ExperimentManager:
         self.command_deque = deque(maxlen=100)
 
         self.sim_dt = 0
+        self.true_rel_vel = None
 
 
     def add_to_image_deque(self, img):
@@ -411,8 +446,53 @@ class ExperimentManager:
         self.run_simulator()
 
 
+def make_video(video_name, folder_path):
+    """Looks for frames in given folder,
+    writes them into a video file, with the given name. 
+    Also removes the folder after creating the video.
+    """
+    if os.path.isdir(folder_path):
+        create_video_from_images(folder_path, 'jpg', video_name, FPS)
 
+        # delete folder
+        shutil.rmtree(folder_path)
 
 if __name__ == "__main__":
-    experiment_manager = ExperimentManager()
-    experiment_manager.run_experiment()
+
+    RUN_EXPERIMENT = 0
+    RUN_TRACK_PLOT = 0
+    if RUN_EXPERIMENT:
+        experiment_manager = ExperimentManager()
+        experiment_manager.run_experiment()
+
+    if RUN_TRACK_PLOT:
+        f = open('track.txt', 'r')
+        time = []
+        true_vel_x = []
+        true_vel_y = []
+        comp_vel_x = []
+        comp_vel_y = []
+
+        for line in f.readlines():
+            t, tvx, tvy, cvx, cvy = tuple(map(float, list(map(str.strip, line.strip().split()))))
+            time.append(t)
+            true_vel_x.append(tvx)
+            true_vel_y.append(tvy)
+            comp_vel_x.append(cvx)
+            comp_vel_y.append(cvy)
+
+        import matplotlib.pyplot as plt
+        plt.style.use('seaborn-whitegrid')
+        plt.plot(time, comp_vel_x, color='tan', linestyle='-', linewidth=1, label='computed relative vx')
+        plt.plot(time, true_vel_x, color='teal', linestyle=':', linewidth=3, label='computed relative vx')
+        # plt.grid(b=True, which='major', color='#666666', linestyle='-')
+        plt.legend()
+        plt.savefig('relative_vx.png')
+        plt.show()
+
+    make_video('sim_track.avi', TEMP_FOLDER)
+
+        
+
+        
+            
