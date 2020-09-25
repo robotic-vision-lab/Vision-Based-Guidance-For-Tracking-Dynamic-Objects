@@ -18,15 +18,18 @@ from utils import *
 EXPERIMENT_VIDS_FOLDER = os.path.realpath(os.path.join(os.path.dirname(__file__), './experiment_vids'))
 SIMPLE_CAR_FOLDER = os.path.realpath(os.path.join(EXPERIMENT_VIDS_FOLDER, './simple_car'))
 CAR_BLOCKS_FOLDER = os.path.realpath(os.path.join(EXPERIMENT_VIDS_FOLDER, './car_blocks'))
+SIM_TRACK_FOLDER = os.path.realpath(os.path.join(EXPERIMENT_VIDS_FOLDER, './simulation_tracker'))
 
 
 # create a list of paths of video files in each folder
 SIMPLE_CAR_PATHS = [ os.path.realpath(path) for path in glob.glob(SIMPLE_CAR_FOLDER + '/*.avi')]
 CAR_BLOCKS_PATHS = [ os.path.realpath(path) for path in glob.glob(CAR_BLOCKS_FOLDER + '/*.avi')]
+SIM_TRACK_PATHS = [ os.path.realpath(path) for path in glob.glob(SIM_TRACK_FOLDER + '/*.avi')]
 
 # list 'em up
 VID_FILE_PATHS_LIST = [ SIMPLE_CAR_PATHS,
-                        CAR_BLOCKS_PATHS ]
+                        CAR_BLOCKS_PATHS,
+                        SIM_TRACK_PATHS ]
 
 
 ## What are we going to do in the module?
