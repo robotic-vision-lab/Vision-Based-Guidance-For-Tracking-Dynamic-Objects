@@ -7,3 +7,5 @@ out_imgs*
 tmp*
 *vid_out*.avi
 references.bib
+out_sim_track.avi
+track.txt
