@@ -460,7 +460,7 @@ def make_video(video_name, folder_path):
 if __name__ == "__main__":
 
     RUN_EXPERIMENT = 0
-    RUN_TRACK_PLOT = 0
+    RUN_TRACK_PLOT = 1
     if RUN_EXPERIMENT:
         experiment_manager = ExperimentManager()
         experiment_manager.run_experiment()
@@ -484,13 +484,15 @@ if __name__ == "__main__":
         import matplotlib.pyplot as plt
         plt.style.use('seaborn-whitegrid')
         plt.plot(time, comp_vel_x, color='tan', linestyle='-', linewidth=1, label='computed relative vx')
-        plt.plot(time, true_vel_x, color='teal', linestyle=':', linewidth=3, label='computed relative vx')
+        plt.plot(time, true_vel_x, color='teal', linestyle=':', linewidth=3, label='true relative vx')
         # plt.grid(b=True, which='major', color='#666666', linestyle='-')
         plt.legend()
+        plt.xlabel('seconds')
+        plt.ylabel('pixels/second')
         plt.savefig('relative_vx.png')
         plt.show()
 
-    make_video('sim_track.avi', TEMP_FOLDER)
+    # make_video('sim_track.avi', TEMP_FOLDER)
 
         
 
