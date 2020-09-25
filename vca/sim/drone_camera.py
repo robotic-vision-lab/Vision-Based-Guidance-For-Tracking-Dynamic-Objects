@@ -78,7 +78,7 @@ class DroneCamera(pygame.sprite.Sprite):
         if abs(self.acceleration.length()) > self.acc_limit:
             self.acceleration -= command_vec
         # self.update_kinematics()
-        print(f'Kinematics: x:{self.position} | v:{self.velocity} | a:{self.acceleration} | command:{command_vec}')
+        print(f'Kinematics: x:{self.position} | v:{self.velocity} | a:{self.acceleration} | command:{command_vec} | rel_vel: {self.game.car.velocity - self.velocity}')
         x = int(self.position.x)
         y = int(self.position.y)
         # print(x,y)
