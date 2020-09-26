@@ -60,7 +60,13 @@ or in other words have the car right in the center of it's view.
 """
 
 class Simulator:
+    """Simulator object creates the simulation game. 
+    Responds to keypresses 'p' to toggle play/pause, 's' to save screen mode, ESC to quit.
+    While running simulation, it also dumps the screens to a shared memory location.
+    Designed to work with an ExperimentManager object.
+    """
     def __init__(self, manager):
+
         self.manager = manager
         # initialize screen
         pygame.init()
@@ -87,6 +93,8 @@ class Simulator:
 
 
     def start_new(self):
+        """Initializes simulation components.
+        """
         self.time = 0.0
 
         # initiate screen shot generator
@@ -111,6 +119,8 @@ class Simulator:
 
     
     def run(self):
+        """Keeps simulation game running until quit.
+        """
         self.running = True
         while self.running:
             # make clock tick and measure time elapsed
@@ -153,6 +163,8 @@ class Simulator:
                 
         
     def handle_events(self):
+        """Handles captured events.
+        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT or     \
                 event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -200,6 +212,8 @@ class Simulator:
 
 
     def update(self):
+        """Update positions of components.
+        """
         # update Group. (All sprites in it will get updated)
         self.all_sprites.update()
         self.camera.move(deepcopy(self.euc_factor * self.cam_accel_command))
@@ -207,6 +221,8 @@ class Simulator:
 
 
     def draw(self):
+        """Draws components on screen. Note: drone_img is drawn after screen capture for tracking is performed.
+        """
         # fill background
         self.screen_surface.fill(SCREEN_BG_COLOR)
         sim_fps = 'NA' if self.dt == 0 else f'{1/self.dt:.2f}'
@@ -219,6 +235,8 @@ class Simulator:
 
 
     def draw_extra(self):
+        """Components to be drawn after screen capture for tracking/controllers is performed.
+        """
         # draw drone cross hair
         self.drone_sprite.draw(self.screen_surface)
 
@@ -238,8 +256,12 @@ class Simulator:
             pygame.draw.rect(self.screen_surface, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
             
 
-
     def screen_saver(self, path):
+        """Creates a generator to perform screen saving.
+
+        Args:
+            path (str): Path where screen captured frames are to be stored.
+        """
         _prep_temp_folder(path)
 
         frame_num = 0
@@ -257,8 +279,12 @@ class Simulator:
             yield
         
 
-
     def get_screen_capture(self):
+        """Get screen capture from pygame and convert it to return opencv compatible images.
+
+        Returns:
+            [np.ndarray]: Captured and converted opencv compatible image.
+        """
         data = pygame.image.tostring(self.screen_surface, 'RGB')
         img = np.frombuffer(data, np.uint8).reshape(HEIGHT, WIDTH, 3)
         img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
@@ -266,18 +292,26 @@ class Simulator:
 
 
     def put_image(self):
+        """Helper function, captures screen and adds to manager's image deque.
+        """
         img = self.get_screen_capture()
         self.manager.add_to_image_deque(img)
 
     
     def quit(self):
+        """Helper function, sets running flag to False and quits pygame.
+        """
         self.running = False
         pygame.quit()
         
 
 
 class Tracker:
+    """Tracker object is desgined to work with and ExperimentManager object.
+    It can be used to process screen captures and produce tracking information for feature points.
+    """
     def __init__(self, manager):
+        
         self.manager = manager
         self.velocities = deque()
         self.vel_file = 'track.txt'
@@ -285,15 +319,16 @@ class Tracker:
 
 
     def run(self):
+        """Keeps running the tracker main functions.
+        Reads bounding box from it's ExperimentManager and computed features to be tracked.
+        """
         # get first frame
         while True:# len(self.image_deque) <= 1:
-            print("inside")
             if not (self.manager.simulator.bb_start and self.manager.simulator.bb_end) or self.manager.simulator.pause:
                 continue
             if len(self.manager.image_deque) > 0:
                 frame_1 = self.manager.image_deque.popleft()
                 cur_frame = convert_to_grayscale(frame_1)
-                print("First frame")
                 break
         
         # compute good feature points to track
@@ -328,7 +363,7 @@ class Tracker:
             img, mask = draw_tracks(frame_2, good_cur, good_nxt, None, mask, track_thickness=1)
 
             # add optical flow arrows 
-            img = draw_sparse_optical_flow_arrows(img, good_cur, good_nxt, thickness=1, arrow_scale=10.0, color=RED_CV)
+            img = draw_sparse_optical_flow_arrows(img, good_cur, good_nxt, thickness=2, arrow_scale=10.0, color=RED_CV)
 
             # put velocity text 
             img = self.put_velocity_text(img, velocity)
@@ -360,6 +395,16 @@ class Tracker:
 
 
     def compute_velocity(self, cur_pts, nxt_pts):
+        """Helper function, takes in current and next points (corresponding to an object) and 
+        computes the average velocity using elapsed simulation time from it's ExperimentManager.
+
+        Args:
+            cur_pts (np.ndarray): feature points in frame_1 or current frame (prev frame)
+            nxt_pts (np.ndarray): feature points in frame_2 or next frame 
+
+        Returns:
+            tuple(float, float): mean of velocities computed from each point pair.
+        """
         vx = 0
         vy = 0
         for cur_pt, nxt_pt in zip(cur_pts, nxt_pts):
@@ -375,13 +420,20 @@ class Tracker:
 
     
     def put_velocity_text(self, img, velocity):
+        """Helper function, put computed velocity in text form on (opencv) image.
+
+        Args:
+            img (np.ndarray): Image on which text is to be put.
+            velocity (tuple(float, float)): velocity to be put in text form on image.
+
+        Returns:
+            np.ndarray: Image with velotcity text.
+        """
         img = put_text(img, f'computed velocity: ', (WIDTH - 180, 25), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
         img = put_text(img, f'vx = {velocity[0]:.2f} ', (WIDTH - 130, 50), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
         img = put_text(img, f'vy = {velocity[1]:.2f} ', (WIDTH - 130, 75), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
 
         return img
-
-    
 
 
 
@@ -395,13 +447,22 @@ class ExperimentManager:
     """
     Experiment:
 
-    - Run the game simulator with car. 
+    - Run the game Simulator with a car and static blocks to aid motion perception for biological creatures with visual perception. 
     - Let user select a bounding box for the car to be tracked.
-        - 
-    The manager is responsible for running the simulator and controller in separate threads.
-    The manager can start and stop both applications.
+        - Simulator needs to be paused and played back again after bounding box selection.
+    - Simulator keeps simulating and rendering images on screen.
+    - Also, dumps screen captures for Tracker or Controller to consume.
+    - Additionally, concatenate screen captures and tracker produced images with tracking information, into one image and save it.
+    - Tracker consumes these images and produces tracking information at each frame. 
+    - Controller consumes tracking information and produces acceleration commands for Simulator
+    - Simulator consumes acceleration command and updates simulated components appropriately.
+    - All information relay across the Simulator, Tracker and Controller can be mediated through the ExperimentManager
+    
+    The manager is responsible for running Simulator, Tracker and controller in separate threads and manage shared memory.
+    The manager can start and stop Simulator, Tracker and Controller.
     """
-    def __init__(self):
+    def __init__(self, save_on=False):
+
         self.simulator = Simulator(self)
         self.tracker = Tracker(self)
         self.controller = Controller(self)
@@ -412,57 +473,69 @@ class ExperimentManager:
         self.sim_dt = 0
         self.true_rel_vel = None
 
+        self.save_on = save_on
+        if self.save_on:
+            self.simulator.save_screen = True
+
 
     def add_to_image_deque(self, img):
+        """Helper function, adds given image to manager's image deque
+
+        Args:
+            img (np.ndarray): Image to be added to manager's image deque
+        """
         self.image_deque.append(img)
 
 
-
     def run_simulator(self):
-        """
-        this method keeps the simulator running 
+        """Run Simulator
         """
         self.simulator.start_new()
         self.simulator.run()
 
 
     def run_controller(self):
+        """Run Controller
         """
-        this method keeps the controller running
-        """
-
+        pass
     
+
     def run_tracker(self):
-        """
-        this method keeps the tracker running
+        """Run Tracker
         """
         self.tracker.run()
         
 
-
     def run_experiment(self):
+        """Run Experiment by running Simulator, Tracker and Controller.
+        """
         self.tracker_thread = th.Thread(target=self.run_tracker, daemon=True)
         self.tracker_thread.start()
         self.run_simulator()
+        if self.save_on:
+            self.make_video('sim_track.avi', TEMP_FOLDER)
 
 
-def make_video(video_name, folder_path):
-    """Looks for frames in given folder,
-    writes them into a video file, with the given name. 
-    Also removes the folder after creating the video.
-    """
-    if os.path.isdir(folder_path):
-        create_video_from_images(folder_path, 'jpg', video_name, FPS)
+    def make_video(self, video_name, folder_path):
+        """Helper function, looks for frames in given folder,
+        writes them into a video file, with the given name. 
+        Also removes the folder after creating the video.
+        """
+        if os.path.isdir(folder_path):
+            create_video_from_images(folder_path, 'jpg', video_name, FPS)
 
-        # delete folder
-        shutil.rmtree(folder_path)
+            # delete folder
+            shutil.rmtree(folder_path)
+
+
 
 if __name__ == "__main__":
 
     RUN_EXPERIMENT = 0
+    EXPERIMENT_SAVE_MODE_ON = 0
     RUN_TRACK_PLOT = 1
     if RUN_EXPERIMENT:
-        experiment_manager = ExperimentManager()
+        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON)
         experiment_manager.run_experiment()
 
     if RUN_TRACK_PLOT:
@@ -492,9 +565,4 @@ if __name__ == "__main__":
         plt.savefig('relative_vx.png')
         plt.show()
 
-    # make_video('sim_track.avi', TEMP_FOLDER)
 
-        
-
-        
-            
