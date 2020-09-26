@@ -59,6 +59,136 @@ or in other words have the car right in the center of it's view.
 
 """
 
+
+
+if __name__ == "__main__":
+
+    RUN_EXPERIMENT = 0
+    EXPERIMENT_SAVE_MODE_ON = 0
+    WRITE_TRACK = 0
+    RUN_TRACK_PLOT = 1
+    if RUN_EXPERIMENT:
+        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK)
+        experiment_manager.run_experiment()
+
+    if RUN_TRACK_PLOT:
+        f = open('track.txt', 'r')
+        time = []
+        true_vel_x = []
+        true_vel_y = []
+        comp_vel_x = []
+        comp_vel_y = []
+
+        for line in f.readlines():
+            t, tvx, tvy, cvx, cvy = tuple(map(float, list(map(str.strip, line.strip().split()))))
+            time.append(t)
+            true_vel_x.append(tvx)
+            true_vel_y.append(tvy)
+            comp_vel_x.append(cvx)
+            comp_vel_y.append(cvy)
+
+        import matplotlib.pyplot as plt
+        plt.style.use('seaborn-whitegrid')
+        plt.plot(time, comp_vel_x, color='tan', linestyle='-', linewidth=1, label='computed relative vx')
+        plt.plot(time, true_vel_x, color='teal', linestyle=':', linewidth=3, label='true relative vx')
+        # plt.grid(b=True, which='major', color='#666666', linestyle='-')
+        plt.legend()
+        plt.xlabel('seconds')
+        plt.ylabel('pixels/second')
+        plt.savefig('relative_vx.png')
+        plt.show()
+
+
+
+
+class ExperimentManager:
+    """
+    Experiment:
+
+    - Run the game Simulator with a car and static blocks to aid motion perception for biological creatures with visual perception. 
+    - Let user select a bounding box for the car to be tracked.
+        - Simulator needs to be paused and played back again after bounding box selection.
+    - Simulator keeps simulating and rendering images on screen.
+    - Also, dumps screen captures for Tracker or Controller to consume.
+    - Additionally, concatenate screen captures and tracker produced images with tracking information, into one image and save it.
+    - Tracker consumes these images and produces tracking information at each frame. 
+    - Controller consumes tracking information and produces acceleration commands for Simulator
+    - Simulator consumes acceleration command and updates simulated components appropriately.
+    - All information relay across the Simulator, Tracker and Controller can be mediated through the ExperimentManager
+    
+    The manager is responsible for running Simulator, Tracker and controller in separate threads and manage shared memory.
+    The manager can start and stop Simulator, Tracker and Controller.
+    """
+    def __init__(self, save_on=False, write_track=False):
+
+        self.save_on = save_on
+        self.write_track = write_track
+
+        self.simulator = Simulator(self)
+        self.tracker = Tracker(self)
+        self.controller = Controller(self)
+
+        self.image_deque = deque(maxlen=100)
+        self.command_deque = deque(maxlen=100)
+
+        self.sim_dt = 0
+        self.true_rel_vel = None
+
+        if self.save_on:
+            self.simulator.save_screen = True
+
+
+    def add_to_image_deque(self, img):
+        """Helper function, adds given image to manager's image deque
+
+        Args:
+            img (np.ndarray): Image to be added to manager's image deque
+        """
+        self.image_deque.append(img)
+
+
+    def run_simulator(self):
+        """Run Simulator
+        """
+        self.simulator.start_new()
+        self.simulator.run()
+
+
+    def run_controller(self):
+        """Run Controller
+        """
+        pass
+    
+
+    def run_tracker(self):
+        """Run Tracker
+        """
+        self.tracker.run()
+        
+
+    def run_experiment(self):
+        """Run Experiment by running Simulator, Tracker and Controller.
+        """
+        self.tracker_thread = th.Thread(target=self.run_tracker, daemon=True)
+        self.tracker_thread.start()
+        self.run_simulator()
+        if self.save_on:
+            self.make_video('sim_track.avi', TEMP_FOLDER)
+
+
+    def make_video(self, video_name, folder_path):
+        """Helper function, looks for frames in given folder,
+        writes them into a video file, with the given name. 
+        Also removes the folder after creating the video.
+        """
+        if os.path.isdir(folder_path):
+            create_video_from_images(folder_path, 'jpg', video_name, FPS)
+
+            # delete folder
+            shutil.rmtree(folder_path)
+
+
+
 class Simulator:
     """Simulator object creates the simulation game. 
     Responds to keypresses 'p' to toggle play/pause, 's' to save screen mode, ESC to quit.
@@ -367,7 +497,8 @@ class Tracker:
 
             # put velocity text 
             img = self.put_velocity_text(img, velocity)
-            f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {velocity[0]:.2f} {velocity[1]:.2f}\n')
+            if self.manager.write_track:
+                f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {velocity[0]:.2f} {velocity[1]:.2f}\n')
             self.cur_img = img
             cv.imshow('Tracking in progress', img)
             
@@ -440,129 +571,5 @@ class Tracker:
 class Controller:
     def __init__(self, manager):
         self.manager = manager
-
-
-
-class ExperimentManager:
-    """
-    Experiment:
-
-    - Run the game Simulator with a car and static blocks to aid motion perception for biological creatures with visual perception. 
-    - Let user select a bounding box for the car to be tracked.
-        - Simulator needs to be paused and played back again after bounding box selection.
-    - Simulator keeps simulating and rendering images on screen.
-    - Also, dumps screen captures for Tracker or Controller to consume.
-    - Additionally, concatenate screen captures and tracker produced images with tracking information, into one image and save it.
-    - Tracker consumes these images and produces tracking information at each frame. 
-    - Controller consumes tracking information and produces acceleration commands for Simulator
-    - Simulator consumes acceleration command and updates simulated components appropriately.
-    - All information relay across the Simulator, Tracker and Controller can be mediated through the ExperimentManager
-    
-    The manager is responsible for running Simulator, Tracker and controller in separate threads and manage shared memory.
-    The manager can start and stop Simulator, Tracker and Controller.
-    """
-    def __init__(self, save_on=False):
-
-        self.simulator = Simulator(self)
-        self.tracker = Tracker(self)
-        self.controller = Controller(self)
-
-        self.image_deque = deque(maxlen=100)
-        self.command_deque = deque(maxlen=100)
-
-        self.sim_dt = 0
-        self.true_rel_vel = None
-
-        self.save_on = save_on
-        if self.save_on:
-            self.simulator.save_screen = True
-
-
-    def add_to_image_deque(self, img):
-        """Helper function, adds given image to manager's image deque
-
-        Args:
-            img (np.ndarray): Image to be added to manager's image deque
-        """
-        self.image_deque.append(img)
-
-
-    def run_simulator(self):
-        """Run Simulator
-        """
-        self.simulator.start_new()
-        self.simulator.run()
-
-
-    def run_controller(self):
-        """Run Controller
-        """
-        pass
-    
-
-    def run_tracker(self):
-        """Run Tracker
-        """
-        self.tracker.run()
-        
-
-    def run_experiment(self):
-        """Run Experiment by running Simulator, Tracker and Controller.
-        """
-        self.tracker_thread = th.Thread(target=self.run_tracker, daemon=True)
-        self.tracker_thread.start()
-        self.run_simulator()
-        if self.save_on:
-            self.make_video('sim_track.avi', TEMP_FOLDER)
-
-
-    def make_video(self, video_name, folder_path):
-        """Helper function, looks for frames in given folder,
-        writes them into a video file, with the given name. 
-        Also removes the folder after creating the video.
-        """
-        if os.path.isdir(folder_path):
-            create_video_from_images(folder_path, 'jpg', video_name, FPS)
-
-            # delete folder
-            shutil.rmtree(folder_path)
-
-
-
-if __name__ == "__main__":
-
-    RUN_EXPERIMENT = 0
-    EXPERIMENT_SAVE_MODE_ON = 0
-    RUN_TRACK_PLOT = 1
-    if RUN_EXPERIMENT:
-        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON)
-        experiment_manager.run_experiment()
-
-    if RUN_TRACK_PLOT:
-        f = open('track.txt', 'r')
-        time = []
-        true_vel_x = []
-        true_vel_y = []
-        comp_vel_x = []
-        comp_vel_y = []
-
-        for line in f.readlines():
-            t, tvx, tvy, cvx, cvy = tuple(map(float, list(map(str.strip, line.strip().split()))))
-            time.append(t)
-            true_vel_x.append(tvx)
-            true_vel_y.append(tvy)
-            comp_vel_x.append(cvx)
-            comp_vel_y.append(cvy)
-
-        import matplotlib.pyplot as plt
-        plt.style.use('seaborn-whitegrid')
-        plt.plot(time, comp_vel_x, color='tan', linestyle='-', linewidth=1, label='computed relative vx')
-        plt.plot(time, true_vel_x, color='teal', linestyle=':', linewidth=3, label='true relative vx')
-        # plt.grid(b=True, which='major', color='#666666', linestyle='-')
-        plt.legend()
-        plt.xlabel('seconds')
-        plt.ylabel('pixels/second')
-        plt.savefig('relative_vx.png')
-        plt.show()
 
 
