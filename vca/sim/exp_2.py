@@ -61,46 +61,6 @@ or in other words have the car right in the center of it's view.
 
 
 
-if __name__ == "__main__":
-
-    RUN_EXPERIMENT = 0
-    EXPERIMENT_SAVE_MODE_ON = 0
-    WRITE_TRACK = 0
-    RUN_TRACK_PLOT = 1
-    if RUN_EXPERIMENT:
-        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK)
-        experiment_manager.run_experiment()
-
-    if RUN_TRACK_PLOT:
-        f = open('track.txt', 'r')
-        time = []
-        true_vel_x = []
-        true_vel_y = []
-        comp_vel_x = []
-        comp_vel_y = []
-
-        for line in f.readlines():
-            t, tvx, tvy, cvx, cvy = tuple(map(float, list(map(str.strip, line.strip().split()))))
-            time.append(t)
-            true_vel_x.append(tvx)
-            true_vel_y.append(tvy)
-            comp_vel_x.append(cvx)
-            comp_vel_y.append(cvy)
-
-        import matplotlib.pyplot as plt
-        plt.style.use('seaborn-whitegrid')
-        plt.plot(time, comp_vel_x, color='tan', linestyle='-', linewidth=1, label='computed relative vx')
-        plt.plot(time, true_vel_x, color='teal', linestyle=':', linewidth=3, label='true relative vx')
-        # plt.grid(b=True, which='major', color='#666666', linestyle='-')
-        plt.legend()
-        plt.xlabel('seconds')
-        plt.ylabel('pixels/second')
-        plt.savefig('relative_vx.png')
-        plt.show()
-
-
-
-
 class ExperimentManager:
     """
     Experiment:
@@ -571,5 +531,46 @@ class Tracker:
 class Controller:
     def __init__(self, manager):
         self.manager = manager
+
+
+
+
+if __name__ == "__main__":
+
+    RUN_EXPERIMENT          = 1
+    EXPERIMENT_SAVE_MODE_ON = 0
+    WRITE_TRACK             = 0
+    RUN_TRACK_PLOT          = 0
+    if RUN_EXPERIMENT:
+        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK)
+        experiment_manager.run_experiment()
+
+    if RUN_TRACK_PLOT:
+        f = open('track.txt', 'r')
+        time = []
+        true_vel_x = []
+        true_vel_y = []
+        comp_vel_x = []
+        comp_vel_y = []
+
+        for line in f.readlines():
+            t, tvx, tvy, cvx, cvy = tuple(map(float, list(map(str.strip, line.strip().split()))))
+            time.append(t)
+            true_vel_x.append(tvx)
+            true_vel_y.append(tvy)
+            comp_vel_x.append(cvx)
+            comp_vel_y.append(cvy)
+
+        import matplotlib.pyplot as plt
+        plt.style.use('seaborn-whitegrid')
+        plt.plot(time, comp_vel_x, color='tan', linestyle='-', linewidth=1, label='computed relative vx')
+        plt.plot(time, true_vel_x, color='teal', linestyle=':', linewidth=3, label='true relative vx')
+        # plt.grid(b=True, which='major', color='#666666', linestyle='-')
+        plt.legend()
+        plt.xlabel('seconds')
+        plt.ylabel('pixels/second')
+        plt.savefig('relative_vx.png')
+        plt.show()
+
 
 
