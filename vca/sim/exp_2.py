@@ -159,6 +159,7 @@ class Simulator:
 
         self.manager = manager
         # initialize screen
+        os.environ['SDL_VIDEO_WINDOW_POS'] = "2,30"
         pygame.init()
         self.screen_surface = pygame.display.set_mode(SCREEN_SIZE)
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
@@ -432,6 +433,10 @@ class Tracker:
 
         f = open(self.vel_file, '+w')
 
+        from win32api import GetSystemMetrics
+        win_name = 'Tracking in progress'
+        cv.namedWindow(win_name)
+        cv.moveWindow(win_name, GetSystemMetrics(0)-frame_1.shape[1], 0)
         frame_num = 0
         while True:
             if len(self.manager.image_deque) < 1:
@@ -460,7 +465,7 @@ class Tracker:
             if self.manager.write_track:
                 f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {velocity[0]:.2f} {velocity[1]:.2f}\n')
             self.cur_img = img
-            cv.imshow('Tracking in progress', img)
+            cv.imshow(win_name, img)
             
             # save image
             frame_num += 1
@@ -544,6 +549,7 @@ if __name__ == "__main__":
     if RUN_EXPERIMENT:
         experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK)
         experiment_manager.run_experiment()
+        print("Experiment ended.\n")
 
     if RUN_TRACK_PLOT:
         f = open('track.txt', 'r')
