@@ -145,8 +145,6 @@ class ExperimentManager:
         return self.kinematics_deque.popleft()
 
 
-
-
     def run_simulator(self):
         """Run Simulator
         """
@@ -446,8 +444,7 @@ class Tracker:
     def __init__(self, manager):
         
         self.manager = manager
-        self.velocities = deque()
-        self.vel_file = 'track.txt'
+        self.tracker_filename = 'track.txt'
         self.cur_img = None
 
 
@@ -456,9 +453,13 @@ class Tracker:
         Reads bounding box from it's ExperimentManager and computed features to be tracked.
         """
         # get first frame
-        while True:# len(self.image_deque) <= 1:
+        while True:
+            # do nothing until bounding box is selected
             if not (self.manager.simulator.bb_start and self.manager.simulator.bb_end) or self.manager.simulator.pause:
+                self.manager.image_deque.clear()
                 continue
+
+            # get a frame from the image deque and break
             if len(self.manager.image_deque) > 0:
                 frame_1 = self.manager.image_deque.popleft()
                 cur_frame = convert_to_grayscale(frame_1)
@@ -473,17 +474,23 @@ class Tracker:
         # create mask for drawing tracks
         mask = np.zeros_like(frame_1)
 
-        f = open(self.vel_file, '+w')
+        f = open(self.tracker_filename, '+w')
 
+        # set window location 
         from win32api import GetSystemMetrics
         win_name = 'Tracking in progress'
         cv.namedWindow(win_name)
         cv.moveWindow(win_name, GetSystemMetrics(0)-frame_1.shape[1], 0)
+
+        # begin tracking
         frame_num = 0
         while True:
+            # make sure there is more than one frame in the deque
             if len(self.manager.image_deque) < 1:
                 continue
-            frame_2 = self.manager.image_deque.popleft()
+
+            # get and prepare next frame
+            frame_2 = self.manager.get_from_image_deque()
             nxt_frame = convert_to_grayscale(frame_2)
 
             # compute optical flow between current and next frame
@@ -493,14 +500,18 @@ class Tracker:
             good_cur = cur_points[stdev==1]
             good_nxt = nxt_points[stdev==1]
 
-            # compute kinematics and add manager's kinematics deque
-            position, car_velocity = self.compute_kinematics(good_cur, good_nxt)
-            car_position = position - DRONE_POSITION
+            # compute and create kinematics tuple 
+            car_position, car_velocity = self.compute_car_kinematics(good_cur, good_nxt)
+            car_position = car_position - DRONE_POSITION
             drone_position = self.manager.simulator.camera.position
             drone_velocity = self.manager.simulator.camera.velocity
             alpha = atan2(drone_velocity[1], drone_velocity[0])
-            self.manager.kinematics_deque.append((drone_position, drone_velocity, car_position, car_velocity, alpha))
+            kin = (drone_position, drone_velocity, car_position, car_velocity, alpha)
 
+            # add kinematics tuple to manager's kinematics deque
+            self.manager.add_to_kinematics_deque(kin)
+
+            # cosmetics/visual aids
             # create img with added tracks for all point pairs on next frame
             img, mask = draw_tracks(frame_2, good_cur, good_nxt, None, mask, track_thickness=1)
 
@@ -537,7 +548,7 @@ class Tracker:
         f.close()
 
 
-    def compute_kinematics(self, cur_pts, nxt_pts):
+    def compute_car_kinematics(self, cur_pts, nxt_pts):
         """Helper function, takes in current and next points (corresponding to an object) and 
         computes the average velocity using elapsed simulation time from it's ExperimentManager.
 
@@ -548,25 +559,26 @@ class Tracker:
         Returns:
             tuple(float, float), tuple(float, float): mean of positions and velocities computed from each point pair.
         """
-        x = 0
-        y = 0
-        vx = 0
-        vy = 0
+        # sum over all pairs and deltas between them
+        car_x = 0
+        car_y = 0
+        car_vx = 0
+        car_vy = 0
 
         for cur_pt, nxt_pt in zip(cur_pts, nxt_pts):
-            x += nxt_pt[0]
-            y += nxt_pt[1]
-            vx += nxt_pt[0] - cur_pt[0]
-            vy += nxt_pt[1] - cur_pt[1]
+            car_x += nxt_pt[0]
+            car_y += nxt_pt[1]
+            car_vx += nxt_pt[0] - cur_pt[0]
+            car_vy += nxt_pt[1] - cur_pt[1]
 
         num_pts = len(cur_pts)
         # converting from px/frame to px/secs. Averaging
-        x /= self.manager.sim_dt * num_pts
-        y /= self.manager.sim_dt * num_pts
-        vx /= self.manager.sim_dt * num_pts
-        vy /= self.manager.sim_dt * num_pts
+        car_x /= self.manager.sim_dt * num_pts
+        car_y /= self.manager.sim_dt * num_pts
+        car_vx /= self.manager.sim_dt * num_pts
+        car_vy /= self.manager.sim_dt * num_pts
 
-        return (x, y), (vx, vy)
+        return (car_x, car_y), (car_vx, car_vy)
 
     
     def put_velocity_text(self, img, velocity):
