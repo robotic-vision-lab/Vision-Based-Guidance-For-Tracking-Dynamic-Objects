@@ -109,6 +109,44 @@ class ExperimentManager:
         self.image_deque.append(img)
 
 
+    def add_to_command_deque(self, command):
+        """Helper function, adds given command to manager's command deque
+
+        Args:
+            command (tuple(float, float)): Command to be added to manager's command deque
+        """
+        self.command_deque.append(command)
+
+
+    def add_to_kinematics_deque(self, kinematics):
+        """Helper function, adds given kinematics to manager's kinematics deque
+
+        Args:
+            kinematics (tuple(Vector2, Vector2, Vector2, Vector2, float)): Kinematics to be added to manager's kinematics deque
+        """
+        self.kinematics_deque.append(kinematics)
+
+
+    def get_from_image_deque(self):
+        """Helper function, gets image from manager's image deque
+        """
+        return self.image_deque.popleft()
+
+
+    def get_from_command_deque(self):
+        """Helper function, gets command from manager's command deque
+        """
+        return self.command_deque.popleft()
+
+
+    def get_from_kinematics_deque(self):
+        """Helper function, gets kinematics from manager's kinematics deque
+        """
+        return self.kinematics_deque.popleft()
+
+
+
+
     def run_simulator(self):
         """Run Simulator
         """
