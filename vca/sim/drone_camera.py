@@ -54,10 +54,10 @@ class DroneCamera(pygame.sprite.Sprite):
         if abs(self.velocity.length()) > self.vel_limit:
             # self.acceleration = pygame.Vector2(0,0)
             self.velocity -= self.acceleration * self.game.dt
-            self.position += self.velocity * self.game.dt
-        else:
-            self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
-
+        #     self.position += self.velocity * self.game.dt 
+        # else:
+            # self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+        self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
         self.rect.center = self.position
 
     def compensate_camera_motion(self, sprite_obj):
