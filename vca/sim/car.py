@@ -10,7 +10,7 @@ from settings import CAR_IMG
 class Car(pygame.sprite.Sprite):
     """Defines a car sprite.
     """
-    def __init__(self, game, x, y, vx=0, vy=0, ax=0, ay=0):
+    def __init__(self, game, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0):
         # assign itself to the all_sprites group 
         self.groups = [game.all_sprites, game.car_block_sprites]
 
