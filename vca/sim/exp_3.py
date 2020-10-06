@@ -91,7 +91,7 @@ class ExperimentManager:
         self.controller = Controller(self)
 
         self.image_deque = deque(maxlen=100)
-        self.command_deque = deque(maxlen=100)
+        self.command_deque = deque(maxlen=10)
         self.kinematics_deque = deque(maxlen=100)
 
         self.sim_dt = 0
@@ -175,7 +175,7 @@ class ExperimentManager:
             self.controller_thread.start()
         self.run_simulator()
         if self.save_on:
-            self.make_video('sim_track.avi', TEMP_FOLDER)
+            self.make_video('sim_track_control.avi', TEMP_FOLDER)
 
 
     def make_video(self, video_name, folder_path):
@@ -270,7 +270,7 @@ class Simulator:
             
             if not self.pause:
                 # print stuffs
-                print(f'\rTrue kinematics >> drone - x:{self.camera.position} | v:{self.camera.velocity} | a:{self.camera.acceleration} | accel_comm:{self.cam_accel_command} | car - position:{self.car.position}, velocity: {self.car.velocity},  rel_vel: {self.car.velocity - self.camera.velocity}              ', end='')
+                # print(f'\rTrue kinematics >> drone - x:{self.camera.position} | v:{self.camera.velocity} | a:{self.camera.acceleration} | accel_comm:{self.cam_accel_command} | car - position:{self.car.position}, velocity: {self.car.velocity},  rel_vel: {self.car.velocity - self.camera.velocity}              ', end='')
                 # update game objects
                 self.update()
                 self.manager.true_rel_vel = self.car.velocity - self.camera.velocity
@@ -340,6 +340,8 @@ class Simulator:
                 self.bb_drag = False
 
             pygame.event.pump()
+        if len(self.manager.command_deque) > 0:
+            self.camera.acceleration[0] = self.manager.get_from_command_deque()[0]
 
 
     def update(self):
@@ -621,12 +623,19 @@ class Controller:
         while True:
             if len(self.manager.kinematics_deque) == 0:
                 continue
+            
+            if self.manager.simulator.pause:
+                continue
+            # kin = self.manager.get_from_kinematics_deque()
+            # x, y = kin[0]
+            # vx, vy = kin[1]
+            # car_x, car_y = kin[2]
+            # car_speed, _ = kin[3] 
 
-            kin = self.manager.get_from_kinematics_deque()
-            x, y = kin[0]
-            vx, vy = kin[1]
-            car_x, car_y = kin[2]
-            car_speed, _ = kin[3] 
+            x, y = self.manager.simulator.camera.position
+            vx, vy = self.manager.simulator.camera.velocity
+            car_x, car_y = self.manager.simulator.car.position
+            car_speed, _ = self.manager.simulator.car.velocity
 
             # speed of drone
             s = (vx**2 + vy**2) **0.5
@@ -635,7 +644,7 @@ class Controller:
             r = ((car_x - x)**2 + (car_y - y)**2)**0.5
 
             # heading angle of drone wrt x axis
-            alpha = kin[4]
+            alpha = atan2(vy,vx)
 
             # angle of LOS from drone to car
             theta = atan2(car_y-y, car_x-x)
@@ -646,7 +655,7 @@ class Controller:
             # compute vr and vtheta
             vr = car_speed * cos(beta - theta) - s * cos(alpha - theta)
             vtheta = car_speed * sin(beta - theta) - s * sin(alpha - theta)
-
+            # print(car_speed, theta, vr, vtheta)
             # calculate y from drone to car
             y1 = r**2 * vtheta**2 / (vtheta**2 + vr**2) - R**2
 
@@ -689,16 +698,21 @@ class Controller:
                     + vtheta**2 * sin(alpha - theta)**2\
                     + 2 * vr * vtheta * sin(alpha - theta) * cos(alpha - theta)))
 
-            if abs(a_long) > 0.1:
-                a_long = np.sign(a_long)
-            else:
-                a_long = a_long/0.1
 
-            if abs(a_lat) > 0.1:
+            a_long_sat = 0.006
+            a_lat_sat = 1
+            if abs(a_long) > a_long_sat:
+                a_long = np.sign(a_long) 
+            else:
+                a_long = a_long/a_long_sat
+
+            if abs(a_lat) > a_lat_sat:
                 a_lat = np.sign(a_lat)
             else:
-                a_lat = a_lat/0.1
+                a_lat = a_lat/a_lat_sat
 
+            a_long *=1
+            # print(a_long)
             self.manager.add_to_command_deque((a_long, a_lat))
 
 
@@ -707,9 +721,9 @@ class Controller:
 if __name__ == "__main__":
 
     RUN_EXPERIMENT          = 1
-    EXPERIMENT_SAVE_MODE_ON = 0
+    EXPERIMENT_SAVE_MODE_ON = 1
     WRITE_TRACK             = 0
-    CONTROL_ON              = 0
+    CONTROL_ON              = 1
     RUN_TRACK_PLOT          = 0
     if RUN_EXPERIMENT:
         experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK, CONTROL_ON)
