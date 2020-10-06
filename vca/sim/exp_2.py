@@ -225,18 +225,18 @@ class Simulator:
             self.handle_events()
             if not self.running:
                 break
-
-            # if self.pause:
-            #     self.dt = 0.0
-            #     continue
-            # else:
+            
             if not self.pause:
+                # print stuffs
+                print(f'\rTrue kinematics >> drone - x:{self.camera.position} | v:{self.camera.velocity} | a:{self.camera.acceleration} | accel_comm:{self.cam_accel_command} | car - position:{self.car.position}, velocity: {self.car.velocity},  rel_vel: {self.car.velocity - self.camera.velocity}              ', end='')
                 # update game objects
                 self.update()
                 self.manager.true_rel_vel = self.car.velocity - self.camera.velocity
 
             # draw stuffs
             self.draw()
+
+
 
             if not self.pause:
                 # put the screen capture into image_deque
@@ -273,9 +273,9 @@ class Simulator:
                     self.pause = not self.pause
                     if self.pause:
                         self.bb_start = self.bb_end = None
-                        print("Simulation paused.")
+                        print("\nSimulation paused.")
                     else:
-                        print("Simulation running.")
+                        print("\nSimulation running.")
 
             key_state = pygame.key.get_pressed()
             if key_state[pygame.K_LEFT]:
@@ -307,7 +307,9 @@ class Simulator:
         """
         # update Group. (All sprites in it will get updated)
         self.all_sprites.update()
-        self.camera.move(deepcopy(self.euc_factor * self.cam_accel_command))
+
+        # update drone acceleration using acceleration command (force)
+        self.camera.change_acceleration(deepcopy(self.euc_factor * self.cam_accel_command))
         self.cam_accel_command = pygame.Vector2(0, 0)
 
 
@@ -548,8 +550,9 @@ if __name__ == "__main__":
     RUN_TRACK_PLOT          = 0
     if RUN_EXPERIMENT:
         experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK)
+        print("\nExperiment started.\n")
         experiment_manager.run_experiment()
-        print("Experiment ended.\n")
+        print("\n\nExperiment finished.\n")
 
     if RUN_TRACK_PLOT:
         f = open('track.txt', 'r')
@@ -574,7 +577,7 @@ if __name__ == "__main__":
         # plt.grid(b=True, which='major', color='#666666', linestyle='-')
         plt.legend()
         plt.xlabel('seconds')
-        plt.ylabel('pixels/second')
+        plt.ylabel('m/s')
         plt.savefig('relative_vx.png')
         plt.show()
 
