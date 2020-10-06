@@ -193,7 +193,7 @@ class ExperimentManager:
 
 class Simulator:
     """Simulator object creates the simulation game. 
-    Responds to keypresses 'p' to toggle play/pause, 's' to save screen mode, ESC to quit.
+    Responds to keypresses 'SPACE' to toggle play/pause, 's' to save screen mode, ESC to quit.
     While running simulation, it also dumps the screens to a shared memory location.
     Designed to work with an ExperimentManager object.
     """
@@ -259,7 +259,7 @@ class Simulator:
             # make clock tick and measure time elapsed
             self.dt = self.clock.tick(FPS) / 1000.0 
             if self.pause:
-                self.dt = 0
+                self.dt = 0.0
             self.time += self.dt
             self.manager.sim_dt = self.dt
 
@@ -309,7 +309,7 @@ class Simulator:
                         print("\nScreen recording started.")
                     else:
                         print("\nScreen recording stopped.")
-                if event.key == pygame.K_p:
+                if event.key == pygame.K_SPACE:
                     self.pause = not self.pause
                     if self.pause:
                         self.bb_start = self.bb_end = None
@@ -329,7 +329,7 @@ class Simulator:
 
             self.euc_factor = 0.7071 if self.cam_accel_command == (1, 1) else 1.0
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN and self.pause:
                 self.bb_start = self.bb_end = pygame.mouse.get_pos()
                 self.bb_drag = True
             if self.bb_drag and event.type == pygame.MOUSEMOTION:
@@ -360,7 +360,7 @@ class Simulator:
         self.screen_surface.fill(SCREEN_BG_COLOR)
         sim_fps = 'NA' if self.dt == 0 else f'{1/self.dt:.2f}'
         
-        pygame.display.set_caption(f'car position {self.car.position} | cam velocity {self.camera.velocity} | FPS {sim_fps}')
+        pygame.display.set_caption(f'  FPS {sim_fps} | car: x-{self.car.position} v-{self.car.velocity * self.dt} a-{self.car.acceleration} | cam x-{self.camera.position} v-{self.camera.velocity} a-{self.camera.acceleration} ')
 
         for sprite in self.all_sprites:
             self.camera.compensate_camera_motion(sprite)
@@ -709,7 +709,7 @@ if __name__ == "__main__":
     RUN_EXPERIMENT          = 1
     EXPERIMENT_SAVE_MODE_ON = 0
     WRITE_TRACK             = 0
-    CONTROL_ON              = 1
+    CONTROL_ON              = 0
     RUN_TRACK_PLOT          = 0
     if RUN_EXPERIMENT:
         experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK, CONTROL_ON)
