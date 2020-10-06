@@ -36,7 +36,7 @@ class DroneCamera(pygame.sprite.Sprite):
         """[summary]
         """
         self.position = pygame.Vector2(0, 0)
-        self.velocity = pygame.Vector2(0, 0)
+        self.velocity = pygame.Vector2(CAR_INITIAL_VELOCITY)
         self.acceleration = pygame.Vector2(0, 0)
 
 
@@ -68,18 +68,30 @@ class DroneCamera(pygame.sprite.Sprite):
         """
         sprite_obj.position -= self.position #self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
 
-    def move(self, command_vec):
+    def change_acceleration(self, command_vec):
+        """Changes the drone acceleration appropriately in reponse to given command vector.
 
-        COMMAND_SENSITIVITY = 0.5
+        Args:
+            command_vec (tuple(float, float)): Command vector tuple. Indicates acceleration change to be made.
+        """
+        # update acceleration
+        COMMAND_SENSITIVITY = 0.1
         command_vec *= COMMAND_SENSITIVITY
         self.acceleration += command_vec
-        
 
+        # counter floating point arithmetic noise 
+        if abs(self.acceleration[0]) < COMMAND_SENSITIVITY:
+            self.acceleration[0] = 0.0
+        if abs(self.acceleration[1]) < COMMAND_SENSITIVITY:
+            self.acceleration[1] = 0.0
+        
+        # make sure acceleration magnitude stays within a set limit
         if abs(self.acceleration.length()) > self.acc_limit:
             self.acceleration -= command_vec
+        
         # self.update_kinematics()
-        print(f'Kinematics>>> x:{self.position} | v:{self.velocity} | a:{self.acceleration} | command:{command_vec} | rel_vel: {self.game.car.velocity - self.velocity}')
-        x = int(self.position.x)
-        y = int(self.position.y)
+        # print(f'\rDrone kinematics >> x:{self.position} | v:{self.velocity} | a:{self.acceleration} | command:{command_vec} | car_rel_vel: {self.game.car.velocity - self.velocity} \t\t', end='')
+        # x = int(self.position.x)
+        # y = int(self.position.y)
         # print(x,y)
         # self.drone = pygame.Rect(x, y, WIDTH, HEIGHT)
