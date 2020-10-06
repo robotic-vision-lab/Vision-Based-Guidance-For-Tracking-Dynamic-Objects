@@ -80,10 +80,11 @@ class ExperimentManager:
     The manager is responsible for running Simulator, Tracker and controller in separate threads and manage shared memory.
     The manager can start and stop Simulator, Tracker and Controller.
     """
-    def __init__(self, save_on=False, write_track=False):
+    def __init__(self, save_on=False, write_track=False, control_on=False):
 
         self.save_on = save_on
         self.write_track = write_track
+        self.control_on = control_on
 
         self.simulator = Simulator(self)
         self.tracker = Tracker(self)
@@ -170,7 +171,8 @@ class ExperimentManager:
         self.tracker_thread = th.Thread(target=self.run_tracker, daemon=True)
         self.controller_thread = th.Thread(target=self.run_controller, daemon=True)
         self.tracker_thread.start()
-        self.controller_thread.start()
+        if self.control_on:
+            self.controller_thread.start()
         self.run_simulator()
         if self.save_on:
             self.make_video('sim_track.avi', TEMP_FOLDER)
@@ -304,9 +306,9 @@ class Simulator:
                 if event.key == pygame.K_s:
                     self.save_screen = not self.save_screen
                     if self.save_screen:
-                        print("Screen recording started.")
+                        print("\nScreen recording started.")
                     else:
-                        print("Screen recording stopped.")
+                        print("\nScreen recording stopped.")
                 if event.key == pygame.K_p:
                     self.pause = not self.pause
                     if self.pause:
@@ -393,20 +395,29 @@ class Simulator:
         Args:
             path (str): Path where screen captured frames are to be stored.
         """
+        # make sure the folder is there and empty
         _prep_temp_folder(path)
 
         frame_num = 0
         while True:
+            # make full file path string
             frame_num += 1
             image_name = f'frame_{str(frame_num).zfill(4)}.jpg'
             file_path = os.path.join(path, image_name)
+
+            # get capture from simulator
             img_sim = self.get_screen_capture()
+
+            # get tracker image
             img_track = self.manager.tracker.cur_img
             if img_track is None:
                 img_track = np.ones_like(img_sim, dtype='uint8') * 31
+            
+            # assemble images
             img = images_assemble([img_sim, img_track], (1,2))
+            
+            # write image
             cv.imwrite(file_path, img)
-            # pygame.image.save(screen, file_path)
             yield
         
 
@@ -483,7 +494,7 @@ class Tracker:
         cv.moveWindow(win_name, GetSystemMetrics(0)-frame_1.shape[1], 0)
 
         # begin tracking
-        frame_num = 0
+        # frame_num = 0
         while True:
             # make sure there is more than one frame in the deque
             if len(self.manager.image_deque) < 1:
@@ -502,7 +513,6 @@ class Tracker:
 
             # compute and create kinematics tuple 
             car_position, car_velocity = self.compute_car_kinematics(good_cur, good_nxt)
-            car_position = car_position - DRONE_POSITION
             drone_position = self.manager.simulator.camera.position
             drone_velocity = self.manager.simulator.camera.velocity
             alpha = atan2(drone_velocity[1], drone_velocity[0])
@@ -519,14 +529,16 @@ class Tracker:
             img = draw_sparse_optical_flow_arrows(img, good_cur, good_nxt, thickness=2, arrow_scale=10.0, color=RED_CV)
 
             # put velocity text 
-            img = self.put_velocity_text(img, velocity)
+            img = self.put_velocity_text(img, car_velocity)
             if self.manager.write_track:
-                f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {velocity[0]:.2f} {velocity[1]:.2f}\n')
+                f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {car_velocity[0]:.2f} {car_velocity[1]:.2f}\n')
+            
+            # set cur_img; to be used for saving 
             self.cur_img = img
             cv.imshow(win_name, img)
             
             # save image
-            frame_num += 1
+            # frame_num += 1
             # img_name = f'frame_{str(_frame_num).zfill(4)}.jpg'
             # img_path = os.path.join(LK_TEMP_FOLDER, img_name)
             # cv.imwrite(img_path, img)
@@ -536,9 +548,9 @@ class Tracker:
             cur_points = good_nxt.reshape(-1, 1, 2) # -1 indicates to infer that dim size
 
             # every n seconds (n*FPS frames), get good points
-            num_seconds = 1
-            if frame_num % (num_seconds*FPS) == 0:
-                pass#cur_points = cv.goodFeaturesToTrack(cur_frame, mask=None, **FEATURE_PARAMS)
+            # num_seconds = 1
+            # if frame_num % (num_seconds*FPS) == 0:
+            #     pass#cur_points = cv.goodFeaturesToTrack(cur_frame, mask=None, **FEATURE_PARAMS)
                 # for every point in good point if its not there in cur points, add , update color too
                 
 
@@ -578,7 +590,7 @@ class Tracker:
         car_vx /= self.manager.sim_dt * num_pts
         car_vy /= self.manager.sim_dt * num_pts
 
-        return (car_x, car_y), (car_vx, car_vy)
+        return (car_x - DRONE_POSITION[0], car_y - DRONE_POSITION[1]), (car_vx, car_vy)
 
     
     def put_velocity_text(self, img, velocity):
@@ -610,7 +622,7 @@ class Controller:
             if len(self.manager.kinematics_deque) == 0:
                 continue
 
-            kin = self.manager.kinematics_deque.popleft()
+            kin = self.manager.get_from_kinematics_deque()
             x, y = kin[0]
             vx, vy = kin[1]
             car_x, car_y = kin[2]
@@ -647,31 +659,31 @@ class Controller:
             K2 = 0.1
 
             a_lat = -((vr**2 + vtheta**2) * (K1 * vr**3 * w * cos(alpha - theta)\
-                    - K1 * vr**3 * y1(i) * cos(alpha - theta)\
+                    - K1 * vr**3 * y1 * cos(alpha - theta)\
                     + K1 * vtheta**3 * w * sin(alpha - theta)\
-                    - K1 * vtheta**3 * y1(i) * sin(alpha - theta)\
-                    + 2 * K2 * vr * vtheta**2 * r(i) * cos(alpha - theta)\
+                    - K1 * vtheta**3 * y1 * sin(alpha - theta)\
+                    + 2 * K2 * vr * vtheta**2 * r * cos(alpha - theta)\
                     + K1 * vr * vtheta**2 * w * cos(alpha - theta)\
-                    - K1 * vr * vtheta**2 * y1(i) * cos(alpha - theta)\
-                    + 2 * K2 * vr**2 * vtheta * r(i) * sin(alpha - theta)\
+                    - K1 * vr * vtheta**2 * y1 * cos(alpha - theta)\
+                    + 2 * K2 * vr**2 * vtheta * r * sin(alpha - theta)\
                     + K1 * vr**2 * vtheta * w * sin(alpha - theta)\
-                    - K1 * vr**2 * vtheta * y1(i) * sin(alpha - theta)))\
-                    / (2 * vr * vtheta * r(i)**2 * (vr**2 * cos(alpha - theta)**2\
+                    - K1 * vr**2 * vtheta * y1 * sin(alpha - theta)))\
+                    / (2 * vr * vtheta * r**2 * (vr**2 * cos(alpha - theta)**2\
                     - vtheta**2 * cos(alpha - theta)**2 + vr**2 * sin(alpha\
                     - theta)**2 + vtheta**2 * sin(alpha - theta)**2\
                     + 2 * vr * vtheta * sin(alpha - theta) * cos(alpha - theta)))
 
             a_long = ((vr**2 + vtheta**2) * (K1 * vtheta**3 * w * cos(alpha - theta)\
-                    - K1 * vtheta**3 * y1(i) * cos(alpha - theta)\
+                    - K1 * vtheta**3 * y1 * cos(alpha - theta)\
                     - K1 * vr**3 * w * sin(alpha - theta)\
-                    + K1 * vr**3 * y1(i) * sin(alpha - theta)\
-                    + 2 * K2 * vr**2 * vtheta * r(i) * cos(alpha - theta)\
+                    + K1 * vr**3 * y1 * sin(alpha - theta)\
+                    + 2 * K2 * vr**2 * vtheta * r * cos(alpha - theta)\
                     + K1 * vr**2 * vtheta * w * cos(alpha - theta)\
-                    - K1 * vr**2 * vtheta * y1(i) * cos(alpha - theta)\
-                    + 2 * K2 * vr * vtheta**2 * r(i) * sin(alpha - theta)\
+                    - K1 * vr**2 * vtheta * y1 * cos(alpha - theta)\
+                    + 2 * K2 * vr * vtheta**2 * r * sin(alpha - theta)\
                     - K1 * vr * vtheta**2 * w * sin(alpha - theta)\
-                    + K1 * vr * vtheta**2 * y1(i) * sin(alpha - theta)))\
-                    / (2 * vr * vtheta * r(i)**2 * (vr**2 * cos(alpha - theta)**2\
+                    + K1 * vr * vtheta**2 * y1 * sin(alpha - theta)))\
+                    / (2 * vr * vtheta * r**2 * (vr**2 * cos(alpha - theta)**2\
                     - vtheta**2 * cos(alpha - theta)**2\
                     + vr**2 * sin(alpha - theta)**2\
                     + vtheta**2 * sin(alpha - theta)**2\
@@ -687,7 +699,7 @@ class Controller:
             else:
                 a_lat = a_lat/0.1
 
-            self.manager.command_deque.append(a_long, a_lat)
+            self.manager.add_to_command_deque((a_long, a_lat))
 
 
 
@@ -697,9 +709,10 @@ if __name__ == "__main__":
     RUN_EXPERIMENT          = 1
     EXPERIMENT_SAVE_MODE_ON = 0
     WRITE_TRACK             = 0
+    CONTROL_ON              = 1
     RUN_TRACK_PLOT          = 0
     if RUN_EXPERIMENT:
-        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK)
+        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK, CONTROL_ON)
         print("\nExperiment started.\n")
         experiment_manager.run_experiment()
         print("\n\nExperiment finished.\n")
