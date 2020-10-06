@@ -36,7 +36,7 @@ class DroneCamera(pygame.sprite.Sprite):
         """[summary]
         """
         self.position = pygame.Vector2(0, 0)
-        self.velocity = pygame.Vector2(CAR_INITIAL_VELOCITY)
+        self.velocity = pygame.Vector2(DRONE_INITIAL_VELOCITY)
         self.acceleration = pygame.Vector2(0, 0)
 
 
