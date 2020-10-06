@@ -8,5 +8,6 @@ tmp*
 *vid_out*.avi
 references.bib
 out_sim_track.avi
+out_sim_track_control.avi
 track.txt
 relative_vx.png
