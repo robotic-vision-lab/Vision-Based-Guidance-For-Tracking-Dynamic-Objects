@@ -24,7 +24,7 @@ vca_path = os.path.abspath(os.path.join('..'))
 if vca_path not in sys.path:
     sys.path.append(vca_path)
 
-from game_utils import load_image, _prep_temp_folder
+from game_utils import load_image, _prep_temp_folder, vec_str
 from utils.vid_utils import create_video_from_images
 from utils.optical_flow_utils import (get_OF_color_encoded, 
                                       draw_sparse_optical_flow_arrows,
@@ -80,11 +80,12 @@ class ExperimentManager:
     The manager is responsible for running Simulator, Tracker and controller in separate threads and manage shared memory.
     The manager can start and stop Simulator, Tracker and Controller.
     """
-    def __init__(self, save_on=False, write_track=False, control_on=False):
+    def __init__(self, save_on=False, write_track=False, control_on=False, tracker_display_on=False):
 
         self.save_on = save_on
         self.write_track = write_track
         self.control_on = control_on
+        self.tracker_display_on = tracker_display_on
 
         self.simulator = Simulator(self)
         self.tracker = Tracker(self)
@@ -270,7 +271,7 @@ class Simulator:
             
             if not self.pause:
                 # print stuffs
-                # print(f'\rTrue kinematics >> drone - x:{self.camera.position} | v:{self.camera.velocity} | a:{self.camera.acceleration} | accel_comm:{self.cam_accel_command} | car - position:{self.car.position}, velocity: {self.car.velocity},  rel_vel: {self.car.velocity - self.camera.velocity}              ', end='')
+                print(f'\rTrue kinematics >> drone - x:{vect_str(self.camera.position)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | accel_comm:{vec_str(self.cam_accel_command)} | car - position:{vec_str(self.car.position)}, velocity: {vec_str(self.car.velocity)},  rel_vel: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='')
                 # update game objects
                 self.update()
                 self.manager.true_rel_vel = self.car.velocity - self.camera.velocity
@@ -489,11 +490,12 @@ class Tracker:
 
         f = open(self.tracker_filename, '+w')
 
-        # set window location 
-        from win32api import GetSystemMetrics
-        win_name = 'Tracking in progress'
-        cv.namedWindow(win_name)
-        cv.moveWindow(win_name, GetSystemMetrics(0)-frame_1.shape[1], 0)
+        if self.manager.tracker_display_on:
+            # set window location 
+            from win32api import GetSystemMetrics
+            win_name = 'Tracking in progress'
+            cv.namedWindow(win_name)
+            cv.moveWindow(win_name, GetSystemMetrics(0)-frame_1.shape[1], 0)
 
         # begin tracking
         # frame_num = 0
@@ -537,7 +539,8 @@ class Tracker:
             
             # set cur_img; to be used for saving 
             self.cur_img = img
-            cv.imshow(win_name, img)
+            if self.manager.tracker_display_on:
+                cv.imshow(win_name, img)
             
             # save image
             # frame_num += 1
@@ -626,6 +629,7 @@ class Controller:
             
             if self.manager.simulator.pause:
                 continue
+            
             # kin = self.manager.get_from_kinematics_deque()
             # x, y = kin[0]
             # vx, vy = kin[1]
@@ -644,6 +648,7 @@ class Controller:
             r = ((car_x - x)**2 + (car_y - y)**2)**0.5
 
             # heading angle of drone wrt x axis
+            # alpha = kin[4]
             alpha = atan2(vy,vx)
 
             # angle of LOS from drone to car
@@ -721,12 +726,14 @@ class Controller:
 if __name__ == "__main__":
 
     RUN_EXPERIMENT          = 1
-    EXPERIMENT_SAVE_MODE_ON = 1
+    EXPERIMENT_SAVE_MODE_ON = 0
     WRITE_TRACK             = 0
     CONTROL_ON              = 1
+    TRACKER_DISPLAY_ON      = 0
     RUN_TRACK_PLOT          = 0
+
     if RUN_EXPERIMENT:
-        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK, CONTROL_ON)
+        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK, CONTROL_ON, TRACKER_DISPLAY_ON)
         print("\nExperiment started.\n")
         experiment_manager.run_experiment()
         print("\n\nExperiment finished.\n")
