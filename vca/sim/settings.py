@@ -28,7 +28,7 @@ ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets'
 TEMP_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'tmp')
 
 # frame settings
-FPS = 24
+FPS = 30
 
 # screen settings
 SCREEN_SIZE = WIDTH, HEIGHT = 800, 600
@@ -46,7 +46,7 @@ CAR_RADIUS = 5
 # block settings
 BLOCK_COLOR = DARK_GRAY_2
 BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 12, 8
-NUM_BLOCKS = 10
+NUM_BLOCKS = 50
 
 # drone camera settings
 DRONE_IMG = 'cross_hair2.png'
