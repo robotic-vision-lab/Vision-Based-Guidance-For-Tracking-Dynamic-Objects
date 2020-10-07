@@ -28,29 +28,29 @@ ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets'
 TEMP_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'tmp')
 
 # frame settings
-FPS = 5
+FPS = 24
 
 # screen settings
-SCREEN_SIZE = WIDTH, HEIGHT = 640, 400
+SCREEN_SIZE = WIDTH, HEIGHT = 800, 600
 SCREEN_DISPLAY_TITLE = "Car Simulation"
 SCREEN_BG_COLOR = DARK_GRAY
 
 # car settings
 CAR_IMG = 'car.png'
-CAR_SCALE = 0.3
+CAR_SCALE = 0.5
 CAR_INITIAL_POSITION = (50, HEIGHT//2)
 CAR_INITIAL_VELOCITY = (45, 0)
 CAR_ACCELERATION = (0, 0)
-CAR_RADIUS = 1
+CAR_RADIUS = 5
 
 # block settings
 BLOCK_COLOR = DARK_GRAY_2
 BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 12, 8
-NUM_BLOCKS = 100
+NUM_BLOCKS = 10
 
 # drone camera settings
 DRONE_IMG = 'cross_hair2.png'
-DRONE_SCALE = 0.15
+DRONE_SCALE = 0.2
 DRONE_INITIAL_VELOCITY = (30, 0)
 DRONE_VELOCITY_LIMIT = 500      # +/-
 DRONE_ACCELERATION_LIMIT = 20   # +/-
