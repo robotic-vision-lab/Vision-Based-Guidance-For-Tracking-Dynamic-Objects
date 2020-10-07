@@ -67,4 +67,15 @@ def _prep_temp_folder(folder_path):
         shutil.rmtree(folder_path)
         os.mkdir(folder_path)
 
-    
+
+def vec_str(vec):
+    """Helper function to get pygame.Vector2 vectors in 0.2f format string.
+
+    Args:
+        vec (pygame.Vector2): pygame.Vector2 to be formatted
+
+    Returns:
+        (str): formatted string representation
+    """
+
+    return f'[{vec[0]:0.2f}, {vec[1]:0.2f}]'
