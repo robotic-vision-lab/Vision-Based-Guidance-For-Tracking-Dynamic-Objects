@@ -3,6 +3,7 @@ import sys
 import cv2 as cv
 import numpy as np
 import shutil
+import time
 import pygame 
 import threading as th
 from queue import deque
@@ -176,7 +177,11 @@ class ExperimentManager:
             self.controller_thread.start()
         self.run_simulator()
         if self.save_on:
-            self.make_video('sim_track_control.avi', TEMP_FOLDER)
+            # create folder path inside ./sim_outputs
+            _path = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
+            _prep_temp_folder(os.path.realpath(_path))
+            vid_path = f'{_path}/sim_track_control.avi'
+            self.make_video(vid_path, TEMP_FOLDER)
 
 
     def make_video(self, video_name, folder_path):
@@ -190,6 +195,9 @@ class ExperimentManager:
             # delete folder
             shutil.rmtree(folder_path)
 
+
+    def get_sim_dt(self):
+        return self.simulator.dt
 
 
 class Simulator:
@@ -271,7 +279,7 @@ class Simulator:
             
             if not self.pause:
                 # print stuffs
-                print(f'\rTrue kinematics >> drone - x:{vect_str(self.camera.position)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | accel_comm:{vec_str(self.cam_accel_command)} | car - position:{vec_str(self.car.position)}, velocity: {vec_str(self.car.velocity)},  rel_vel: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='')
+                print(f'\rTrue kinematics >> DRONE - x:{vec_str(self.camera.position)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | CAR - position:{vec_str(self.car.position)}, velocity: {vec_str(self.car.velocity)},  rel_vel: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='')
                 # update game objects
                 self.update()
                 self.manager.true_rel_vel = self.car.velocity - self.camera.velocity
@@ -363,7 +371,7 @@ class Simulator:
         self.screen_surface.fill(SCREEN_BG_COLOR)
         sim_fps = 'NA' if self.dt == 0 else f'{1/self.dt:.2f}'
         
-        pygame.display.set_caption(f'  FPS {sim_fps} | car: x-{self.car.position} v-{self.car.velocity * self.dt} a-{self.car.acceleration} | cam x-{self.camera.position} v-{self.camera.velocity} a-{self.camera.acceleration} ')
+        pygame.display.set_caption(f'  FPS {sim_fps} | car: x-{vec_str(self.car.position)} v-{vec_str(self.car.velocity * self.dt)} a-{vec_str(self.car.acceleration)} | cam x-{vec_str(self.camera.position)} v-{vec_str(self.camera.velocity)} a-{vec_str(self.camera.acceleration)} ')
 
         for sprite in self.all_sprites:
             self.camera.compensate_camera_motion(sprite)
@@ -460,6 +468,10 @@ class Tracker:
         self.manager = manager
         self.tracker_filename = 'track.txt'
         self.cur_img = None
+        self.cur_points = None
+        self.nxt_points = None
+        self.car_position = None
+        self.car_velocity = None
 
 
     def run(self):
@@ -483,7 +495,7 @@ class Tracker:
         feature_mask = np.zeros_like(cur_frame)
         x,y,w,h = self.manager.simulator.bounding_box
         feature_mask[y:y+h+1, x:x+w+1] = 1
-        cur_points = cv.goodFeaturesToTrack(cur_frame, mask=feature_mask, **FEATURE_PARAMS)
+        self.cur_points = cv.goodFeaturesToTrack(cur_frame, mask=feature_mask, **FEATURE_PARAMS)
 
         # create mask for drawing tracks
         mask = np.zeros_like(frame_1)
@@ -501,7 +513,7 @@ class Tracker:
         # frame_num = 0
         while True:
             # make sure there is more than one frame in the deque
-            if len(self.manager.image_deque) < 1:
+            if len(self.manager.image_deque) < 1 or self.manager.get_sim_dt() == 0:
                 continue
 
             # get and prepare next frame
@@ -509,18 +521,18 @@ class Tracker:
             nxt_frame = convert_to_grayscale(frame_2)
 
             # compute optical flow between current and next frame
-            cur_points, nxt_points, stdev, err = compute_optical_flow_LK(cur_frame, nxt_frame, cur_points, LK_PARAMS)
+            self.cur_points, self.nxt_points, stdev, err = compute_optical_flow_LK(cur_frame, nxt_frame, self.cur_points, LK_PARAMS)
 
             # select good points, with standard deviation 1. use numpy index trick
-            good_cur = cur_points[stdev==1]
-            good_nxt = nxt_points[stdev==1]
+            good_cur = self.cur_points[stdev==1]
+            good_nxt = self.nxt_points[stdev==1]
 
             # compute and create kinematics tuple 
-            car_position, car_velocity = self.compute_car_kinematics(good_cur, good_nxt)
+            self.car_position, self.car_velocity = self.compute_car_kinematics(good_cur, good_nxt)
             drone_position = self.manager.simulator.camera.position
             drone_velocity = self.manager.simulator.camera.velocity
             alpha = atan2(drone_velocity[1], drone_velocity[0])
-            kin = (drone_position, drone_velocity, car_position, car_velocity, alpha)
+            kin = (drone_position, drone_velocity, self.car_position, self.car_velocity, alpha)
 
             # add kinematics tuple to manager's kinematics deque
             self.manager.add_to_kinematics_deque(kin)
@@ -533,9 +545,9 @@ class Tracker:
             img = draw_sparse_optical_flow_arrows(img, good_cur, good_nxt, thickness=2, arrow_scale=10.0, color=RED_CV)
 
             # put velocity text 
-            img = self.put_velocity_text(img, car_velocity)
+            img = self.put_velocity_text(img, self.car_velocity)
             if self.manager.write_track:
-                f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {car_velocity[0]:.2f} {car_velocity[1]:.2f}\n')
+                f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {self.car_velocity[0]:.2f} {self.car_velocity[1]:.2f}\n')
             
             # set cur_img; to be used for saving 
             self.cur_img = img
@@ -576,6 +588,11 @@ class Tracker:
         Returns:
             tuple(float, float), tuple(float, float): mean of positions and velocities computed from each point pair.
         """
+        # check non-zero number of points
+        num_pts = len(cur_pts)
+        if num_pts == 0:
+            return self.car_position, self.car_velocity
+        
         # sum over all pairs and deltas between them
         car_x = 0
         car_y = 0
@@ -588,12 +605,11 @@ class Tracker:
             car_vx += nxt_pt[0] - cur_pt[0]
             car_vy += nxt_pt[1] - cur_pt[1]
 
-        num_pts = len(cur_pts)
         # converting from px/frame to px/secs. Averaging
-        car_x /= self.manager.sim_dt * num_pts
-        car_y /= self.manager.sim_dt * num_pts
-        car_vx /= self.manager.sim_dt * num_pts
-        car_vy /= self.manager.sim_dt * num_pts
+        car_x /= self.manager.get_sim_dt() * num_pts
+        car_y /= self.manager.get_sim_dt() * num_pts
+        car_vx /= self.manager.get_sim_dt() * num_pts
+        car_vy /= self.manager.get_sim_dt() * num_pts
 
         return (car_x - DRONE_POSITION[0], car_y - DRONE_POSITION[1]), (car_vx, car_vy)
 
@@ -704,7 +720,7 @@ class Controller:
                     + 2 * vr * vtheta * sin(alpha - theta) * cos(alpha - theta)))
 
 
-            a_long_sat = 0.006
+            a_long_sat = 0.005
             a_lat_sat = 1
             if abs(a_long) > a_long_sat:
                 a_long = np.sign(a_long) 
@@ -716,8 +732,6 @@ class Controller:
             else:
                 a_lat = a_lat/a_lat_sat
 
-            a_long *=1
-            # print(a_long)
             self.manager.add_to_command_deque((a_long, a_lat))
 
 
@@ -728,8 +742,8 @@ if __name__ == "__main__":
     RUN_EXPERIMENT          = 1
     EXPERIMENT_SAVE_MODE_ON = 0
     WRITE_TRACK             = 0
-    CONTROL_ON              = 1
-    TRACKER_DISPLAY_ON      = 0
+    CONTROL_ON              = 0
+    TRACKER_DISPLAY_ON      = 1
     RUN_TRACK_PLOT          = 0
 
     if RUN_EXPERIMENT:
