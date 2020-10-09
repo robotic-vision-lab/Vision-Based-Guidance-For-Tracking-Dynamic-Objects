@@ -5,7 +5,7 @@ import pygame
 
 from pygame.locals import *
 
-from settings import CAR_IMG
+from settings import CAR_IMG, DRONE_POSITION
 
 class Car(pygame.sprite.Sprite):
     """Defines a car sprite.
@@ -28,9 +28,9 @@ class Car(pygame.sprite.Sprite):
         self.acceleration = pygame.Vector2(ax, ay)
 
         # set initial rect location to position
-        self.rect.center = self.position
+        self.rect.center = self.position + DRONE_POSITION
 
-        # hold onto the game reference
+        # hold onto the game/simulator reference
         self.game = game
 
 
@@ -47,6 +47,6 @@ class Car(pygame.sprite.Sprite):
             This will get called in game loop for every frame
         """
         self.update_kinematics()
-        self.rect.center = self.position
+        self.rect.center = self.position + DRONE_POSITION
     
 
