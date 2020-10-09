@@ -10,7 +10,7 @@ from queue import deque
 from PIL import Image
 from copy import deepcopy
 from datetime import timedelta
-from math import atan2, degrees, cos, sin
+from math import atan2, degrees, cos, sin, pi
 
 from pygame.locals import *
 from settings import *
@@ -81,20 +81,21 @@ class ExperimentManager:
     The manager is responsible for running Simulator, Tracker and controller in separate threads and manage shared memory.
     The manager can start and stop Simulator, Tracker and Controller.
     """
-    def __init__(self, save_on=False, write_track=False, control_on=False, tracker_display_on=False):
+    def __init__(self, save_on=False, write_track=False, control_on=False, tracker_on=True, tracker_display_on=False):
 
         self.save_on = save_on
         self.write_track = write_track
         self.control_on = control_on
+        self.tracker_on = tracker_on
         self.tracker_display_on = tracker_display_on
 
         self.simulator = Simulator(self)
         self.tracker = Tracker(self)
         self.controller = Controller(self)
 
-        self.image_deque = deque(maxlen=100)
-        self.command_deque = deque(maxlen=10)
-        self.kinematics_deque = deque(maxlen=100)
+        self.image_deque = deque(maxlen=2)
+        self.command_deque = deque(maxlen=2)
+        self.kinematics_deque = deque(maxlen=2)
 
         self.sim_dt = 0
         self.true_rel_vel = None
@@ -170,17 +171,23 @@ class ExperimentManager:
     def run_experiment(self):
         """Run Experiment by running Simulator, Tracker and Controller.
         """
-        self.tracker_thread = th.Thread(target=self.run_tracker, daemon=True)
-        self.controller_thread = th.Thread(target=self.run_controller, daemon=True)
-        self.tracker_thread.start()
+
+        if self.tracker_on:
+            self.tracker_thread = th.Thread(target=self.run_tracker, daemon=True)
+            self.tracker_thread.start()
+
         if self.control_on:
+            self.controller_thread = th.Thread(target=self.run_controller, daemon=True)
             self.controller_thread.start()
+
         self.run_simulator()
+
         if self.save_on:
             # create folder path inside ./sim_outputs
             _path = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
             _prep_temp_folder(os.path.realpath(_path))
             vid_path = f'{_path}/sim_track_control.avi'
+            print('Making video.')
             self.make_video(vid_path, TEMP_FOLDER)
 
 
@@ -200,6 +207,16 @@ class ExperimentManager:
         return self.simulator.dt
 
 
+    def get_true_kinematics(self):
+        kin = (self.simulator.camera.position,# + pygame.Vector2(DRONE_POSITION),
+               self.simulator.camera.velocity,
+               self.simulator.car.position,
+               self.simulator.car.velocity)
+
+        return kin
+
+
+
 class Simulator:
     """Simulator object creates the simulation game. 
     Responds to keypresses 'SPACE' to toggle play/pause, 's' to save screen mode, ESC to quit.
@@ -209,8 +226,9 @@ class Simulator:
     def __init__(self, manager):
 
         self.manager = manager
+
         # initialize screen
-        os.environ['SDL_VIDEO_WINDOW_POS'] = "2,30"
+        os.environ['SDL_VIDEO_WINDOW_POS'] = "2,30"        
         pygame.init()
         self.screen_surface = pygame.display.set_mode(SCREEN_SIZE)
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
@@ -267,10 +285,9 @@ class Simulator:
         while self.running:
             # make clock tick and measure time elapsed
             self.dt = self.clock.tick(FPS) / 1000.0 
-            if self.pause:
+            if self.pause:          # DO NOT TOUCH! clock needs to tick regardless
                 self.dt = 0.0
             self.time += self.dt
-            self.manager.sim_dt = self.dt
 
             # handle events
             self.handle_events()
@@ -278,16 +295,16 @@ class Simulator:
                 break
             
             if not self.pause:
-                # print stuffs
-                print(f'\rTrue kinematics >> DRONE - x:{vec_str(self.camera.position)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | CAR - position:{vec_str(self.car.position)}, velocity: {vec_str(self.car.velocity)},  rel_vel: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='')
                 # update game objects
                 self.update()
+                # print stuffs
+                print(f'\rTrue kinematics >> DRONE - x:{vec_str(self.camera.position)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | CAR - position:{vec_str(self.car.position)}, velocity: {vec_str(self.car.velocity)},  rel_vel: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='')
                 self.manager.true_rel_vel = self.car.velocity - self.camera.velocity
 
             # draw stuffs
             self.draw()
 
-            if not self.pause:
+            if not self.pause and self.manager.tracker_on:
                 # put the screen capture into image_deque
                 self.put_image()
 
@@ -305,6 +322,7 @@ class Simulator:
     def handle_events(self):
         """Handles captured events.
         """
+        # respond to all events posted in the event queue
         for event in pygame.event.get():
             if event.type == pygame.QUIT or     \
                 event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -349,19 +367,25 @@ class Simulator:
                 self.bb_drag = False
 
             pygame.event.pump()
+        
+        # respond to the command posted by controller
         if len(self.manager.command_deque) > 0:
-            self.camera.acceleration[0] = self.manager.get_from_command_deque()[0]
+            self.camera.acceleration = self.manager.get_from_command_deque()
 
 
     def update(self):
         """Update positions of components.
         """
-        # update Group. (All sprites in it will get updated)
-        self.all_sprites.update()
-
         # update drone acceleration using acceleration command (force)
         self.camera.change_acceleration(deepcopy(self.euc_factor * self.cam_accel_command))
         self.cam_accel_command = pygame.Vector2(0, 0)
+
+        # update Group. (All sprites in it will get updated)
+        self.all_sprites.update()
+
+        # compensate camera motion for all sprites
+        for sprite in self.all_sprites:
+            self.camera.compensate_camera_motion(sprite)
 
 
     def draw(self):
@@ -369,12 +393,16 @@ class Simulator:
         """
         # fill background
         self.screen_surface.fill(SCREEN_BG_COLOR)
-        sim_fps = 'NA' if self.dt == 0 else f'{1/self.dt:.2f}'
-        
-        pygame.display.set_caption(f'  FPS {sim_fps} | car: x-{vec_str(self.car.position)} v-{vec_str(self.car.velocity * self.dt)} a-{vec_str(self.car.acceleration)} | cam x-{vec_str(self.camera.position)} v-{vec_str(self.camera.velocity)} a-{vec_str(self.camera.acceleration)} ')
 
-        for sprite in self.all_sprites:
-            self.camera.compensate_camera_motion(sprite)
+        # make title
+        sim_fps = 'NA' if self.dt == 0 else f'{1/self.dt:.2f}'
+        pygame.display.set_caption(f'  FPS {sim_fps} | car: x-{vec_str(self.car.position)} v-{vec_str(self.car.velocity)} a-{vec_str(self.car.acceleration)} | cam x-{vec_str(self.camera.position)} v-{vec_str(self.camera.velocity)} a-{vec_str(self.camera.acceleration)} ')
+
+        # # compensate camera motion for all sprites
+        # for sprite in self.all_sprites:
+        #     self.camera.compensate_camera_motion(sprite)
+
+        # draw only car and blocks (not drone)
         self.car_block_sprites.draw(self.screen_surface)
 
 
@@ -495,7 +523,7 @@ class Tracker:
         feature_mask = np.zeros_like(cur_frame)
         x,y,w,h = self.manager.simulator.bounding_box
         feature_mask[y:y+h+1, x:x+w+1] = 1
-        self.cur_points = cv.goodFeaturesToTrack(cur_frame, mask=feature_mask, **FEATURE_PARAMS)
+        cur_points = cv.goodFeaturesToTrack(cur_frame, mask=feature_mask, **FEATURE_PARAMS)
 
         # create mask for drawing tracks
         mask = np.zeros_like(frame_1)
@@ -510,7 +538,6 @@ class Tracker:
             cv.moveWindow(win_name, GetSystemMetrics(0)-frame_1.shape[1], 0)
 
         # begin tracking
-        # frame_num = 0
         while True:
             # make sure there is more than one frame in the deque
             if len(self.manager.image_deque) < 1 or self.manager.get_sim_dt() == 0:
@@ -521,19 +548,18 @@ class Tracker:
             nxt_frame = convert_to_grayscale(frame_2)
 
             # compute optical flow between current and next frame
-            self.cur_points, self.nxt_points, stdev, err = compute_optical_flow_LK(cur_frame, nxt_frame, self.cur_points, LK_PARAMS)
-
+            cur_points, nxt_points, stdev, err = compute_optical_flow_LK(cur_frame, nxt_frame, cur_points, LK_PARAMS)
             # select good points, with standard deviation 1. use numpy index trick
-            good_cur = self.cur_points[stdev==1]
-            good_nxt = self.nxt_points[stdev==1]
+            good_cur = cur_points[stdev==1]
+            good_nxt = nxt_points[stdev==1]
 
             # compute and create kinematics tuple 
-            self.car_position, self.car_velocity = self.compute_car_kinematics(good_cur, good_nxt)
-            drone_position = self.manager.simulator.camera.position
-            drone_velocity = self.manager.simulator.camera.velocity
-            alpha = atan2(drone_velocity[1], drone_velocity[0])
-            kin = (drone_position, drone_velocity, self.car_position, self.car_velocity, alpha)
-
+            # drone_position = self.manager.simulator.camera.position
+            # drone_velocity = self.manager.simulator.camera.velocity
+            # self.car_position, self.car_velocity = self.compute_car_kinematics(good_cur, good_nxt)
+            
+            # kin = (drone_position, drone_velocity, self.car_position, self.car_velocity)
+            kin = drone_position, drone_velocity, self.car_position, self.car_velocity = self.compute_car_kinematics(good_cur, good_nxt)
             # add kinematics tuple to manager's kinematics deque
             self.manager.add_to_kinematics_deque(kin)
 
@@ -554,11 +580,6 @@ class Tracker:
             if self.manager.tracker_display_on:
                 cv.imshow(win_name, img)
             
-            # save image
-            # frame_num += 1
-            # img_name = f'frame_{str(_frame_num).zfill(4)}.jpg'
-            # img_path = os.path.join(LK_TEMP_FOLDER, img_name)
-            # cv.imwrite(img_path, img)
 
             # ready for next iteration
             cur_frame = nxt_frame.copy()
@@ -591,7 +612,7 @@ class Tracker:
         # check non-zero number of points
         num_pts = len(cur_pts)
         if num_pts == 0:
-            return self.car_position, self.car_velocity
+            return self.manager.simulator.camera.position, self.manager.simulator.camera.velocity, self.car_position, self.car_velocity
         
         # sum over all pairs and deltas between them
         car_x = 0
@@ -611,7 +632,12 @@ class Tracker:
         car_vx /= self.manager.get_sim_dt() * num_pts
         car_vy /= self.manager.get_sim_dt() * num_pts
 
-        return (car_x - DRONE_POSITION[0], car_y - DRONE_POSITION[1]), (car_vx, car_vy)
+        # return (car_x - DRONE_POSITION[0], car_y - DRONE_POSITION[1]), (car_vx, car_vy)
+        drone_position = self.manager.simulator.camera.position
+        drone_velocity = self.manager.simulator.camera.velocity
+        car_position = pygame.Vector2((car_x , car_y))
+        car_velocity = pygame.Vector2((car_vx, car_vy))
+        return (drone_position, drone_velocity, car_position, car_velocity)
 
     
     def put_velocity_text(self, img, velocity):
@@ -637,25 +663,22 @@ class Controller:
         self.manager = manager
 
     def run(self):
-
+        print('Controller run')
         R = CAR_RADIUS
         while True:
-            if len(self.manager.kinematics_deque) == 0:
+            if self.manager.tracker_on and len(self.manager.kinematics_deque) == 0:
                 continue
             
             if self.manager.simulator.pause:
                 continue
             
             # kin = self.manager.get_from_kinematics_deque()
-            # x, y = kin[0]
-            # vx, vy = kin[1]
-            # car_x, car_y = kin[2]
-            # car_speed, _ = kin[3] 
-
-            x, y = self.manager.simulator.camera.position
-            vx, vy = self.manager.simulator.camera.velocity
-            car_x, car_y = self.manager.simulator.car.position
-            car_speed, _ = self.manager.simulator.car.velocity
+            kin = self.manager.get_true_kinematics()
+            # print(kin)
+            x, y = kin[0].elementwise() * (1,-1) + (0, HEIGHT)
+            vx, vy = kin[1].elementwise() * (1, -1)
+            car_x, car_y = kin[2].elementwise() * (1, -1) + (0, HEIGHT)
+            car_speed, _ = kin[3].elementwise() * (1, -1)
 
             # speed of drone
             s = (vx**2 + vy**2) **0.5
@@ -678,76 +701,55 @@ class Controller:
             vtheta = car_speed * sin(beta - theta) - s * sin(alpha - theta)
             # print(car_speed, theta, vr, vtheta)
             # calculate y from drone to car
-            y1 = r**2 * vtheta**2 / (vtheta**2 + vr**2) - R**2
+            y2 = vtheta**2 + vr**2
+            y1 = r**2 * vtheta**2 - y2 * R**2
 
             # time to collision from drone to car
             tm = -vr * r / (vtheta**2 + vr**2)
 
             # compute desired acceleration
             w = -0.1
-            K1 = 0.5 * np.sign(-vr)
-            K2 = 0.1
+            K1 = 0.02 * np.sign(-vr)
+            K2 = 0.02
 
-            a_lat = -((vr**2 + vtheta**2) * (K1 * vr**3 * w * cos(alpha - theta)\
-                    - K1 * vr**3 * y1 * cos(alpha - theta)\
-                    + K1 * vtheta**3 * w * sin(alpha - theta)\
-                    - K1 * vtheta**3 * y1 * sin(alpha - theta)\
-                    + 2 * K2 * vr * vtheta**2 * r * cos(alpha - theta)\
-                    + K1 * vr * vtheta**2 * w * cos(alpha - theta)\
-                    - K1 * vr * vtheta**2 * y1 * cos(alpha - theta)\
-                    + 2 * K2 * vr**2 * vtheta * r * sin(alpha - theta)\
-                    + K1 * vr**2 * vtheta * w * sin(alpha - theta)\
-                    - K1 * vr**2 * vtheta * y1 * sin(alpha - theta)))\
-                    / (2 * vr * vtheta * r**2 * (vr**2 * cos(alpha - theta)**2\
-                    - vtheta**2 * cos(alpha - theta)**2 + vr**2 * sin(alpha\
-                    - theta)**2 + vtheta**2 * sin(alpha - theta)**2\
-                    + 2 * vr * vtheta * sin(alpha - theta) * cos(alpha - theta)))
+            c = cos(alpha - theta)
+            s = sin(alpha - theta)
+            K1y1 = K1*y1
+            K2y2Vrr2 = K2*y2*vr*r**2
+            d = 2*vr*vtheta*r**2
 
-            a_long = ((vr**2 + vtheta**2) * (K1 * vtheta**3 * w * cos(alpha - theta)\
-                    - K1 * vtheta**3 * y1 * cos(alpha - theta)\
-                    - K1 * vr**3 * w * sin(alpha - theta)\
-                    + K1 * vr**3 * y1 * sin(alpha - theta)\
-                    + 2 * K2 * vr**2 * vtheta * r * cos(alpha - theta)\
-                    + K1 * vr**2 * vtheta * w * cos(alpha - theta)\
-                    - K1 * vr**2 * vtheta * y1 * cos(alpha - theta)\
-                    + 2 * K2 * vr * vtheta**2 * r * sin(alpha - theta)\
-                    - K1 * vr * vtheta**2 * w * sin(alpha - theta)\
-                    + K1 * vr * vtheta**2 * y1 * sin(alpha - theta)))\
-                    / (2 * vr * vtheta * r**2 * (vr**2 * cos(alpha - theta)**2\
-                    - vtheta**2 * cos(alpha - theta)**2\
-                    + vr**2 * sin(alpha - theta)**2\
-                    + vtheta**2 * sin(alpha - theta)**2\
-                    + 2 * vr * vtheta * sin(alpha - theta) * cos(alpha - theta)))
+            a_lat = (K1y1 * (vr*c + vtheta*s) + K2y2Vrr2*c) / d
+            a_long = (K1y1 * (vr*s - vtheta*c) + K2y2Vrr2*s) / d
 
+            a_long_bound = 20
+            a_lat_bound = 20
+            
+            a_long = self.sat(a_long, a_long_bound)
+            a_lat = self.sat(a_lat, a_lat_bound)
 
-            a_long_sat = 0.005
-            a_lat_sat = 1
-            if abs(a_long) > a_long_sat:
-                a_long = np.sign(a_long) 
-            else:
-                a_long = a_long/a_long_sat
+            delta = alpha + pi/2
+            ax = a_lat * cos(delta) + a_long * cos(alpha)
+            ay = a_lat * sin(delta) + a_long * sin(alpha)
 
-            if abs(a_lat) > a_lat_sat:
-                a_lat = np.sign(a_lat)
-            else:
-                a_lat = a_lat/a_lat_sat
+            self.manager.add_to_command_deque((ax, -ay))
 
-            self.manager.add_to_command_deque((a_long, a_lat))
-
+    def sat(self, x, bound):
+        return min(max(x, -bound), bound)
 
 
 
 if __name__ == "__main__":
 
     RUN_EXPERIMENT          = 1
-    EXPERIMENT_SAVE_MODE_ON = 0
+    EXPERIMENT_SAVE_MODE_ON = 1
     WRITE_TRACK             = 0
-    CONTROL_ON              = 0
+    CONTROL_ON              = 1
+    TRACKER_ON              = 1
     TRACKER_DISPLAY_ON      = 1
     RUN_TRACK_PLOT          = 0
 
     if RUN_EXPERIMENT:
-        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK, CONTROL_ON, TRACKER_DISPLAY_ON)
+        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON)
         print("\nExperiment started.\n")
         experiment_manager.run_experiment()
         print("\n\nExperiment finished.\n")
