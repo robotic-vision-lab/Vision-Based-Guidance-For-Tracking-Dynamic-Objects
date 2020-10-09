@@ -1,5 +1,6 @@
 import os
 import pygame
+from math import tan, radians
 
 # define some colors to be used with pygame 
 BLACK = (0, 0, 0)
@@ -35,9 +36,20 @@ SCREEN_SIZE = WIDTH, HEIGHT = 800, 600
 SCREEN_DISPLAY_TITLE = "Car Simulation"
 SCREEN_BG_COLOR = DARK_GRAY
 
+# camera image formation settings
+FOV = 30.0                                      # degrees
+PIXEL_SIZE = 6.25 * 10**-6                      # meters
+ALTITUDE = 200                                 # meters
+SENSOR_WIDTH = PIXEL_SIZE * WIDTH
+FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
+HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
+PIXEL_TO_METERS_FACTOR = HORIZONTAL_SPAN / WIDTH
+
 # car settings
 CAR_IMG = 'car.png'
-CAR_SCALE = 0.5
+CAR_LENGTH = 6
+CAR_LENGTH_PX = 128
+CAR_SCALE = CAR_LENGTH / (CAR_LENGTH_PX * PIXEL_TO_METERS_FACTOR)
 CAR_INITIAL_POSITION = (-50, 300)#(50, HEIGHT//2)
 CAR_INITIAL_VELOCITY = (45, 0)
 CAR_ACCELERATION = (0, 0)

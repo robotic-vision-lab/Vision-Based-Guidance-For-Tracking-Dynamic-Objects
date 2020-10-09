@@ -662,6 +662,7 @@ class Controller:
     def __init__(self, manager):
         self.manager = manager
 
+
     def run(self):
         print('Controller run')
         R = CAR_RADIUS
@@ -733,15 +734,17 @@ class Controller:
 
             self.manager.add_to_command_deque((ax, -ay))
 
+
     def sat(self, x, bound):
         return min(max(x, -bound), bound)
+
 
 
 
 if __name__ == "__main__":
 
     RUN_EXPERIMENT          = 1
-    EXPERIMENT_SAVE_MODE_ON = 1
+    EXPERIMENT_SAVE_MODE_ON = 0
     WRITE_TRACK             = 0
     CONTROL_ON              = 1
     TRACKER_ON              = 1
