@@ -566,16 +566,18 @@ class Tracker:
 
             # cosmetics/visual aids
             # create img with added tracks for all point pairs on next frame
-            img, mask = draw_tracks(frame_2, good_cur, good_nxt, None, mask, track_thickness=2)
+            # give car positions
+
+            img, mask = draw_tracks(frame_2, self.get_centroid(good_cur), self.get_centroid(good_nxt), None, mask, track_thickness=2)
 
             # add optical flow arrows 
-            img = draw_sparse_optical_flow_arrows(img, good_cur, good_nxt, thickness=2, arrow_scale=10.0, color=RED_CV)
+            img = draw_sparse_optical_flow_arrows(img, self.get_centroid(good_cur), self.get_centroid(good_nxt), thickness=2, arrow_scale=10.0, color=RED_CV)
 
             # add a center
             img = cv.circle(img, SCREEN_CENTER, radius=1, color=WHITE, thickness=2)
 
             # put velocity text 
-            img = self.put_velocity_text(img, self.car_velocity)
+            img = self.put_velocity_text(img, self.car_velocity.elementwise()*(1,-1))
             if self.manager.write_track:
                 f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {self.car_velocity[0]:.2f} {self.car_velocity[1]:.2f}\n')
             
@@ -644,6 +646,21 @@ class Tracker:
         return (drone_position, drone_velocity, car_position, car_velocity)
 
     
+    def get_centroid(self, points):
+        """Returns centroid of given list of points
+
+        Args:
+            points (np.ndarray): List of points
+        """
+        cx, cy = 0, 0
+        for x, y in points:
+            cx += x
+            cy += y
+
+        return np.array([[int(cx/len(points)), int(cy/len(points))]])
+
+
+
     def put_velocity_text(self, img, velocity):
         """Helper function, put computed velocity in text form on (opencv) image.
 
