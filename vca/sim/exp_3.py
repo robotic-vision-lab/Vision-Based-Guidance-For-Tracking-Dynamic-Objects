@@ -208,9 +208,11 @@ class ExperimentManager:
 
 
     def get_true_kinematics(self):
-        kin = (self.simulator.camera.position,# + pygame.Vector2(DRONE_POSITION),
+        drone_position = pygame.Vector2(self.simulator.camera.rect.center)
+        car_position = pygame.Vector2(self.simulator.car.rect.center)
+        kin = (drone_position,# + pygame.Vector2(DRONE_POSITION),
                self.simulator.camera.velocity,
-               self.simulator.car.position,
+               car_position,
                self.simulator.car.velocity)
 
         return kin
@@ -250,7 +252,6 @@ class Simulator:
         self.bb_start = None
         self.bb_end = None
         self.bb_drag = False
-
 
     def start_new(self):
         """Initializes simulation components.
@@ -298,7 +299,7 @@ class Simulator:
                 # update game objects
                 self.update()
                 # print stuffs
-                print(f'\rTrue kinematics >> DRONE - x:{vec_str(self.camera.position)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | CAR - position:{vec_str(self.car.position)}, velocity: {vec_str(self.car.velocity)},  rel_vel: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='')
+                print(f'SSSS >> {str(timedelta(seconds=self.time))} >> DRONE - x:{vec_str(self.camera.rect.center)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | CAR - x:{vec_str(self.car.rect.center)}, v: {vec_str(self.car.velocity)},  v_c-v_d: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='\n')
                 self.manager.true_rel_vel = self.car.velocity - self.camera.velocity
 
             # draw stuffs
@@ -565,10 +566,13 @@ class Tracker:
 
             # cosmetics/visual aids
             # create img with added tracks for all point pairs on next frame
-            img, mask = draw_tracks(frame_2, good_cur, good_nxt, None, mask, track_thickness=1)
+            img, mask = draw_tracks(frame_2, good_cur, good_nxt, None, mask, track_thickness=2)
 
             # add optical flow arrows 
             img = draw_sparse_optical_flow_arrows(img, good_cur, good_nxt, thickness=2, arrow_scale=10.0, color=RED_CV)
+
+            # add a center
+            img = cv.circle(img, SCREEN_CENTER, radius=1, color=WHITE, thickness=2)
 
             # put velocity text 
             img = self.put_velocity_text(img, self.car_velocity)
@@ -680,6 +684,7 @@ class Controller:
             vx, vy = kin[1].elementwise() * (1, -1)
             car_x, car_y = kin[2].elementwise() * (1, -1) + (0, HEIGHT)
             car_speed, _ = kin[3].elementwise() * (1, -1)
+            print(f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{x:0.2f},{y:0.2f}] | v:[{vx:0.2f},{vy:0.2f}] | CAR - x:[{car_x:0.2f},{car_y:0.2f}] | v:[{car_speed:0.2f},0.00]')
 
             # speed of drone
             s = (vx**2 + vy**2) **0.5
