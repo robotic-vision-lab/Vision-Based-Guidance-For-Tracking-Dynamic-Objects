@@ -40,6 +40,7 @@ class Block(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
 
         self.reset_kinematics()
+        self.rect.center = self.position
         self.game = game
 
 
@@ -76,4 +77,4 @@ class Block(pygame.sprite.Sprite):
         """
         # for example if we want the sprite to move 5 pixels to the right
         self.update_kinematics()
-        self.rect.topleft = self.position
+        self.rect.center = self.position#
