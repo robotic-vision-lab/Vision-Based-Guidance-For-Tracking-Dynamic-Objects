@@ -536,7 +536,7 @@ class Tracker:
             from win32api import GetSystemMetrics
             win_name = 'Tracking in progress'
             cv.namedWindow(win_name)
-            cv.moveWindow(win_name, GetSystemMetrics(0)-frame_1.shape[1], 0)
+            cv.moveWindow(win_name, GetSystemMetrics(0)-frame_1.shape[1] -10, 0)
 
         # begin tracking
         while True:
@@ -560,7 +560,14 @@ class Tracker:
             # self.car_position, self.car_velocity = self.compute_car_kinematics(good_cur, good_nxt)
             
             # kin = (drone_position, drone_velocity, self.car_position, self.car_velocity)
-            kin = drone_position, drone_velocity, self.car_position, self.car_velocity = self.compute_car_kinematics(good_cur, good_nxt)
+            kin = drone_position, drone_velocity, self.car_position, self.car_velocity = self.compute_car_kinematics(good_cur.copy(), good_nxt.copy())
+            
+            x, y = kin[0].elementwise() * (1,-1) + (0, HEIGHT)
+            vx, vy = kin[1].elementwise() * (1, -1)
+            car_x, car_y = kin[2].elementwise() * (1, -1) + (0, HEIGHT)
+            car_speed, _ = kin[3].elementwise() * (1, -1)
+            print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{x:0.2f},{y:0.2f}] | v:[{vx:0.2f},{vy:0.2f}] | CAR - x:[{car_x:0.2f},{car_y:0.2f}] | v:[{car_speed:0.2f},0.00]')
+            
             # add kinematics tuple to manager's kinematics deque
             self.manager.add_to_kinematics_deque(kin)
 
@@ -577,7 +584,9 @@ class Tracker:
             img = cv.circle(img, SCREEN_CENTER, radius=1, color=WHITE, thickness=2)
 
             # put velocity text 
-            img = self.put_velocity_text(img, self.car_velocity.elementwise()*(1,-1))
+            img = self.put_metrics(img, kin)
+
+            # write tracking information to file
             if self.manager.write_track:
                 f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {self.car_velocity[0]:.2f} {self.car_velocity[1]:.2f}\n')
             
@@ -633,16 +642,18 @@ class Tracker:
             car_vy += nxt_pt[1] - cur_pt[1]
 
         # converting from px/frame to px/secs. Averaging
-        car_x /= self.manager.get_sim_dt() * num_pts
-        car_y /= self.manager.get_sim_dt() * num_pts
-        car_vx /= self.manager.get_sim_dt() * num_pts
-        car_vy /= self.manager.get_sim_dt() * num_pts
+        d = self.manager.get_sim_dt() * num_pts
+        car_x /= num_pts
+        car_y /= num_pts
+        car_vx /= d
+        car_vy /= d
 
         # return (car_x - DRONE_POSITION[0], car_y - DRONE_POSITION[1]), (car_vx, car_vy)
         drone_position = self.manager.simulator.camera.position
         drone_velocity = self.manager.simulator.camera.velocity
         car_position = pygame.Vector2((car_x , car_y))
         car_velocity = pygame.Vector2((car_vx, car_vy))
+
         return (drone_position, drone_velocity, car_position, car_velocity)
 
     
@@ -674,6 +685,33 @@ class Tracker:
         img = put_text(img, f'computed velocity: ', (WIDTH - 180, 25), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
         img = put_text(img, f'vx = {velocity[0]:.2f} ', (WIDTH - 130, 50), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
         img = put_text(img, f'vy = {velocity[1]:.2f} ', (WIDTH - 130, 75), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+
+        return img
+
+
+    def put_metrics(self, img, k):
+        """Helper function, put metrics and stuffs on opencv image.
+
+        Args:
+            k (tuple): drone_position, drone_velocity, car_position, car_velocity
+
+        Returns:
+            [np.ndarray]: Image after putting all kinds of crap
+        """
+        img = put_text(img, f'Altitude = {ALTITUDE:0.2f} m', (WIDTH-170, HEIGHT-50), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, f'1 pixel = {PIXEL_TO_METERS_FACTOR:0.4f} m', (WIDTH-170, HEIGHT-25), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+
+        kin_str_1 = f'car_pos(m):        <{k[2][0]:6.2f}, {k[2][1]*-1 + HEIGHT:6.2f}>'
+        kin_str_2 = f'car_vel(m/s):       <{k[3][0]:6.2f}, {k[3][1]*-1:6.2f}>'
+        kin_str_3 = f'drone_pos(m):      <{k[0][0]:6.2f}, {k[0][1]*-1 + HEIGHT:6.2f}>'
+        kin_str_4 = f'drone_vel(m/s):    <{k[1][0]:6.2f}, {k[1][1]*-1:6.2f}>'
+        kin_str_5 = f'drone_acc(m/s^2): <{self.manager.simulator.camera.acceleration[0]:6.2f}, {self.manager.simulator.camera.acceleration[1]*-1:6.2f}>'
+
+        img = put_text(img, kin_str_1, (WIDTH - 325, 25),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_2, (WIDTH - 325, 50),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_3, (WIDTH - 325, 75),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_4, (WIDTH - 325, 100),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_5, (WIDTH - 325, 125),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
 
         return img
 
