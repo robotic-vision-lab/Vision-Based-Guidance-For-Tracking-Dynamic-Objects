@@ -20,7 +20,7 @@ class DroneCamera(pygame.sprite.Sprite):
         self.image.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
         self.reset_kinematics()
         
-        self.rect.center = pygame.Vector2(DRONE_POSITION)
+        self.rect.center = self.position + SCREEN_CENTER
         self.game = game
         
         self.vel_limit = DRONE_VELOCITY_LIMIT
@@ -30,7 +30,7 @@ class DroneCamera(pygame.sprite.Sprite):
         """[summary]
         """
         self.update_kinematics()
-        self.rect.center = pygame.Vector2(DRONE_POSITION)
+        self.rect.center = self.position + SCREEN_CENTER
 
     def reset_kinematics(self):
         """[summary]
