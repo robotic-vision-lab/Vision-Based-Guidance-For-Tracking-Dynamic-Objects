@@ -33,13 +33,14 @@ FPS = 30
 
 # screen settings
 SCREEN_SIZE = WIDTH, HEIGHT = 800, 600
+SCREEN_CENTER = (WIDTH//2, HEIGHT//2)
 SCREEN_DISPLAY_TITLE = "Car Simulation"
 SCREEN_BG_COLOR = DARK_GRAY
 
 # camera image formation settings
-FOV = 30.0                                      # degrees
+FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 200                                 # meters
+ALTITUDE = 200                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -50,7 +51,8 @@ CAR_IMG = 'car.png'
 CAR_LENGTH = 6
 CAR_LENGTH_PX = 128
 CAR_SCALE = CAR_LENGTH / (CAR_LENGTH_PX * PIXEL_TO_METERS_FACTOR)
-CAR_INITIAL_POSITION = (-50, 300)#(50, HEIGHT//2)
+# note (0,0) at image center, axes: x points right [>], y points down [v]
+CAR_INITIAL_POSITION = (-300, -200)#(50, HEIGHT//2)
 CAR_INITIAL_VELOCITY = (45, 0)
 CAR_ACCELERATION = (0, 0)
 CAR_RADIUS = 1
@@ -63,10 +65,11 @@ NUM_BLOCKS = 50
 # drone camera settings
 DRONE_IMG = 'cross_hair2.png'
 DRONE_SCALE = 0.2
+# note (0,0) at image center, axes: x points right [>], y points down [v]
+DRONE_POSITION = (0, 0)
 DRONE_INITIAL_VELOCITY = (30, 0)
 DRONE_VELOCITY_LIMIT = 500      # +/-
 DRONE_ACCELERATION_LIMIT = 20   # +/-
-DRONE_POSITION = (WIDTH//2, HEIGHT//2)
 
 # time settings
 TIME_FONT = 'consolas'
