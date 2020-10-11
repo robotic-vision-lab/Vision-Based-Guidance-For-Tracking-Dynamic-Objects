@@ -562,11 +562,11 @@ class Tracker:
             # kin = (drone_position, drone_velocity, self.car_position, self.car_velocity)
             kin = drone_position, drone_velocity, self.car_position, self.car_velocity = self.compute_car_kinematics(good_cur.copy(), good_nxt.copy())
             
-            x, y = kin[0].elementwise() * (1,-1) + (0, HEIGHT)
-            vx, vy = kin[1].elementwise() * (1, -1)
-            car_x, car_y = kin[2].elementwise() * (1, -1) + (0, HEIGHT)
-            car_speed, _ = kin[3].elementwise() * (1, -1)
-            print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{x:0.2f},{y:0.2f}] | v:[{vx:0.2f},{vy:0.2f}] | CAR - x:[{car_x:0.2f},{car_y:0.2f}] | v:[{car_speed:0.2f},0.00]')
+            # x, y = kin[0].elementwise() * (1,-1) + (0, HEIGHT)
+            # vx, vy = kin[1].elementwise() * (1, -1)
+            # car_x, car_y = kin[2].elementwise() * (1, -1) + (0, HEIGHT)
+            # car_speed, _ = kin[3].elementwise() * (1, -1)
+            # print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{x:0.2f},{y:0.2f}] | v:[{vx:0.2f},{vy:0.2f}] | CAR - x:[{car_x:0.2f},{car_y:0.2f}] | v:[{car_speed:0.2f},0.00]')
             
             # add kinematics tuple to manager's kinematics deque
             self.manager.add_to_kinematics_deque(kin)
