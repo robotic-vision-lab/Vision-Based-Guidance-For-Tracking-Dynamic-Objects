@@ -17,7 +17,7 @@ class DroneCamera(pygame.sprite.Sprite):
         # self.image.fill(BLUE)
         # self.rect = self.image.get_rect()
         self.image, self.rect = game.drone_img
-        self.image.fill((255, 255, 255, 128), None, pygame.BLEND_RGBA_MULT)
+        self.image.fill((255, 255, 255, 160), None, pygame.BLEND_RGBA_MULT)
         self.reset_kinematics()
         
         self.rect.center = self.position + SCREEN_CENTER
