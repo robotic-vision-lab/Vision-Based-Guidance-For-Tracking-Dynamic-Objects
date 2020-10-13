@@ -24,7 +24,10 @@ def create_dir(folder_name, path):
 def generate_synth_data(img_size=(20,20), 
                         path='./', 
                         num_images=4, 
-                        folder_name='synth_data'):
+                        folder_name='synth_data',
+                        radius=5,
+                        num_dots=8,
+                        increment=1 ):
     """ takes in size and path, creates synthetic data of given size in the given path """
 
     # create folder if the folder did not already exist in the path
@@ -34,13 +37,13 @@ def generate_synth_data(img_size=(20,20),
     # set parameters for circle
     h, w = img_size
     center = (h//2, w//2)
-    radius = 5
-    num_dots = 8
+    # radius = 5
+    # num_dots = 8
 
     # create images with circles
     for i in range(num_images):
         # create image 
-        blank_img = get_blank_image(img_size, value=255)
+        blank_img = get_blank_image(img_size, value=128)
         # draw the circle
         circle_img = draw_radial_dots(blank_img, radius, center, 0, num_dots)
         
@@ -50,7 +53,7 @@ def generate_synth_data(img_size=(20,20),
         cv.imwrite(os.path.join(os.path.relpath(path), folder_name, image_name), circle_img)    # TODO make sure to write image appropriately
                                                                                                 # currently it will overwrite if the images were already there
         # increment radius for next image
-        radius += 1
+        radius += increment
 
     return os.path.join(os.path.relpath(path), folder_name)
 
