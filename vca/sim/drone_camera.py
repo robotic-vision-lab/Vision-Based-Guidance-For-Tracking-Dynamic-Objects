@@ -17,7 +17,7 @@ class DroneCamera(pygame.sprite.Sprite):
         # self.image.fill(BLUE)
         # self.rect = self.image.get_rect()
         self.image, self.rect = game.drone_img
-        self.image.fill((255, 255, 255, 160), None, pygame.BLEND_RGBA_MULT)
+        self.image.fill((255, 255, 255, 204), None, pygame.BLEND_RGBA_MULT)
         self.reset_kinematics()
         
         self.rect.center = self.position + SCREEN_CENTER
@@ -52,13 +52,9 @@ class DroneCamera(pygame.sprite.Sprite):
         # update velocity and position
         self.velocity += self.acceleration * self.game.dt
         if abs(self.velocity.length()) > self.vel_limit:
-            # self.acceleration = pygame.Vector2(0,0)
             self.velocity -= self.acceleration * self.game.dt
-        #     self.position += self.velocity * self.game.dt 
-        # else:
-            # self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+
         self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
-        # self.rect.center = self.position
 
     def compensate_camera_motion(self, sprite_obj):
         """[summary]
