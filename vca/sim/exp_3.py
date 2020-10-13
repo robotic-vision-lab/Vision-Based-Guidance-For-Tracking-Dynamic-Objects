@@ -81,21 +81,22 @@ class ExperimentManager:
     The manager is responsible for running Simulator, Tracker and controller in separate threads and manage shared memory.
     The manager can start and stop Simulator, Tracker and Controller.
     """
-    def __init__(self, save_on=False, write_track=False, control_on=False, tracker_on=True, tracker_display_on=False):
+    def __init__(self, save_on=False, write_track=False, control_on=False, tracker_on=True, tracker_display_on=False, use_true_kin=True):
 
         self.save_on = save_on
         self.write_track = write_track
         self.control_on = control_on
         self.tracker_on = tracker_on
         self.tracker_display_on = tracker_display_on
+        self.use_true_kin = use_true_kin
 
         self.simulator = Simulator(self)
         self.tracker = Tracker(self)
         self.controller = Controller(self)
 
-        self.image_deque = deque(maxlen=2)
-        self.command_deque = deque(maxlen=2)
-        self.kinematics_deque = deque(maxlen=2)
+        self.image_deque = deque(maxlen=10)
+        self.command_deque = deque(maxlen=10)
+        self.kinematics_deque = deque(maxlen=10)
 
         self.sim_dt = 0
         self.true_rel_vel = None
@@ -252,6 +253,8 @@ class Simulator:
         self.bb_start = None
         self.bb_end = None
         self.bb_drag = False
+        self.running = False
+
 
     def start_new(self):
         """Initializes simulation components.
@@ -539,7 +542,7 @@ class Tracker:
             cv.moveWindow(win_name, GetSystemMetrics(0)-frame_1.shape[1] -10, 0)
 
         # begin tracking
-        while True:
+        while self.manager.simulator.running:
             # make sure there is more than one frame in the deque
             if len(self.manager.image_deque) < 1 or self.manager.get_sim_dt() == 0:
                 continue
@@ -574,25 +577,29 @@ class Tracker:
             # cosmetics/visual aids
             # create img with added tracks for all point pairs on next frame
             # give car positions
-
-            img, mask = draw_tracks(frame_2, self.get_centroid(good_cur), self.get_centroid(good_nxt), None, mask, track_thickness=2)
-
-            # add optical flow arrows 
-            img = draw_sparse_optical_flow_arrows(img, self.get_centroid(good_cur), self.get_centroid(good_nxt), thickness=2, arrow_scale=10.0, color=RED_CV)
-
-            # add a center
-            img = cv.circle(img, SCREEN_CENTER, radius=1, color=WHITE, thickness=2)
-
-            # put velocity text 
-            img = self.put_metrics(img, kin)
-
-            # write tracking information to file
-            if self.manager.write_track:
-                f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {self.car_velocity[0]:.2f} {self.car_velocity[1]:.2f}\n')
-            
-            # set cur_img; to be used for saving 
-            self.cur_img = img
+            self.cur_img = nxt_frame
             if self.manager.tracker_display_on:
+                img, mask = draw_tracks(frame_2, self.get_centroid(good_cur), self.get_centroid(good_nxt), None, mask, track_thickness=2)
+
+                # add optical flow arrows 
+                img = draw_sparse_optical_flow_arrows(img, self.get_centroid(good_cur), self.get_centroid(good_nxt), thickness=2, arrow_scale=10.0, color=RED_CV)
+
+                # add a center
+                img = cv.circle(img, SCREEN_CENTER, radius=1, color=WHITE, thickness=2)
+
+                # draw axes
+                img = cv.arrowedLine(img, (16,HEIGHT-15), (41, HEIGHT-15), (51,51,255), 2)
+                img = cv.arrowedLine(img, (15,HEIGHT-16), (15, HEIGHT-41), (51,255,51), 2)
+
+                # put velocity text 
+                img = self.put_metrics(img, kin)
+
+                # write tracking information to file
+                if self.manager.write_track:
+                    f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {self.car_velocity[0]:.2f} {self.car_velocity[1]:.2f}\n')
+                
+                # set cur_img; to be used for saving 
+                self.cur_img = img
                 cv.imshow(win_name, img)
             
 
@@ -698,20 +705,31 @@ class Tracker:
         Returns:
             [np.ndarray]: Image after putting all kinds of crap
         """
-        img = put_text(img, f'Altitude = {ALTITUDE:0.2f} m', (WIDTH-170, HEIGHT-50), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, f'1 pixel = {PIXEL_TO_METERS_FACTOR:0.4f} m', (WIDTH-170, HEIGHT-25), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, f'Altitude = {ALTITUDE:0.2f} m', (WIDTH-175, HEIGHT-15), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, f'1 pixel = {PIXEL_TO_METERS_FACTOR:0.4f} m', (WIDTH-175, HEIGHT-40), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        
+        fac = PIXEL_TO_METERS_FACTOR
+        kin_str_1 = f'car_pos(m) : '      .rjust(20)
+        kin_str_2 = f'<{fac*round(k[2][0]):6.2f}, {fac*round(k[2][1]*-1 + HEIGHT):6.2f}>'
+        kin_str_3 = f'car_vel(m/s) : '    .rjust(20)
+        kin_str_4 = f'<{fac*(k[3][0]):6.2f}, {fac*(k[3][1]*-1):6.2f}>'
+        kin_str_5 = f'drone_pos(m) : '    .rjust(20)
+        kin_str_6 = f'<{fac*(k[0][0]):6.2f}, {fac*(k[0][1]*-1 + HEIGHT):6.2f}>'
+        kin_str_7 = f'drone_vel(m/s) : '  .rjust(20)
+        kin_str_8 = f'<{fac*(k[1][0]):6.2f}, {fac*(k[1][1]*-1):6.2f}>'
+        kin_str_9 = f'drone_acc(m/s^2) : '.rjust(20)
+        kin_str_0 = f'<{fac*(self.manager.simulator.camera.acceleration[0]):6.2f}, {fac*(self.manager.simulator.camera.acceleration[1]*-1):6.2f}>'
 
-        kin_str_1 = f'car_pos(m):        <{k[2][0]:6.2f}, {k[2][1]*-1 + HEIGHT:6.2f}>'
-        kin_str_2 = f'car_vel(m/s):       <{k[3][0]:6.2f}, {k[3][1]*-1:6.2f}>'
-        kin_str_3 = f'drone_pos(m):      <{k[0][0]:6.2f}, {k[0][1]*-1 + HEIGHT:6.2f}>'
-        kin_str_4 = f'drone_vel(m/s):    <{k[1][0]:6.2f}, {k[1][1]*-1:6.2f}>'
-        kin_str_5 = f'drone_acc(m/s^2): <{self.manager.simulator.camera.acceleration[0]:6.2f}, {self.manager.simulator.camera.acceleration[1]*-1:6.2f}>'
-
-        img = put_text(img, kin_str_1, (WIDTH - 325, 25),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_2, (WIDTH - 325, 50),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_3, (WIDTH - 325, 75),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_4, (WIDTH - 325, 100),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_5, (WIDTH - 325, 125),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_1, (WIDTH - 330, 25),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_2, (WIDTH - 155, 25),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_3, (WIDTH - 328, 50),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_4, (WIDTH - 155, 50),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_5, (WIDTH - 332, 75),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_6, (WIDTH - 155, 75),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_7, (WIDTH - 330, 100),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_8, (WIDTH - 155, 100),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_9, (WIDTH - 340, 125),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_0, (WIDTH - 155, 125),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
 
         return img
 
@@ -733,7 +751,7 @@ class Controller:
                 continue
             
             # kin = self.manager.get_from_kinematics_deque()
-            kin = self.manager.get_true_kinematics()
+            kin = self.manager.get_true_kinematics() if self.manager.use_true_kin else self.manager.get_from_kinematics_deque()
             # print(kin)
             x, y = kin[0].elementwise() * (1,-1) + (0, HEIGHT)
             vx, vy = kin[1].elementwise() * (1, -1)
@@ -782,6 +800,10 @@ class Controller:
             a_lat = (K1y1 * (vr*c + vtheta*s) + K2y2Vrr2*c) / d
             a_long = (K1y1 * (vr*s - vtheta*c) + K2y2Vrr2*s) / d
 
+            # a_lat = (K1*vr*y1*cos(alpha - theta) + K1*vtheta*y1*sin(alpha - theta) + K2*R**2*vr*y2*cos(alpha - theta) + K2*R**2*vtheta*y2*sin(alpha - theta) - K2*vtheta*r**2*y2*sin(alpha - theta))/(2*(vr*vtheta*r**2*cos(alpha - theta)**2 + vr*vtheta*r**2*sin(alpha - theta)**2))
+ 
+            # a_long = (K1*vr*y1*sin(alpha - theta) - K1*vtheta*y1*cos(alpha - theta) - K2*R**2*vtheta*y2*cos(alpha - theta) + K2*R**2*vr*y2*sin(alpha - theta) + K2*vtheta*r**2*y2*cos(alpha - theta))/(2*(vr*vtheta*r**2*cos(alpha - theta)**2 + vr*vtheta*r**2*sin(alpha - theta)**2))
+
             a_long_bound = 20
             a_lat_bound = 20
             
@@ -809,10 +831,11 @@ if __name__ == "__main__":
     CONTROL_ON              = 1
     TRACKER_ON              = 1
     TRACKER_DISPLAY_ON      = 1
+    USE_TRUE_KINEMATICS     = 1
     RUN_TRACK_PLOT          = 0
 
     if RUN_EXPERIMENT:
-        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON)
+        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON, USE_TRUE_KINEMATICS)
         print("\nExperiment started.\n")
         experiment_manager.run_experiment()
         print("\n\nExperiment finished.\n")
