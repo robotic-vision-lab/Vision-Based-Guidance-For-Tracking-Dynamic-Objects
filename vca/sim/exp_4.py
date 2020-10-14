@@ -255,6 +255,7 @@ class Simulator:
         self.bb_drag = False
         self.running = False
         self.alt_change_fac = 1.0
+        self.pxm_fac = PIXEL_TO_METERS_FACTOR
 
 
     def start_new(self):
@@ -497,7 +498,9 @@ class Simulator:
 
     def drone_up(self):
         self.camera.fly_higher()
-        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE/self.alt_change_fac)
+        self.pxm_fac = ((self.camera.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
+        car_scale = (CAR_LENGTH / (CAR_LENGTH_PX * self.pxm_fac)) / self.alt_change_fac
+        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=car_scale)
         self.car.load()
         for block in self.blocks:
             block.load()
@@ -506,7 +509,9 @@ class Simulator:
 
     def drone_down(self):
         self.camera.fly_lower()
-        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE/self.alt_change_fac)
+        self.pxm_fac = ((self.camera.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
+        car_scale = (CAR_LENGTH / (CAR_LENGTH_PX * self.pxm_fac)) / self.alt_change_fac
+        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=car_scale)
         self.car.load()
         for block in self.blocks:
             block.load()

@@ -21,7 +21,7 @@ class DroneCamera(pygame.sprite.Sprite):
         self.image.fill((255, 255, 255, 204), None, pygame.BLEND_RGBA_MULT)
         self.reset_kinematics()
         self.altitude = ALTITUDE
-        self.alt_change = 50.0
+        self.alt_change = 10.0
         
         self.rect.center = self.position + SCREEN_CENTER
         self.game = game
