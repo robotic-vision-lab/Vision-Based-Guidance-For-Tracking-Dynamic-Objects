@@ -33,7 +33,9 @@ class Block(pygame.sprite.Sprite):
 
         # Create an image of the block, and fill it with a color.
         # This could also be an image loaded from the disk.
-        self.image = pygame.Surface(BLOCK_SIZE)
+        self.w = BLOCK_WIDTH
+        self.h = BLOCK_HEIGHT
+        self.image = pygame.Surface((int(self.w), int(self.h)))
         self.image.fill(BLOCK_COLOR)
 
         # Fetch the rectangle object that has the dimensions of the image
@@ -77,4 +79,16 @@ class Block(pygame.sprite.Sprite):
         """
         # for example if we want the sprite to move 5 pixels to the right
         self.update_kinematics()
-        self.rect.center = self.position#
+        self.rect.center = self.position
+
+
+    def load(self):
+        self.w /= self.game.alt_change_fac
+        self.h /= self.game.alt_change_fac
+        self.image = pygame.Surface((int(self.w), int(self.h)))
+        self.image.fill(BLOCK_COLOR)
+
+        # Fetch the rectangle object that has the dimensions of the image
+        self.rect = self.image.get_rect()
+
+        self.rect.center = self.position
