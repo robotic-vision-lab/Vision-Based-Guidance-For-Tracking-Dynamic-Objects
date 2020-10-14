@@ -23,6 +23,7 @@ class DroneCamera(pygame.sprite.Sprite):
         self.altitude = ALTITUDE
         self.alt_change = 10.0
         
+        
         self.rect.center = self.position + SCREEN_CENTER
         self.game = game
         
@@ -122,7 +123,6 @@ class DroneCamera(pygame.sprite.Sprite):
         self.altitude += self.alt_change
         
         
-
     def fly_lower(self):
         self.game.alt_change_fac = 1.0 - self.alt_change/self.altitude
         self.altitude -= self.alt_change

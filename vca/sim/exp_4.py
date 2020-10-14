@@ -1,16 +1,19 @@
 import os
 import sys
+import random
 import cv2 as cv
 import numpy as np
 import shutil
 import time
 import pygame 
 import threading as th
+
 from queue import deque
 from PIL import Image
 from copy import deepcopy
+from random import randrange
 from datetime import timedelta
-from math import atan2, degrees, cos, sin, pi
+from math import atan2, degrees, cos, sin, pi, copysign
 
 from pygame.locals import *
 from settings import *
@@ -25,7 +28,7 @@ vca_path = os.path.abspath(os.path.join('..'))
 if vca_path not in sys.path:
     sys.path.append(vca_path)
 
-from game_utils import load_image, _prep_temp_folder, vec_str
+from game_utils import load_image, _prep_temp_folder, vec_str, scale_img
 from utils.vid_utils import create_video_from_images
 from utils.optical_flow_utils import (get_OF_color_encoded, 
                                       draw_sparse_optical_flow_arrows,
@@ -35,9 +38,6 @@ from algorithms.optical_flow import (compute_optical_flow_farneback,
                                      compute_optical_flow_HS, 
                                      compute_optical_flow_LK)
 
-from car import Car
-from block import Block
-from drone_camera import DroneCamera
 
 """ 
 
@@ -63,160 +63,264 @@ or in other words have the car right in the center of it's view.
 
 
 
-class ExperimentManager:
+class Block(pygame.sprite.Sprite):
+    """[summary]
+
+    Args:
+        pygame ([type]): [description]
     """
-    Experiment:
 
-    - Run the game Simulator with a car and static blocks to aid motion perception for biological creatures with visual perception. 
-    - Let user select a bounding box for the car to be tracked.
-        - Simulator needs to be paused and played back again after bounding box selection.
-    - Simulator keeps simulating and rendering images on screen.
-    - Also, dumps screen captures for Tracker or Controller to consume.
-    - Additionally, concatenate screen captures and tracker produced images with tracking information, into one image and save it.
-    - Tracker consumes these images and produces tracking information at each frame. 
-    - Controller consumes tracking information and produces acceleration commands for Simulator
-    - Simulator consumes acceleration command and updates simulated components appropriately.
-    - All information relay across the Simulator, Tracker and Controller can be mediated through the ExperimentManager
-    
-    The manager is responsible for running Simulator, Tracker and controller in separate threads and manage shared memory.
-    The manager can start and stop Simulator, Tracker and Controller.
+    # Constructor. Pass in the color of the block,
+    # and its x and y position
+    def __init__(self, game):
+        self.groups = [game.all_sprites, game.car_block_sprites]
+        
+        # Call the parent class (Sprite) constructor
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
+        # Create an image of the block, and fill it with a color.
+        # This could also be an image loaded from the disk.
+        self.w = BLOCK_WIDTH
+        self.h = BLOCK_HEIGHT
+        self.image = pygame.Surface((int(self.w), int(self.h)))
+        self.image.fill(BLOCK_COLOR)
+
+        # Fetch the rectangle object that has the dimensions of the image
+        self.rect = self.image.get_rect()
+
+        self.reset_kinematics()
+        self.rect.center = self.position
+        self.game = game
+
+
+    def reset_kinematics(self):
+        """resets the kinematics of block
+        """
+        # set vectors representing the position, velocity and acceleration
+        # note the velocity we assign below will be interpreted as pixels/sec
+        self.position = pygame.Vector2(randrange(WIDTH - self.rect.width), randrange(HEIGHT - self.rect.height))
+        self.velocity = pygame.Vector2(0.0,0.0)#(randrange(-50, 50), randrange(-50, 50))
+        self.acceleration = pygame.Vector2(0.0, 0.0)
+
+
+
+    def update_kinematics(self):
+        """helper function to update kinematics of object
+        """
+        # update velocity and position
+        self.velocity += self.acceleration * self.game.dt
+        self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+
+        # re-spawn in view
+        if self.position.x > WIDTH or \
+            self.position.x < 0 - self.rect.width or \
+            self.position.y > HEIGHT or \
+            self.position.y < 0 - self.rect.height:
+            self.reset_kinematics()
+
+
+    def update_rect(self):
+        """Position information is in bottom-left reference frame. 
+        This method transforms it to top-left reference frame
+        """
+        pass
+
+
+
+    def update(self):
+        """Overwrites Sprite.update()
+            When we call update() on a group this methods gets called.
+            Every next frame while running the game loop this will get called
+        """
+        # for example if we want the sprite to move 5 pixels to the right
+        self.update_kinematics()
+        self.rect.center = self.position
+
+
+    def load(self):
+        self.w /= self.game.alt_change_fac
+        self.h /= self.game.alt_change_fac
+        self.image = pygame.Surface((int(self.w), int(self.h)))
+        self.image.fill(BLOCK_COLOR)
+
+        # Fetch the rectangle object that has the dimensions of the image
+        self.rect = self.image.get_rect()
+
+        self.rect.center = self.position
+
+
+
+
+class Car(pygame.sprite.Sprite):
+    """Defines a car sprite.
     """
-    def __init__(self, save_on=False, write_track=False, control_on=False, tracker_on=True, tracker_display_on=False, use_true_kin=True):
+    def __init__(self, game, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0):
+        # assign itself to the all_sprites group 
+        self.groups = [game.all_sprites, game.car_block_sprites]
 
-        self.save_on = save_on
-        self.write_track = write_track
-        self.control_on = control_on
-        self.tracker_on = tracker_on
-        self.tracker_display_on = tracker_display_on
-        self.use_true_kin = use_true_kin
+        # call Sprite initializer with group info
+        pygame.sprite.Sprite.__init__(self, self.groups) 
+        
+        # assign Sprite.image and Sprite.rect attributes for this Sprite
+        self.image, self.rect = game.car_img
 
-        self.simulator = Simulator(self)
-        self.tracker = Tracker(self)
-        self.controller = Controller(self)
+        # set kinematics
+        # note the velocity and acceleration we assign below 
+        # will be interpreted as pixels/sec
+        self.position = pygame.Vector2(x, y)
+        self.velocity = pygame.Vector2(vx, vy)
+        self.acceleration = pygame.Vector2(ax, ay)
 
-        self.image_deque = deque(maxlen=10)
-        self.command_deque = deque(maxlen=10)
-        self.kinematics_deque = deque(maxlen=10)
+        # set initial rect location to position
+        self.rect.center = self.position + SCREEN_CENTER
 
-        self.sim_dt = 0
-        self.true_rel_vel = None
-
-        if self.save_on:
-            self.simulator.save_screen = True
+        # hold onto the game/simulator reference
+        self.game = game
 
 
-    def add_to_image_deque(self, img):
-        """Helper function, adds given image to manager's image deque
-
-        Args:
-            img (np.ndarray): Image to be added to manager's image deque
+    def update_kinematics(self):
+        """helper function to update kinematics of object
         """
-        self.image_deque.append(img)
+        # update velocity and position
+        self.velocity += self.acceleration * self.game.dt
+        self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
 
 
-    def add_to_command_deque(self, command):
-        """Helper function, adds given command to manager's command deque
-
-        Args:
-            command (tuple(float, float)): Command to be added to manager's command deque
+    def update(self):
+        """ update sprite attributes. 
+            This will get called in game loop for every frame
         """
-        self.command_deque.append(command)
-
-
-    def add_to_kinematics_deque(self, kinematics):
-        """Helper function, adds given kinematics to manager's kinematics deque
-
-        Args:
-            kinematics (tuple(Vector2, Vector2, Vector2, Vector2, float)): Kinematics to be added to manager's kinematics deque
-        """
-        self.kinematics_deque.append(kinematics)
-
-
-    def get_from_image_deque(self):
-        """Helper function, gets image from manager's image deque
-        """
-        return self.image_deque.popleft()
-
-
-    def get_from_command_deque(self):
-        """Helper function, gets command from manager's command deque
-        """
-        return self.command_deque.popleft()
-
-
-    def get_from_kinematics_deque(self):
-        """Helper function, gets kinematics from manager's kinematics deque
-        """
-        return self.kinematics_deque.popleft()
-
-
-    def run_simulator(self):
-        """Run Simulator
-        """
-        self.simulator.start_new()
-        self.simulator.run()
-
-
-    def run_controller(self):
-        """Run Controller
-        """
-        self.controller.run()
+        self.update_kinematics()
+        self.rect.center = self.position + SCREEN_CENTER
     
 
-    def run_tracker(self):
-        """Run Tracker
+    def load(self):
+        self.image, self.rect = self.game.car_img
+        self.rect.center = self.position + SCREEN_CENTER
+
+
+
+class DroneCamera(pygame.sprite.Sprite):
+    def __init__(self, game):
+        self.groups = [game.all_sprites, game.drone_sprite]
+
+        # call the parent class (Sprite) constructor
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
+        # self.drone = pygame.Rect(0, 0, WIDTH, HEIGHT)
+        # self.image = pygame.Surface((20, 20))
+        # self.image.fill(BLUE)
+        # self.rect = self.image.get_rect()
+        self.image, self.rect = game.drone_img
+        self.image.fill((255, 255, 255, 204), None, pygame.BLEND_RGBA_MULT)
+        self.reset_kinematics()
+        self.altitude = ALTITUDE
+        self.alt_change = 10.0
+        
+        
+        self.rect.center = self.position + SCREEN_CENTER
+        self.game = game
+        
+        self.vel_limit = DRONE_VELOCITY_LIMIT
+        self.acc_limit = DRONE_ACCELERATION_LIMIT
+
+
+    def update(self):
+        """[summary]
         """
-        self.tracker.run()
+        self.update_kinematics()
+        self.rect.center = self.position + SCREEN_CENTER
+
+
+    def reset_kinematics(self):
+        """[summary]
+        """
+        self.position = pygame.Vector2(0, 0)
+        self.velocity = pygame.Vector2(DRONE_INITIAL_VELOCITY)
+        self.acceleration = pygame.Vector2(0, 0)
+
+
+    def update_kinematics(self):
+        """helper function to update kinematics of object
+        """
+        # set a drag coefficient
+        # COEFF = 0.1
+        # print(f'a {self.acceleration}, v {self.velocity}, dt {self.game.dt}')
+        # self.acceleration -= self.acceleration * COEFF
+        # print(f'a {self.acceleration}, v {self.velocity}')
+        
+        # update velocity and position
+        self.velocity += self.acceleration * self.game.dt
+        if abs(self.velocity.length()) > self.vel_limit:
+            self.velocity -= self.acceleration * self.game.dt
+
+        self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+
+
+    def compensate_camera_motion(self, sprite_obj):
+        """[summary]
+
+        Args:
+            sprite_obj ([type]): [description]
+        """
+        sprite_obj.position -= self.position #self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+
+
+    def change_acceleration(self, command_vec):
+        """Changes the drone acceleration appropriately in reponse to given command vector.
+
+        Args:
+            command_vec (tuple(float, float)): Command vector tuple. Indicates acceleration change to be made.
+        """
+        # update acceleration
+        COMMAND_SENSITIVITY = 0.1
+        command_vec *= COMMAND_SENSITIVITY
+        self.acceleration += command_vec
+
+        # counter floating point arithmetic noise 
+        if abs(self.acceleration[0]) < COMMAND_SENSITIVITY:
+            self.acceleration[0] = 0.0
+        if abs(self.acceleration[1]) < COMMAND_SENSITIVITY:
+            self.acceleration[1] = 0.0
+        
+        # make sure acceleration magnitude stays within a set limit
+        if abs(self.acceleration.length()) > self.acc_limit:
+            self.acceleration -= command_vec
         
 
-    def run_experiment(self):
-        """Run Experiment by running Simulator, Tracker and Controller.
+    def convert_px_to_m(self, p):
+        """Convert pixels to meters
+
+        Args:
+            p (float): Value in pixel units
+
+        Returns:
+            float: Value in SI units
         """
-
-        if self.tracker_on:
-            self.tracker_thread = th.Thread(target=self.run_tracker, daemon=True)
-            self.tracker_thread.start()
-
-        if self.control_on:
-            self.controller_thread = th.Thread(target=self.run_controller, daemon=True)
-            self.controller_thread.start()
-
-        self.run_simulator()
-
-        if self.save_on:
-            # create folder path inside ./sim_outputs
-            _path = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
-            _prep_temp_folder(os.path.realpath(_path))
-            vid_path = f'{_path}/sim_track_control.avi'
-            print('Making video.')
-            self.make_video(vid_path, TEMP_FOLDER)
+        return p * ((self.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
 
 
-    def make_video(self, video_name, folder_path):
-        """Helper function, looks for frames in given folder,
-        writes them into a video file, with the given name. 
-        Also removes the folder after creating the video.
+    def convert_m_to_px(self, x):
+        """Convert meters to pixel units
+
+        Args:
+            x (float): Value in SI units
+
+        Returns:
+            float: Value in pixels
         """
-        if os.path.isdir(folder_path):
-            create_video_from_images(folder_path, 'jpg', video_name, FPS)
+        return x / ((self.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
 
-            # delete folder
-            shutil.rmtree(folder_path)
+    
+    def fly_higher(self):
+        self.game.alt_change_fac = 1.0 + self.alt_change/self.altitude
+        self.altitude += self.alt_change
+        
+        
 
-
-    def get_sim_dt(self):
-        return self.simulator.dt
-
-
-    def get_true_kinematics(self):
-        drone_position = pygame.Vector2(self.simulator.camera.rect.center)
-        car_position = pygame.Vector2(self.simulator.car.rect.center)
-        kin = (drone_position,# + pygame.Vector2(DRONE_POSITION),
-               self.simulator.camera.velocity,
-               car_position,
-               self.simulator.car.velocity)
-
-        return kin
+    def fly_lower(self):
+        self.game.alt_change_fac = 1.0 - self.alt_change/self.altitude
+        self.altitude -= self.alt_change
 
 
 
@@ -852,6 +956,163 @@ class Controller:
 
     def sat(self, x, bound):
         return min(max(x, -bound), bound)
+
+
+
+class ExperimentManager:
+    """
+    Experiment:
+
+    - Run the game Simulator with a car and static blocks to aid motion perception for biological creatures with visual perception. 
+    - Let user select a bounding box for the car to be tracked.
+        - Simulator needs to be paused and played back again after bounding box selection.
+    - Simulator keeps simulating and rendering images on screen.
+    - Also, dumps screen captures for Tracker or Controller to consume.
+    - Additionally, concatenate screen captures and tracker produced images with tracking information, into one image and save it.
+    - Tracker consumes these images and produces tracking information at each frame. 
+    - Controller consumes tracking information and produces acceleration commands for Simulator
+    - Simulator consumes acceleration command and updates simulated components appropriately.
+    - All information relay across the Simulator, Tracker and Controller can be mediated through the ExperimentManager
+    
+    The manager is responsible for running Simulator, Tracker and controller in separate threads and manage shared memory.
+    The manager can start and stop Simulator, Tracker and Controller.
+    """
+    def __init__(self, save_on=False, write_track=False, control_on=False, tracker_on=True, tracker_display_on=False, use_true_kin=True):
+
+        self.save_on = save_on
+        self.write_track = write_track
+        self.control_on = control_on
+        self.tracker_on = tracker_on
+        self.tracker_display_on = tracker_display_on
+        self.use_true_kin = use_true_kin
+
+        self.simulator = Simulator(self)
+        self.tracker = Tracker(self)
+        self.controller = Controller(self)
+
+        self.image_deque = deque(maxlen=10)
+        self.command_deque = deque(maxlen=10)
+        self.kinematics_deque = deque(maxlen=10)
+
+        self.sim_dt = 0
+        self.true_rel_vel = None
+
+        if self.save_on:
+            self.simulator.save_screen = True
+
+
+    def add_to_image_deque(self, img):
+        """Helper function, adds given image to manager's image deque
+
+        Args:
+            img (np.ndarray): Image to be added to manager's image deque
+        """
+        self.image_deque.append(img)
+
+
+    def add_to_command_deque(self, command):
+        """Helper function, adds given command to manager's command deque
+
+        Args:
+            command (tuple(float, float)): Command to be added to manager's command deque
+        """
+        self.command_deque.append(command)
+
+
+    def add_to_kinematics_deque(self, kinematics):
+        """Helper function, adds given kinematics to manager's kinematics deque
+
+        Args:
+            kinematics (tuple(Vector2, Vector2, Vector2, Vector2, float)): Kinematics to be added to manager's kinematics deque
+        """
+        self.kinematics_deque.append(kinematics)
+
+
+    def get_from_image_deque(self):
+        """Helper function, gets image from manager's image deque
+        """
+        return self.image_deque.popleft()
+
+
+    def get_from_command_deque(self):
+        """Helper function, gets command from manager's command deque
+        """
+        return self.command_deque.popleft()
+
+
+    def get_from_kinematics_deque(self):
+        """Helper function, gets kinematics from manager's kinematics deque
+        """
+        return self.kinematics_deque.popleft()
+
+
+    def run_simulator(self):
+        """Run Simulator
+        """
+        self.simulator.start_new()
+        self.simulator.run()
+
+
+    def run_controller(self):
+        """Run Controller
+        """
+        self.controller.run()
+    
+
+    def run_tracker(self):
+        """Run Tracker
+        """
+        self.tracker.run()
+        
+
+    def run_experiment(self):
+        """Run Experiment by running Simulator, Tracker and Controller.
+        """
+
+        if self.tracker_on:
+            self.tracker_thread = th.Thread(target=self.run_tracker, daemon=True)
+            self.tracker_thread.start()
+
+        if self.control_on:
+            self.controller_thread = th.Thread(target=self.run_controller, daemon=True)
+            self.controller_thread.start()
+
+        self.run_simulator()
+
+        if self.save_on:
+            # create folder path inside ./sim_outputs
+            _path = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
+            _prep_temp_folder(os.path.realpath(_path))
+            vid_path = f'{_path}/sim_track_control.avi'
+            print('Making video.')
+            self.make_video(vid_path, TEMP_FOLDER)
+
+
+    def make_video(self, video_name, folder_path):
+        """Helper function, looks for frames in given folder,
+        writes them into a video file, with the given name. 
+        Also removes the folder after creating the video.
+        """
+        if os.path.isdir(folder_path):
+            create_video_from_images(folder_path, 'jpg', video_name, FPS)
+
+            # delete folder
+            shutil.rmtree(folder_path)
+
+
+    def get_sim_dt(self):
+        return self.simulator.dt
+
+
+    def get_true_kinematics(self):
+        drone_position = pygame.Vector2(self.simulator.camera.rect.center)
+        car_position = pygame.Vector2(self.simulator.car.rect.center)
+        kin = (drone_position,# + pygame.Vector2(DRONE_POSITION),
+               self.simulator.camera.velocity,
+               car_position,
+               self.simulator.car.velocity)
+
+        return kin
 
 
 
