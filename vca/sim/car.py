@@ -50,3 +50,9 @@ class Car(pygame.sprite.Sprite):
         self.rect.center = self.position + SCREEN_CENTER
     
 
+    def load(self):
+        self.image, self.rect = self.game.car_img
+        self.rect.center = self.position + SCREEN_CENTER
+
+
+
