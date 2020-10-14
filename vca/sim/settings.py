@@ -52,7 +52,7 @@ CAR_LENGTH = 6          # meters
 CAR_LENGTH_PX = 128
 CAR_SCALE = CAR_LENGTH / (CAR_LENGTH_PX * PIXEL_TO_METERS_FACTOR)
 # note (0,0) at image center, axes: x points right [>], y points down [v]
-CAR_INITIAL_POSITION = (-100.0, 200.0)#(50, HEIGHT//2)
+CAR_INITIAL_POSITION = (40.0, 20.0)#(50, HEIGHT//2)
 CAR_INITIAL_VELOCITY = (30.0, 0.0)
 CAR_ACCELERATION = (0.0, 0.0)
 CAR_RADIUS = 1

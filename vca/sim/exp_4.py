@@ -23,17 +23,18 @@ from optical_flow_config import (FARNEBACK_PARAMS,
                                  LK_PARAMS,
                                  LK_TEMP_FOLDER)
 
+
 # add vca\ to sys.path
 vca_path = os.path.abspath(os.path.join('..'))
 if vca_path not in sys.path:
     sys.path.append(vca_path)
 
-from game_utils import load_image, _prep_temp_folder, vec_str, scale_img
 from utils.vid_utils import create_video_from_images
 from utils.optical_flow_utils import (get_OF_color_encoded, 
                                       draw_sparse_optical_flow_arrows,
                                       draw_tracks)
 from utils.img_utils import convert_to_grayscale, put_text, images_assemble
+from game_utils import load_image, _prep_temp_folder, vec_str, scale_img
 from algorithms.optical_flow import (compute_optical_flow_farneback, 
                                      compute_optical_flow_HS, 
                                      compute_optical_flow_LK)
@@ -64,33 +65,30 @@ or in other words have the car right in the center of it's view.
 
 
 class Block(pygame.sprite.Sprite):
-    """[summary]
-
-    Args:
-        pygame ([type]): [description]
+    """Defines a Block sprite.
     """
 
     # Constructor. Pass in the color of the block,
     # and its x and y position
-    def __init__(self, game):
-        self.groups = [game.all_sprites, game.car_block_sprites]
+    def __init__(self, simulator):
+        self.groups = [simulator.all_sprites, simulator.car_block_sprites]
         
         # Call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self, self.groups)
 
+        self.simulator = simulator
         # Create an image of the block, and fill it with a color.
         # This could also be an image loaded from the disk.
         self.w = BLOCK_WIDTH
         self.h = BLOCK_HEIGHT
         self.image = pygame.Surface((int(self.w), int(self.h)))
-        self.image.fill(BLOCK_COLOR)
+        self.fill_image()
 
         # Fetch the rectangle object that has the dimensions of the image
         self.rect = self.image.get_rect()
 
         self.reset_kinematics()
         self.rect.center = self.position
-        self.game = game
 
 
     def reset_kinematics(self):
@@ -98,33 +96,37 @@ class Block(pygame.sprite.Sprite):
         """
         # set vectors representing the position, velocity and acceleration
         # note the velocity we assign below will be interpreted as pixels/sec
-        self.position = pygame.Vector2(randrange(WIDTH - self.rect.width), randrange(HEIGHT - self.rect.height))
+        self.position = pygame.Vector2(randrange(-(WIDTH - self.rect.width),(WIDTH - self.rect.width))*self.simulator.pxm_fac, randrange(-(HEIGHT - self.rect.height),(HEIGHT - self.rect.height))*self.simulator.pxm_fac)
         self.velocity = pygame.Vector2(0.0,0.0)#(randrange(-50, 50), randrange(-50, 50))
         self.acceleration = pygame.Vector2(0.0, 0.0)
-
 
 
     def update_kinematics(self):
         """helper function to update kinematics of object
         """
         # update velocity and position
-        self.velocity += self.acceleration * self.game.dt
-        self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+        self.velocity += self.acceleration * self.simulator.dt
+        self.position += self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2
 
         # re-spawn in view
-        if self.position.x > WIDTH or \
-            self.position.x < 0 - self.rect.width or \
-            self.position.y > HEIGHT or \
-            self.position.y < 0 - self.rect.height:
+        if self.rect.centerx > WIDTH or \
+            self.rect.centerx < 0 - self.rect.width or \
+            self.rect.centery > HEIGHT or \
+            self.rect.centery < 0 - self.rect.height:
             self.reset_kinematics()
 
 
     def update_rect(self):
         """Position information is in bottom-left reference frame. 
-        This method transforms it to top-left reference frame
+        This method transforms it to top-left reference frame and update the sprite's rect.
+        This is for rendering purposes only, to decide where to draw the sprite.
         """
-        pass
-
+        
+        x, y = self.position.elementwise() * (1, -1) / self.simulator.pxm_fac
+        self.rect.centerx = int(x)
+        self.rect.centery = int(y) + HEIGHT
+        self.rect.center += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1) 
+        
 
 
     def update(self):
@@ -134,35 +136,45 @@ class Block(pygame.sprite.Sprite):
         """
         # for example if we want the sprite to move 5 pixels to the right
         self.update_kinematics()
-        self.rect.center = self.position
+        self.update_rect()
+        # self.rect.center = self.position
+
+
+    def fill_image(self):
+        # r,g,b = BLOCK_COLOR
+        # r += random.randint(-5, 5)
+        # g += random.randint(-5, 5)
+        # b += random.randint(-5, 5)
+        self.image.fill(BLOCK_COLOR) #((r,g,b))
 
 
     def load(self):
-        self.w /= self.game.alt_change_fac
-        self.h /= self.game.alt_change_fac
-        self.image = pygame.Surface((int(self.w), int(self.h)))
-        self.image.fill(BLOCK_COLOR)
+        self.w /= self.simulator.alt_change_fac
+        self.h /= self.simulator.alt_change_fac
+
+        if self.w >= 1 and self.h >= 1:
+            self.image = pygame.Surface((int(self.w), int(self.h)))
+            self.fill_image()
 
         # Fetch the rectangle object that has the dimensions of the image
         self.rect = self.image.get_rect()
 
-        self.rect.center = self.position
-
+        # self.rect.center = self.position
 
 
 
 class Car(pygame.sprite.Sprite):
     """Defines a car sprite.
     """
-    def __init__(self, game, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0):
+    def __init__(self, simulator, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0):
         # assign itself to the all_sprites group 
-        self.groups = [game.all_sprites, game.car_block_sprites]
+        self.groups = [simulator.all_sprites, simulator.car_block_sprites]
 
         # call Sprite initializer with group info
         pygame.sprite.Sprite.__init__(self, self.groups) 
         
         # assign Sprite.image and Sprite.rect attributes for this Sprite
-        self.image, self.rect = game.car_img
+        self.image, self.rect = simulator.car_img
 
         # set kinematics
         # note the velocity and acceleration we assign below 
@@ -171,19 +183,29 @@ class Car(pygame.sprite.Sprite):
         self.velocity = pygame.Vector2(vx, vy)
         self.acceleration = pygame.Vector2(ax, ay)
 
-        # set initial rect location to position
-        self.rect.center = self.position + SCREEN_CENTER
-
         # hold onto the game/simulator reference
-        self.game = game
+        self.simulator = simulator
+
+        # set initial rect location to position
+        self.update_rect()
+        # self.rect.center = self.position + SCREEN_CENTER
 
 
     def update_kinematics(self):
         """helper function to update kinematics of object
         """
         # update velocity and position
-        self.velocity += self.acceleration * self.game.dt
-        self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+        self.velocity += self.acceleration * self.simulator.dt
+        self.position += self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2
+
+
+    def update_rect(self):
+        """update car sprite's rect.
+        """
+        x, y = self.position.elementwise() * (1, -1) / self.simulator.pxm_fac
+        self.rect.centerx = int(x)
+        self.rect.centery = int(y) + HEIGHT
+        self.rect.center += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1)
 
 
     def update(self):
@@ -191,18 +213,20 @@ class Car(pygame.sprite.Sprite):
             This will get called in game loop for every frame
         """
         self.update_kinematics()
-        self.rect.center = self.position + SCREEN_CENTER
+        self.update_rect()
+        # self.rect.center = self.position + SCREEN_CENTER
     
 
     def load(self):
-        self.image, self.rect = self.game.car_img
-        self.rect.center = self.position + SCREEN_CENTER
+        self.image, self.rect = self.simulator.car_img
+        self.update_rect()
+        # self.rect.center = self.position + SCREEN_CENTER
 
 
 
 class DroneCamera(pygame.sprite.Sprite):
-    def __init__(self, game):
-        self.groups = [game.all_sprites, game.drone_sprite]
+    def __init__(self, simulator):
+        self.groups = [simulator.all_sprites, simulator.drone_sprite]
 
         # call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self, self.groups)
@@ -211,15 +235,15 @@ class DroneCamera(pygame.sprite.Sprite):
         # self.image = pygame.Surface((20, 20))
         # self.image.fill(BLUE)
         # self.rect = self.image.get_rect()
-        self.image, self.rect = game.drone_img
+        self.image, self.rect = simulator.drone_img
         self.image.fill((255, 255, 255, 204), None, pygame.BLEND_RGBA_MULT)
         self.reset_kinematics()
         self.altitude = ALTITUDE
-        self.alt_change = 10.0
+        self.alt_change = 5.0
         
-        
-        self.rect.center = self.position + SCREEN_CENTER
-        self.game = game
+        # self.rect.center = self.position + SCREEN_CENTER
+        self.simulator = simulator
+        self.update_rect()
         
         self.vel_limit = DRONE_VELOCITY_LIMIT
         self.acc_limit = DRONE_ACCELERATION_LIMIT
@@ -229,7 +253,17 @@ class DroneCamera(pygame.sprite.Sprite):
         """[summary]
         """
         self.update_kinematics()
-        self.rect.center = self.position + SCREEN_CENTER
+        self.update_rect()
+        # self.rect.center = self.position + SCREEN_CENTER
+
+
+    def update_rect(self):
+        """update drone sprite's rect.
+        """
+        x, y = self.position.elementwise() * (1, -1) / self.simulator.pxm_fac
+        self.rect.centerx = int(x)
+        self.rect.centery = int(y) + HEIGHT
+        self.rect.center += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1)
 
 
     def reset_kinematics(self):
@@ -250,11 +284,11 @@ class DroneCamera(pygame.sprite.Sprite):
         # print(f'a {self.acceleration}, v {self.velocity}')
         
         # update velocity and position
-        self.velocity += self.acceleration * self.game.dt
+        self.velocity += self.acceleration * self.simulator.dt
         if abs(self.velocity.length()) > self.vel_limit:
-            self.velocity -= self.acceleration * self.game.dt
+            self.velocity -= self.acceleration * self.simulator.dt
 
-        self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+        self.position += self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2
 
 
     def compensate_camera_motion(self, sprite_obj):
@@ -313,13 +347,12 @@ class DroneCamera(pygame.sprite.Sprite):
 
     
     def fly_higher(self):
-        self.game.alt_change_fac = 1.0 + self.alt_change/self.altitude
+        self.simulator.alt_change_fac = 1.0 + self.alt_change/self.altitude
         self.altitude += self.alt_change
-        
         
 
     def fly_lower(self):
-        self.game.alt_change_fac = 1.0 - self.alt_change/self.altitude
+        self.simulator.alt_change_fac = 1.0 - self.alt_change/self.altitude
         self.altitude -= self.alt_change
 
 
@@ -358,6 +391,7 @@ class Simulator:
         self.bb_end = None
         self.bb_drag = False
         self.running = False
+
         self.alt_change_fac = 1.0
         self.pxm_fac = PIXEL_TO_METERS_FACTOR
 
@@ -542,11 +576,14 @@ class Simulator:
             pygame.draw.rect(self.screen_surface, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
             
         # draw drone altitude
-        alt_str = f'Drone Altitude - {self.camera.altitude:0.2f}m, fac - {self.alt_change_fac}'
+        alt_str = f'car location - {self.car.rect.center}, Drone Altitude - {self.camera.altitude:0.2f}m, fac - {self.alt_change_fac:0.4f}, pxm - {self.pxm_fac:0.4f}'
         alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
         alt_rect = alt_surf.get_rect()
-        self.screen_surface.blit(alt_surf, (15, HEIGHT - 25))
-
+        self.screen_surface.blit(alt_surf, (15, 15))
+        alt_str = f'drone location - {self.camera.rect.center}, FOV - {WIDTH * self.pxm_fac:0.2f}m x {HEIGHT * self.pxm_fac:0.2f}m'
+        alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
+        alt_rect = alt_surf.get_rect()
+        self.screen_surface.blit(alt_surf, (15, 35))
 
 
     def screen_saver(self, path):
@@ -609,7 +646,6 @@ class Simulator:
         for block in self.blocks:
             block.load()
 
-    
 
     def drone_down(self):
         self.camera.fly_lower()
@@ -619,7 +655,8 @@ class Simulator:
         self.car.load()
         for block in self.blocks:
             block.load()
-    
+
+
     def quit(self):
         """Helper function, sets running flag to False and quits pygame.
         """
@@ -813,7 +850,6 @@ class Tracker:
             cy += y
 
         return np.array([[int(cx/len(points)), int(cy/len(points))]])
-
 
 
     def put_velocity_text(self, img, velocity):
