@@ -27,10 +27,8 @@ def load_image(img_name, colorkey=None, alpha=True, scale=1.0):
     # convert image for pygame compatibility
     image = image.convert_alpha() if alpha else image.convert()
 
-    if not scale == 1.0:
-        new_width = int(image.get_width() * scale)
-        new_height = int(image.get_height() * scale)
-        image = pygame.transform.scale(image, (new_width, new_height))
+    # scale image
+    image = scale_img(image, scale)
 
     # adjust according to colorkey
     if colorkey is not None:
@@ -39,6 +37,22 @@ def load_image(img_name, colorkey=None, alpha=True, scale=1.0):
         image.set_colorkey(colorkey, RLEACCEL)
 
     return image, image.get_rect()
+
+
+def scale_img(img, scale):
+    """Scales a pygame image by given scale
+
+    Args:
+        img (pygame.surface.Surface): Image to be scaled
+        scale (float): Scale of output image
+    """
+    if not scale == 1.0:
+        new_width = int(img.get_width() * scale)
+        new_height = int(img.get_height() * scale)
+        img = pygame.transform.scale(img, (new_width, new_height))
+
+    return img
+
 
 
 def screen_saver(screen, path):
