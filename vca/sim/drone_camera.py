@@ -2,6 +2,7 @@ import pygame
 
 from pygame.locals import *
 from settings import *
+from game_utils import scale_img
 from math import copysign
 
 
@@ -19,6 +20,8 @@ class DroneCamera(pygame.sprite.Sprite):
         self.image, self.rect = game.drone_img
         self.image.fill((255, 255, 255, 204), None, pygame.BLEND_RGBA_MULT)
         self.reset_kinematics()
+        self.altitude = ALTITUDE
+        self.alt_change = 50.0
         
         self.rect.center = self.position + SCREEN_CENTER
         self.game = game
@@ -26,11 +29,13 @@ class DroneCamera(pygame.sprite.Sprite):
         self.vel_limit = DRONE_VELOCITY_LIMIT
         self.acc_limit = DRONE_ACCELERATION_LIMIT
 
+
     def update(self):
         """[summary]
         """
         self.update_kinematics()
         self.rect.center = self.position + SCREEN_CENTER
+
 
     def reset_kinematics(self):
         """[summary]
@@ -56,6 +61,7 @@ class DroneCamera(pygame.sprite.Sprite):
 
         self.position += self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
 
+
     def compensate_camera_motion(self, sprite_obj):
         """[summary]
 
@@ -63,6 +69,7 @@ class DroneCamera(pygame.sprite.Sprite):
             sprite_obj ([type]): [description]
         """
         sprite_obj.position -= self.position #self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+
 
     def change_acceleration(self, command_vec):
         """Changes the drone acceleration appropriately in reponse to given command vector.
@@ -85,3 +92,37 @@ class DroneCamera(pygame.sprite.Sprite):
         if abs(self.acceleration.length()) > self.acc_limit:
             self.acceleration -= command_vec
         
+
+    def convert_px_to_m(self, p):
+        """Convert pixels to meters
+
+        Args:
+            p (float): Value in pixel units
+
+        Returns:
+            float: Value in SI units
+        """
+        return p * ((self.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
+
+
+    def convert_m_to_px(self, x):
+        """Convert meters to pixel units
+
+        Args:
+            x (float): Value in SI units
+
+        Returns:
+            float: Value in pixels
+        """
+        return x / ((self.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
+
+    
+    def fly_higher(self):
+        self.game.alt_change_fac = 1.0 + self.alt_change/self.altitude
+        self.altitude += self.alt_change
+        
+        
+
+    def fly_lower(self):
+        self.game.alt_change_fac = 1.0 - self.alt_change/self.altitude
+        self.altitude -= self.alt_change

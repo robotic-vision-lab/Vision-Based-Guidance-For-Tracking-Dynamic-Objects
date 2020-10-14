@@ -40,7 +40,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 200                                  # meters
+ALTITUDE = 200.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -48,18 +48,18 @@ PIXEL_TO_METERS_FACTOR = HORIZONTAL_SPAN / WIDTH
 
 # car settings
 CAR_IMG = 'car.png'
-CAR_LENGTH = 6
+CAR_LENGTH = 6          # meters
 CAR_LENGTH_PX = 128
 CAR_SCALE = CAR_LENGTH / (CAR_LENGTH_PX * PIXEL_TO_METERS_FACTOR)
 # note (0,0) at image center, axes: x points right [>], y points down [v]
-CAR_INITIAL_POSITION = (-100, 300)#(50, HEIGHT//2)
-CAR_INITIAL_VELOCITY = (45, 0)
+CAR_INITIAL_POSITION = (-100, 200)#(50, HEIGHT//2)
+CAR_INITIAL_VELOCITY = (30, 0)
 CAR_ACCELERATION = (0, 0)
 CAR_RADIUS = 1
 
 # block settings
 BLOCK_COLOR = DARK_GRAY_2
-BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 12, 8
+BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 12.0, 8.0
 NUM_BLOCKS = 50
 
 # drone camera settings
