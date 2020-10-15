@@ -52,8 +52,8 @@ CAR_LENGTH = 6          # meters
 CAR_LENGTH_PX = 128
 CAR_SCALE = CAR_LENGTH / (CAR_LENGTH_PX * PIXEL_TO_METERS_FACTOR)
 # note (0,0) at image center, axes: x points right [>], y points down [v]
-CAR_INITIAL_POSITION = (-50.0, 50.0)#(-200.0, 200.0)#(50, HEIGHT//2)
-CAR_INITIAL_VELOCITY = (30.0, 0.0)#(45.0, 0.0)
+CAR_INITIAL_POSITION = (-200.0, 200.0)#(-50.0, 50.0)#(50, HEIGHT//2)
+CAR_INITIAL_VELOCITY = (45.0, 0.0)#(30.0, 0.0)#
 CAR_ACCELERATION = (0.0, 0.0)
 CAR_RADIUS = 1
 
@@ -67,7 +67,7 @@ DRONE_IMG = 'cross_hair2.png'
 DRONE_SCALE = 0.2
 # note (0,0) at image center, axes: x points right [>], y points down [v]
 DRONE_POSITION = (0.0, 0.0)
-DRONE_INITIAL_VELOCITY = (25.0, 0.0)
+DRONE_INITIAL_VELOCITY = (30.0, 0.0)
 DRONE_VELOCITY_LIMIT = 500      # +/-
 DRONE_ACCELERATION_LIMIT = 20   # +/-
 

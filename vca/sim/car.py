@@ -28,7 +28,7 @@ class Car(pygame.sprite.Sprite):
         self.acceleration = pygame.Vector2(ax, ay)
 
         # set initial rect location to position
-        self.rect.center = self.position + SCREEN_CENTER
+        self.update_rect()
 
         # hold onto the game/simulator reference
         self.game = game
@@ -47,8 +47,14 @@ class Car(pygame.sprite.Sprite):
             This will get called in game loop for every frame
         """
         self.update_kinematics()
+        self.update_rect()
+
+    def update_rect(self):
+        """update car sprite's rect
+        """
         self.rect.center = self.position + SCREEN_CENTER
-    
+
+
 
     def load(self):
         self.image, self.rect = self.game.car_img

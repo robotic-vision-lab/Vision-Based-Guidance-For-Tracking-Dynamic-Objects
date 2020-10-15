@@ -24,7 +24,7 @@ class DroneCamera(pygame.sprite.Sprite):
         self.alt_change = 10.0
         
         
-        self.rect.center = self.position + SCREEN_CENTER
+        self.update_rect()
         self.game = game
         
         self.vel_limit = DRONE_VELOCITY_LIMIT
@@ -35,6 +35,13 @@ class DroneCamera(pygame.sprite.Sprite):
         """[summary]
         """
         self.update_kinematics()
+        self.update_rect()
+        # self.rect.center = self.position + SCREEN_CENTER
+
+
+    def update_rect(self):
+        """update drone sprite's rect.
+        """
         self.rect.center = self.position + SCREEN_CENTER
 
 
@@ -69,7 +76,8 @@ class DroneCamera(pygame.sprite.Sprite):
         Args:
             sprite_obj ([type]): [description]
         """
-        sprite_obj.position -= self.position #self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+        sprite_obj.position -= self.position
+        sprite_obj.update_rect()
 
 
     def change_acceleration(self, command_vec):
