@@ -239,7 +239,7 @@ class DroneCamera(pygame.sprite.Sprite):
         self.image.fill((255, 255, 255, 204), None, pygame.BLEND_RGBA_MULT)
         self.reset_kinematics()
         self.altitude = ALTITUDE
-        self.alt_change = 5.0
+        self.alt_change = 1.0
         
         # self.rect.center = self.position + SCREEN_CENTER
         self.simulator = simulator
@@ -711,8 +711,8 @@ class Tracker:
 
         # create mask for drawing tracks
         mask = np.zeros_like(frame_1)
-
-        f = open(self.tracker_filename, '+w')
+        if self.manager.write_track:
+            f = open(self.tracker_filename, '+w')
 
         if self.manager.tracker_display_on:
             # set window location 
@@ -757,7 +757,7 @@ class Tracker:
             # cosmetics/visual aids
             # create img with added tracks for all point pairs on next frame
             # give car positions
-            self.cur_img = nxt_frame
+            # self.cur_img = nxt_frame
             if self.manager.tracker_display_on:
                 img, mask = draw_tracks(frame_2, self.get_centroid(good_cur), self.get_centroid(good_nxt), None, mask, track_thickness=2)
 
@@ -797,7 +797,8 @@ class Tracker:
             cv.waitKey(1)
 
         cv.destroyAllWindows()
-        f.close()
+        if self.manager.write_track:
+            f.close()
 
 
     def compute_car_kinematics(self, cur_pts, nxt_pts):
@@ -884,8 +885,8 @@ class Tracker:
         Returns:
             [np.ndarray]: Image after putting all kinds of crap
         """
-        img = put_text(img, f'Altitude = {ALTITUDE:0.2f} m', (WIDTH-175, HEIGHT-15), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, f'1 pixel = {PIXEL_TO_METERS_FACTOR:0.4f} m', (WIDTH-175, HEIGHT-40), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, f'Altitude = {self.manager.simulator.camera.altitude:0.2f} m', (WIDTH-175, HEIGHT-15), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, f'1 pixel = {self.manager.simulator.pxm_fac:0.4f} m', (WIDTH-175, HEIGHT-40), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
         
         fac = PIXEL_TO_METERS_FACTOR
         kin_str_1 = f'car_pos(m) : '      .rjust(20)
@@ -932,6 +933,15 @@ class Controller:
             # kin = self.manager.get_from_kinematics_deque()
             kin = self.manager.get_true_kinematics() if self.manager.use_true_kin else self.manager.get_from_kinematics_deque()
             # print(kin)
+
+            # print(len(self.manager.kinematics_deque), ', ', len(self.manager.kinematics_deque) > 0)
+            l = len(self.manager.kinematics_deque)
+            if l > 0:
+                print(len(self.manager.kinematics_deque))
+                self.manager.get_from_kinematics_deque()
+            else:
+                continue
+
             mpx_fac = 1/self.manager.simulator.pxm_fac
             
             x, y            = kin[0]#.elementwise() * (1, -1) * mpx_fac + SCREEN_CENTER#(0, HEIGHT)
@@ -976,8 +986,8 @@ class Controller:
 
             # compute desired acceleration
             w = -0.1
-            K1 = 0.002 * np.sign(-vr)
-            K2 = 0.002
+            K1 = 0.02 * np.sign(-vr)
+            K2 = 0.02
 
             c = cos(alpha - theta)
             s = sin(alpha - theta)
@@ -985,12 +995,12 @@ class Controller:
             K2y2Vrr2 = K2*y2*vr*r**2
             d = 2*vr*vtheta*r**2
 
-            # a_lat = (K1y1 * (vr*c + vtheta*s) + K2y2Vrr2*c) / d
-            # a_long = (K1y1 * (vr*s - vtheta*c) + K2y2Vrr2*s) / d
+            a_lat = (K1y1 * (vr*c + vtheta*s) + K2y2Vrr2*c) / d
+            a_long = (K1y1 * (vr*s - vtheta*c) + K2y2Vrr2*s) / d
 
-            a_lat = (K1*vr*y1*cos(alpha - theta) + K1*vtheta*y1*sin(alpha - theta) + K2*R**2*vr*y2*cos(alpha - theta) + K2*R**2*vtheta*y2*sin(alpha - theta) - K2*vtheta*r**2*y2*sin(alpha - theta))/(2*(vr*vtheta*r**2*cos(alpha - theta)**2 + vr*vtheta*r**2*sin(alpha - theta)**2))
+            # a_lat = (K1*vr*y1*cos(alpha - theta) + K1*vtheta*y1*sin(alpha - theta) + K2*R**2*vr*y2*cos(alpha - theta) + K2*R**2*vtheta*y2*sin(alpha - theta) - K2*vtheta*r**2*y2*sin(alpha - theta))/(2*(vr*vtheta*r**2*cos(alpha - theta)**2 + vr*vtheta*r**2*sin(alpha - theta)**2))
  
-            a_long = (K1*vr*y1*sin(alpha - theta) - K1*vtheta*y1*cos(alpha - theta) - K2*R**2*vtheta*y2*cos(alpha - theta) + K2*R**2*vr*y2*sin(alpha - theta) + K2*vtheta*r**2*y2*cos(alpha - theta))/(2*(vr*vtheta*r**2*cos(alpha - theta)**2 + vr*vtheta*r**2*sin(alpha - theta)**2))
+            # a_long = (K1*vr*y1*sin(alpha - theta) - K1*vtheta*y1*cos(alpha - theta) - K2*R**2*vtheta*y2*cos(alpha - theta) + K2*R**2*vr*y2*sin(alpha - theta) + K2*vtheta*r**2*y2*cos(alpha - theta))/(2*(vr*vtheta*r**2*cos(alpha - theta)**2 + vr*vtheta*r**2*sin(alpha - theta)**2))
 
             a_long_bound = 10
             a_lat_bound = 10
@@ -1171,7 +1181,7 @@ class ExperimentManager:
 if __name__ == "__main__":
 
     RUN_EXPERIMENT          = 1
-    EXPERIMENT_SAVE_MODE_ON = 0
+    EXPERIMENT_SAVE_MODE_ON = 1
     WRITE_TRACK             = 0
     CONTROL_ON              = 1
     TRACKER_ON              = 1

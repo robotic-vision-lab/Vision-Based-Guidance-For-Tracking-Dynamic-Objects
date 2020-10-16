@@ -532,7 +532,8 @@ class Tracker:
         # create mask for drawing tracks
         mask = np.zeros_like(frame_1)
 
-        f = open(self.tracker_filename, '+w')
+        if self.manager.write_track:
+            f = open(self.tracker_filename, '+w')
 
         if self.manager.tracker_display_on:
             # set window location 
@@ -577,7 +578,7 @@ class Tracker:
             # cosmetics/visual aids
             # create img with added tracks for all point pairs on next frame
             # give car positions
-            self.cur_img = nxt_frame
+            # self.cur_img = nxt_frame
             if self.manager.tracker_display_on:
                 img, mask = draw_tracks(frame_2, self.get_centroid(good_cur), self.get_centroid(good_nxt), None, mask, track_thickness=2)
 
@@ -617,7 +618,8 @@ class Tracker:
             cv.waitKey(1)
 
         cv.destroyAllWindows()
-        f.close()
+        if self.manager.write_track:
+            f.close()
 
 
     def compute_car_kinematics(self, cur_pts, nxt_pts):
@@ -676,7 +678,6 @@ class Tracker:
             cy += y
 
         return np.array([[int(cx/len(points)), int(cy/len(points))]])
-
 
 
     def put_velocity_text(self, img, velocity):
