@@ -456,7 +456,7 @@ class Simulator:
                 # print stuffs
                 # print(f'SSSS >> {str(timedelta(seconds=self.time))} >> DRONE - x:{vec_str(self.camera.rect.center)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | CAR - x:{vec_str(self.car.rect.center)}, v: {vec_str(self.car.velocity)},  v_c-v_d: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='\n')
                 print(f'SSSS >> {str(timedelta(seconds=self.time))} >> DRONE - x:{vec_str(self.camera.position)} | v:{vec_str(self.camera.velocity)} | CAR - x:{vec_str(self.car.position)}, v: {vec_str(self.car.velocity)} | COMMANDED a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | rel_car_pos: {vec_str(self.car.position - self.camera.position)}', end='\n')
-                self.manager.true_rel_vel = self.car.velocity - self.camera.velocity
+                # self.manager.true_rel_vel = self.car.velocity - self.camera.velocity
 
             # draw stuffs
             self.draw()
@@ -469,12 +469,16 @@ class Simulator:
             self.draw_extra()
 
             # show drawing board
-            pygame.display.flip()
+            self.show_drawing()
+            # pygame.display.flip()
 
             # save screen
             if self.save_screen:
                 next(self.screen_shot)
-                
+
+
+    def show_drawing(self):
+        pygame.display.flip()          
         
     def handle_events(self):
         """Handles captured events.
@@ -684,7 +688,7 @@ class Simulator:
         return (WIDTH * self.pxm_fac, HEIGHT * self.pxm_fac)
 
 
-    def begin_tracking_ready(self):
+    def can_begin_tracking(self):
         ready = True
 
         # not ready if bb not selected or if simulated is still paused
@@ -711,8 +715,13 @@ class Tracker:
     def __init__(self, manager):
         
         self.manager = manager
+        self.frame_1 = None
+        self.cur_frame = None
         self.cur_img = None
         self.cur_points = None
+        self.win_name = 'Tracking in progress'
+        self._can_begin_control_flag = False
+        self.kin = None
         # self.nxt_points = None
         # self.car_position = None
         # self.car_velocity = None
@@ -723,7 +732,7 @@ class Tracker:
         Reads bounding box from it's ExperimentManager and computed features to be tracked.
         """
         # get first frame once bounding box is selected 
-        frame_1, cur_frame = self.get_first_frame()        
+        frame_1, cur_frame = self.get_first_frame()      
         
         # compute feature mask from selected bounding box
         feature_mask = np.zeros_like(cur_frame)
@@ -771,7 +780,7 @@ class Tracker:
             kin = self.compute_kinematics( good_cur.copy(), 
                                            good_nxt.copy() )
             drone_position, drone_velocity, car_position, car_velocity = kin
-            print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(self.car_position)} | v:{vec_str(self.car_velocity)}')
+            print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
             
             # add kinematics tuple to manager's kinematics deque
             self.manager.add_to_kinematics_deque(kin)
@@ -828,7 +837,7 @@ class Tracker:
     def get_first_frame(self):
         while True:
             # do nothing until bounding box is selected
-            if not self.manager.simulator.begin_tracking_ready():
+            if not self.manager.simulator.can_begin_tracking():
                 continue
 
             # get a frame from the image deque and break
@@ -836,8 +845,14 @@ class Tracker:
                 frame_1 = self.manager.image_deque.popleft()
                 cur_frame = convert_to_grayscale(frame_1)
                 break
+        
+        self._can_begin_control_flag = True
 
         return frame_1, cur_frame
+
+
+    def can_begin_control(self):
+        return self._can_begin_control_flag
 
 
     def compute_kinematics(self, cur_pts, nxt_pts):
@@ -852,7 +867,7 @@ class Tracker:
             tuple(float, float), tuple(float, float): mean of positions and velocities computed from each point pair. Transformed to world coordinates.
         """
         # # check non-zero number of points
-        # num_pts = len(cur_pts)
+        num_pts = len(cur_pts)
         # if num_pts == 0:
         #     return self.manager.simulator.camera.position, self.manager.simulator.camera.velocity, self.car_position, self.car_velocity
         
@@ -904,6 +919,71 @@ class Tracker:
             cy += y
 
         return np.array([[int(cx/len(points)), int(cy/len(points))]])
+
+
+    def process_image(self, img):
+        if self.cur_frame is None:
+            self.frame_1 = img
+            self.cur_frame = convert_to_grayscale(self.frame_1)
+
+            # compute feature mask from selected bounding box
+            feature_mask = np.zeros_like(self.cur_frame)
+            x,y,w,h = self.manager.simulator.bounding_box
+            feature_mask[y:y+h+1, x:x+w+1] = 1
+
+            # compute good features in the selected bounding box
+            self.cur_points = cv.goodFeaturesToTrack(self.cur_frame, mask=feature_mask, **FEATURE_PARAMS)
+
+            # create mask for drawing tracks
+            self.mask = np.zeros_like(self.frame_1)
+
+            # set tracker window location 
+            if self.manager.tracker_display_on:
+                from win32api import GetSystemMetrics                
+                cv.namedWindow(self.win_name)
+                cv.moveWindow(self.win_name, GetSystemMetrics(0)-frame_1.shape[1] -10, 0)
+        else:
+            self._can_begin_control_flag = True
+            self.frame_2 = img
+            self.nxt_frame = convert_to_grayscale(self.frame_2)
+
+            # track current points in next frame, compute optical flow
+            self.cur_points, self.nxt_points, stdev, err = compute_optical_flow_LK( self.cur_frame, 
+                                                                                    self.nxt_frame, 
+                                                                                    self.cur_points, 
+                                                                                    LK_PARAMS )
+            
+            # select good points, with standard deviation 1. use numpy index trick
+            good_cur = self.cur_points[stdev==1]
+            good_nxt = self.nxt_points[stdev==1]
+
+            # compute and create kinematics tuple
+            if len(good_cur)==0 or len(good_nxt)==0:
+                return False, None
+
+            self.kin = self.compute_kinematics( good_cur.copy(), 
+                                                good_nxt.copy() )
+
+            drone_position, drone_velocity, car_position, car_velocity = self.kin
+            # print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
+
+            if self.manager.tracker_display_on:
+                # add cosmetics to frame_2 for display purpose
+                img, mask = self.add_cosmetics(self.frame_2, mask, good_cur, good_nxt, self.kin)
+
+                # set cur_img; to be used for saving 
+                self.cur_img = img
+
+                # show resultant img
+                cv.imshow(win_name, img)
+
+            # ready for next iteration. set cur frame and points to next frame and points
+            self.cur_frame = self.nxt_frame.copy()
+            self.cur_points = good_nxt.reshape(-1, 1, 2) # -1 indicates to infer that dim size
+
+            cv.waitKey(1)
+
+            return True, self.kin
 
 
     def put_velocity_text(self, img, velocity):
@@ -966,6 +1046,8 @@ class Controller:
     def __init__(self, manager):
         self.manager = manager
         self.plot_info_file = 'plot_info.txt'
+        self.R = CAR_RADIUS
+        self.f = None
 
     def run(self):
         print('Controller run')
@@ -1068,7 +1150,7 @@ class Controller:
             # self.manager.add_to_command_deque((ax, ay))
             self.manager.simulator.camera.acceleration = pygame.Vector2((ax, ay))
 
-            if self.manager.write_plot:#TODO
+            if self.manager.write_plot:
                 f.write(f'{self.manager.simulator.time},{r},{theta},{vtheta},{vr},{x},{y},{car_x},{car_y},{ax},{ay},{a_lat},{a_long}\n')
 
         if self.manager.write_plot:
@@ -1077,6 +1159,62 @@ class Controller:
     def sat(self, x, bound):
         return min(max(x, -bound), bound)
 
+    def generate_acceleration(self, kin):
+        X, Y            = kin[0]
+        Vx, Vy          = kin[1]
+        car_x, car_y    = kin[2]
+        car_speed, cvy  = kin[3]
+
+        print(f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{X:0.2f}, {Y:0.2f}] | v:[{Vx:0.2f}, {Vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}]')
+        
+        # speed of drone
+        S = (Vx**2 + Vy**2) **0.5
+
+        # distance between the drone and car
+        r = ((car_x - X)**2 + (car_y - Y)**2)**0.5
+
+        # heading angle of drone wrt x axis
+        alpha = atan2(Vy,Vx)
+
+        # angle of LOS from drone to car
+        theta = atan2(car_y-Y, car_x-X)
+
+        # heading angle of car
+        beta = 0
+
+        # compute vr and vtheta
+        Vr = car_speed * cos(beta - theta) - S * cos(alpha - theta)
+        Vtheta = car_speed * sin(beta - theta) - S * sin(alpha - theta)
+
+        # calculate y from drone to car
+        y2 = Vtheta**2 + Vr**2
+        y1 = r**2 * Vtheta**2 - y2 * self.R**2
+
+        # time to collision from drone to car
+        # tm = -vr * r / (vtheta**2 + vr**2)
+
+        # compute desired acceleration
+        w = -0.1
+        K1 = 0.1 * np.sign(-Vr)
+        K2 = 0.05
+
+        a_lat = (K1*Vr*y1*cos(alpha - theta) + K1*Vtheta*y1*sin(alpha - theta) + K2*self.R**2*Vr*y2*cos(alpha - theta) + K2*self.R**2*Vtheta*y2*sin(alpha - theta) - K2*Vtheta*r**2*y2*sin(alpha - theta))/(2*(Vr*Vtheta*r**2*cos(alpha - theta)**2 + Vr*Vtheta*r**2*sin(alpha - theta)**2))
+        a_long = (K1*Vr*y1*sin(alpha - theta) - K1*Vtheta*y1*cos(alpha - theta) - K2*self.R**2*Vtheta*y2*cos(alpha - theta) + K2*self.R**2*Vr*y2*sin(alpha - theta) + K2*Vtheta*r**2*y2*cos(alpha - theta))/(2*(Vr*Vtheta*r**2*cos(alpha - theta)**2 + Vr*Vtheta*r**2*sin(alpha - theta)**2))
+
+        a_long_bound = 8
+        a_lat_bound = 8
+        
+        a_long = self.sat(a_long, a_long_bound)
+        a_lat = self.sat(a_lat, a_lat_bound)
+
+        delta = alpha + pi/2
+        ax = a_lat * cos(delta) + a_long * cos(alpha)
+        ay = a_lat * sin(delta) + a_long * sin(alpha)
+
+        if self.manager.write_plot:
+            self.f.write(f'{self.manager.simulator.time},{r},{theta},{Vtheta},{Vr},{X},{Y},{car_x},{car_y},{ax},{ay},{a_lat},{a_long}\n')
+
+        return ax, ay
 
 
 class ExperimentManager:
@@ -1208,6 +1346,56 @@ class ExperimentManager:
             self.make_video(vid_path, TEMP_FOLDER)
 
 
+    def run(self):
+        self.simulator.start_new()
+        if self.write_plot:
+            self.controller.f = open(self.controller.plot_info_file, '+w')
+
+        # start the experiment
+        while self.simulator.running:
+            self.simulator.dt = self.simulator.clock.tick(FPS) / 1000.0
+            if self.simulator.pause:
+                self.simulator.dt = 0.0
+            self.simulator.time += self.simulator.dt
+
+            self.simulator.handle_events()
+            if not self.simulator.running:
+                break
+
+            if not self.simulator.pause:
+                self.simulator.update()
+                print(f'SSSS >> {str(timedelta(seconds=self.simulator.time))} >> DRONE - x:{vec_str(self.simulator.camera.position)} | v:{vec_str(self.simulator.camera.velocity)} | CAR - x:{vec_str(self.simulator.car.position)}, v: {vec_str(self.simulator.car.velocity)} | COMMANDED a:{vec_str(self.simulator.camera.acceleration)} | a_comm:{vec_str(self.simulator.cam_accel_command)} | rel_car_pos: {vec_str(self.simulator.car.position - self.simulator.camera.position)}', end='\n')
+            
+            # draw stuffs
+            self.simulator.draw()
+
+            # process screen capture
+            if not self.simulator.pause:
+                # let tracker process image, when simulator says so
+                if self.simulator.can_begin_tracking():
+                    screen_capture = self.simulator.get_screen_capture()
+                    self.tracker.process_image(screen_capture)
+                    # let controller generate acceleration, when tracker says so
+                    if self.tracker.can_begin_control() and not self.tracker.kin is None:
+                        kin = self.get_true_kinematics() if self.use_true_kin else self.tracker.kin
+                        ax, ay = self.controller.generate_acceleration(kin)
+                        self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
+
+            self.simulator.draw_extra()
+            self.simulator.show_drawing()
+
+            if self.simulator.save_screen:
+                next(self.simulator.screen_shot)
+            
+        cv.destroyAllWindows()
+        if self.write_plot:
+            self.controller.f.close()
+
+
+
+
+
+
     def make_video(self, video_name, folder_path):
         """Helper function, looks for frames in given folder,
         writes them into a video file, with the given name. 
@@ -1242,19 +1430,20 @@ class ExperimentManager:
 
 if __name__ == "__main__":
 
-    RUN_EXPERIMENT          = 1
+    RUN_EXPERIMENT          = 0
     EXPERIMENT_SAVE_MODE_ON = 0
     WRITE_PLOT              = 1
     CONTROL_ON              = 1
     TRACKER_ON              = 1
     TRACKER_DISPLAY_ON      = 0
     USE_TRUE_KINEMATICS     = 1
-    RUN_TRACK_PLOT          = 0
+    RUN_TRACK_PLOT          = 1
 
     if RUN_EXPERIMENT:
         experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_PLOT, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON, USE_TRUE_KINEMATICS)
         print("\nExperiment started.\n")
-        experiment_manager.run_experiment()
+        # experiment_manager.run_experiment()
+        experiment_manager.run()
         print("\n\nExperiment finished.\n")
 
     if RUN_TRACK_PLOT:
