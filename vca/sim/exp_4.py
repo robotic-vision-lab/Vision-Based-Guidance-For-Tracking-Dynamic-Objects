@@ -87,8 +87,13 @@ class Block(pygame.sprite.Sprite):
         # Fetch the rectangle object that has the dimensions of the image
         self.rect = self.image.get_rect()
 
-        self.reset_kinematics()
-        self.rect.center = self.position
+        # self.reset_kinematics()
+        self.position = pygame.Vector2(randrange(-(WIDTH - self.rect.width),(WIDTH - self.rect.width))*self.simulator.pxm_fac, randrange(-(HEIGHT - self.rect.height),(HEIGHT - self.rect.height))*self.simulator.pxm_fac)
+        self.velocity = pygame.Vector2(0.0,0.0)#(randrange(-50, 50), randrange(-50, 50))
+        self.acceleration = pygame.Vector2(0.0, 0.0)
+
+        # self.rect.center = self.position
+        self.update_rect()
 
 
     def reset_kinematics(self):
@@ -96,7 +101,10 @@ class Block(pygame.sprite.Sprite):
         """
         # set vectors representing the position, velocity and acceleration
         # note the velocity we assign below will be interpreted as pixels/sec
-        self.position = pygame.Vector2(randrange(-(WIDTH - self.rect.width),(WIDTH - self.rect.width))*self.simulator.pxm_fac, randrange(-(HEIGHT - self.rect.height),(HEIGHT - self.rect.height))*self.simulator.pxm_fac)
+        fov = self.simulator.get_camera_fov()
+        drone_pos = self.simulator.get_drone_position()
+        self.position = pygame.Vector2(random.uniform(drone_pos[0]-fov[0]/2,drone_pos[0]+fov[0]), random.uniform(drone_pos[1]-fov[1]/2,drone_pos[1]+fov[1]))
+        # self.position = pygame.Vector2(randrange(-(WIDTH - self.rect.width),(WIDTH - self.rect.width))*self.simulator.pxm_fac, randrange(-(HEIGHT - self.rect.height),(HEIGHT - self.rect.height))*self.simulator.pxm_fac)
         self.velocity = pygame.Vector2(0.0,0.0)#(randrange(-50, 50), randrange(-50, 50))
         self.acceleration = pygame.Vector2(0.0, 0.0)
 
@@ -127,7 +135,6 @@ class Block(pygame.sprite.Sprite):
         self.rect.centery = int(y) + HEIGHT
         self.rect.center += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1) 
         
-
 
     def update(self):
         """Overwrites Sprite.update()
@@ -269,7 +276,7 @@ class DroneCamera(pygame.sprite.Sprite):
     def reset_kinematics(self):
         """[summary]
         """
-        self.position = pygame.Vector2(0, 0)
+        self.position = pygame.Vector2(DRONE_POSITION)
         self.velocity = pygame.Vector2(DRONE_INITIAL_VELOCITY)
         self.acceleration = pygame.Vector2(0, 0)
 
@@ -297,8 +304,12 @@ class DroneCamera(pygame.sprite.Sprite):
         Args:
             sprite_obj ([type]): [description]
         """
-        sprite_obj.position -= self.position #self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
-        sprite_obj.update_rect()
+        # sprite_obj.position -= self.position #self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+        # sprite_obj.update_rect()
+        sprite_obj.rect.centerx = sprite_obj.rect.centerx - self.rect.centerx + WIDTH//2
+        sprite_obj.rect.centery = sprite_obj.rect.centery - self.rect.centery + HEIGHT//2
+        
+
 
     def change_acceleration(self, command_vec):
         """Changes the drone acceleration appropriately in reponse to given command vector.
@@ -442,7 +453,8 @@ class Simulator:
                 # update game objects
                 self.update()
                 # print stuffs
-                print(f'SSSS >> {str(timedelta(seconds=self.time))} >> DRONE - x:{vec_str(self.camera.rect.center)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | CAR - x:{vec_str(self.car.rect.center)}, v: {vec_str(self.car.velocity)},  v_c-v_d: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='\n')
+                # print(f'SSSS >> {str(timedelta(seconds=self.time))} >> DRONE - x:{vec_str(self.camera.rect.center)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | CAR - x:{vec_str(self.car.rect.center)}, v: {vec_str(self.car.velocity)},  v_c-v_d: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='\n')
+                print(f'SSSS >> {str(timedelta(seconds=self.time))} >> DRONE - x:{vec_str(self.camera.position)} | v:{vec_str(self.camera.velocity)} | CAR - x:{vec_str(self.car.position)}, v: {vec_str(self.car.velocity)} | COMMANDED a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | rel_car_pos: {vec_str(self.car.position - self.camera.position)}', end='\n')
                 self.manager.true_rel_vel = self.car.velocity - self.camera.velocity
 
             # draw stuffs
@@ -663,12 +675,22 @@ class Simulator:
             block.load()
 
 
+    def get_drone_position(self):
+        return self.camera.position
+
+    
+    def get_camera_fov(self):
+        return (WIDTH * self.pxm_fac, HEIGHT * self.pxm_fac)
+
+
+
     def quit(self):
         """Helper function, sets running flag to False and quits pygame.
         """
         self.running = False
         pygame.quit()
-        
+
+      
 
 
 class Tracker:
@@ -711,7 +733,7 @@ class Tracker:
 
         # create mask for drawing tracks
         mask = np.zeros_like(frame_1)
-        if self.manager.write_track:
+        if self.manager.write_plot:
             f = open(self.tracker_filename, '+w')
 
         if self.manager.tracker_display_on:
@@ -741,6 +763,8 @@ class Tracker:
             # drone_position = self.manager.simulator.camera.position
             # drone_velocity = self.manager.simulator.camera.velocity
             # self.car_position, self.car_velocity = self.compute_car_kinematics(good_cur, good_nxt)
+            if len(good_cur)==0 or len(good_nxt)==0:
+                continue
             
             # kin = (drone_position, drone_velocity, self.car_position, self.car_velocity)
             kin = drone_position, drone_velocity, self.car_position, self.car_velocity = self.compute_car_kinematics(good_cur.copy(), good_nxt.copy())
@@ -775,8 +799,8 @@ class Tracker:
                 img = self.put_metrics(img, kin)
 
                 # write tracking information to file
-                if self.manager.write_track:
-                    f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {self.car_velocity[0]:.2f} {self.car_velocity[1]:.2f}\n')
+                # if self.manager.write_plot:
+                #     f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {self.car_velocity[0]:.2f} {self.car_velocity[1]:.2f}\n')
                 
                 # set cur_img; to be used for saving 
                 self.cur_img = img
@@ -797,7 +821,7 @@ class Tracker:
             cv.waitKey(1)
 
         cv.destroyAllWindows()
-        if self.manager.write_track:
+        if self.manager.write_plot:
             f.close()
 
 
@@ -839,8 +863,13 @@ class Tracker:
         # return (car_x - DRONE_POSITION[0], car_y - DRONE_POSITION[1]), (car_vx, car_vy)
         drone_position = self.manager.simulator.camera.position
         drone_velocity = self.manager.simulator.camera.velocity
-        car_position = pygame.Vector2((car_x , car_y))
-        car_velocity = pygame.Vector2((car_vx, car_vy))
+        fov = self.manager.simulator.get_camera_fov()
+        car_position = pygame.Vector2((car_x , car_y)).elementwise() * (1, -1) + (0, HEIGHT)
+        car_velocity = pygame.Vector2((car_vx, car_vy)).elementwise() * (1, -1)
+        car_position *= self.manager.simulator.pxm_fac
+        car_velocity *= self.manager.simulator.pxm_fac
+        cam_origin = drone_position - pygame.Vector2(fov)/2
+        car_position += cam_origin
 
         return (drone_position, drone_velocity, car_position, car_velocity)
 
@@ -888,17 +917,17 @@ class Tracker:
         img = put_text(img, f'Altitude = {self.manager.simulator.camera.altitude:0.2f} m', (WIDTH-175, HEIGHT-15), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
         img = put_text(img, f'1 pixel = {self.manager.simulator.pxm_fac:0.4f} m', (WIDTH-175, HEIGHT-40), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
         
-        fac = PIXEL_TO_METERS_FACTOR
+        # fac = self.manager.simulator.pxm_fac
         kin_str_1 = f'car_pos(m) : '      .rjust(20)
-        kin_str_2 = f'<{fac*round(k[2][0]):6.2f}, {fac*round(k[2][1]*-1 + HEIGHT):6.2f}>'
+        kin_str_2 = f'<{k[2][0]:6.2f}, {k[2][1]:6.2f}>'
         kin_str_3 = f'car_vel(m/s) : '    .rjust(20)
-        kin_str_4 = f'<{fac*(k[3][0]):6.2f}, {fac*(k[3][1]*-1):6.2f}>'
+        kin_str_4 = f'<{k[3][0]:6.2f}, {k[3][1]:6.2f}>'
         kin_str_5 = f'drone_pos(m) : '    .rjust(20)
-        kin_str_6 = f'<{fac*(k[0][0]):6.2f}, {fac*(k[0][1]*-1 + HEIGHT):6.2f}>'
+        kin_str_6 = f'<{k[0][0]:6.2f}, {k[0][1]:6.2f}>'
         kin_str_7 = f'drone_vel(m/s) : '  .rjust(20)
-        kin_str_8 = f'<{fac*(k[1][0]):6.2f}, {fac*(k[1][1]*-1):6.2f}>'
+        kin_str_8 = f'<{k[1][0]:6.2f}, {k[1][1]*-1:6.2f}>'
         kin_str_9 = f'drone_acc(m/s^2) : '.rjust(20)
-        kin_str_0 = f'<{fac*(self.manager.simulator.camera.acceleration[0]):6.2f}, {fac*(self.manager.simulator.camera.acceleration[1]*-1):6.2f}>'
+        kin_str_0 = f'<{self.manager.simulator.camera.acceleration[0]:6.2f}, {self.manager.simulator.camera.acceleration[1]:6.2f}>'
 
         img = put_text(img, kin_str_1, (WIDTH - 330, 25),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
         img = put_text(img, kin_str_2, (WIDTH - 155, 25),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
@@ -918,14 +947,16 @@ class Tracker:
 class Controller:
     def __init__(self, manager):
         self.manager = manager
-
+        self.plot_info_file = 'plot_info.txt'
 
     def run(self):
         print('Controller run')
+        if self.manager.write_plot:
+            f = open(self.plot_info_file, '+w')
         R = CAR_RADIUS
         while True:
-            if self.manager.tracker_on and len(self.manager.kinematics_deque) == 0:
-                continue
+            # if self.manager.tracker_on and len(self.manager.kinematics_deque) == 0:
+            #     continue
             
             if self.manager.simulator.pause:
                 continue
@@ -935,27 +966,27 @@ class Controller:
             # print(kin)
 
             # print(len(self.manager.kinematics_deque), ', ', len(self.manager.kinematics_deque) > 0)
-            l = len(self.manager.kinematics_deque)
-            if l > 0:
-                print(len(self.manager.kinematics_deque))
-                self.manager.get_from_kinematics_deque()
-            else:
-                continue
+            # l = len(self.manager.kinematics_deque)
+            # if l > 0:
+            #     # print(len(self.manager.kinematics_deque))
+            #     self.manager.get_from_kinematics_deque()
+            # else:
+            #     continue
 
             mpx_fac = 1/self.manager.simulator.pxm_fac
             
             x, y            = kin[0]#.elementwise() * (1, -1) * mpx_fac + SCREEN_CENTER#(0, HEIGHT)
             vx, vy          = kin[1]#.elementwise() * (1, -1) * mpx_fac 
             car_x, car_y    = kin[2]#.elementwise() * (1, -1) * mpx_fac + SCREEN_CENTER#(0, HEIGHT)
-            car_speed, _    = kin[3]#.elementwise() * (1, -1) * mpx_fac
+            car_speed, cvy  = kin[3]#.elementwise() * (1, -1) * mpx_fac
 
-            print(f'CCCC1 >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{x:0.2f},{y:0.2f}] | v:[{vx:0.2f},{vy:0.2f}] | CAR - x:[{car_x:0.2f},{car_y:0.2f}] | v:[{car_speed:0.2f},0.00]')
-            x, y            = kin[0].elementwise() * (1, -1) * mpx_fac + SCREEN_CENTER#(0, HEIGHT)
-            vx, vy          = kin[1].elementwise() * (1, -1) * mpx_fac 
-            car_x, car_y    = kin[2].elementwise() * (1, -1) * mpx_fac + SCREEN_CENTER#(0, HEIGHT)
-            car_speed, _    = kin[3].elementwise() * (1, -1) * mpx_fac
+            # print(f'CCCC1 >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{x:0.2f},{y:0.2f}] | v:[{vx:0.2f},{vy:0.2f}] | CAR - x:[{car_x:0.2f},{car_y:0.2f}] | v:[{car_speed:0.2f},0.00]')
+            # x, y            = kin[0].elementwise() * (1, -1) * mpx_fac + SCREEN_CENTER#(0, HEIGHT)
+            # vx, vy          = kin[1].elementwise() * (1, -1) * mpx_fac 
+            # car_x, car_y    = kin[2].elementwise() * (1, -1) * mpx_fac + SCREEN_CENTER#(0, HEIGHT)
+            # car_speed, _    = kin[3].elementwise() * (1, -1) * mpx_fac
 
-            print(f'CCCC2 >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{x:0.2f},{y:0.2f}] | v:[{vx:0.2f},{vy:0.2f}] | CAR - x:[{car_x:0.2f},{car_y:0.2f}] | v:[{car_speed:0.2f},0.00]')
+            print(f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{x:0.2f}, {y:0.2f}] | v:[{vx:0.2f}, {vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}]')
             
             # speed of drone
             s = (vx**2 + vy**2) **0.5
@@ -982,28 +1013,31 @@ class Controller:
             y1 = r**2 * vtheta**2 - y2 * R**2
 
             # time to collision from drone to car
-            tm = -vr * r / (vtheta**2 + vr**2)
+            # tm = -vr * r / (vtheta**2 + vr**2)
 
             # compute desired acceleration
             w = -0.1
-            K1 = 0.02 * np.sign(-vr)
-            K2 = 0.02
+            K1 = 0.1 * np.sign(-vr)
+            K2 = 0.05
 
-            c = cos(alpha - theta)
-            s = sin(alpha - theta)
-            K1y1 = K1*y1
-            K2y2Vrr2 = K2*y2*vr*r**2
-            d = 2*vr*vtheta*r**2
+            # c = cos(alpha - theta)
+            # s = sin(alpha - theta)
+            # K1y1 = K1*y1
+            # K2y2Vrr2 = K2*y2*vr*r**2
+            # d = 2*vr*vtheta*r**2
 
-            a_lat = (K1y1 * (vr*c + vtheta*s) + K2y2Vrr2*c) / d
-            a_long = (K1y1 * (vr*s - vtheta*c) + K2y2Vrr2*s) / d
+            # a_lat = (K1y1 * (vr*c + vtheta*s) + K2y2Vrr2*c) / d
+            # a_long = (K1y1 * (vr*s - vtheta*c) + K2y2Vrr2*s) / d
 
             # a_lat = (K1*vr*y1*cos(alpha - theta) + K1*vtheta*y1*sin(alpha - theta) + K2*R**2*vr*y2*cos(alpha - theta) + K2*R**2*vtheta*y2*sin(alpha - theta) - K2*vtheta*r**2*y2*sin(alpha - theta))/(2*(vr*vtheta*r**2*cos(alpha - theta)**2 + vr*vtheta*r**2*sin(alpha - theta)**2))
- 
             # a_long = (K1*vr*y1*sin(alpha - theta) - K1*vtheta*y1*cos(alpha - theta) - K2*R**2*vtheta*y2*cos(alpha - theta) + K2*R**2*vr*y2*sin(alpha - theta) + K2*vtheta*r**2*y2*cos(alpha - theta))/(2*(vr*vtheta*r**2*cos(alpha - theta)**2 + vr*vtheta*r**2*sin(alpha - theta)**2))
 
-            a_long_bound = 10
-            a_lat_bound = 10
+            
+            a_lat = (K1*vr*y1*cos(alpha - theta) + K1*vtheta*y1*sin(alpha - theta) + K2*R**2*vr*y2*cos(alpha - theta) + K2*R**2*vtheta*y2*sin(alpha - theta) - K2*vtheta*r**2*y2*sin(alpha - theta))/(2*(vr*vtheta*r**2*cos(alpha - theta)**2 + vr*vtheta*r**2*sin(alpha - theta)**2))
+            a_long = (K1*vr*y1*sin(alpha - theta) - K1*vtheta*y1*cos(alpha - theta) - K2*R**2*vtheta*y2*cos(alpha - theta) + K2*R**2*vr*y2*sin(alpha - theta) + K2*vtheta*r**2*y2*cos(alpha - theta))/(2*(vr*vtheta*r**2*cos(alpha - theta)**2 + vr*vtheta*r**2*sin(alpha - theta)**2))
+
+            a_long_bound = 8
+            a_lat_bound = 8
             
             a_long = self.sat(a_long, a_long_bound)
             a_lat = self.sat(a_lat, a_lat_bound)
@@ -1012,8 +1046,13 @@ class Controller:
             ax = a_lat * cos(delta) + a_long * cos(alpha)
             ay = a_lat * sin(delta) + a_long * sin(alpha)
 
-            self.manager.add_to_command_deque((ax, -ay))
+            self.manager.add_to_command_deque((ax, ay))
 
+            if self.manager.write_plot:#TODO
+                f.write(f'{self.manager.simulator.time},{r},{theta},{vtheta},{vr},{x},{y},{car_x},{car_y},{ax},{ay},{a_lat},{a_long}\n')
+
+        if self.manager.write_plot:
+            f.close()
 
     def sat(self, x, bound):
         return min(max(x, -bound), bound)
@@ -1038,10 +1077,10 @@ class ExperimentManager:
     The manager is responsible for running Simulator, Tracker and controller in separate threads and manage shared memory.
     The manager can start and stop Simulator, Tracker and Controller.
     """
-    def __init__(self, save_on=False, write_track=False, control_on=False, tracker_on=True, tracker_display_on=False, use_true_kin=True):
+    def __init__(self, save_on=False, write_plot=False, control_on=False, tracker_on=True, tracker_display_on=False, use_true_kin=True):
 
         self.save_on = save_on
-        self.write_track = write_track
+        self.write_plot = write_plot
         self.control_on = control_on
         self.tracker_on = tracker_on
         self.tracker_display_on = tracker_display_on
@@ -1166,9 +1205,12 @@ class ExperimentManager:
 
 
     def get_true_kinematics(self):
-        # drone_position = pygame.Vector2(self.simulator.camera.rect.center)
-        # car_position = pygame.Vector2(self.simulator.car.rect.center)
-        kin = (self.simulator.camera.position,# + pygame.Vector2(DRONE_POSITION),
+        """Helper function returns drone and car position and velocity
+
+        Returns:
+            tuple: drone_pos, drone_vel, car_pos, car_vel
+        """
+        kin = (self.simulator.camera.position,
                self.simulator.camera.velocity,
                self.simulator.car.position,
                self.simulator.car.velocity)
@@ -1181,45 +1223,109 @@ class ExperimentManager:
 if __name__ == "__main__":
 
     RUN_EXPERIMENT          = 1
-    EXPERIMENT_SAVE_MODE_ON = 1
-    WRITE_TRACK             = 0
+    EXPERIMENT_SAVE_MODE_ON = 0
+    WRITE_PLOT              = 1
     CONTROL_ON              = 1
     TRACKER_ON              = 1
-    TRACKER_DISPLAY_ON      = 1
+    TRACKER_DISPLAY_ON      = 0
     USE_TRUE_KINEMATICS     = 1
     RUN_TRACK_PLOT          = 0
 
     if RUN_EXPERIMENT:
-        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_TRACK, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON, USE_TRUE_KINEMATICS)
+        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_PLOT, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON, USE_TRUE_KINEMATICS)
         print("\nExperiment started.\n")
         experiment_manager.run_experiment()
         print("\n\nExperiment finished.\n")
 
     if RUN_TRACK_PLOT:
-        f = open('track.txt', 'r')
-        time = []
-        true_vel_x = []
-        true_vel_y = []
-        comp_vel_x = []
-        comp_vel_y = []
+        f = open('plot_info.txt', 'r')
+        t = []
+        r = []
+        theta = []
+        vtheta = []
+        vr = []
+        dx = []
+        dy = []
+        cx = []
+        cy = []
+        ax = []
+        ay = []
+        a_lat = []
+        a_long = []
+        
 
         for line in f.readlines():
-            t, tvx, tvy, cvx, cvy = tuple(map(float, list(map(str.strip, line.strip().split()))))
-            time.append(t)
-            true_vel_x.append(tvx)
-            true_vel_y.append(tvy)
-            comp_vel_x.append(cvx)
-            comp_vel_y.append(cvy)
+            data = tuple(map(float, list(map(str.strip, line.strip().split(',')))))
+
+            t.append(data[0])            
+            r.append(data[1])
+            theta.append(data[2])
+            vtheta.append(data[3])
+            vr.append(data[4])
+            dx.append(data[5])
+            dy.append(data[6])
+            cx.append(data[7])
+            cy.append(data[8])
+            ax.append(data[9])
+            ay.append(data[10])            
+            a_lat.append(data[11])            
+            a_long.append(data[12])            
 
         import matplotlib.pyplot as plt
+        _path = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
+        _prep_temp_folder(os.path.realpath(_path))
+
         plt.style.use('seaborn-whitegrid')
-        plt.plot(time, comp_vel_x, color='tan', linestyle='-', linewidth=1, label='computed relative vx')
-        plt.plot(time, true_vel_x, color='teal', linestyle=':', linewidth=3, label='true relative vx')
-        # plt.grid(b=True, which='major', color='#666666', linestyle='-')
+        # t vs r
+        plt.plot(t, r, color='teal', linestyle='-', linewidth=1, label='r')
         plt.legend()
-        plt.xlabel('seconds')
-        plt.ylabel('m/s')
-        plt.savefig('relative_vx.png')
+        plt.xlabel('t')
+        plt.ylabel('r')
+        plt.savefig(f'{_path}/r.png')
+        plt.show()
+
+        # t vs r
+        plt.plot(t, theta, color='teal', linestyle='-', linewidth=1, label='theta')
+        plt.legend()
+        plt.xlabel('t')
+        plt.ylabel('theta')
+        plt.savefig(f'{_path}/theta.png')
+        plt.show()
+
+        # t vs vtheta
+        plt.plot(t, vtheta, color='teal', linestyle='-', linewidth=1, label='vtheta')
+        plt.legend()
+        plt.xlabel('t')
+        plt.ylabel('vtheta')
+        plt.savefig(f'{_path}/vtheta.png')
+        plt.show()
+
+        # t vs vr
+        plt.plot(t, vtheta, color='teal', linestyle='-', linewidth=1, label='vr')
+        plt.legend()
+        plt.xlabel('t')
+        plt.ylabel('vr')
+        plt.savefig(f'{_path}/vr.png')
+        plt.show()
+
+        # trajectories
+        plt.plot(dx, dy, color='teal', linestyle='-', linewidth=1, label='drone')
+        plt.plot(cx, cy, color='green', linestyle='-', linewidth=1, label='car')
+        plt.legend()
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.savefig(f'{_path}/traj.png')
+        plt.show()
+
+        # accelerations
+        plt.plot(t, ax, color='teal', linestyle='-', linewidth=1, label='ax')
+        plt.plot(t, ay, color='green', linestyle='-', linewidth=1, label='ay')
+        plt.plot(t, a_lat, color='blue', linestyle='-', linewidth=1, label='a_lat')
+        plt.plot(t, a_long, color='red', linestyle='-', linewidth=1, label='a_long')
+        plt.legend()
+        plt.xlabel('t')
+        plt.ylabel('acceleration')
+        plt.savefig(f'{_path}/accel.png')
         plt.show()
 
 
