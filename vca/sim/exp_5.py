@@ -79,8 +79,8 @@ class Block(pygame.sprite.Sprite):
         self.simulator = simulator
         # Create an image of the block, and fill it with a color.
         # This could also be an image loaded from the disk.
-        self.w = BLOCK_WIDTH
-        self.h = BLOCK_HEIGHT
+        self.w = BLOCK_WIDTH / PIXEL_TO_METERS_FACTOR
+        self.h = BLOCK_HEIGHT / PIXEL_TO_METERS_FACTOR
         self.image = pygame.Surface((int(self.w), int(self.h)))
         self.fill_image()
 
@@ -148,11 +148,12 @@ class Block(pygame.sprite.Sprite):
 
 
     def fill_image(self):
-        # r,g,b = BLOCK_COLOR
-        # r += random.randint(-5, 5)
-        # g += random.randint(-5, 5)
-        # b += random.randint(-5, 5)
-        self.image.fill(BLOCK_COLOR) #((r,g,b))
+        r,g,b = BLOCK_COLOR
+        r += random.randint(-5, 5)
+        g += random.randint(-5, 5)
+        b += random.randint(-5, 5)
+        self.image.fill((r,g,b))
+        # self.image.fill(BLOCK_COLOR)
 
 
     def load(self):
@@ -401,7 +402,7 @@ class Simulator:
         self.bb_start = None
         self.bb_end = None
         self.bb_drag = False
-        self.running = False
+        self.running = True
 
         self.alt_change_fac = 1.0
         self.pxm_fac = PIXEL_TO_METERS_FACTOR
@@ -683,6 +684,16 @@ class Simulator:
         return (WIDTH * self.pxm_fac, HEIGHT * self.pxm_fac)
 
 
+    def begin_tracking_ready(self):
+        ready = True
+
+        # not ready if bb not selected or if simulated is still paused
+        if not (self.bb_start and self.bb_end) or self.pause:
+                self.manager.image_deque.clear()
+                ready = False
+
+        return ready
+
 
     def quit(self):
         """Helper function, sets running flag to False and quits pygame.
@@ -700,44 +711,33 @@ class Tracker:
     def __init__(self, manager):
         
         self.manager = manager
-        self.tracker_filename = 'track.txt'
         self.cur_img = None
         self.cur_points = None
-        self.nxt_points = None
-        self.car_position = None
-        self.car_velocity = None
+        # self.nxt_points = None
+        # self.car_position = None
+        # self.car_velocity = None
 
 
     def run(self):
         """Keeps running the tracker main functions.
         Reads bounding box from it's ExperimentManager and computed features to be tracked.
         """
-        # get first frame
-        while True:
-            # do nothing until bounding box is selected
-            if not (self.manager.simulator.bb_start and self.manager.simulator.bb_end) or self.manager.simulator.pause:
-                self.manager.image_deque.clear()
-                continue
-
-            # get a frame from the image deque and break
-            if len(self.manager.image_deque) > 0:
-                frame_1 = self.manager.image_deque.popleft()
-                cur_frame = convert_to_grayscale(frame_1)
-                break
+        # get first frame once bounding box is selected 
+        frame_1, cur_frame = self.get_first_frame()        
         
-        # compute good feature points to track
+        # compute feature mask from selected bounding box
         feature_mask = np.zeros_like(cur_frame)
         x,y,w,h = self.manager.simulator.bounding_box
         feature_mask[y:y+h+1, x:x+w+1] = 1
+
+        # compute good features in the selected bounding box
         cur_points = cv.goodFeaturesToTrack(cur_frame, mask=feature_mask, **FEATURE_PARAMS)
 
         # create mask for drawing tracks
         mask = np.zeros_like(frame_1)
-        if self.manager.write_plot:
-            f = open(self.tracker_filename, '+w')
 
+        # set tracker window location 
         if self.manager.tracker_display_on:
-            # set window location 
             from win32api import GetSystemMetrics
             win_name = 'Tracking in progress'
             cv.namedWindow(win_name)
@@ -745,69 +745,52 @@ class Tracker:
 
         # begin tracking
         while self.manager.simulator.running:
-            # make sure there is more than one frame in the deque
-            if len(self.manager.image_deque) < 1 or self.manager.get_sim_dt() == 0:
+
+            # make sure there is more than 0 frames in the deque
+            if len(self.manager.image_deque) < 0 or self.manager.get_sim_dt() == 0:
                 continue
 
-            # get and prepare next frame
+            # get next frame from image deque and convert to grayscale
             frame_2 = self.manager.get_from_image_deque()
             nxt_frame = convert_to_grayscale(frame_2)
 
             # compute optical flow between current and next frame
-            cur_points, nxt_points, stdev, err = compute_optical_flow_LK(cur_frame, nxt_frame, cur_points, LK_PARAMS)
+            cur_points, nxt_points, stdev, err = compute_optical_flow_LK( cur_frame, 
+                                                                          nxt_frame, 
+                                                                          cur_points, 
+                                                                          LK_PARAMS )
+            
             # select good points, with standard deviation 1. use numpy index trick
             good_cur = cur_points[stdev==1]
             good_nxt = nxt_points[stdev==1]
 
-            # compute and create kinematics tuple 
-            # drone_position = self.manager.simulator.camera.position
-            # drone_velocity = self.manager.simulator.camera.velocity
-            # self.car_position, self.car_velocity = self.compute_car_kinematics(good_cur, good_nxt)
+            # compute and create kinematics tuple
             if len(good_cur)==0 or len(good_nxt)==0:
                 continue
             
-            # kin = (drone_position, drone_velocity, self.car_position, self.car_velocity)
-            kin = drone_position, drone_velocity, self.car_position, self.car_velocity = self.compute_car_kinematics(good_cur.copy(), good_nxt.copy())
-            
-            # x, y = kin[0].elementwise() * (1,-1) + (0, HEIGHT)
-            # vx, vy = kin[1].elementwise() * (1, -1)
-            # car_x, car_y = kin[2].elementwise() * (1, -1) + (0, HEIGHT)
-            # car_speed, _ = kin[3].elementwise() * (1, -1)
-            # print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{x:0.2f},{y:0.2f}] | v:[{vx:0.2f},{vy:0.2f}] | CAR - x:[{car_x:0.2f},{car_y:0.2f}] | v:[{car_speed:0.2f},0.00]')
+            kin = self.compute_kinematics( good_cur.copy(), 
+                                           good_nxt.copy() )
+            drone_position, drone_velocity, car_position, car_velocity = kin
+            print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(self.car_position)} | v:{vec_str(self.car_velocity)}')
             
             # add kinematics tuple to manager's kinematics deque
             self.manager.add_to_kinematics_deque(kin)
 
-            # cosmetics/visual aids
+            # cosmetics/visual aids if the display is on
             # create img with added tracks for all point pairs on next frame
-            # give car positions
+            # give car positions in current and next frame
             # self.cur_img = nxt_frame
             if self.manager.tracker_display_on:
-                img, mask = draw_tracks(frame_2, self.get_centroid(good_cur), self.get_centroid(good_nxt), None, mask, track_thickness=2)
+                # add cosmetics to frame_2 for display purpose
+                img, mask = self.add_cosmetics(frame_2, mask, good_cur, good_nxt, kin)
 
-                # add optical flow arrows 
-                img = draw_sparse_optical_flow_arrows(img, self.get_centroid(good_cur), self.get_centroid(good_nxt), thickness=2, arrow_scale=10.0, color=RED_CV)
-
-                # add a center
-                img = cv.circle(img, SCREEN_CENTER, radius=1, color=WHITE, thickness=2)
-
-                # draw axes
-                img = cv.arrowedLine(img, (16,HEIGHT-15), (41, HEIGHT-15), (51,51,255), 2)
-                img = cv.arrowedLine(img, (15,HEIGHT-16), (15, HEIGHT-41), (51,255,51), 2)
-
-                # put velocity text 
-                img = self.put_metrics(img, kin)
-
-                # write tracking information to file
-                # if self.manager.write_plot:
-                #     f.write(f'{self.manager.simulator.time:.2f} {self.manager.true_rel_vel[0]:.2f} {self.manager.true_rel_vel[1]:.2f} {self.car_velocity[0]:.2f} {self.car_velocity[1]:.2f}\n')
-                
                 # set cur_img; to be used for saving 
                 self.cur_img = img
-                cv.imshow(win_name, img)
-            
 
-            # ready for next iteration
+                # show resultant img
+                cv.imshow(win_name, img)            
+
+            # ready for next iteration. set cur frame and points to next frame and points
             cur_frame = nxt_frame.copy()
             cur_points = good_nxt.reshape(-1, 1, 2) # -1 indicates to infer that dim size
 
@@ -817,15 +800,47 @@ class Tracker:
             #     pass#cur_points = cv.goodFeaturesToTrack(cur_frame, mask=None, **FEATURE_PARAMS)
                 # for every point in good point if its not there in cur points, add , update color too
                 
-
             cv.waitKey(1)
 
         cv.destroyAllWindows()
-        if self.manager.write_plot:
-            f.close()
 
 
-    def compute_car_kinematics(self, cur_pts, nxt_pts):
+    def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
+        # draw tracks on the mask, add mask to frame, save mask for future use
+        img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(good_nxt), None, mask, track_thickness=2)
+
+        # add optical flow arrows 
+        img = draw_sparse_optical_flow_arrows(img, self.get_centroid(good_cur), self.get_centroid(good_nxt), thickness=2, arrow_scale=10.0, color=RED_CV)
+
+        # add a center
+        img = cv.circle(img, SCREEN_CENTER, radius=1, color=WHITE, thickness=2)
+
+        # draw axes
+        img = cv.arrowedLine(img, (16,HEIGHT-15), (41, HEIGHT-15), (51,51,255), 2)
+        img = cv.arrowedLine(img, (15,HEIGHT-16), (15, HEIGHT-41), (51,255,51), 2)
+
+        # put velocity text 
+        img = self.put_metrics(img, kin)
+
+        return img, mask
+
+
+    def get_first_frame(self):
+        while True:
+            # do nothing until bounding box is selected
+            if not self.manager.simulator.begin_tracking_ready():
+                continue
+
+            # get a frame from the image deque and break
+            if len(self.manager.image_deque) > 0:
+                frame_1 = self.manager.image_deque.popleft()
+                cur_frame = convert_to_grayscale(frame_1)
+                break
+
+        return frame_1, cur_frame
+
+
+    def compute_kinematics(self, cur_pts, nxt_pts):
         """Helper function, takes in current and next points (corresponding to an object) and 
         computes the average velocity using elapsed simulation time from it's ExperimentManager.
 
@@ -834,12 +849,12 @@ class Tracker:
             nxt_pts (np.ndarray): feature points in frame_2 or next frame 
 
         Returns:
-            tuple(float, float), tuple(float, float): mean of positions and velocities computed from each point pair.
+            tuple(float, float), tuple(float, float): mean of positions and velocities computed from each point pair. Transformed to world coordinates.
         """
-        # check non-zero number of points
-        num_pts = len(cur_pts)
-        if num_pts == 0:
-            return self.manager.simulator.camera.position, self.manager.simulator.camera.velocity, self.car_position, self.car_velocity
+        # # check non-zero number of points
+        # num_pts = len(cur_pts)
+        # if num_pts == 0:
+        #     return self.manager.simulator.camera.position, self.manager.simulator.camera.velocity, self.car_position, self.car_velocity
         
         # sum over all pairs and deltas between them
         car_x = 0
@@ -859,18 +874,21 @@ class Tracker:
         car_y /= num_pts
         car_vx /= d
         car_vy /= d
-
-        # return (car_x - DRONE_POSITION[0], car_y - DRONE_POSITION[1]), (car_vx, car_vy)
+        
+        # collect drone position, drone velocity and fov from simulator
         drone_position = self.manager.simulator.camera.position
         drone_velocity = self.manager.simulator.camera.velocity
         fov = self.manager.simulator.get_camera_fov()
+
+        # transform car position and car velocity to world reference frame
         car_position = pygame.Vector2((car_x , car_y)).elementwise() * (1, -1) + (0, HEIGHT)
-        car_velocity = pygame.Vector2((car_vx, car_vy)).elementwise() * (1, -1)
         car_position *= self.manager.simulator.pxm_fac
-        car_velocity *= self.manager.simulator.pxm_fac
         cam_origin = drone_position - pygame.Vector2(fov)/2
         car_position += cam_origin
+        car_velocity = pygame.Vector2((car_vx, car_vy)).elementwise() * (1, -1)
+        car_velocity *= self.manager.simulator.pxm_fac
 
+        # return kinematics in world reference frame
         return (drone_position, drone_velocity, car_position, car_velocity)
 
     
@@ -957,7 +975,8 @@ class Controller:
         while True:
             # if self.manager.tracker_on and len(self.manager.kinematics_deque) == 0:
             #     continue
-            
+            if not self.manager.simulator.running:
+                break
             if self.manager.simulator.pause:
                 continue
             

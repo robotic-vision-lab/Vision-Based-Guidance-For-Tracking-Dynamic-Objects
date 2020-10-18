@@ -51,7 +51,8 @@ CAR_IMG = 'car.png'
 CAR_LENGTH = 6          # meters
 CAR_LENGTH_PX = 128
 CAR_SCALE = CAR_LENGTH / (CAR_LENGTH_PX * PIXEL_TO_METERS_FACTOR)
-# note (0,0) at image center, axes: x points right [>], y points down [v]
+# note for exp 3 (0,0) at image center, axes: x points right [>], y points down [v]
+# for exp4 world coords in SI units, x ->, y ^.
 CAR_INITIAL_POSITION = (0.0, 0.0)#(-200.0, 200.0)#(-30.0, 30.0)#(50, HEIGHT//2)
 CAR_INITIAL_VELOCITY = (22.22, 0.0)#(30.0, 0.0)#(30.0, 0.0)#
 CAR_ACCELERATION = (0.0, 0.0)
@@ -59,7 +60,7 @@ CAR_RADIUS = 1
 
 # block settings
 BLOCK_COLOR = DARK_GRAY_2
-BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 12.0, 8.0
+BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 5.0, 4.0
 NUM_BLOCKS = 50
 
 # drone camera settings
@@ -77,4 +78,4 @@ TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY_2
 
 # Bounding box settings
-BB_COLOR = BLUE
+BB_COLOR = BLUE     # pygame color
