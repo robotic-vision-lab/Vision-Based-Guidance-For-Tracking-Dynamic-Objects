@@ -37,7 +37,6 @@ hyperlink==20.0.1
 idna==2.10
 imageio==2.8.0
 imageio-ffmpeg==0.4.2
-importlib-metadata @ file:///C:/ci/importlib-metadata_1593446525189/work
 incremental==17.5.0
 ipykernel==5.1.4
 ipython==7.13.0
