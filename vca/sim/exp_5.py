@@ -149,9 +149,9 @@ class Block(pygame.sprite.Sprite):
 
     def fill_image(self):
         r,g,b = BLOCK_COLOR
-        r += random.randint(-5, 5)
-        g += random.randint(-5, 5)
-        b += random.randint(-5, 5)
+        r += random.randint(-8, 8)
+        g += random.randint(-8, 8)
+        b += random.randint(-8, 8)
         self.image.fill((r,g,b))
         # self.image.fill(BLOCK_COLOR)
 
@@ -246,6 +246,7 @@ class DroneCamera(pygame.sprite.Sprite):
         self.image, self.rect = simulator.drone_img
         self.image.fill((255, 255, 255, 204), None, pygame.BLEND_RGBA_MULT)
         self.reset_kinematics()
+        self.origin = self.position
         self.altitude = ALTITUDE
         self.alt_change = 20.0
         
@@ -296,7 +297,9 @@ class DroneCamera(pygame.sprite.Sprite):
         if abs(self.velocity.length()) > self.vel_limit:
             self.velocity -= self.acceleration * self.simulator.dt
 
-        self.position += self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2
+        delta_pos = self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2      # i know how this looks like but,
+        self.position = self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2  # donot touch
+        self.origin += delta_pos
 
 
     def compensate_camera_motion(self, sprite_obj):
@@ -305,10 +308,10 @@ class DroneCamera(pygame.sprite.Sprite):
         Args:
             sprite_obj ([type]): [description]
         """
-        # sprite_obj.position -= self.position #self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
-        # sprite_obj.update_rect()
-        sprite_obj.rect.centerx = sprite_obj.rect.centerx - self.rect.centerx + WIDTH//2
-        sprite_obj.rect.centery = sprite_obj.rect.centery - self.rect.centery + HEIGHT//2
+        sprite_obj.position -= self.position #self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+        sprite_obj.update_rect()
+        # sprite_obj.rect.centerx = sprite_obj.rect.centerx - self.rect.centerx + WIDTH//2
+        # sprite_obj.rect.centery = sprite_obj.rect.centery - self.rect.centery + HEIGHT//2
         
 
     def change_acceleration(self, command_vec):
@@ -402,6 +405,7 @@ class Simulator:
         self.bb_end = None
         self.bb_drag = False
         self.running = True
+        self.tracker_ready = False
 
         self.alt_change_fac = 1.0
         self.pxm_fac = PIXEL_TO_METERS_FACTOR
@@ -479,6 +483,7 @@ class Simulator:
     def show_drawing(self):
         pygame.display.flip()          
         
+
     def handle_events(self):
         """Handles captured events.
         """
@@ -529,6 +534,7 @@ class Simulator:
             if event.type == pygame.MOUSEBUTTONUP:
                 self.bb_end = pygame.mouse.get_pos()
                 self.bb_drag = False
+                self.tracker_ready = True
 
             pygame.event.pump()
         
@@ -541,8 +547,9 @@ class Simulator:
         """Update positions of components.
         """
         # update drone acceleration using acceleration command (force)
-        self.camera.change_acceleration(deepcopy(self.euc_factor * self.cam_accel_command))
-        self.cam_accel_command = pygame.Vector2(0, 0)
+        if not self.manager.control_on:
+            self.camera.change_acceleration(deepcopy(self.euc_factor * self.cam_accel_command))
+            self.cam_accel_command = pygame.Vector2(0, 0)
         # print(f'SSSS1 >> {str(timedelta(seconds=self.time))} >> DRONE - x:{vec_str(self.camera.rect.center)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | CAR - x:{vec_str(self.car.rect.center)}, v: {vec_str(self.car.velocity)},  v_c-v_d: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='\n')
         # print(self.camera.position)
         # update Group. (All sprites in it will get updated)
@@ -688,14 +695,14 @@ class Simulator:
 
 
     def can_begin_tracking(self):
-        ready = True
+        # ready = True
 
         # not ready if bb not selected or if simulated is still paused
-        if not (self.bb_start and self.bb_end) or self.pause:
+        if (self.bb_start and self.bb_end) or not self.pause:
                 self.manager.image_deque.clear()
-                ready = False
+                ready = True
 
-        return ready
+        return self.tracker_ready
 
 
     def quit(self):
@@ -921,6 +928,7 @@ class Tracker:
 
     def process_image(self, img):
         if self.cur_frame is None:
+            print('tracker 1st frame')
             self.frame_1 = img
             self.cur_frame = convert_to_grayscale(self.frame_1)
 
@@ -963,7 +971,7 @@ class Tracker:
                                                 good_nxt.copy() )
 
             drone_position, drone_velocity, car_position, car_velocity = self.kin
-            # print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
+            print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
 
             if self.manager.tracker_display_on:
                 # add cosmetics to frame_2 for display purpose
@@ -1014,31 +1022,37 @@ class Tracker:
         img = put_text(img, f'1 pixel = {self.manager.simulator.pxm_fac:0.4f} m', (WIDTH-175, HEIGHT-40), font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
         
         # fac = self.manager.simulator.pxm_fac
-        kin_str_1 = f'car_pos(m) : '      .rjust(20)
+        kin_str_1 = f'car_pos (m) : '      .rjust(20)
         kin_str_2 = f'<{k[2][0]:6.2f}, {k[2][1]:6.2f}>'
-        kin_str_3 = f'car_vel(m/s) : '    .rjust(20)
+        kin_str_3 = f'car_vel (m/s) : '    .rjust(20)
         kin_str_4 = f'<{k[3][0]:6.2f}, {k[3][1]:6.2f}>'
-        kin_str_5 = f'drone_pos(m) : '    .rjust(20)
+        kin_str_5 = f'drone_pos (m) : '    .rjust(20)
         kin_str_6 = f'<{k[0][0]:6.2f}, {k[0][1]:6.2f}>'
-        kin_str_7 = f'drone_vel(m/s) : '  .rjust(20)
+        kin_str_7 = f'drone_vel (m/s) : '  .rjust(20)
         kin_str_8 = f'<{k[1][0]:6.2f}, {k[1][1]*-1:6.2f}>'
-        kin_str_9 = f'drone_acc(m/s^2) : '.rjust(20)
+        kin_str_9 = f'drone_acc (m/s^2) : '.rjust(20)
         kin_str_0 = f'<{self.manager.simulator.camera.acceleration[0]:6.2f}, {self.manager.simulator.camera.acceleration[1]:6.2f}>'
-        kin_str_11 = f'distance(m) : '       .rjust(20)
-        kin_str_12 = f'{self.manager.simulator.car.position.distance_to(self.manager.simulator.camera.position):0.4f}'
+        kin_str_11 = f'r (m) : '       .rjust(20)
+        kin_str_12 = f'{self.manager.simulator.camera.position.distance_to(self.manager.simulator.car.position):0.4f}'
+        kin_str_13 = f'theta (degrees) : '  .rjust(20)
+        kin_str_14 = f'{(self.manager.simulator.car.position - self.manager.simulator.camera.position).as_polar()[1]:0.4f}'
+        kin_str_15 = f'cam origin : <{self.manager.simulator.camera.origin[0]:6.2f}, {self.manager.simulator.camera.origin[1]:6.2f}>'
 
-        img = put_text(img, kin_str_1, (WIDTH - 330, 25),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_2, (WIDTH - 155, 25),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_3, (WIDTH - 328, 50),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_4, (WIDTH - 155, 50),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_5, (WIDTH - 332, 75),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_6, (WIDTH - 155, 75),   font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_7, (WIDTH - 330, 100),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_8, (WIDTH - 155, 100),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_9, (WIDTH - 340, 125),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_0, (WIDTH - 155, 125),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_11, (WIDTH - 325, 150),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(img, kin_str_12, (WIDTH - 155, 150),  font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_1,  (WIDTH - (330 + 25), 25),   font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_2,  (WIDTH - (155 + 25), 25),   font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_3,  (WIDTH - (328 + 25), 50),   font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_4,  (WIDTH - (155 + 25), 50),   font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_5,  (WIDTH - (332 + 25), 75),   font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_6,  (WIDTH - (155 + 25), 75),   font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_7,  (WIDTH - (330 + 25), 100),  font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_8,  (WIDTH - (155 + 25), 100),  font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_9,  (WIDTH - (340 + 25), 125),  font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_0,  (WIDTH - (155 + 25), 125),  font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_11, (WIDTH - (323 + 25), 150),  font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_12, (WIDTH - (155 + 25), 150),  font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_13, (WIDTH - (323 + 25), 175),  font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_14, (WIDTH - (155 + 25), 175),  font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
+        img = put_text(img, kin_str_15, (50, HEIGHT - 15),          font_scale=0.45, color=LIGHT_GRAY_2, thickness=1)
 
         return img
 
@@ -1196,15 +1210,15 @@ class Controller:
 
         # compute desired acceleration
         w = -0.1
-        K1 = 0.35 * np.sign(-Vr)    # lat 
-        K2 = 0.1                    # long
+        K1 = 0.15 * np.sign(-Vr)    # lat 
+        K2 = 0.02                   # long
 
         # compute lat and long accelerations
         a_lat = (K1*Vr*y1*cos(alpha - theta) + K1*Vtheta*y1*sin(alpha - theta) + K2*self.R**2*Vr*y2*cos(alpha - theta) + K2*self.R**2*Vtheta*y2*sin(alpha - theta) - K2*Vtheta*r**2*y2*sin(alpha - theta))/(2*(Vr*Vtheta*r**2*cos(alpha - theta)**2 + Vr*Vtheta*r**2*sin(alpha - theta)**2))
         a_long = (K1*Vr*y1*sin(alpha - theta) - K1*Vtheta*y1*cos(alpha - theta) - K2*self.R**2*Vtheta*y2*cos(alpha - theta) + K2*self.R**2*Vr*y2*sin(alpha - theta) + K2*Vtheta*r**2*y2*cos(alpha - theta))/(2*(Vr*Vtheta*r**2*cos(alpha - theta)**2 + Vr*Vtheta*r**2*sin(alpha - theta)**2))
 
-        a_long_bound = 2
-        a_lat_bound = 2
+        a_long_bound = 3
+        a_lat_bound = 3
         
         a_long = self.sat(a_long, a_long_bound)
         a_lat = self.sat(a_lat, a_lat_bound)
@@ -1214,9 +1228,10 @@ class Controller:
         ax = a_lat * cos(delta) + a_long * cos(alpha)
         ay = a_lat * sin(delta) + a_long * sin(alpha)
 
-        print(f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{X:0.2f}, {Y:0.2f}] | v:[{Vx:0.2f}, {Vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}] | COMMANDED a:[{ax:0.2f}, {ay:0.2f}]')
+        print(f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{X:0.2f}, {Y:0.2f}] | v:[{Vx:0.2f}, {Vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}] | COMMANDED a:[{ax:0.2f}, {ay:0.2f}] | r:{r:0.4f} | theta:{degrees(theta):0.4f}')
         if self.manager.write_plot:
-            self.f.write(f'{self.manager.simulator.time},{r},{theta},{Vtheta},{Vr},{X},{Y},{car_x},{car_y},{ax},{ay},{a_lat},{a_long}\n')
+            t_kin = self.manager.tracker.kin
+            self.f.write(f'{self.manager.simulator.time},{r},{theta},{Vtheta},{Vr},{X},{Y},{car_x},{car_y},{ax},{ay},{a_lat},{a_long},{car_speed},{cvy},{t_kin[2][0]},{t_kin[2][1]},{t_kin[3][0]},{t_kin[3][1]},{self.manager.simulator.camera.origin[0]},{self.manager.simulator.camera.origin[1]},{S},{alpha}\n')
 
         return ax, ay
 
@@ -1444,8 +1459,8 @@ if __name__ == "__main__":
     TRACKER_DISPLAY_ON      = 1
     USE_TRUE_KINEMATICS     = 1
     
-    RUN_EXPERIMENT          = 1
-    RUN_TRACK_PLOT          = 0
+    RUN_EXPERIMENT          = 0
+    RUN_TRACK_PLOT          = 1
 
     if RUN_EXPERIMENT:
         experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_PLOT, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON, USE_TRUE_KINEMATICS)
@@ -1469,11 +1484,20 @@ if __name__ == "__main__":
         ay = []
         a_lat = []
         a_long = []
+        cvx = []
+        cvy = []
+        tcx = []
+        tcy = []
+        tcvx = []
+        tcvy = []
+        dox = []
+        doy = []
+        S = []
+        alpha = []
         
-
+        # get all the data in memory
         for line in f.readlines():
             data = tuple(map(float, list(map(str.strip, line.strip().split(',')))))
-
             t.append(data[0])            
             r.append(data[1])
             theta.append(data[2])
@@ -1487,6 +1511,16 @@ if __name__ == "__main__":
             ay.append(data[10])            
             a_lat.append(data[11])            
             a_long.append(data[12])            
+            cvx.append(data[13])            
+            cvy.append(data[14])            
+            tcx.append(data[15])            
+            tcy.append(data[16])            
+            tcvx.append(data[17])            
+            tcvy.append(data[18])            
+            dox.append(data[19])            
+            doy.append(data[20])            
+            S.append(data[21])            
+            alpha.append(data[22])            
 
         import matplotlib.pyplot as plt
         _path = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
@@ -1526,12 +1560,32 @@ if __name__ == "__main__":
         plt.show()
 
         # trajectories
-        plt.plot(dx, dy, color='teal', linestyle='-', linewidth=1, label='drone')
-        plt.plot(cx, cy, color='green', linestyle='-', linewidth=1, label='car')
+        ndx = np.array(dx) + np.array(dox)
+        ncx = np.array(cx) + np.array(dox)
+        ndy = np.array(dy) + np.array(doy)
+        ncy = np.array(cy) + np.array(doy)
+        plt.plot(ncx, ncy, color='green', linestyle='-', linewidth=1, label='car')
+        plt.plot(ndx, ndy, color='gray', linestyle='-', linewidth=2, label='drone')
         plt.legend()
         plt.xlabel('x')
         plt.ylabel('y')
         plt.savefig(f'{_path}/traj.png')
+        plt.show()
+
+        plt.plot(cx, cy, color='green', linestyle='-', linewidth=1, label='car')
+        plt.plot(dx, dy, color='gray', marker='+', markersize=20, label='drone')
+        plt.legend()
+        plt.xlabel('x')
+        plt.ylabel('y')
+        x_pad = (max(cx) - min(cx)) * 0.05
+        y_pad = (max(cy) - min(cy)) * 0.05
+        xl = max(abs(max(cx)), abs(min(cx))) + x_pad
+        yl = max(abs(max(cy)), abs(min(cy))) + y_pad
+        # plt.xlim(min(cx)-x_pad, max(cx)+x_pad)
+        # plt.ylim(min(cy)-y_pad, max(cy)+y_pad)
+        plt.xlim(-xl, xl)
+        plt.ylim(-yl, yl)
+        plt.savefig(f'{_path}/traj2.png')
         plt.show()
 
         # accelerations
@@ -1543,6 +1597,41 @@ if __name__ == "__main__":
         plt.xlabel('t')
         plt.ylabel('acceleration')
         plt.savefig(f'{_path}/accel.png')
+        plt.show()
+
+        # tracked pos vs true pos
+        plt.plot(t, cx, color='red', linestyle='-', linewidth=1, label='cx')
+        plt.plot(t, cy, color='blue', linestyle='-', linewidth=1, label='cy')
+        plt.plot(t, tcx, color='green', linestyle=':', linewidth=2, label='track_cx')
+        plt.plot(t, tcy, color='orange', linestyle=':', linewidth=2, label='track_cy')
+        plt.legend()
+        plt.xlabel('t')
+        plt.ylabel('pos and tracked pos')
+        plt.savefig(f'{_path}/pos_comp.png')
+        plt.show()
+
+        # tracked vel vs true vel
+        plt.plot(t, tcvx, color='tan', linestyle='-', linewidth=1, label='track_cvx')
+        # plt.plot(t, tcvy, color='orange', linestyle='-', linewidth=1, label='track_cvy')
+        plt.plot(t, cvx, color='red', linestyle='-', linewidth=2, label='cvx')
+        # plt.plot(t, cvy, color='blue', linestyle='-', linewidth=1, label='cvy')
+        plt.legend()
+        plt.xlabel('t')
+        plt.ylabel('vel and tracked vel')
+        plt.savefig(f'{_path}/vel_comp.png')
+        plt.show()
+
+        # speed and heading
+        plt.plot(t, S, color='blue', linestyle='-', linewidth=1, label='drone speed')
+        c_speed = (CAR_INITIAL_VELOCITY[0]**2 + CAR_INITIAL_VELOCITY[1]**2)**0.5
+        plt.plot(t, [c_speed for i in S], color='lightblue', linestyle='-', linewidth=1, label='car speed')
+        c_heading = degrees(atan2(CAR_INITIAL_VELOCITY[1], CAR_INITIAL_VELOCITY[0]))
+        plt.plot(t, [degrees(i) for i in alpha], color='green', linestyle='-', linewidth=1, label='drone heading')
+        plt.plot(t, [c_heading for i in alpha], color='lightgreen', linestyle='-', linewidth=1, label='car speed')
+        plt.legend()
+        plt.xlabel('t')
+        plt.ylabel('heading and alpha')
+        plt.savefig(f'{_path}/speed_head.png')
         plt.show()
 
 
