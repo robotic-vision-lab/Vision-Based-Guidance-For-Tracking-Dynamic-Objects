@@ -63,7 +63,7 @@ def screen_saver(screen, path):
     frame_num = 0
     while True:
         frame_num += 1
-        image_name = f'frame_{str(frame_num).zfill(4)}.jpg'
+        image_name = f'frame_{str(frame_num).zfill(4)}.png'
         file_path = os.path.join(path, image_name)
         pygame.image.save(screen, file_path)
         yield

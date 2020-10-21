@@ -248,7 +248,7 @@ class DroneCamera(pygame.sprite.Sprite):
         self.reset_kinematics()
         self.origin = self.position
         self.altitude = ALTITUDE
-        self.alt_change = 20.0
+        self.alt_change = 10.0
         
         # self.rect.center = self.position + SCREEN_CENTER
         self.simulator = simulator
@@ -435,6 +435,8 @@ class Simulator:
         # spawn drone camera
         self.camera = DroneCamera(self)
         self.cam_accel_command = pygame.Vector2(0,0)
+        for sprite in self.all_sprites:
+            self.camera.compensate_camera_motion(sprite)
 
     
     def run(self):
@@ -628,7 +630,7 @@ class Simulator:
         while True:
             # make full file path string
             frame_num += 1
-            image_name = f'frame_{str(frame_num).zfill(4)}.jpg'
+            image_name = f'frame_{str(frame_num).zfill(4)}.png'
             file_path = os.path.join(path, image_name)
 
             # get capture from simulator
@@ -911,9 +913,9 @@ class Tracker:
         car_velocity *= self.manager.simulator.pxm_fac
 
         # filter car kin
-        self.manager.ma.add(car_position, car_velocity)
-        car_position = self.manager.ma.get_pos()
-        car_velocity = self.manager.ma.get_vel()
+        self.manager.filter.add(car_position, car_velocity)
+        car_position = self.manager.filter.get_pos()
+        car_velocity = self.manager.filter.get_vel()
 
         # return kinematics in world reference frame
         return (drone_position, drone_velocity, car_position, car_velocity)
@@ -1228,8 +1230,9 @@ class Controller:
 
         # compute lat and long accelerations
         _D = 2*Vr*Vtheta*r**2
+        print(_D, Vr, Vtheta, r)
 
-        if abs(_D) < 0.05:
+        if abs(_D) < 0.01:
             a_lat = 0.0
             a_long = 0.0
         else:
@@ -1238,14 +1241,22 @@ class Controller:
             _A = K2 * y2 / (2*Vr)
             _B = K2 * y2 * self.R**2 - K1*w + K1*y1
 
+            # 2
             a_lat = ((Vr * _c + Vtheta * _s) * (_B / _D)) - _A * _s
             a_long = - ((Vtheta * _c + Vr * _s) * (_B / _D)) + _A * _s
 
-            a_lat = (K1*Vr*y1*cos(alpha - theta) + K1*Vtheta*y1*sin(alpha - theta) + K2*self.R**2*Vr*y2*cos(alpha - theta) + K2*self.R**2*Vtheta*y2*sin(alpha - theta) - K2*Vtheta*r**2*y2*sin(alpha - theta))/(2*(Vr*Vtheta*r**2*cos(alpha - theta)**2 + Vr*Vtheta*r**2*sin(alpha - theta)**2))
-            a_long = (K1*Vr*y1*sin(alpha - theta) - K1*Vtheta*y1*cos(alpha - theta) - K2*self.R**2*Vtheta*y2*cos(alpha - theta) + K2*self.R**2*Vr*y2*sin(alpha - theta) + K2*Vtheta*r**2*y2*cos(alpha - theta))/(2*(Vr*Vtheta*r**2*cos(alpha - theta)**2 + Vr*Vtheta*r**2*sin(alpha - theta)**2))
+            # 1
+            # a_lat = (K1*Vr*y1*cos(alpha - theta) + K1*Vtheta*y1*sin(alpha - theta) + K2*self.R**2*Vr*y2*cos(alpha - theta) + K2*self.R**2*Vtheta*y2*sin(alpha - theta) - K2*Vtheta*r**2*y2*sin(alpha - theta))/(2*(Vr*Vtheta*r**2*cos(alpha - theta)**2 + Vr*Vtheta*r**2*sin(alpha - theta)**2))
+            # a_long = (K1*Vr*y1*sin(alpha - theta) - K1*Vtheta*y1*cos(alpha - theta) - K2*self.R**2*Vtheta*y2*cos(alpha - theta) + K2*self.R**2*Vr*y2*sin(alpha - theta) + K2*Vtheta*r**2*y2*cos(alpha - theta))/(2*(Vr*Vtheta*r**2*cos(alpha - theta)**2 + Vr*Vtheta*r**2*sin(alpha - theta)**2))
 
-        a_long_bound = 3
-        a_lat_bound = 3
+            #3
+            a_lat = (K1*Vr*y1*cos(alpha - theta) - K1*Vr*w*cos(alpha - theta) - K1*Vtheta*w*sin(alpha - theta) + K1*Vtheta*y1*sin(alpha - theta) + K2*self.R**2*Vr*y2*cos(alpha - theta) + K2*self.R**2*Vtheta*y2*sin(alpha - theta) - K2*Vtheta*r**2*y2*sin(alpha - theta))/_D
+            a_long = (K1*Vtheta*w*cos(alpha - theta) - K1*Vtheta*y1*cos(alpha - theta) - K1*Vr*w*sin(alpha - theta) + K1*Vr*y1*sin(alpha - theta) - K2*self.R**2*Vtheta*y2*cos(alpha - theta) + K2*self.R**2*Vr*y2*sin(alpha - theta) + K2*Vtheta*r**2*y2*cos(alpha - theta))/_D
+
+
+
+        a_long_bound = 10
+        a_lat_bound = 10
         
         a_long = self.sat(a_long, a_long_bound)
         a_lat = self.sat(a_lat, a_lat_bound)
@@ -1295,7 +1306,8 @@ class ExperimentManager:
         self.simulator = Simulator(self)
         self.tracker = Tracker(self)
         self.controller = Controller(self)
-        self.ma = MA(window_size=20)
+
+        self.filter = Kalman() if USE_KALMAN else MA(window_size=10) 
 
         self.image_deque = deque(maxlen=2)
         self.command_deque = deque(maxlen=2)
@@ -1450,7 +1462,7 @@ class ExperimentManager:
         Also removes the folder after creating the video.
         """
         if os.path.isdir(folder_path):
-            create_video_from_images(folder_path, 'jpg', video_name, FPS)
+            create_video_from_images(folder_path, 'png', video_name, FPS)
 
             # delete folder
             shutil.rmtree(folder_path)
@@ -1505,6 +1517,15 @@ class MA:
         return pygame.Vector2(vx,vy)
 
 
+class Kalman:
+    def __init__(self):
+        self.car_x = CAR_INITIAL_POSITION[0]
+        self.car_y = CAR_INITIAL_POSITION[1]
+        self.car_vx = CAR_INITIAL_VELOCITY[0]
+        self.car_vy = CAR_INITIAL_VELOCITY[1]
+
+        
+
 
 
 def get_moving_average(a, w):
@@ -1525,10 +1546,12 @@ if __name__ == "__main__":
     CONTROL_ON              = 1
     TRACKER_ON              = 1
     TRACKER_DISPLAY_ON      = 1
-    USE_TRUE_KINEMATICS     = 1
+    USE_TRUE_KINEMATICS     = 0
     
-    RUN_EXPERIMENT          = 0
-    RUN_TRACK_PLOT          = 1
+    RUN_EXPERIMENT          = 1
+    RUN_TRACK_PLOT          = 0
+
+    RUN_VIDEO_WRITER        = 0
 
     if RUN_EXPERIMENT:
         experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_PLOT, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON, USE_TRUE_KINEMATICS)
@@ -1594,50 +1617,70 @@ if __name__ == "__main__":
             dvx.append(data[23])            
             dvy.append(data[24])            
 
+        f.close()
 
         # plot
         import matplotlib
-        # matplotlib.rcParams['text.usetex'] = True
         import matplotlib.pyplot as plt
+        # params = {'legend.shadow':True, 'legend.frameon':True, 'legend.framealpha':0.2}
+        # plt.rcParams.update(params)
+        
         _path = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
         _prep_temp_folder(os.path.realpath(_path))
 
+        # copy the plot_info file to the where plots figured will be saved
+        shutil.copyfile('plot_info.txt', f'{_path}/plot_info.txt')
         plt.style.use('seaborn-whitegrid')
 
         # ----------------------------------------------------------------------------------------- figure 1
-        f0, axs = plt.subplots(2, 2, sharex=True, gridspec_kw={'wspace':0.4})
-        f0.suptitle('LOS kinematics')
+        f0, axs = plt.subplots(2, 2, sharex=True, gridspec_kw={'wspace':0.4, 'hspace':0.25})
+        f0.suptitle(r'$\mathbf{Line\ of\ sight\ kinematics}$', fontsize=14)
  
         # t vs r
-        axs[0,0].plot(t, r, color='royalblue', linestyle='-', linewidth=1, label='r')
-        axs[0,0].legend()
-        axs[0,0].set(ylabel='r (m)')
-        axs[0,0].set_title('r', fontsize=12)
+        axs[0,0].plot(t, r, color='royalblue', linestyle='-', linewidth=1.5, label=r'$r$')
+        # axs[0,0].legend(loc='upper right')
+        axs[0,0].set(ylabel=r'$r\ (m)$')
+        axs[0,0].set_title(r'$\mathbf{r}$', fontsize=11)
 
-        # t vs theta
-        axs[1,0].plot(t, theta, color='royalblue', linestyle='-', linewidth=1, label='theta')
-        axs[1,0].legend()
-        axs[1,0].set(xlabel='t (s)', ylabel='theta (rads)')
-        axs[1,0].set_title('theta')
+        # t vs θ
+        axs[1,0].plot(t, theta, color='royalblue', linestyle='-', linewidth=1.5, label=r'$\theta$')
+        # axs[1,0].legend(loc='upper right')
+        axs[1,0].set(xlabel=r'$t\ (s)$', ylabel=r'$\theta\ (rads)$')
+        axs[1,0].set_title(r'$\mathbf{\theta}$', fontsize=11)
 
         # t vs vr
-        axs[0,1].plot(t, vr, color='royalblue', linestyle='-', linewidth=1, label='Vr')
-        axs[0,1].legend()
-        axs[0,1].set(ylabel='Vr (m/s)')
-        axs[0,1].set_title('Vr')
+        axs[0,1].plot(t, vr, color='royalblue', linestyle='-', linewidth=1.5, label=r'$V_{r}$')
+        # axs[0,1].legend(loc='upper right')
+        axs[0,1].set(ylabel=r'$V_{r}\ (\frac{m}{s})$')
+        axs[0,1].set_title(r'$\mathbf{V_{r}}$', fontsize=11)
 
         # t vs vtheta
-        axs[1,1].plot(t, vtheta, color='royalblue', linestyle='-', linewidth=1, label='Vtheta')
-        axs[1,1].legend()
-        axs[1,1].set(xlabel='t (s)', ylabel='Vtheta (rad/s)')
-        axs[1,1].set_title('Vtheta')
+        axs[1,1].plot(t, vtheta, color='royalblue', linestyle='-', linewidth=1.5, label=r'$V_{\theta}$')
+        # axs[1,1].legend(loc='upper right')
+        axs[1,1].set(xlabel=r'$t\ (s)$', ylabel=r'$V_{\theta}\ (\frac{rad}{s})$')
+        axs[1,1].set_title(r'$\mathbf{V_{\theta}}$', fontsize=11)
+
         f0.savefig(f'{_path}/1_los.png', dpi=300)
         f0.show()
 
+        
         # ----------------------------------------------------------------------------------------- figure 2
+        # acceleration commands
+        f1, axs = plt.subplots()
+        f1.suptitle(r'$\mathbf{Acceleration\ commands}$', fontsize=14)
+        # plt.plot(t, ax, color='teal', linestyle='-', linewidth=1, label=r'$a_x$')
+        # plt.plot(t, ay, color='green', linestyle='-', linewidth=1, label=r'$a_y$')
+        axs.plot(t, a_lat, color='forestgreen', linestyle='-', linewidth=1.5, label=r'$a_{lat}$')
+        axs.plot(t, a_long, color='deeppink', linestyle='-', linewidth=1.5, label=r'$a_{long}$')
+        axs.legend()
+        axs.set(xlabel=r'$t\ (s)$', ylabel=r'$acceleration\ (\frac{m}{s_{2}})$')
+        f1.savefig(f'{_path}/2_accel.png', dpi=300)
+        f1.show()
+
+        # ----------------------------------------------------------------------------------------- figure 3
         # trajectories
-        f1, axs = plt.subplots(2, 1, gridspec_kw={'hspace':0.4})
-        f1.suptitle('Trajectories')
+        f2, axs = plt.subplots(2, 1, gridspec_kw={'hspace':0.4})
+        f2.suptitle(r'$\mathbf{Trajectories}$', fontsize=14)
         if USE_WORLD_FRAME:
             ndx = np.array(dx)
             ncx = np.array(cx)
@@ -1649,10 +1692,10 @@ if __name__ == "__main__":
             ndy = np.array(dy) + np.array(doy)
             ncy = np.array(cy) + np.array(doy)
 
-        axs[0].plot(ndx, ndy, color='darkslategray', linestyle='-', linewidth=1.5, label='drone trajectory')
-        axs[0].plot(ncx, ncy, color='green', linestyle='-', linewidth=1, label='car trajectory')
-        axs[0].set(ylabel='y (m)')
-        axs[0].set_title('World frame')
+        axs[0].plot(ncx, ncy, color='limegreen', linestyle='-', linewidth=1.5, label=r'$Vehicle$')
+        axs[0].plot(ndx, ndy, color='darkslategray', linestyle='-', linewidth=1.5, label=r'$UAS$')
+        axs[0].set(ylabel=r'$y (m)$')
+        axs[0].set_title(r'$\mathbf{World\ frame}$', fontsize=11)
         axs[0].legend()
 
         if USE_WORLD_FRAME:
@@ -1670,33 +1713,21 @@ if __name__ == "__main__":
         y_pad = (max(ncy) - min(ncy)) * 0.05
         xl = max(abs(max(ncx)), abs(min(ncx))) + x_pad
         yl = max(abs(max(ncy)), abs(min(ncy))) + y_pad
-        axs[1].plot(ndx, ndy, color='darkslategray', marker='+', markersize=20, label='drone')
-        axs[1].plot(ncx, ncy, color='green', linestyle='-', linewidth=1, label='car trajectory')
-        axs[1].set(xlabel='x (m)', ylabel='y (m)')
-        axs[1].set_title('Camera frame')
-        axs[1].legend()
+        axs[1].plot(ncx, ncy, color='limegreen', linestyle='-', linewidth=1.5, label=r'$Vehicle$')
+        axs[1].plot(ndx, ndy, color='darkslategray', marker='+', markersize=20, label=r'$UAS$')
+        axs[1].set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$')
+        axs[1].set_title(r'$\mathbf{Camera\ frame}$', fontsize=11)
+        axs[1].legend(loc='lower right')
         axs[1].set_xlim(-xl,xl)
         axs[1].set_ylim(-yl,yl)
-        f1.savefig(f'{_path}/2_traj.png',dpi=300)
-        f1.show()
-
-        # ----------------------------------------------------------------------------------------- figure 3
-        # accelerations
-        f2, axs = plt.subplots()
-        f2.suptitle('Accelerations')
-        # plt.plot(t, ax, color='teal', linestyle='-', linewidth=1, label='ax')
-        # plt.plot(t, ay, color='green', linestyle='-', linewidth=1, label='ay')
-        axs.plot(t, a_lat, color='blue', linestyle='-', linewidth=1, label='a_lat')
-        axs.plot(t, a_long, color='red', linestyle='-', linewidth=1, label='a_long')
-        axs.legend()
-        axs.set(xlabel='t (s)', ylabel='acceleration (m/s^2)')
-        f2.savefig(f'{_path}/3_accel.png', dpi=300)
+        f2.savefig(f'{_path}/3_traj.png',dpi=300)
         f2.show()
 
+
         # ----------------------------------------------------------------------------------------- figure 4
-        # tracked vs true trajectory
+        # true and tracked trajectories
         f3, axs = plt.subplots()
-        f3.suptitle('True and tracked car trajectory')
+        f3.suptitle(r'$\mathbf{True\ and\ tracked\ vehicle\ trajectories}$', fontsize=14)
         if USE_WORLD_FRAME:
             ndx = np.array(dx) - np.array(dox)
             ncx = np.array(cx) - np.array(dox)
@@ -1707,81 +1738,99 @@ if __name__ == "__main__":
             ncx = np.array(cx)
             ndy = np.array(dy)
             ncy = np.array(cy)
-        axs.plot(ncx, ncy, color='deepskyblue', linestyle='-', linewidth=1, label='true_car_pos')
-        axs.plot(tcx, tcy, color='red', linestyle=':', linewidth=1.5, label='tracked_car_pos')
+        axs.plot(ncx, ncy, color='deepskyblue', linestyle='-', linewidth=1.5, label=r'$true\ trajectory$')
+        axs.plot(tcx, tcy, color='orangered', linestyle=':', linewidth=1.5, label=r'$tracked\ trajectory$')
         axs.legend()
-        axs.set(xlabel='x (m)', ylabel='y (m)')
+        axs.set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$')
         f3.savefig(f'{_path}/4_traj_comp.png', dpi=300)
         f3.show()
 
+
         # ----------------------------------------------------------------------------------------- figure 5
-        # tracked vel vs true vel
-        f4, axs = plt.subplots(2, 1, sharex=True)
-        f4.suptitle('True and tracked car velocities')
+        # true and tracked pos
+        f4, axs = plt.subplots(2,1, sharex=True, gridspec_kw={'hspace':0.4})
+        f4.suptitle(r'$\mathbf{True\ and\ tracked\ vehicle\ positions}$', fontsize=14)
+        if USE_WORLD_FRAME:
+            ndx = np.array(dx) - np.array(dox)
+            ncx = np.array(cx) - np.array(dox)
+            ndy = np.array(dy) - np.array(doy)
+            ncy = np.array(cy) - np.array(doy)
+        else:
+            ndx = np.array(dx)
+            ncx = np.array(cx)
+            ndy = np.array(dy)
+            ncy = np.array(cy)
+
+        axs[0].plot(t, ncx, color='rosybrown', linestyle='-', linewidth=1.5, label=r'$true\ x$')
+        axs[0].plot(t, tcx, color='red', linestyle=':', linewidth=1.5, label=r'$tracked\ x$')
+        axs[0].set(ylabel=r'$x\ (m)$')
+        axs[0].set_title(r'$\mathbf{x}$', fontsize=11)
+        axs[0].legend()
+        axs[1].plot(t, ncy, color='mediumseagreen', linestyle='-', linewidth=1.5, label=r'$true\ y$')
+        axs[1].plot(t, tcy, color='green', linestyle=':', linewidth=1.5, label=r'$tracked\ y$')
+        axs[1].set(xlabel=r'$t\ (s)$', ylabel=r'$y\ (m)$')
+        axs[1].set_title(r'$\mathbf{y}$', fontsize=11)
+        axs[1].legend()
+        f4.savefig(f'{_path}/5_pos_comp.png', dpi=300)
+        f4.show()
+
+
+        # ----------------------------------------------------------------------------------------- figure 6
+        # true and tracked velocities
+        f5, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
+        f5.suptitle(r'$\mathbf{True\ and\ tracked\ vehicle\ velocities}$', fontsize=14)
         ntcvx = np.array(tcvx) + np.array(dvx)
         ntcvy = np.array(tcvy) + np.array(dvy)
         ma_tcvx = get_moving_average(ntcvx, 10)
         ma_tcvy = get_moving_average(ntcvy, 10)
-        axs[0].plot(t, ntcvx, color='steelblue', linestyle='-', linewidth=1, label='tracked_car_Vx')
-        axs[0].plot(t, ma_tcvx, color='purple', linestyle='-', linewidth=2, label='tracked_car_Vx_avg')
-        axs[0].plot(t, cvx, color='red', linestyle='-', linewidth=2, label='car_Vx')
-        axs[0].set(ylabel='true and tracked Vx (m/s)')
-        axs[0].legend()
-        axs[1].plot(t, ntcvy, color='steelblue', linestyle='-', linewidth=1, label='tracked_car_Vy')
-        axs[1].plot(t, ma_tcvy, color='purple', linestyle='-', linewidth=2, label='tracked_car_Vy_avg')
-        axs[1].plot(t, cvy, color='red', linestyle='-', linewidth=2, label='car_Vy')
-        axs[1].set(xlabel='t (s)', ylabel='true and tracked Vy (m/s)')
-        axs[1].legend()
-        f4.savefig(f'{_path}/5_vel_comp.png', dpi=300)
-        f4.show()
+        
+        axs[0].plot(t, ntcvx, color='paleturquoise', linestyle='-', linewidth=1, label=r'$tracked\ V_x$')
+        axs[0].plot(t, ma_tcvx, color='mediumturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_x\ moving\ avg$')
+        axs[0].plot(t, cvx, color='crimson', linestyle='-', linewidth=2, label=r'$true\ V_x$')
+        axs[0].set(ylabel=r'$V_x\ (\frac{m}{s})$')
+        axs[0].set_title(r'$\mathbf{V_x}$', fontsize=11)
+        axs[0].legend(loc='upper right')
 
-        # ----------------------------------------------------------------------------------------- figure 6
-        # speed and heading
-        f5, axs = plt.subplots(2, 1, sharex=True)
-        f5.suptitle('Speed and Heading')
-        c_speed = (CAR_INITIAL_VELOCITY[0]**2 + CAR_INITIAL_VELOCITY[1]**2)**0.5
-        c_heading = degrees(atan2(CAR_INITIAL_VELOCITY[1], CAR_INITIAL_VELOCITY[0]))
-        axs[0].plot(t, S, color='blue', linestyle='-', linewidth=1, label='drone speed')
-        axs[0].plot(t, [c_speed for i in S], color='lightblue', linestyle='-', linewidth=2, label='car speed')
-        axs[0].set(ylabel='speed (m/s)')
-        axs[0].legend()
-        axs[1].plot(t, [degrees(i) for i in alpha], color='green', linestyle='-', linewidth=1, label='drone heading')
-        axs[1].plot(t, [c_heading for i in alpha], color='lightgreen', linestyle='-', linewidth=2, label='car heading')
-        axs[1].set(xlabel='t (s)',ylabel='heading (rad/s)')
-        axs[1].legend()
-        f5.savefig(f'{_path}/6_speed_head.png', dpi=300)
+        axs[1].plot(t, ntcvy, color='paleturquoise', linestyle='-', linewidth=1, label=r'$tracked\ V_y$')
+        axs[1].plot(t, ma_tcvy, color='darkturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_y\ moving\  avg$')
+        axs[1].plot(t, cvy, color='crimson', linestyle='-', linewidth=2, label=r'$true\ V_y$')
+        axs[1].set(xlabel=r'$t\ (s)$', ylabel=r'$V_y\ (\frac{m}{s})$')
+        axs[1].set_title(r'$\mathbf{V_y}$', fontsize=11)
+        axs[1].legend(loc='upper right')
+
+        f5.savefig(f'{_path}/6_vel_comp.png', dpi=300)
         f5.show()
 
-
         # ----------------------------------------------------------------------------------------- figure 7
-        # tracked pos vs true pos
-        f6, axs = plt.subplots(2,1, sharex=True)
-        f6.suptitle('True and tracked car positions')
-        if USE_WORLD_FRAME:
-            ndx = np.array(dx) - np.array(dox)
-            ncx = np.array(cx) - np.array(dox)
-            ndy = np.array(dy) - np.array(doy)
-            ncy = np.array(cy) - np.array(doy)
-        else:
-            ndx = np.array(dx)
-            ncx = np.array(cx)
-            ndy = np.array(dy)
-            ncy = np.array(cy)
+        # speed and heading
+        f6, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
+        f6.suptitle(r'$\mathbf{Vehicle\ and\ UAS\ speed\ and\ heading}$', fontsize=14)
+        c_speed = (CAR_INITIAL_VELOCITY[0]**2 + CAR_INITIAL_VELOCITY[1]**2)**0.5
+        c_heading = degrees(atan2(CAR_INITIAL_VELOCITY[1], CAR_INITIAL_VELOCITY[0]))
 
-        axs[0].plot(t, ncx, color='rosybrown', linestyle='-', linewidth=1, label='car_x')
-        axs[0].plot(t, tcx, color='red', linestyle=':', linewidth=2, label='tracked_car_x')
-        axs[0].set(ylabel='x (m)')
-        axs[0].set_title('x')
+        axs[0].plot(t, [c_speed for i in S], color='lightblue', linestyle='-', linewidth=2, label=r'$|V_{vehicle}|$')
+        axs[0].plot(t, S, color='blue', linestyle='-', linewidth=1.5, label=r'$|V_{UAS}|$')
+        axs[0].set(ylabel=r'$|V|\ (\frac{m}{s})$')
+        axs[0].set_title(r'$\mathbf{speed}$', fontsize=11)
         axs[0].legend()
-        axs[1].plot(t, ncy, color='mediumseagreen', linestyle='-', linewidth=1, label='car_y')
-        axs[1].plot(t, tcy, color='green', linestyle=':', linewidth=2, label='tracked_car_y')
-        axs[1].set(xlabel='t (s)', ylabel='y (m)')
-        axs[1].set_title('y')
+
+        axs[1].plot(t, [c_heading for i in alpha], color='lightgreen', linestyle='-', linewidth=2, label=r'$\angle V_{vehicle}$')
+        axs[1].plot(t, [degrees(i) for i in alpha], color='green', linestyle='-', linewidth=1.5, label=r'$\angle V_{UAS}$')
+        axs[1].set(xlabel=r'$t\ (s)$',ylabel=r'$\angle V\ (rad/s)$')
+        axs[1].set_title(r'$\mathbf{heading}$', fontsize=11)
         axs[1].legend()
-        f6.savefig(f'{_path}/7_pos_comp.png', dpi=300)
+
+        f6.savefig(f'{_path}/7_speed_head.png', dpi=300)
         f6.show()
 
         plt.show()
+        
 
-
-
+    if RUN_VIDEO_WRITER:
+        experiment_manager = ExperimentManager()
+        # create folder path inside ./sim_outputs
+        _path = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
+        _prep_temp_folder(os.path.realpath(_path))
+        vid_path = f'{_path}/sim_track_control.avi'
+        print('Making video.')
+        experiment_manager.make_video(vid_path, TEMP_FOLDER)

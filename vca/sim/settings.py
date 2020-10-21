@@ -53,10 +53,10 @@ CAR_LENGTH_PX = 128
 CAR_SCALE = CAR_LENGTH / (CAR_LENGTH_PX * PIXEL_TO_METERS_FACTOR)
 # note for exp 3 (0,0) at image center, axes: x points right [>], y points down [v]
 # for exp4 world coords in SI units, x ->, y ^.
-CAR_INITIAL_POSITION = (-70.0, -70.0)#(966.94, -150.00)#(-200.0, -150.0)#(-200.0, 200.0)#(-30.0, 30.0)#(50, HEIGHT//2)
-CAR_INITIAL_VELOCITY = (22.22, 0.0)#(30.0, 0.0)#(30.0, 0.0)#
+# CAR_INITIAL_POSITION = (-70.0, -70.0)#(966.94, -150.00)#(-200.0, -150.0)#(-200.0, 200.0)#(-30.0, 30.0)#(50, HEIGHT//2)
+# CAR_INITIAL_VELOCITY = (22.22, 0.0)#(30.0, 0.0)#(30.0, 0.0)#
 CAR_ACCELERATION = (0.0, 0.0)
-CAR_RADIUS = 1
+CAR_RADIUS = 1.0
 
 # block settings
 BLOCK_COLOR = DARK_GRAY_2
@@ -67,8 +67,8 @@ NUM_BLOCKS = 50
 DRONE_IMG = 'cross_hair2.png'
 DRONE_SCALE = 0.2
 # note (0,0) at image center, axes: x points right [>], y points down [v]
-DRONE_POSITION = (0.0, 0.0)#(943.15, -203.48)#(0.0, 50.0)
-DRONE_INITIAL_VELOCITY = (31.11, 0.0)#(-11.11, 0.0)#(20.0, 0.0)
+# DRONE_POSITION = (0.0, 0.0)#(943.15, -203.48)#(0.0, 50.0)
+# DRONE_INITIAL_VELOCITY = (31.11, 0.0)#(-11.11, 0.0)#(20.0, 0.0)
 DRONE_VELOCITY_LIMIT = 500      # +/-
 DRONE_ACCELERATION_LIMIT = 20   # +/-
 
@@ -83,62 +83,71 @@ BB_COLOR = BLUE     # pygame color
 # tracker settings
 USE_WORLD_FRAME = 1
 
-# initial conditions
-IC = 1
+# filter choice
+USE_KALMAN = 0  # else Moving average
 
-if IC == 1:     # open
-    CAR_INITIAL_POSITION    = (-70.0, -70.0)
-    CAR_INITIAL_VELOCITY    = (31.11, 0.0)
-    DRONE_POSITION          = (0.0, 0.0)
-    DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
-    K_1                     = 0.15
-    K_2                     = 0.02
-    w_                      = -0.1
-elif IC == 2:   # open
-    CAR_INITIAL_POSITION    = (-70.0, -70.0)
-    CAR_INITIAL_VELOCITY    = (31.11, 0.0)
-    DRONE_POSITION          = (0.0, 0.0)
-    DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
-    K_1                     = 0.1
-    K_2                     = 0.05
-    w_                      = -0.1
-elif IC == 3:   # open
-    CAR_INITIAL_POSITION    = (-70.0, -70.0)
-    CAR_INITIAL_VELOCITY    = (22.22, 0.0)
-    DRONE_POSITION          = (0.0, 0.0)
-    DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
-    K_1                     = 0.1
-    K_2                     = 0.05
-    w_                      = -0.1
-elif IC == 4:   # open
-    CAR_INITIAL_POSITION    = (-70.0, -70.0)
-    CAR_INITIAL_VELOCITY    = (22.22, 0.0)
-    DRONE_POSITION          = (0.0, 0.0)
-    DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
-    K_1                     = 0.1
-    K_2                     = 0.05
-    w_                      = -0.1
-elif IC == 5:   # open
-    CAR_INITIAL_POSITION    = (-70.0, -70.0)
-    CAR_INITIAL_VELOCITY    = (22.22, 0.0)
-    DRONE_POSITION          = (0.0, 0.0)
-    DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
-    K_1                     = 0.1
-    K_2                     = 0.05
-    w_                      = -0.1
-elif IC == 6:   # open
-    CAR_INITIAL_POSITION    = (-70.0, -70.0)
-    CAR_INITIAL_VELOCITY    = (22.22, 0.0)
-    DRONE_POSITION          = (0.0, 0.0)
-    DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
-    K_1                     = 0.1
-    K_2                     = 0.05
-    w_                      = -0.1
-else:           # open
-    CAR_INITIAL_POSITION    = (-70.0, -70.0)
-    CAR_INITIAL_VELOCITY    = (22.22, 0.0)
-    DRONE_POSITION          = (0.0, 0.0)
-    DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
-    K_1                     = 0.1
-    K_2                     = 0.05
-    w_                      = -0.1
+# initial conditions
+
+
+# # 1 OPEN
+# CAR_INITIAL_POSITION    = (-70.0, -70.0)
+# CAR_INITIAL_VELOCITY    = (31.11, 0.0)
+# DRONE_POSITION          = (0.0, 0.0)
+# DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
+# K_1                     = 0.15
+# K_2                     = 0.02
+# w_                      = -0.1
+
+# # 2 CLOSED [cam frame, truekin, c1 with den .05, bound=3]
+# CAR_INITIAL_POSITION    = (-70.0, -10.0)    # DO NOT TOUCH
+# CAR_INITIAL_VELOCITY    = (22.22, 0.0)      # DO NOT TOUCH
+# DRONE_POSITION          = (0.0, 0.0)        # DO NOT TOUCH
+# DRONE_INITIAL_VELOCITY  = (11.11, 0.0)      # DO NOT TOUCH
+# K_1                     = 0.3               # DO NOT TOUCH
+# K_2                     = 0.05              # DO NOT TOUCH
+# w_                      = -0.1              # DO NOT TOUCH
+
+# 3 open [world frame, truekin, c2 with den .01, bound=10]
+CAR_INITIAL_POSITION    = (0.0, 0.0)        #DO NOT TOUCH
+CAR_INITIAL_VELOCITY    = (22.2222, 0.0)    #DO NOT TOUCH
+DRONE_POSITION          = (0.0, 50.0)       #DO NOT TOUCH
+DRONE_INITIAL_VELOCITY  = (31.1111, 0.0)    #DO NOT TOUCH
+K_1                     = 0.1               #DO NOT TOUCH
+K_2                     = 0.05              #DO NOT TOUCH
+w_                      = -0.1              #DO NOT TOUCH
+
+# #4 open
+# CAR_INITIAL_POSITION    = (-70.0, -70.0)
+# CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+# DRONE_POSITION          = (0.0, 0.0)
+# DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+# K_1                     = 0.1
+# K_2                     = 0.05
+# w_                      = -0.1
+
+# # 5 open
+# CAR_INITIAL_POSITION    = (-70.0, -70.0)
+# CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+# DRONE_POSITION          = (0.0, 0.0)
+# DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+# K_1                     = 0.1
+# K_2                     = 0.05
+# w_                      = -0.1
+
+# # 6 open
+# CAR_INITIAL_POSITION    = (-70.0, -70.0)
+# CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+# DRONE_POSITION          = (0.0, 0.0)
+# DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+# K_1                     = 0.1
+# K_2                     = 0.05
+# w_                      = -0.1
+
+# # 7 open
+# CAR_INITIAL_POSITION    = (-70.0, -70.0)
+# CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+# DRONE_POSITION          = (0.0, 0.0)
+# DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+# K_1                     = 0.1
+# K_2                     = 0.05
+# w_                      = -0.1
