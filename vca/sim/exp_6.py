@@ -910,6 +910,11 @@ class Tracker:
         car_velocity = pygame.Vector2((car_vx, car_vy)).elementwise() * (1, -1)
         car_velocity *= self.manager.simulator.pxm_fac
 
+        # filter car kin
+        self.manager.ma.add(car_position, car_velocity)
+        car_position = self.manager.ma.get_pos()
+        car_velocity = self.manager.ma.get_vel()
+
         # return kinematics in world reference frame
         return (drone_position, drone_velocity, car_position, car_velocity)
 
@@ -1290,6 +1295,7 @@ class ExperimentManager:
         self.simulator = Simulator(self)
         self.tracker = Tracker(self)
         self.controller = Controller(self)
+        self.ma = MA(window_size=20)
 
         self.image_deque = deque(maxlen=2)
         self.command_deque = deque(maxlen=2)
@@ -1473,6 +1479,33 @@ class ExperimentManager:
 
 
 
+class MA:
+    def __init__(self, window_size=10):
+        self.car_x  = deque(maxlen=window_size)
+        self.car_y  = deque(maxlen=window_size)
+        self.car_vx = deque(maxlen=window_size)
+        self.car_vy = deque(maxlen=window_size)
+
+        self.add(CAR_INITIAL_POSITION, CAR_INITIAL_VELOCITY)
+
+    def add(self, pos, vel):
+        self.car_x.append(pos[0])
+        self.car_y.append(pos[1])
+        self.car_vx.append(vel[0])
+        self.car_vy.append(vel[1])
+
+    def get_pos(self):
+        x = sum(self.car_x) / len(self.car_x)
+        y = sum(self.car_y) / len(self.car_y)
+        return pygame.Vector2(x,y)
+
+    def get_vel(self):
+        vx = sum(self.car_vx) / len(self.car_vx)
+        vy = sum(self.car_vy) / len(self.car_vy)
+        return pygame.Vector2(vx,vy)
+
+
+
 
 def get_moving_average(a, w):
     ret = []
@@ -1483,6 +1516,7 @@ def get_moving_average(a, w):
         ret.append(sum(b) / len(b))
 
     return ret
+
 
 if __name__ == "__main__":
 
@@ -1597,7 +1631,7 @@ if __name__ == "__main__":
         axs[1,1].legend()
         axs[1,1].set(xlabel='t (s)', ylabel='Vtheta (rad/s)')
         axs[1,1].set_title('Vtheta')
-        f0.savefig(f'{_path}/1_los.png')
+        f0.savefig(f'{_path}/1_los.png', dpi=300)
         f0.show()
 
         # ----------------------------------------------------------------------------------------- figure 2
@@ -1643,7 +1677,7 @@ if __name__ == "__main__":
         axs[1].legend()
         axs[1].set_xlim(-xl,xl)
         axs[1].set_ylim(-yl,yl)
-        f1.savefig(f'{_path}/2_traj.png')
+        f1.savefig(f'{_path}/2_traj.png',dpi=300)
         f1.show()
 
         # ----------------------------------------------------------------------------------------- figure 3
@@ -1656,7 +1690,7 @@ if __name__ == "__main__":
         axs.plot(t, a_long, color='red', linestyle='-', linewidth=1, label='a_long')
         axs.legend()
         axs.set(xlabel='t (s)', ylabel='acceleration (m/s^2)')
-        f2.savefig(f'{_path}/3_accel.png')
+        f2.savefig(f'{_path}/3_accel.png', dpi=300)
         f2.show()
 
         # ----------------------------------------------------------------------------------------- figure 4
@@ -1677,7 +1711,7 @@ if __name__ == "__main__":
         axs.plot(tcx, tcy, color='red', linestyle=':', linewidth=1.5, label='tracked_car_pos')
         axs.legend()
         axs.set(xlabel='x (m)', ylabel='y (m)')
-        f3.savefig(f'{_path}/4_traj_comp.png')
+        f3.savefig(f'{_path}/4_traj_comp.png', dpi=300)
         f3.show()
 
         # ----------------------------------------------------------------------------------------- figure 5
@@ -1689,16 +1723,16 @@ if __name__ == "__main__":
         ma_tcvx = get_moving_average(ntcvx, 10)
         ma_tcvy = get_moving_average(ntcvy, 10)
         axs[0].plot(t, ntcvx, color='steelblue', linestyle='-', linewidth=1, label='tracked_car_Vx')
-        axs[0].plot(t, ma_tcvx, color='purple', linestyle='-', linewidth=2, label='car_Vx')
+        axs[0].plot(t, ma_tcvx, color='purple', linestyle='-', linewidth=2, label='tracked_car_Vx_avg')
         axs[0].plot(t, cvx, color='red', linestyle='-', linewidth=2, label='car_Vx')
         axs[0].set(ylabel='true and tracked Vx (m/s)')
         axs[0].legend()
         axs[1].plot(t, ntcvy, color='steelblue', linestyle='-', linewidth=1, label='tracked_car_Vy')
-        axs[1].plot(t, ma_tcvy, color='purple', linestyle='-', linewidth=2, label='car_Vy')
+        axs[1].plot(t, ma_tcvy, color='purple', linestyle='-', linewidth=2, label='tracked_car_Vy_avg')
         axs[1].plot(t, cvy, color='red', linestyle='-', linewidth=2, label='car_Vy')
         axs[1].set(xlabel='t (s)', ylabel='true and tracked Vy (m/s)')
         axs[1].legend()
-        f4.savefig(f'{_path}/5_vel_comp.png')
+        f4.savefig(f'{_path}/5_vel_comp.png', dpi=300)
         f4.show()
 
         # ----------------------------------------------------------------------------------------- figure 6
@@ -1715,7 +1749,7 @@ if __name__ == "__main__":
         axs[1].plot(t, [c_heading for i in alpha], color='lightgreen', linestyle='-', linewidth=2, label='car heading')
         axs[1].set(xlabel='t (s)',ylabel='heading (rad/s)')
         axs[1].legend()
-        f5.savefig(f'{_path}/6_speed_head.png')
+        f5.savefig(f'{_path}/6_speed_head.png', dpi=300)
         f5.show()
 
 
@@ -1744,7 +1778,7 @@ if __name__ == "__main__":
         axs[1].set(xlabel='t (s)', ylabel='y (m)')
         axs[1].set_title('y')
         axs[1].legend()
-        f6.savefig(f'{_path}/7_pos_comp.png')
+        f6.savefig(f'{_path}/7_pos_comp.png', dpi=300)
         f6.show()
 
         plt.show()
