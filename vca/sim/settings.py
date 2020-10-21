@@ -79,3 +79,66 @@ TIME_COLOR = LIGHT_GRAY_2
 
 # Bounding box settings
 BB_COLOR = BLUE     # pygame color
+
+# tracker settings
+USE_WORLD_FRAME = 1
+
+# initial conditions
+IC = 1
+
+if IC == 1:     # open
+    CAR_INITIAL_POSITION    = (-70.0, -70.0)
+    CAR_INITIAL_VELOCITY    = (31.11, 0.0)
+    DRONE_POSITION          = (0.0, 0.0)
+    DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
+    K_1                     = 0.15
+    K_2                     = 0.02
+    w_                      = -0.1
+elif IC == 2:   # open
+    CAR_INITIAL_POSITION    = (-70.0, -70.0)
+    CAR_INITIAL_VELOCITY    = (31.11, 0.0)
+    DRONE_POSITION          = (0.0, 0.0)
+    DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
+    K_1                     = 0.1
+    K_2                     = 0.05
+    w_                      = -0.1
+elif IC == 3:   # open
+    CAR_INITIAL_POSITION    = (-70.0, -70.0)
+    CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+    DRONE_POSITION          = (0.0, 0.0)
+    DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+    K_1                     = 0.1
+    K_2                     = 0.05
+    w_                      = -0.1
+elif IC == 4:   # open
+    CAR_INITIAL_POSITION    = (-70.0, -70.0)
+    CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+    DRONE_POSITION          = (0.0, 0.0)
+    DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+    K_1                     = 0.1
+    K_2                     = 0.05
+    w_                      = -0.1
+elif IC == 5:   # open
+    CAR_INITIAL_POSITION    = (-70.0, -70.0)
+    CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+    DRONE_POSITION          = (0.0, 0.0)
+    DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+    K_1                     = 0.1
+    K_2                     = 0.05
+    w_                      = -0.1
+elif IC == 6:   # open
+    CAR_INITIAL_POSITION    = (-70.0, -70.0)
+    CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+    DRONE_POSITION          = (0.0, 0.0)
+    DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+    K_1                     = 0.1
+    K_2                     = 0.05
+    w_                      = -0.1
+else:           # open
+    CAR_INITIAL_POSITION    = (-70.0, -70.0)
+    CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+    DRONE_POSITION          = (0.0, 0.0)
+    DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+    K_1                     = 0.1
+    K_2                     = 0.05
+    w_                      = -0.1
