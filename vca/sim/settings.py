@@ -95,14 +95,16 @@ if DARK_ON:
     METRICS_COLOR = LIGHT_GRAY_2
     DOT_COLOR = WHITE
     DRONE_IMG_ALPHA = 250
+    BB_COLOR = BLUE
 else:
-    BLOCK_COLOR = (230, 230, 230)
+    BLOCK_COLOR = (230, 220, 230)
     SCREEN_BG_COLOR = (250, 250, 250)
     TRACK_COLOR = (8, 255, 8)
     TIME_COLOR = LIGHT_GRAY
     METRICS_COLOR = LIGHT_GRAY
     DOT_COLOR = DARK_GRAY
     DRONE_IMG_ALPHA = 102
+    BB_COLOR = (51, 51, 255)
 
 
 # tracker settings
@@ -111,8 +113,10 @@ USE_WORLD_FRAME = 1
 # filter choice
 USE_KALMAN = 0  # else Moving average
 
-# initial conditions
 
+#--------------------------------------------------------------------------------
+CAR_RADIUS = 1
+# initial conditions
 
 # # 1 OPEN
 # CAR_INITIAL_POSITION    = (-70.0, -70.0)
