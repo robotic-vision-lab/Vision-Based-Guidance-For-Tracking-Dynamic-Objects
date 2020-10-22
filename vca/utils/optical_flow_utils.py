@@ -153,11 +153,15 @@ def draw_tracks(img, old_pts, new_pts, colors=None, mask=None, track_thickness=1
     for i, (new, old) in enumerate(zip(new_pts, old_pts)):
         a, b = new.ravel()
         c, d = old.ravel()
-        color = (102, 255, 102) if colors is None else colors[i].tolist()
+        if len(colors) == 1:
+            color = colors[0]
+        else:
+            color = (102, 255, 102) if colors is None else colors[i].tolist()
         mask = cv.line(mask, (a,b), (c,d), color, track_thickness)
         img = cv.circle(img, (a,b), radius, color, -1)
 
     # add img and mask
+    img[mask>0]=0
     img = cv.add(img, mask)
 
     return img, mask
