@@ -41,7 +41,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 500.0                                  # meters
+ALTITUDE = 250.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -88,21 +88,25 @@ BB_COLOR = BLUE     # pygame color
 # theme
 DARK_ON = 0
 if DARK_ON:
-    BLOCK_COLOR = DARK_GRAY_2
-    SCREEN_BG_COLOR = DARK_GRAY
+    BLOCK_COLOR = (40, 40, 40)
+    BLOCK_COLOR_DELTA = 24
+    SCREEN_BG_COLOR = (31, 31, 31)
     TRACK_COLOR = (102, 255, 102)
-    TIME_COLOR = LIGHT_GRAY_2
-    METRICS_COLOR = LIGHT_GRAY_2
+    TRACKER_BLANK = 31
+    TIME_COLOR = (153, 153, 153)
+    METRICS_COLOR = (153, 153, 153)
     DOT_COLOR = WHITE
     DRONE_IMG_ALPHA = 250
-    BB_COLOR = BLUE
+    BB_COLOR = (102, 102, 255)
 else:
-    BLOCK_COLOR = (230, 220, 230)
+    BLOCK_COLOR = (230, 230, 230)
+    BLOCK_COLOR_DELTA = 18
     SCREEN_BG_COLOR = (250, 250, 250)
     TRACK_COLOR = (8, 255, 8)
-    TIME_COLOR = LIGHT_GRAY
-    METRICS_COLOR = LIGHT_GRAY
-    DOT_COLOR = DARK_GRAY
+    TRACKER_BLANK = 250
+    TIME_COLOR = (128, 128, 128)
+    METRICS_COLOR = (128, 128, 128)
+    DOT_COLOR = (31, 31, 31)
     DRONE_IMG_ALPHA = 102
     BB_COLOR = (51, 51, 255)
 
@@ -111,7 +115,7 @@ else:
 USE_WORLD_FRAME = 1
 
 # filter choice
-USE_KALMAN = 0  # else Moving average
+USE_KALMAN = 1  # else Moving average
 
 
 #--------------------------------------------------------------------------------
@@ -146,22 +150,22 @@ CAR_RADIUS = 1
 # w_                      = -0.1              #DO NOT TOUCH
 
 # #4 CLOSED [world frame, truekin, c2 with den .01, bound=10, R=10]
-CAR_INITIAL_POSITION    = (200.0, 100.0)    # DO NOT TOUCH
-CAR_INITIAL_VELOCITY    = (22.22, 0.0)      # DO NOT TOUCH
-DRONE_POSITION          = (0.0, 0.0)        # DO NOT TOUCH
-DRONE_INITIAL_VELOCITY  = (31.11, 0.0)      # DO NOT TOUCH
-K_1                     = 0.1               # DO NOT TOUCH
-K_2                     = 0.05              # DO NOT TOUCH
-w_                      = -0.1              # DO NOT TOUCH
+# CAR_INITIAL_POSITION    = (200.0, 100.0)    # DO NOT TOUCH
+# CAR_INITIAL_VELOCITY    = (22.22, 0.0)      # DO NOT TOUCH
+# DRONE_POSITION          = (0.0, 0.0)        # DO NOT TOUCH
+# DRONE_INITIAL_VELOCITY  = (31.11, 0.0)      # DO NOT TOUCH
+# K_1                     = 0.1               # DO NOT TOUCH
+# K_2                     = 0.05              # DO NOT TOUCH
+# w_                      = -0.1              # DO NOT TOUCH
 
 # 5 open
-# CAR_INITIAL_POSITION    = (100.0, 100.0)
-# CAR_INITIAL_VELOCITY    = (22.22, 0.0)
-# DRONE_POSITION          = (0.0, 0.0)
-# DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
-# K_1                     = 0.1
-# K_2                     = 0.05
-# w_                      = -0.1
+CAR_INITIAL_POSITION    = (50.0, 50.0)
+CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+DRONE_POSITION          = (0.0, 0.0)
+DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+K_1                     = 0.5
+K_2                     = 0.025
+w_                      = -0.1
 
 # # 6 open
 # CAR_INITIAL_POSITION    = (-70.0, -70.0)

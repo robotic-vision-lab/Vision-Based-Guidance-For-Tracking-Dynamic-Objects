@@ -149,9 +149,10 @@ class Block(pygame.sprite.Sprite):
 
     def fill_image(self):
         r,g,b = BLOCK_COLOR
-        r += random.randint(-24, 24)
-        g += random.randint(-24, 24)
-        b += random.randint(-24, 24)
+        d = BLOCK_COLOR_DELTA
+        r += random.randint(-d, d)
+        g += random.randint(-d, d)
+        b += random.randint(-d, d)
         self.image.fill((r,g,b))
         # self.image.fill(BLOCK_COLOR)
 
@@ -639,7 +640,7 @@ class Simulator:
             # get tracker image
             img_track = self.manager.tracker.cur_img
             if img_track is None:
-                img_track = np.ones_like(img_sim, dtype='uint8') * 31
+                img_track = np.ones_like(img_sim, dtype='uint8') * TRACKER_BLANK
             
             # assemble images
             img = images_assemble([img_sim, img_track], (1,2))
@@ -916,16 +917,21 @@ class Tracker:
         # filter car kin
         if not self.manager.filter.ready:
             self.manager.filter.init_filter(car_position, car_velocity)
-        self.manager.filter.add_pos(car_position)
-        car_position = self.manager.filter.get_pos()
-        # car_velocity = self.manager.filter.get_vel()
-        if self.manager.get_sim_dt()==0:
-            car_velocity = self.manager.filter.get_vel()
+        if not USE_KALMAN:
+            self.manager.filter.add_pos(car_position)
+            car_position = self.manager.filter.get_pos()
+            # car_velocity = self.manager.filter.get_vel()
+            if self.manager.get_sim_dt()==0:
+                car_velocity = self.manager.filter.get_vel()
+            else:
+                car_velocity = (self.manager.filter.new_pos - self.manager.filter.old_pos) / self.manager.get_sim_dt()
+            # car_velocity = pygame.Vector2(car_velocity).elementwise() * (1, -1)
+            # car_velocity *= self.manager.simulator.pxm_fac
+            self.manager.filter.add_vel(car_velocity)
         else:
-            car_velocity = (self.manager.filter.new_pos - self.manager.filter.old_pos) / self.manager.get_sim_dt()
-        # car_velocity = pygame.Vector2(car_velocity).elementwise() * (1, -1)
-        # car_velocity *= self.manager.simulator.pxm_fac
-        self.manager.filter.add_vel(car_velocity)
+            self.manager.filter.add(car_position, car_velocity)
+            car_position = self.manager.filter.get_pos()
+            car_velocity = self.manager.filter.get_vel()
 
         # return kinematics in world reference frame
         return (drone_position, drone_velocity, car_position, car_velocity)
@@ -1317,7 +1323,7 @@ class ExperimentManager:
         self.tracker = Tracker(self)
         self.controller = Controller(self)
 
-        self.filter = Kalman() if USE_KALMAN else MA(window_size=10) 
+        self.filter = Kalman(self) if USE_KALMAN else MA(window_size=10) 
 
         self.image_deque = deque(maxlen=2)
         self.command_deque = deque(maxlen=2)
@@ -1447,7 +1453,7 @@ class ExperimentManager:
                     screen_capture = self.simulator.get_screen_capture()
                     self.tracker.process_image(screen_capture)
                     # let controller generate acceleration, when tracker says so
-                    if self.tracker.can_begin_control() and (self.use_true_kin or self.tracker.kin is not None) and len(self.filter.car_vx)>5:
+                    if self.tracker.can_begin_control() and (self.use_true_kin or self.tracker.kin is not None) and self.filter.done_waiting():
                         # collect kinematics tuple
                         kin = self.get_true_kinematics() if self.use_true_kin else self.tracker.kin
                         # let controller process kinematics
@@ -1518,6 +1524,11 @@ class MA:
         # self.old_pos = self.avg_pos()
         # self.old_vel = self.avg_vel()
 
+
+    def done_waiting(self):
+        return len(self.car_vx) > 5
+
+
     def init_filter(self, pos, vel):
         self.new_pos = pygame.Vector2(pos)
         self.new_vel = pygame.Vector2(vel)
@@ -1581,11 +1592,113 @@ class MA:
 
 
 class Kalman:
-    def __init__(self):
-        self.car_x = CAR_INITIAL_POSITION[0]
-        self.car_y = CAR_INITIAL_POSITION[1]
-        self.car_vx = CAR_INITIAL_VELOCITY[0]
-        self.car_vy = CAR_INITIAL_VELOCITY[1]
+    def __init__(self, manager):
+        self.x  = 0.0
+        self.y  = 0.0
+        self.vx = 0.0
+        self.vy = 0.0
+        self.Mu = np.array([[self.x], [self.y], [self.vx], [self.vy]])
+        self.sig_r = 0.1
+        self.sig = 0.1
+        self.sig_q = 1.0
+        self.S = np.identity(4) * self.sig**2
+        self.C = np.identity(4)
+        self.Eq = np.array([[0.01], [0.01], [0.01], [0.01]])
+        # self.Q = np.array([[0.01, 0.01, 0.01, 0], [0.01, 0.01, 0, 0.01], [0.01, 0, 0.01, 0.01], [0, 0.01, 0.01, 0.01]])
+        self.Q = np.array([[0.01, 0.0, 0.0, 0], [0.0, 0.01, 0, 0.0], [0.0, 0, 0.01, 0.0], [0, 0.0, 0.0, 0.01]])
+        
+        self.manager = manager
+        self.ready = False
+
+    
+
+    def done_waiting(self):
+        return self.ready
+
+
+    def init_filter(self, pos, vel):
+        self.x  = pos[0]
+        self.y  = pos[1]
+        self.vx = vel[0]
+        self.vy = vel[1]
+        self.X = np.array([[self.x], [self.y], [self.vx], [self.vy]])
+        self.Mu = self.X
+        self.ready = True
+
+
+    def add(self, pos, vel):
+        # pos and vel are the measured values. (remember x_bar)
+        self.x  = pos[0]
+        self.y  = pos[1]
+        self.vx = vel[0]
+        self.vy = vel[1]
+        self.X = np.array([[self.x], [self.y], [self.vx], [self.vy]])
+
+        self.predict()
+        self.correct()
+        # self.simple_predict()
+        # self.simple_correct()
+
+    def predict(self):
+        # collect params
+        dt = self.manager.get_sim_dt()
+        dt2 = dt**2
+        A = np.array([[1, 0, dt, 0], [0, 1, 0, dt], [0, 0, 1, 0], [0, 0, 0, 1]])
+        B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [dt, 0], [0, dt]])
+        R = np.identity(4) * self.sig_r**2
+        commmand = self.manager.simulator.camera.acceleration
+        U = np.array([[commmand[0]],[commmand[1]]])
+        
+        # predict
+        self.Mu = np.matmul(A,self.Mu) + np.matmul(B, U)
+        self.S = np.matmul(np.matmul(A, self.S), np.transpose(A)) + R
+ 
+    def simple_predict(self):
+        # collect params
+        dt = self.manager.get_sim_dt()
+        dt2 = dt**2
+        A = np.array([[1, 0, dt, 0], [0, 1, 0, dt], [0, 0, 1, 0], [0, 0, 0, 1]])
+        # B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [dt, 0], [0, dt]])
+        B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [0, 0], [0, 0]])
+        commmand = self.manager.simulator.camera.acceleration
+        U = np.array([[commmand[0]],[commmand[1]]])
+        
+        # predict
+        self.Mu = np.matmul(A,self.Mu) + np.matmul(B, U)
+        self.S = np.matmul(np.matmul(A, self.S), np.transpose(A))
+
+
+    def correct(self):
+        Z = np.matmul(self.C, self.X) + self.Eq
+        K = np.matmul( np.matmul(self.S, self.C), np.linalg.inv( np.matmul(np.matmul(self.C, self.S), np.transpose(self.C)) + self.Q ))
+
+        self.Mu = self.Mu + np.matmul(K, (Z - np.matmul(self.C, self.Mu)))
+        self.S = np.matmul((np.identity(4) - np.matmul(K, self.C)), self.S)
+        
+
+    def simple_correct(self):
+        Z = self.X + self.Eq
+        K = np.matmul( self.S, np.linalg.inv( self.S + self.Q ))
+
+        self.Mu = self.Mu + np.matmul(K, (Z - self.Mu))
+        self.S = np.matmul((np.identity(4) - K), self.S)
+
+
+    def add_pos(self, pos):
+        self.add(pos, (self.vx, self.vy))
+
+
+    def add_vel(self, vel):
+        self.add((self.x, self.y), vel)
+
+    def get_pos(self):
+        return pygame.Vector2(self.Mu.flatten()[0], self.Mu.flatten()[1])
+
+    def get_vel(self):
+        return pygame.Vector2(self.Mu.flatten()[2], self.Mu.flatten()[3])
+        
+        
+
 
         
 
@@ -1605,14 +1718,14 @@ def get_moving_average(a, w):
 if __name__ == "__main__":
 
     EXPERIMENT_SAVE_MODE_ON = 0
-    WRITE_PLOT              = 0
+    WRITE_PLOT              = 1
     CONTROL_ON              = 1
     TRACKER_ON              = 1
     TRACKER_DISPLAY_ON      = 1
-    USE_TRUE_KINEMATICS     = 1
+    USE_TRUE_KINEMATICS     = 0
     
     RUN_EXPERIMENT          = 1
-    RUN_TRACK_PLOT          = 0
+    RUN_TRACK_PLOT          = 1
 
     RUN_VIDEO_WRITER        = 0
 
