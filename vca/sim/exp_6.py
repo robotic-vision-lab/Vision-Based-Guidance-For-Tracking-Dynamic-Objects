@@ -731,6 +731,8 @@ class Tracker:
         self._can_begin_control_flag = False
         self.kin = None
         self.window_size = 5
+        self.prev_car_pos = None
+        self.count = 0
 
         # self.nxt_points = None
         # self.car_position = None
@@ -826,7 +828,7 @@ class Tracker:
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         # draw tracks on the mask, add mask to frame, save mask for future use
-        img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(good_nxt), [TRACK_COLOR], mask, track_thickness=1)
+        img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(good_nxt), [TRACK_COLOR], mask, track_thickness=2)
 
         # add optical flow arrows 
         img = draw_sparse_optical_flow_arrows(img, self.get_centroid(good_cur), self.get_centroid(good_nxt), thickness=2, arrow_scale=10.0, color=RED_CV)
@@ -862,7 +864,7 @@ class Tracker:
 
 
     def can_begin_control(self):
-        return self._can_begin_control_flag
+        return self._can_begin_control_flag #and self.prev_car_pos is not None
 
 
     def compute_kinematics(self, cur_pts, nxt_pts):
@@ -928,10 +930,22 @@ class Tracker:
             # car_velocity = pygame.Vector2(car_velocity).elementwise() * (1, -1)
             # car_velocity *= self.manager.simulator.pxm_fac
             self.manager.filter.add_vel(car_velocity)
-        else:
-            self.manager.filter.add(car_position, car_velocity)
-            car_position = self.manager.filter.get_pos()
-            car_velocity = self.manager.filter.get_vel()
+        else: # KALMAN CASE
+            if self.count > 0:
+                self.count -= 1
+                car_position = self.manager.simulator.car.position
+                car_velocity = self.manager.simulator.car.velocity - self.manager.simulator.camera.velocity
+                self.manager.filter.add(car_position, car_velocity)
+            else:
+                car_velocity = self.manager.simulator.car.velocity - self.manager.simulator.camera.velocity
+                self.manager.filter.add(car_position, car_velocity)
+                car_position = self.manager.filter.get_pos()
+                car_velocity = self.manager.filter.get_vel()
+            # if self.prev_car_pos is None:
+            #     car_velocity = self.manager.filter.get_vel()
+            # else:
+            #     car_velocity = (car_position - self.prev_car_pos ) / self.manager.get_sim_dt()
+            self.prev_car_pos = car_position
 
         # return kinematics in world reference frame
         return (drone_position, drone_velocity, car_position, car_velocity)
@@ -1257,8 +1271,8 @@ class Controller:
             _B = K2 * y2 * self.R**2 - K1*w + K1*y1
 
             # 2
-            a_lat = ((Vr * _c + Vtheta * _s) * (_B / _D)) - _A * _s
-            a_long = - ((Vtheta * _c + Vr * _s) * (_B / _D)) + _A * _s
+            # a_lat = ((Vr * _c + Vtheta * _s) * (_B / _D)) - _A * _s
+            # a_long = - ((Vtheta * _c + Vr * _s) * (_B / _D)) + _A * _s
 
             # 1
             # a_lat = (K1*Vr*y1*cos(alpha - theta) + K1*Vtheta*y1*sin(alpha - theta) + K2*self.R**2*Vr*y2*cos(alpha - theta) + K2*self.R**2*Vtheta*y2*sin(alpha - theta) - K2*Vtheta*r**2*y2*sin(alpha - theta))/(2*(Vr*Vtheta*r**2*cos(alpha - theta)**2 + Vr*Vtheta*r**2*sin(alpha - theta)**2))
@@ -1270,8 +1284,8 @@ class Controller:
 
 
 
-        a_long_bound = 10
-        a_lat_bound = 10
+        a_long_bound = 3
+        a_lat_bound = 3
         
         a_long = self.sat(a_long, a_long_bound)
         a_lat = self.sat(a_lat, a_lat_bound)
@@ -1597,17 +1611,54 @@ class Kalman:
         self.y  = 0.0
         self.vx = 0.0
         self.vy = 0.0
-        self.Mu = np.array([[self.x], [self.y], [self.vx], [self.vy]])
-        self.sig_r = 0.1
         self.sig = 0.1
+        self.sig_r = 0.1
         self.sig_q = 1.0
-        self.S = np.identity(4) * self.sig**2
-        self.C = np.identity(4)
-        self.Eq = np.array([[0.01], [0.01], [0.01], [0.01]])
-        # self.Q = np.array([[0.01, 0.01, 0.01, 0], [0.01, 0.01, 0, 0.01], [0.01, 0, 0.01, 0.01], [0, 0.01, 0.01, 0.01]])
-        self.Q = np.array([[0.01, 0.0, 0.0, 0], [0.0, 0.01, 0, 0.0], [0.0, 0, 0.01, 0.0], [0, 0.0, 0.0, 0.01]])
-        
         self.manager = manager
+        # self.dt = self.manager.get_sim_dt()
+        # self.dt2 = self.dt**2
+
+        # # motion model
+        # self.A = np.array([[1, 0, self.dt, 0], [0, 1, 0, self.dt], [0, 0, 1, 0], [0, 0, 0, 1]])
+
+        # # control model
+        # self.B = np.array([[0.5*self.dt2, 0], [0, 0.5*self.dt2], [self.dt, 0], [0, self.dt]])
+
+        # # process noise covariance
+        # self.R = np.identity(4) * self.sig_r**2
+
+        # predicted belief state
+        self.Mu = np.array([[self.x], [self.y], [self.vx], [self.vy]])
+        self.S = np.array([ [0.00001, 0, 0, 0],    \
+                            [0, 0.00001, 0, 0],    \
+                            [0, 0, 1, 0],     \
+                            [0, 0, 0, 1]  ])
+
+        # noiseless connection between state vector and measurement vector
+        # self.C = np.identity(4)
+        self.C = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        
+        # process noise
+        self.Er = np.array([[0.01], [0.01], [0.01], [0.01]])
+
+        # measurement noise
+        self.Eq = np.array([[0.01], [0.01], [0.01], [0.01]])
+        
+        # covariance of process noise model
+        # self.R = np.matmul(self.Er, np.transpose(self.Er))
+        self.R = np.array([ [1, 0, 0, 0],    \
+                            [0, 1, 0, 0],    \
+                            [0, 0, 1, 0],     \
+                            [0, 0, 0, 1]  ])
+
+        # covariance of measurement noise model
+        # self.Q = np.array([[0.01, 0.01, 0.01, 0], [0.01, 0.01, 0, 0.01], [0.01, 0, 0.01, 0.01], [0, 0.01, 0.01, 0.01]])
+        self.Q = np.array([ [0.00001, 0, 0, 0],    \
+                            [0, 0.00001, 0, 0],    \
+                            [0, 0, 0.00001, 0],       \
+                            [0, 0, 0, 0.00001]    ])
+        # self.Q = np.matmul(self.Eq, np.transpose(self.Eq))
+
         self.ready = False
 
     
@@ -1643,14 +1694,20 @@ class Kalman:
         # collect params
         dt = self.manager.get_sim_dt()
         dt2 = dt**2
+        # motion model
         A = np.array([[1, 0, dt, 0], [0, 1, 0, dt], [0, 0, 1, 0], [0, 0, 0, 1]])
+
+        # control model
         B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [dt, 0], [0, dt]])
-        R = np.identity(4) * self.sig_r**2
+
+        # process noise covariance
+        R = self.R
+
         commmand = self.manager.simulator.camera.acceleration
         U = np.array([[commmand[0]],[commmand[1]]])
         
         # predict
-        self.Mu = np.matmul(A,self.Mu) + np.matmul(B, U)
+        self.Mu = np.matmul(A, self.Mu) + np.matmul(B, U)
         self.S = np.matmul(np.matmul(A, self.S), np.transpose(A)) + R
  
     def simple_predict(self):
@@ -1658,8 +1715,8 @@ class Kalman:
         dt = self.manager.get_sim_dt()
         dt2 = dt**2
         A = np.array([[1, 0, dt, 0], [0, 1, 0, dt], [0, 0, 1, 0], [0, 0, 0, 1]])
-        # B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [dt, 0], [0, dt]])
-        B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [0, 0], [0, 0]])
+        B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [dt, 0], [0, dt]])
+        # B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [0, 0], [0, 0]])
         commmand = self.manager.simulator.camera.acceleration
         U = np.array([[commmand[0]],[commmand[1]]])
         
@@ -1670,7 +1727,7 @@ class Kalman:
 
     def correct(self):
         Z = np.matmul(self.C, self.X) + self.Eq
-        K = np.matmul( np.matmul(self.S, self.C), np.linalg.inv( np.matmul(np.matmul(self.C, self.S), np.transpose(self.C)) + self.Q ))
+        K = np.matmul( np.matmul(self.S, self.C), np.linalg.pinv( np.matmul(np.matmul(self.C, self.S), np.transpose(self.C)) + self.Q ))
 
         self.Mu = self.Mu + np.matmul(K, (Z - np.matmul(self.C, self.Mu)))
         self.S = np.matmul((np.identity(4) - np.matmul(K, self.C)), self.S)
@@ -1678,7 +1735,7 @@ class Kalman:
 
     def simple_correct(self):
         Z = self.X + self.Eq
-        K = np.matmul( self.S, np.linalg.inv( self.S + self.Q ))
+        K = np.matmul( self.S, np.linalg.pinv( self.S + self.Q ))
 
         self.Mu = self.Mu + np.matmul(K, (Z - self.Mu))
         self.S = np.matmul((np.identity(4) - K), self.S)
@@ -1717,12 +1774,12 @@ def get_moving_average(a, w):
 
 if __name__ == "__main__":
 
-    EXPERIMENT_SAVE_MODE_ON = 0
+    EXPERIMENT_SAVE_MODE_ON = 1
     WRITE_PLOT              = 1
     CONTROL_ON              = 1
     TRACKER_ON              = 1
     TRACKER_DISPLAY_ON      = 1
-    USE_TRUE_KINEMATICS     = 0
+    USE_TRUE_KINEMATICS     = 1
     
     RUN_EXPERIMENT          = 1
     RUN_TRACK_PLOT          = 1
@@ -1811,7 +1868,7 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 1
         # line of sight kinematics
         f0, axs = plt.subplots(2, 2, sharex=True, gridspec_kw={'wspace':0.4, 'hspace':0.25})
-        f0.suptitle(r'$\mathbf{Line\ of\ sight\ kinematics}$', fontsize=14)
+        f0.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics}$', fontsize=14)
  
         # t vs r
         axs[0,0].plot(t, r, color='royalblue', linestyle='-', linewidth=1.5, label=r'$r$')
@@ -1822,7 +1879,7 @@ if __name__ == "__main__":
         # t vs θ
         axs[1,0].plot(t, theta, color='royalblue', linestyle='-', linewidth=1.5, label=r'$\theta$')
         # axs[1,0].legend(loc='upper right')
-        axs[1,0].set(xlabel=r'$t\ (s)$', ylabel=r'$\theta\ (rads)$')
+        axs[1,0].set(xlabel=r'$time\ (s)$', ylabel=r'$\theta\ (rads)$')
         axs[1,0].set_title(r'$\mathbf{\theta}$', fontsize=11)
 
         # t vs vr
@@ -1834,7 +1891,7 @@ if __name__ == "__main__":
         # t vs vtheta
         axs[1,1].plot(t, vtheta, color='royalblue', linestyle='-', linewidth=1.5, label=r'$V_{\theta}$')
         # axs[1,1].legend(loc='upper right')
-        axs[1,1].set(xlabel=r'$t\ (s)$', ylabel=r'$V_{\theta}\ (\frac{rad}{s})$')
+        axs[1,1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_{\theta}\ (\frac{rad}{s})$')
         axs[1,1].set_title(r'$\mathbf{V_{\theta}}$', fontsize=11)
 
         f0.savefig(f'{_path}/1_los.png', dpi=300)
@@ -1850,7 +1907,7 @@ if __name__ == "__main__":
         axs.plot(t, a_lat, color='forestgreen', linestyle='-', linewidth=1.5, label=r'$a_{lat}$')
         axs.plot(t, a_long, color='deeppink', linestyle='-', linewidth=1.5, label=r'$a_{long}$')
         axs.legend()
-        axs.set(xlabel=r'$t\ (s)$', ylabel=r'$acceleration\ (\frac{m}{s_{2}})$')
+        axs.set(xlabel=r'$time\ (s)$', ylabel=r'$acceleration\ (\frac{m}{s_{2}})$')
         f1.savefig(f'{_path}/2_accel.png', dpi=300)
         f1.show()
 
@@ -1871,7 +1928,7 @@ if __name__ == "__main__":
 
         axs[0].plot(ncx, ncy, color='limegreen', linestyle='-', linewidth=1.5, label=r'$Vehicle$')
         axs[0].plot(ndx, ndy, color='darkslategray', linestyle='-', linewidth=1.5, label=r'$UAS$')
-        axs[0].set(ylabel=r'$y (m)$')
+        axs[0].set(ylabel=r'$y\ (m)$')
         axs[0].set_title(r'$\mathbf{World\ frame}$', fontsize=11)
         axs[0].legend()
 
@@ -1904,7 +1961,7 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 4
         # true and tracked trajectories
         f3, axs = plt.subplots()
-        f3.suptitle(r'$\mathbf{True\ and\ tracked\ vehicle\ trajectories}$', fontsize=14)
+        f3.suptitle(r'$\mathbf{True\ and\ Tracked\ Vehicle\ Trajectories}$', fontsize=14)
         # if USE_WORLD_FRAME:
         #     ndx = np.array(dx) - np.array(dox)
         #     ncx = np.array(cx) - np.array(dox)
@@ -1928,7 +1985,7 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 5
         # true and tracked pos
         f4, axs = plt.subplots(2,1, sharex=True, gridspec_kw={'hspace':0.4})
-        f4.suptitle(r'$\mathbf{True\ and\ tracked\ vehicle\ positions}$', fontsize=14)
+        f4.suptitle(r'$\mathbf{True\ and\ Tracked\ Vehicle\ Positions}$', fontsize=14)
         # if USE_WORLD_FRAME:
         # ntcx = np.array(tcx) + np.array(dox)
         # ntcy = np.array(tcy) + np.array(doy)
@@ -1947,7 +2004,7 @@ if __name__ == "__main__":
         axs[0].legend()
         axs[1].plot(t, cy, color='mediumseagreen', linestyle='-', linewidth=1.5, label=r'$true\ y$')
         axs[1].plot(t, tcy, color='green', linestyle=':', linewidth=1.5, label=r'$tracked\ y$')
-        axs[1].set(xlabel=r'$t\ (s)$', ylabel=r'$y\ (m)$')
+        axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$y\ (m)$')
         axs[1].set_title(r'$\mathbf{y}$', fontsize=11)
         axs[1].legend()
         f4.savefig(f'{_path}/5_pos_comp.png', dpi=300)
@@ -1957,23 +2014,23 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 6
         # true and tracked velocities
         f5, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
-        f5.suptitle(r'$\mathbf{True\ and\ tracked\ vehicle\ velocities}$', fontsize=14)
+        f5.suptitle(r'$\mathbf{True\ and\ Tracked\ Vehicle\ Velocities}$', fontsize=14)
         ntcvx = np.array(tcvx) + np.array(dvx)
         ntcvy = np.array(tcvy) + np.array(dvy)
-        ma_tcvx = get_moving_average(ntcvx, 10)
-        ma_tcvy = get_moving_average(ntcvy, 10)
+        # ma_tcvx = get_moving_average(ntcvx, 10)
+        # ma_tcvy = get_moving_average(ntcvy, 10)
         
-        axs[0].plot(t, ntcvx, color='paleturquoise', linestyle='-', linewidth=1, label=r'$tracked\ V_x$')
-        axs[0].plot(t, ma_tcvx, color='mediumturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_x\ moving\ avg$')
-        axs[0].plot(t, cvx, color='crimson', linestyle='-', linewidth=2, label=r'$true\ V_x$')
+        axs[0].plot(t, ntcvx, color='darkturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_x$')
+        # axs[0].plot(t, ma_tcvx, color='mediumturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_x\ moving\ avg$')
+        axs[0].plot(t, cvx, color='crimson', linestyle='-', linewidth=1.5, label=r'$true\ V_x$')
         axs[0].set(ylabel=r'$V_x\ (\frac{m}{s})$')
         axs[0].set_title(r'$\mathbf{V_x}$', fontsize=11)
         axs[0].legend(loc='upper right')
 
-        axs[1].plot(t, ntcvy, color='paleturquoise', linestyle='-', linewidth=1, label=r'$tracked\ V_y$')
-        axs[1].plot(t, ma_tcvy, color='darkturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_y\ moving\  avg$')
-        axs[1].plot(t, cvy, color='crimson', linestyle='-', linewidth=2, label=r'$true\ V_y$')
-        axs[1].set(xlabel=r'$t\ (s)$', ylabel=r'$V_y\ (\frac{m}{s})$')
+        axs[1].plot(t, ntcvy, color='darkturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_y$')
+        # axs[1].plot(t, ma_tcvy, color='darkturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_y\ moving\  avg$')
+        axs[1].plot(t, cvy, color='crimson', linestyle='-', linewidth=1.5, label=r'$true\ V_y$')
+        axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_y\ (\frac{m}{s})$')
         axs[1].set_title(r'$\mathbf{V_y}$', fontsize=11)
         axs[1].legend(loc='upper right')
 
@@ -1983,7 +2040,7 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 7
         # speed and heading
         f6, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
-        f6.suptitle(r'$\mathbf{Vehicle\ and\ UAS\ speed\ and\ heading}$', fontsize=14)
+        f6.suptitle(r'$\mathbf{Vehicle\ and\ UAS,\ Speed\ and\ Heading}$', fontsize=14)
         c_speed = (CAR_INITIAL_VELOCITY[0]**2 + CAR_INITIAL_VELOCITY[1]**2)**0.5
         c_heading = degrees(atan2(CAR_INITIAL_VELOCITY[1], CAR_INITIAL_VELOCITY[0]))
 
@@ -1995,7 +2052,7 @@ if __name__ == "__main__":
 
         axs[1].plot(t, [c_heading for i in alpha], color='lightgreen', linestyle='-', linewidth=2, label=r'$\angle V_{vehicle}$')
         axs[1].plot(t, alpha, color='green', linestyle='-', linewidth=1.5, label=r'$\angle V_{UAS}$')
-        axs[1].set(xlabel=r'$t\ (s)$',ylabel=r'$\angle V\ (rad/s)$')
+        axs[1].set(xlabel=r'$time\ (s)$',ylabel=r'$\angle V\ (rad/s)$')
         axs[1].set_title(r'$\mathbf{heading}$', fontsize=11)
         axs[1].legend()
 

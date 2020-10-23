@@ -62,7 +62,7 @@ TRACK_COLOR = (102, 255, 102)
 
 # block settings
 BLOCK_COLOR = DARK_GRAY_2
-BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 5.0, 3.0
+BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 18.0, 1.0
 NUM_BLOCKS = 50
 
 # drone camera settings
@@ -112,14 +112,14 @@ else:
 
 
 # tracker settings
-USE_WORLD_FRAME = 1
+USE_WORLD_FRAME = 0
 
 # filter choice
 USE_KALMAN = 1  # else Moving average
 
 
 #--------------------------------------------------------------------------------
-CAR_RADIUS = 1
+CAR_RADIUS = 5
 # initial conditions
 
 # # 1 OPEN
@@ -163,8 +163,8 @@ CAR_INITIAL_POSITION    = (50.0, 50.0)
 CAR_INITIAL_VELOCITY    = (22.22, 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
-K_1                     = 0.5
-K_2                     = 0.025
+K_1                     = 0.1
+K_2                     = 0.05
 w_                      = -0.1
 
 # # 6 open
