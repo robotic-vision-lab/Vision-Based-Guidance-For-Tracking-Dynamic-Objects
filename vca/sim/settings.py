@@ -79,8 +79,18 @@ TIME_FONT = 'consolas'
 TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY_2 # used for all simulator texts
 
-# metrics
+# simulator settings
+CLEAR_TOP = 0
+
+# tracker settings
 METRICS_COLOR = LIGHT_GRAY_2
+TRACK_COLOR = (102, 255, 102)
+TRACKER_BLANK = 31
+ADD_METRICS = 1
+ADD_ALTITUDE_INFO = 1
+
+# console settings
+CLEAN_CONSOLE = 0
 
 # Bounding box settings
 BB_COLOR = BLUE     # pygame color
@@ -117,6 +127,11 @@ USE_WORLD_FRAME = 0
 # filter choice
 USE_KALMAN = 1  # else Moving average
 
+# plot settings
+LINE_WIDTH_1 = 1.5
+LINE_WIDTH_2 = 2
+TITLE_FONT_SIZE = 14
+SUB_TITLE_FONT_SIZE = 11
 
 #--------------------------------------------------------------------------------
 CAR_RADIUS = 5
