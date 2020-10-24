@@ -948,7 +948,7 @@ class Tracker:
             self.prev_car_pos = car_position
 
         # return kinematics in world reference frame
-        return (drone_position, drone_velocity, car_position, car_velocity)
+        return (drone_position, drone_velocity, car_position, car_velocity+drone_velocity)
 
     
     def get_centroid(self, points):
@@ -1284,8 +1284,8 @@ class Controller:
 
 
 
-        a_long_bound = 3
-        a_lat_bound = 3
+        a_long_bound = 10
+        a_lat_bound = 10
         
         a_long = self.sat(a_long, a_long_bound)
         a_lat = self.sat(a_lat, a_lat_bound)
@@ -1295,10 +1295,11 @@ class Controller:
         ax = a_lat * cos(delta) + a_long * cos(alpha)
         ay = a_lat * sin(delta) + a_long * sin(alpha)
         
+        print(f'CCC0 >> r:{r:0.2f} | theta:{theta:0.2f} | alpha:{alpha:0.2f} | car_speed:{car_speed:0.2f} | S:{S:0.2f} | Vr:{Vr:0.2f} | Vtheta:{Vtheta:0.2f} | y1:{y1:0.2f} | y2:{y2:0.2f} | a_lat:{a_lat:0.2f} | a_long:{a_long:0.2f}')
         tru_kin = self.manager.get_true_kinematics()
         tra_kin = self.manager.get_tracked_kinematics()
         vel = self.manager.simulator.camera.velocity
-        print(f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{X:0.2f}, {Y:0.2f}] | v:[{Vx:0.2f}, {Vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}] | COMMANDED a:[{ax:0.2f}, {ay:0.2f}] | r:{r:0.4f} | theta:{theta:0.4f} | TRACKED x:[{tra_kin[2][0]:0.2f},{tra_kin[2][1]:0.2f}] | v:[{vel[0]+tra_kin[3][0]:0.2f},{vel[1]+tra_kin[3][1]:0.2f}]')
+        print(f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{X:0.2f}, {Y:0.2f}] | v:[{Vx:0.2f}, {Vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}] | COMMANDED a:[{ax:0.2f}, {ay:0.2f}] | TRACKED x:[{tra_kin[2][0]:0.2f},{tra_kin[2][1]:0.2f}] | v:[{tra_kin[3][0]:0.2f},{tra_kin[3][1]:0.2f}]')
         if self.manager.write_plot:
             self.f.write(f'{self.manager.simulator.time},{r},{theta},{Vtheta},{Vr},{tru_kin[0][0]},{tru_kin[0][1]},{tru_kin[2][0]},{tru_kin[2][1]},{ax},{ay},{a_lat},{a_long},{tru_kin[3][0]},{tru_kin[3][1]},{tra_kin[2][0]},{tra_kin[2][1]},{tra_kin[3][0]},{tra_kin[3][1]},{self.manager.simulator.camera.origin[0]},{self.manager.simulator.camera.origin[1]},{S},{alpha},{tru_kin[1][0]},{tru_kin[1][1]}\n')
 
@@ -1774,17 +1775,17 @@ def get_moving_average(a, w):
 
 if __name__ == "__main__":
 
-    EXPERIMENT_SAVE_MODE_ON = 1
+    EXPERIMENT_SAVE_MODE_ON = 0
     WRITE_PLOT              = 1
     CONTROL_ON              = 1
     TRACKER_ON              = 1
     TRACKER_DISPLAY_ON      = 1
-    USE_TRUE_KINEMATICS     = 1
+    USE_TRUE_KINEMATICS     = 0
     
-    RUN_EXPERIMENT          = 1
-    RUN_TRACK_PLOT          = 1
+    RUN_EXPERIMENT          = 0
+    RUN_TRACK_PLOT          = 0
 
-    RUN_VIDEO_WRITER        = 0
+    RUN_VIDEO_WRITER        = 1
 
     if RUN_EXPERIMENT:
         experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_PLOT, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON, USE_TRUE_KINEMATICS)
@@ -2015,19 +2016,15 @@ if __name__ == "__main__":
         # true and tracked velocities
         f5, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
         f5.suptitle(r'$\mathbf{True\ and\ Tracked\ Vehicle\ Velocities}$', fontsize=14)
-        ntcvx = np.array(tcvx) + np.array(dvx)
-        ntcvy = np.array(tcvy) + np.array(dvy)
-        # ma_tcvx = get_moving_average(ntcvx, 10)
-        # ma_tcvy = get_moving_average(ntcvy, 10)
         
-        axs[0].plot(t, ntcvx, color='darkturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_x$')
+        axs[0].plot(t, tcvx, color='darkturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_x$')
         # axs[0].plot(t, ma_tcvx, color='mediumturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_x\ moving\ avg$')
         axs[0].plot(t, cvx, color='crimson', linestyle='-', linewidth=1.5, label=r'$true\ V_x$')
         axs[0].set(ylabel=r'$V_x\ (\frac{m}{s})$')
         axs[0].set_title(r'$\mathbf{V_x}$', fontsize=11)
         axs[0].legend(loc='upper right')
 
-        axs[1].plot(t, ntcvy, color='darkturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_y$')
+        axs[1].plot(t, tcvy, color='darkturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_y$')
         # axs[1].plot(t, ma_tcvy, color='darkturquoise', linestyle='-', linewidth=1.5, label=r'$tracked\ V_y\ moving\  avg$')
         axs[1].plot(t, cvy, color='crimson', linestyle='-', linewidth=1.5, label=r'$true\ V_y$')
         axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_y\ (\frac{m}{s})$')
