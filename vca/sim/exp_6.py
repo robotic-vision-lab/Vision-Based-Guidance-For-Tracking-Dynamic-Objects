@@ -912,6 +912,8 @@ class Tracker:
         car_position += - pygame.Vector2(fov)/2
         car_velocity = pygame.Vector2((car_vx, car_vy)).elementwise() * (1, -1)
         car_velocity *= self.manager.simulator.pxm_fac
+        cp = car_position
+        cv = car_velocity
 
         # filter car kin
         if not self.manager.filter.ready:
@@ -945,7 +947,7 @@ class Tracker:
             self.prev_car_pos = car_position
 
         # return kinematics in world reference frame
-        return (drone_position, drone_velocity, car_position, car_velocity+drone_velocity)
+        return (drone_position, drone_velocity, car_position, car_velocity+drone_velocity, cp, cv+drone_velocity)
 
     
     def get_centroid(self, points):
@@ -1006,7 +1008,7 @@ class Tracker:
             self.kin = self.compute_kinematics( good_cur.copy(), 
                                                 good_nxt.copy() )
 
-            drone_position, drone_velocity, car_position, car_velocity = self.kin
+            drone_position, drone_velocity, car_position, car_velocity, cp_, cv_ = self.kin
             if not CLEAN_CONSOLE:
                 print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
 
@@ -1289,7 +1291,7 @@ class Controller:
         if not CLEAN_CONSOLE:
             print(f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{X:0.2f}, {Y:0.2f}] | v:[{Vx:0.2f}, {Vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}] | COMMANDED a:[{ax:0.2f}, {ay:0.2f}] | TRACKED x:[{tra_kin[2][0]:0.2f},{tra_kin[2][1]:0.2f}] | v:[{tra_kin[3][0]:0.2f},{tra_kin[3][1]:0.2f}]')
         if self.manager.write_plot:
-            self.f.write(f'{self.manager.simulator.time},{r},{theta},{Vtheta},{Vr},{tru_kin[0][0]},{tru_kin[0][1]},{tru_kin[2][0]},{tru_kin[2][1]},{ax},{ay},{a_lat},{a_long},{tru_kin[3][0]},{tru_kin[3][1]},{tra_kin[2][0]},{tra_kin[2][1]},{tra_kin[3][0]},{tra_kin[3][1]},{self.manager.simulator.camera.origin[0]},{self.manager.simulator.camera.origin[1]},{S},{alpha},{tru_kin[1][0]},{tru_kin[1][1]}\n')
+            self.f.write(f'{self.manager.simulator.time},{r},{theta},{Vtheta},{Vr},{tru_kin[0][0]},{tru_kin[0][1]},{tru_kin[2][0]},{tru_kin[2][1]},{ax},{ay},{a_lat},{a_long},{tru_kin[3][0]},{tru_kin[3][1]},{tra_kin[2][0]},{tra_kin[2][1]},{tra_kin[3][0]},{tra_kin[3][1]},{self.manager.simulator.camera.origin[0]},{self.manager.simulator.camera.origin[1]},{S},{alpha},{tru_kin[1][0]},{tru_kin[1][1]},{tra_kin[4][0]},{tra_kin[4][1]},{tra_kin[5][0]},{tra_kin[5][1]}\n')
 
         return ax, ay
 
@@ -1769,12 +1771,12 @@ if __name__ == "__main__":
     CONTROL_ON              = 1
     TRACKER_ON              = 1
     TRACKER_DISPLAY_ON      = 1
-    USE_TRUE_KINEMATICS     = 0
+    USE_TRUE_KINEMATICS     = 1
     
     RUN_EXPERIMENT          = 0
-    RUN_TRACK_PLOT          = 0
+    RUN_TRACK_PLOT          = 1
 
-    RUN_VIDEO_WRITER        = 1
+    RUN_VIDEO_WRITER        = 0
 
     if RUN_EXPERIMENT:
         experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_PLOT, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON, USE_TRUE_KINEMATICS)
@@ -1810,6 +1812,10 @@ if __name__ == "__main__":
         alpha = []
         dvx = []
         dvy=[]
+        mcx=[]
+        mcy=[]
+        mcvx=[]
+        mcvy=[]
         
         # get all the data in memory
         for line in f.readlines():
@@ -1839,6 +1845,10 @@ if __name__ == "__main__":
             alpha.append(data[22])            
             dvx.append(data[23])            
             dvy.append(data[24])            
+            mcx.append(data[25])            
+            mcy.append(data[26])            
+            mcvx.append(data[27])            
+            mcvy.append(data[28])            
 
         f.close()
 
@@ -1936,12 +1946,12 @@ if __name__ == "__main__":
 
 
         # ----------------------------------------------------------------------------------------- figure 4
-        # true and tracked trajectories
+        # true and estimated trajectories
         f3, axs = plt.subplots()
-        f3.suptitle(r'$\mathbf{True\ and\ Tracked\ Vehicle\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
+        f3.suptitle(r'$\mathbf{True\ and\ Estimated\ Vehicle\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
 
-        axs.plot(cx, cy, color='deepskyblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ trajectory$')
-        axs.plot(tcx, tcy, color='orangered', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$tracked\ trajectory$')
+        axs.plot(tcx, tcy, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ trajectory$')
+        axs.plot(cx, cy, color='crimson', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ trajectory$')
         axs.legend()
         axs.axis('equal')
         axs.set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$')
@@ -1952,15 +1962,15 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 5
         # true and tracked pos
         f4, axs = plt.subplots(2,1, sharex=True, gridspec_kw={'hspace':0.4})
-        f4.suptitle(r'$\mathbf{True\ and\ Tracked\ Vehicle\ Positions}$', fontsize=TITLE_FONT_SIZE)
+        f4.suptitle(r'$\mathbf{True\ and\ Estimated\ Vehicle\ Positions}$', fontsize=TITLE_FONT_SIZE)
 
-        axs[0].plot(t, cx, color='rosybrown', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ x$')
-        axs[0].plot(t, tcx, color='red', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$tracked\ x$')
+        axs[0].plot(t, tcx, color='rosybrown', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ x$')
+        axs[0].plot(t, cx, color='red', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ x$')
         axs[0].set(ylabel=r'$x\ (m)$')
         axs[0].set_title(r'$\mathbf{x}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs[0].legend()
-        axs[1].plot(t, cy, color='mediumseagreen', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ y$')
-        axs[1].plot(t, tcy, color='green', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$tracked\ y$')
+        axs[1].plot(t, tcy, color='mediumseagreen', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ y$')
+        axs[1].plot(t, cy, color='green', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ y$')
         axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$y\ (m)$')
         axs[1].set_title(r'$\mathbf{y}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs[1].legend()
@@ -1971,18 +1981,20 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 6
         # true and tracked velocities
         f5, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
-        f5.suptitle(r'$\mathbf{True\ and\ Tracked\ Vehicle\ Velocities}$', fontsize=TITLE_FONT_SIZE)
+        f5.suptitle(r'$\mathbf{True,\ Measured\ and\ Estimated\ Vehicle\ Velocities}$', fontsize=TITLE_FONT_SIZE)
         
-        axs[0].plot(t, tcvx, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$tracked\ V_x$')
-        # axs[0].plot(t, ma_tcvx, color='mediumturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$tracked\ V_x\ moving\ avg$')
-        axs[0].plot(t, cvx, color='crimson', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ V_x$')
+
+
+        axs[0].plot(t, mcvx, color='gainsboro', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_x$')
+        axs[0].plot(t, tcvx, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$estimated\ V_x$')
+        axs[0].plot(t, cvx, color='crimson', linestyle=':', linewidth=LINE_WIDTH_2, label=r'$true\ V_x$')
         axs[0].set(ylabel=r'$V_x\ (\frac{m}{s})$')
         axs[0].set_title(r'$\mathbf{V_x}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs[0].legend(loc='upper right')
 
-        axs[1].plot(t, tcvy, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$tracked\ V_y$')
-        # axs[1].plot(t, ma_tcvy, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$tracked\ V_y\ moving\  avg$')
-        axs[1].plot(t, cvy, color='crimson', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ V_y$')
+        axs[1].plot(t, mcvy, color='gainsboro', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_y$')
+        axs[1].plot(t, tcvy, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$estimated\ V_y$')
+        axs[1].plot(t, cvy, color='crimson', linestyle=':', linewidth=LINE_WIDTH_2, label=r'$true\ V_y$')
         axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_y\ (\frac{m}{s})$')
         axs[1].set_title(r'$\mathbf{V_y}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs[1].legend(loc='upper right')

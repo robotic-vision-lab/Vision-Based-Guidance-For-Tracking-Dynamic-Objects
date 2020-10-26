@@ -80,17 +80,17 @@ TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY_2 # used for all simulator texts
 
 # simulator settings
-CLEAR_TOP = 0
+CLEAR_TOP = 1
 
 # tracker settings
 METRICS_COLOR = LIGHT_GRAY_2
 TRACK_COLOR = (102, 255, 102)
 TRACKER_BLANK = 31
-ADD_METRICS = 1
+ADD_METRICS = 0
 ADD_ALTITUDE_INFO = 1
 
 # console settings
-CLEAN_CONSOLE = 0
+CLEAN_CONSOLE = 1
 
 # Bounding box settings
 BB_COLOR = BLUE     # pygame color
@@ -118,7 +118,7 @@ else:
     METRICS_COLOR = (128, 128, 128)
     DOT_COLOR = (31, 31, 31)
     DRONE_IMG_ALPHA = 102
-    BB_COLOR = (51, 51, 255)
+    BB_COLOR = (102, 102, 255)
 
 
 # tracker settings
