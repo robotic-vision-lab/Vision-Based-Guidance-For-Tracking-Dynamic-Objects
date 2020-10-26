@@ -1873,10 +1873,13 @@ if __name__ == "__main__":
         shutil.copyfile('plot_info.txt', f'{_path}/plot_info.txt')
         plt.style.use('seaborn-whitegrid')
 
+        SUPTITLE_ON = 1
+
         # ----------------------------------------------------------------------------------------- figure 1
         # line of sight kinematics
         f0, axs = plt.subplots(2, 2, sharex=True, gridspec_kw={'wspace':0.4, 'hspace':0.25})
-        f0.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics}$', fontsize=TITLE_FONT_SIZE)
+        if SUPTITLE_ON:
+            f0.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics}$', fontsize=TITLE_FONT_SIZE)
  
         # t vs r
         axs[0,0].plot(t, r, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$r$')
@@ -1909,7 +1912,8 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 2
         # acceleration commands
         f1, axs = plt.subplots()
-        f1.suptitle(r'$\mathbf{Acceleration\ commands}$', fontsize=TITLE_FONT_SIZE)
+        if SUPTITLE_ON:
+            f1.suptitle(r'$\mathbf{Acceleration\ commands}$', fontsize=TITLE_FONT_SIZE)
         # plt.plot(t, ax, color='teal', linestyle='-', linewidth=1, label=r'$a_x$')
         # plt.plot(t, ay, color='green', linestyle='-', linewidth=1, label=r'$a_y$')
         axs.plot(t, a_lat, color='forestgreen', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$a_{lat}$')
@@ -1922,7 +1926,8 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 3
         # trajectories
         f2, axs = plt.subplots(2, 1, gridspec_kw={'hspace':0.4})
-        f2.suptitle(r'$\mathbf{Vehicle\ and\ UAS\ True\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
+        if SUPTITLE_ON:
+            f2.suptitle(r'$\mathbf{Vehicle\ and\ UAS\ True\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
 
         ndx = np.array(dx) + np.array(dox)
         ncx = np.array(cx) + np.array(dox)
@@ -1958,7 +1963,8 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 4
         # true and estimated trajectories
         f3, axs = plt.subplots()
-        f3.suptitle(r'$\mathbf{Vehicle\ True\ and\ Estimated\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
+        if SUPTITLE_ON:
+            f3.suptitle(r'$\mathbf{Vehicle\ True\ and\ Estimated\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
 
         axs.plot(tcx, tcy, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ trajectory$')
         axs.plot(cx, cy, color='crimson', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ trajectory$')
@@ -1972,7 +1978,8 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 5
         # true and tracked pos
         f4, axs = plt.subplots(2,1, sharex=True, gridspec_kw={'hspace':0.4})
-        f4.suptitle(r'$\mathbf{Vehicle\ True\ and\ Estimated\ Positions}$', fontsize=TITLE_FONT_SIZE)
+        if SUPTITLE_ON:
+            f4.suptitle(r'$\mathbf{Vehicle\ True\ and\ Estimated\ Positions}$', fontsize=TITLE_FONT_SIZE)
 
         axs[0].plot(t, tcx, color='rosybrown', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ x$')
         axs[0].plot(t, cx, color='red', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ x$')
@@ -1991,7 +1998,8 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 6
         # true and tracked velocities
         f5, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
-        f5.suptitle(r'$\mathbf{True,\ Measured\ and\ Estimated\ Vehicle\ Velocities}$', fontsize=TITLE_FONT_SIZE)
+        if SUPTITLE_ON:
+            f5.suptitle(r'$\mathbf{True,\ Measured\ and\ Estimated\ Vehicle\ Velocities}$', fontsize=TITLE_FONT_SIZE)
         
 
 
@@ -2015,7 +2023,8 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 7
         # speed and heading
         f6, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
-        f6.suptitle(r'$\mathbf{Vehicle\ and\ UAS,\ Speed\ and\ Heading}$', fontsize=TITLE_FONT_SIZE)
+        if SUPTITLE_ON:
+            f6.suptitle(r'$\mathbf{Vehicle\ and\ UAS,\ Speed\ and\ Heading}$', fontsize=TITLE_FONT_SIZE)
         c_speed = (CAR_INITIAL_VELOCITY[0]**2 + CAR_INITIAL_VELOCITY[1]**2)**0.5
         c_heading = degrees(atan2(CAR_INITIAL_VELOCITY[1], CAR_INITIAL_VELOCITY[0]))
 
