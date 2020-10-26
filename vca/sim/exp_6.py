@@ -34,6 +34,7 @@ from utils.optical_flow_utils import (get_OF_color_encoded,
                                       draw_sparse_optical_flow_arrows,
                                       draw_tracks)
 from utils.img_utils import convert_to_grayscale, put_text, images_assemble
+from utils.img_utils import scale_image as cv_scale_img
 from game_utils import load_image, _prep_temp_folder, vec_str, scale_img
 from algorithms.optical_flow import (compute_optical_flow_farneback, 
                                      compute_optical_flow_HS, 
@@ -655,6 +656,10 @@ class Simulator:
         data = pygame.image.tostring(self.screen_surface, 'RGB')
         img = np.frombuffer(data, np.uint8).reshape(HEIGHT, WIDTH, 3)
         img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
+
+        img = cv_scale_img(img, SCALE_1)
+        img = cv_scale_img(img, SCALE_2)
+
         return img
 
 
@@ -828,7 +833,7 @@ class Tracker:
         img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(good_nxt), [TRACK_COLOR], mask, track_thickness=2)
 
         # add optical flow arrows 
-        img = draw_sparse_optical_flow_arrows(img, self.get_centroid(good_cur), self.get_centroid(good_nxt), thickness=2, arrow_scale=10.0, color=RED_CV)
+        img = draw_sparse_optical_flow_arrows(img, self.get_centroid(good_cur), self.get_centroid(good_nxt), thickness=2, arrow_scale=ARROW_SCALE, color=RED_CV)
 
         # add a center
         img = cv.circle(img, SCREEN_CENTER, radius=1, color=DOT_COLOR, thickness=2)
@@ -1766,17 +1771,17 @@ def get_moving_average(a, w):
 
 if __name__ == "__main__":
 
-    EXPERIMENT_SAVE_MODE_ON = 0
-    WRITE_PLOT              = 1
+    EXPERIMENT_SAVE_MODE_ON = 1
+    WRITE_PLOT              = 0
     CONTROL_ON              = 1
     TRACKER_ON              = 1
     TRACKER_DISPLAY_ON      = 1
-    USE_TRUE_KINEMATICS     = 1
+    USE_TRUE_KINEMATICS     = 0
     
-    RUN_EXPERIMENT          = 0
-    RUN_TRACK_PLOT          = 1
+    RUN_EXPERIMENT          = 1
+    RUN_TRACK_PLOT          = 0
 
-    RUN_VIDEO_WRITER        = 0
+    RUN_VIDEO_WRITER        = 1
 
     if RUN_EXPERIMENT:
         experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_PLOT, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON, USE_TRUE_KINEMATICS)
@@ -1912,7 +1917,7 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 3
         # trajectories
         f2, axs = plt.subplots(2, 1, gridspec_kw={'hspace':0.4})
-        f2.suptitle(r'$\mathbf{Trajectories}$', fontsize=TITLE_FONT_SIZE)
+        f2.suptitle(r'$\mathbf{Vehicle\ and\ UAS\ True\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
 
         ndx = np.array(dx) + np.array(dox)
         ncx = np.array(cx) + np.array(dox)
@@ -1948,7 +1953,7 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 4
         # true and estimated trajectories
         f3, axs = plt.subplots()
-        f3.suptitle(r'$\mathbf{True\ and\ Estimated\ Vehicle\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
+        f3.suptitle(r'$\mathbf{Vehicle\ True\ and\ Estimated\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
 
         axs.plot(tcx, tcy, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ trajectory$')
         axs.plot(cx, cy, color='crimson', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ trajectory$')
@@ -1962,7 +1967,7 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------------------------------- figure 5
         # true and tracked pos
         f4, axs = plt.subplots(2,1, sharex=True, gridspec_kw={'hspace':0.4})
-        f4.suptitle(r'$\mathbf{True\ and\ Estimated\ Vehicle\ Positions}$', fontsize=TITLE_FONT_SIZE)
+        f4.suptitle(r'$\mathbf{Vehicle\ True\ and\ Estimated\ Positions}$', fontsize=TITLE_FONT_SIZE)
 
         axs[0].plot(t, tcx, color='rosybrown', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ x$')
         axs[0].plot(t, cx, color='red', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ x$')
