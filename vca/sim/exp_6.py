@@ -33,7 +33,7 @@ from utils.vid_utils import create_video_from_images
 from utils.optical_flow_utils import (get_OF_color_encoded, 
                                       draw_sparse_optical_flow_arrows,
                                       draw_tracks)
-from utils.img_utils import convert_to_grayscale, put_text, images_assemble
+from utils.img_utils import convert_to_grayscale, put_text, images_assemble, add_salt_pepper
 from utils.img_utils import scale_image as cv_scale_img
 from game_utils import load_image, _prep_temp_folder, vec_str, scale_img
 from algorithms.optical_flow import (compute_optical_flow_farneback, 
@@ -632,7 +632,7 @@ class Simulator:
             file_path = os.path.join(path, image_name)
 
             # get capture from simulator
-            img_sim = self.get_screen_capture()
+            img_sim = self.get_screen_capture(save_mode=True)
 
             # get tracker image
             img_track = self.manager.tracker.cur_img
@@ -647,7 +647,7 @@ class Simulator:
             yield
         
 
-    def get_screen_capture(self):
+    def get_screen_capture(self, save_mode=False):
         """Get screen capture from pygame and convert it to return opencv compatible images.
 
         Returns:
@@ -657,8 +657,13 @@ class Simulator:
         img = np.frombuffer(data, np.uint8).reshape(HEIGHT, WIDTH, 3)
         img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
 
-        img = cv_scale_img(img, SCALE_1)
-        img = cv_scale_img(img, SCALE_2)
+        if not save_mode:
+            if not OPTION==0:
+                img = cv_scale_img(img, SCALE_1)
+                img = cv_scale_img(img, SCALE_2)
+            if not SNR==1.0:
+                img = add_salt_pepper(img, SNR)
+                img = cv.GaussianBlur(img, (5,5), 0)
 
         return img
 
@@ -1771,14 +1776,14 @@ def get_moving_average(a, w):
 
 if __name__ == "__main__":
 
-    EXPERIMENT_SAVE_MODE_ON = 1
+    EXPERIMENT_SAVE_MODE_ON = 0
     WRITE_PLOT              = 0
     CONTROL_ON              = 1
     TRACKER_ON              = 1
     TRACKER_DISPLAY_ON      = 1
     USE_TRUE_KINEMATICS     = 0
     
-    RUN_EXPERIMENT          = 1
+    RUN_EXPERIMENT          = 0
     RUN_TRACK_PLOT          = 0
 
     RUN_VIDEO_WRITER        = 1

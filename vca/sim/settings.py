@@ -129,7 +129,7 @@ CLEAN_CONSOLE = 1
 SCALE_1 = 1.0
 SCALE_2 = 1.0
 
-OPTION = 1
+OPTION = 0
 if OPTION==0:
     SCALE_1 = 1.0
     SCALE_2 = 1.0
@@ -137,11 +137,11 @@ if OPTION==1:
     SCALE_1 = 0.5
     SCALE_2 = 2.0
 if OPTION==2:
-    SCALE_1 = 1/3
-    SCALE_2 = 3.0
-if OPTION==3:
     SCALE_1 = 0.25
     SCALE_2 = 4.0
+
+# salt pepper SNR settings
+SNR = 0.99
 
 # filter choice
 USE_KALMAN = 1  # else Moving average
