@@ -926,35 +926,37 @@ class Tracker:
         cv = car_velocity
 
         # filter car kin
-        if not self.manager.filter.ready:
-            self.manager.filter.init_filter(car_position, car_velocity)
-        if not USE_KALMAN:
-            self.manager.filter.add_pos(car_position)
-            car_position = self.manager.filter.get_pos()
-            # car_velocity = self.manager.filter.get_vel()
-            if self.manager.get_sim_dt()==0:
-                car_velocity = self.manager.filter.get_vel()
-            else:
-                car_velocity = (self.manager.filter.new_pos - self.manager.filter.old_pos) / self.manager.get_sim_dt()
-            # car_velocity = pygame.Vector2(car_velocity).elementwise() * (1, -1)
-            # car_velocity *= self.manager.simulator.pxm_fac
-            self.manager.filter.add_vel(car_velocity)
-        else: # KALMAN CASE
-            if self.count > 0:
-                self.count -= 1
-                car_position = self.manager.simulator.car.position
-                car_velocity = self.manager.simulator.car.velocity - self.manager.simulator.camera.velocity
-                self.manager.filter.add(car_position, car_velocity)
-            else:
-                car_velocity = self.manager.simulator.car.velocity - self.manager.simulator.camera.velocity
-                self.manager.filter.add(car_position, car_velocity)
+        if USE_FILTER:
+            if not self.manager.filter.ready:
+                self.manager.filter.init_filter(car_position, car_velocity)
+            
+            if not USE_KALMAN:
+                self.manager.filter.add_pos(car_position)
                 car_position = self.manager.filter.get_pos()
-                car_velocity = self.manager.filter.get_vel()
-            # if self.prev_car_pos is None:
-            #     car_velocity = self.manager.filter.get_vel()
-            # else:
-            #     car_velocity = (car_position - self.prev_car_pos ) / self.manager.get_sim_dt()
-            self.prev_car_pos = car_position
+                # car_velocity = self.manager.filter.get_vel()
+                if self.manager.get_sim_dt()==0:
+                    car_velocity = self.manager.filter.get_vel()
+                else:
+                    car_velocity = (self.manager.filter.new_pos - self.manager.filter.old_pos) / self.manager.get_sim_dt()
+                # car_velocity = pygame.Vector2(car_velocity).elementwise() * (1, -1)
+                # car_velocity *= self.manager.simulator.pxm_fac
+                self.manager.filter.add_vel(car_velocity)
+            else: # KALMAN CASE
+                if self.count > 0:
+                    self.count -= 1
+                    car_position = self.manager.simulator.car.position
+                    car_velocity = self.manager.simulator.car.velocity - self.manager.simulator.camera.velocity
+                    self.manager.filter.add(car_position, car_velocity)
+                else:
+                    # car_velocity = self.manager.simulator.car.velocity - self.manager.simulator.camera.velocity
+                    self.manager.filter.add(car_position, car_velocity)
+                    car_position = self.manager.filter.get_pos()
+                    car_velocity = self.manager.filter.get_vel()
+                # if self.prev_car_pos is None:
+                #     car_velocity = self.manager.filter.get_vel()
+                # else:
+                #     car_velocity = (car_position - self.prev_car_pos ) / self.manager.get_sim_dt()
+                self.prev_car_pos = car_position
 
         # return kinematics in world reference frame
         return (drone_position, drone_velocity, car_position, car_velocity+drone_velocity, cp, cv+drone_velocity)
@@ -1193,8 +1195,8 @@ class Controller:
             a_long_bound = 8
             a_lat_bound = 8
             
-            a_long = self.sat(a_long, a_long_bound)
-            a_lat = self.sat(a_lat, a_lat_bound)
+            # a_long = self.sat(a_long, a_long_bound)
+            # a_lat = self.sat(a_lat, a_lat_bound)
 
             delta = alpha + pi/2
             ax = a_lat * cos(delta) + a_long * cos(alpha)
@@ -1301,7 +1303,7 @@ class Controller:
         if not CLEAN_CONSOLE:
             print(f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{X:0.2f}, {Y:0.2f}] | v:[{Vx:0.2f}, {Vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}] | COMMANDED a:[{ax:0.2f}, {ay:0.2f}] | TRACKED x:[{tra_kin[2][0]:0.2f},{tra_kin[2][1]:0.2f}] | v:[{tra_kin[3][0]:0.2f},{tra_kin[3][1]:0.2f}]')
         if self.manager.write_plot:
-            self.f.write(f'{self.manager.simulator.time},{r},{theta},{Vtheta},{Vr},{tru_kin[0][0]},{tru_kin[0][1]},{tru_kin[2][0]},{tru_kin[2][1]},{ax},{ay},{a_lat},{a_long},{tru_kin[3][0]},{tru_kin[3][1]},{tra_kin[2][0]},{tra_kin[2][1]},{tra_kin[3][0]},{tra_kin[3][1]},{self.manager.simulator.camera.origin[0]},{self.manager.simulator.camera.origin[1]},{S},{alpha},{tru_kin[1][0]},{tru_kin[1][1]},{tra_kin[4][0]},{tra_kin[4][1]},{tra_kin[5][0]},{tra_kin[5][1]}\n')
+            self.f.write(f'{self.manager.simulator.time},{r},{theta},{Vtheta},{Vr},{tru_kin[0][0]},{tru_kin[0][1]},{tru_kin[2][0]},{tru_kin[2][1]},{ax},{ay},{a_lat},{a_long},{tru_kin[3][0]},{tru_kin[3][1]},{tra_kin[2][0]},{tra_kin[2][1]},{tra_kin[3][0]},{tra_kin[3][1]},{self.manager.simulator.camera.origin[0]},{self.manager.simulator.camera.origin[1]},{S},{alpha},{tru_kin[1][0]},{tru_kin[1][1]},{tra_kin[4][0]},{tra_kin[4][1]},{tra_kin[5][0]},{tra_kin[5][1]},{self.manager.simulator.camera.altitude}\n')
 
         return ax, ay
 
@@ -1469,7 +1471,7 @@ class ExperimentManager:
                     screen_capture = self.simulator.get_screen_capture()
                     self.tracker.process_image(screen_capture)
                     # let controller generate acceleration, when tracker says so
-                    if self.tracker.can_begin_control() and (self.use_true_kin or self.tracker.kin is not None) and self.filter.done_waiting():
+                    if self.tracker.can_begin_control() and (self.use_true_kin or self.tracker.kin is not None) and (self.filter.done_waiting() or not USE_FILTER):
                         # collect kinematics tuple
                         kin = self.get_true_kinematics() if self.use_true_kin else self.tracker.kin
                         # let controller process kinematics
@@ -1617,22 +1619,15 @@ class Kalman:
         self.sig_r = 0.1
         self.sig_q = 1.0
         self.manager = manager
-        # self.dt = self.manager.get_sim_dt()
-        # self.dt2 = self.dt**2
-
-        # # motion model
-        # self.A = np.array([[1, 0, self.dt, 0], [0, 1, 0, self.dt], [0, 0, 1, 0], [0, 0, 0, 1]])
-
-        # # control model
-        # self.B = np.array([[0.5*self.dt2, 0], [0, 0.5*self.dt2], [self.dt, 0], [0, self.dt]])
-
-        # # process noise covariance
-        # self.R = np.identity(4) * self.sig_r**2
 
         # predicted belief state
         self.Mu = np.array([[self.x], [self.y], [self.vx], [self.vy]])
-        self.S = np.array([ [0.00001, 0, 0, 0],    \
-                            [0, 0.00001, 0, 0],    \
+        # self.S = np.array([ [0.00001, 0, 0, 0],    \
+        #                     [0, 0.00001, 0, 0],    \
+        #                     [0, 0, 1, 0],     \
+        #                     [0, 0, 0, 1]  ])
+        self.S = np.array([ [1, 0, 0, 0],    \
+                            [0, 1, 0, 0],    \
                             [0, 0, 1, 0],     \
                             [0, 0, 0, 1]  ])
 
@@ -1641,29 +1636,48 @@ class Kalman:
         self.C = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
         
         # process noise
+        # self.Er = np.array([[0.01], [0.01], [0.01], [0.01]])
         self.Er = np.array([[0.01], [0.01], [0.01], [0.01]])
 
         # measurement noise
+        # self.Eq = np.array([[0.01], [0.01], [0.01], [0.01]])
         self.Eq = np.array([[0.01], [0.01], [0.01], [0.01]])
         
         # covariance of process noise model
         # self.R = np.matmul(self.Er, np.transpose(self.Er))
-        self.R = np.array([ [1, 0, 0, 0],    \
-                            [0, 1, 0, 0],    \
-                            [0, 0, 1, 0],     \
-                            [0, 0, 0, 1]  ])
+        # self.R = np.array([ [0.01, 0, 0.1, 0],    \
+        #                     [0, 0.01, 0, 0.1],    \
+        #                     [0, 0, .01, 0],     \
+        #                     [0, 0, 0, .01]  ])
+        self.R = np.array([ [0.000001, 0, 0, 0],    \
+                            [0, 0.000001, 0, 0],    \
+                            [0, 0, .000001, 0],     \
+                            [0, 0, 0, .000001]  ])
+        
 
         # covariance of measurement noise model
-        # self.Q = np.array([[0.01, 0.01, 0.01, 0], [0.01, 0.01, 0, 0.01], [0.01, 0, 0.01, 0.01], [0, 0.01, 0.01, 0.01]])
-        self.Q = np.array([ [0.00001, 0, 0, 0],    \
-                            [0, 0.00001, 0, 0],    \
-                            [0, 0, 0.00001, 0],       \
-                            [0, 0, 0, 0.00001]    ])
+        # self.Q = np.matmul(self.Eq, np.transpose(self.Eq))
+        # self.Q = np.array([[0.01, 0.01, 0.01, 0.0], [0.01, 0.01, 0, 0.01], [0.01, 0, 0.01, 0.01], [0, 0.01, 0.01, 0.01]])
+        # self.Q = np.array([ [0.00001, 0, 0, 0],    \
+        #                     [0, 0.00001, 0, 0],    \
+        #                     [0, 0, 0.00001, 0],       \
+        #                     [0, 0, 0, 0.00001]    ])
+        self.Q = np.array([ [0.00001, 0, 0.0, 0],    \
+                            [0, 0.00001, 0, 0.0],    \
+                            [0, 0, 1, 0],       \
+                            [0, 0, 0, 1]    ])
+        # self.Q = np.array([ [0.0154, -0.0008, 0.0555, -0.0010],    \
+        #                     [-0.0008, 0.0144, -0.0010, 0.0532],    \
+        #                     [0.0555, -0.0010, 1.8173, -0.0791],       \
+        #                     [-0.0010, 0.0532, -0.0791, 1.7557]    ])
+        # self.Q = np.array([ [0.0158, 0.000, 0.0666, -0.0001],    \
+        #                     [0.000, 0.0151, -0.0006, 0.0650],    \
+        #                     [0.0666, -0.0010, 1.8173, -0.0119],       \
+        #                     [-0.0001, 0.0650, -0.0119, 3.7924]    ])
         # self.Q = np.matmul(self.Eq, np.transpose(self.Eq))
 
         self.ready = False
-
-    
+  
 
     def done_waiting(self):
         return self.ready
@@ -1700,7 +1714,8 @@ class Kalman:
         A = np.array([[1, 0, dt, 0], [0, 1, 0, dt], [0, 0, 1, 0], [0, 0, 0, 1]])
 
         # control model
-        B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [dt, 0], [0, dt]])
+        # B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [dt, 0], [0, dt]])
+        B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [0, 0], [0, 0]])
 
         # process noise covariance
         R = self.R
@@ -1711,6 +1726,18 @@ class Kalman:
         # predict
         self.Mu = np.matmul(A, self.Mu) + np.matmul(B, U)
         self.S = np.matmul(np.matmul(A, self.S), np.transpose(A)) + R
+
+    def correct(self):
+        # Z = np.matmul(self.C, self.X) + self.Eq
+        Z = self.X#np.matmul(self.C, self.X) 
+        # K = np.matmul( np.matmul(self.S, self.C), np.linalg.pinv( np.matmul(np.matmul(self.C, self.S), np.transpose(self.C)) + self.Q ))
+        K = np.matmul( self.S, np.linalg.pinv( self.S + self.Q ))
+
+        # self.Mu = self.Mu + np.matmul(K, (Z - np.matmul(self.C, self.Mu)))
+        # self.S = np.matmul((np.identity(4) - np.matmul(K, self.C)), self.S)
+        self.Mu = self.Mu + np.matmul(K, (Z - self.Mu))
+        self.S = np.matmul((np.identity(4) - K), self.S)
+        
  
     def simple_predict(self):
         # collect params
@@ -1726,14 +1753,6 @@ class Kalman:
         self.Mu = np.matmul(A,self.Mu) + np.matmul(B, U)
         self.S = np.matmul(np.matmul(A, self.S), np.transpose(A))
 
-
-    def correct(self):
-        Z = np.matmul(self.C, self.X) + self.Eq
-        K = np.matmul( np.matmul(self.S, self.C), np.linalg.pinv( np.matmul(np.matmul(self.C, self.S), np.transpose(self.C)) + self.Q ))
-
-        self.Mu = self.Mu + np.matmul(K, (Z - np.matmul(self.C, self.Mu)))
-        self.S = np.matmul((np.identity(4) - np.matmul(K, self.C)), self.S)
-        
 
     def simple_correct(self):
         Z = self.X + self.Eq
@@ -1758,11 +1777,6 @@ class Kalman:
         
         
 
-
-        
-
-
-
 def get_moving_average(a, w):
     ret = []
     for i in range(len(a)):
@@ -1777,16 +1791,16 @@ def get_moving_average(a, w):
 if __name__ == "__main__":
 
     EXPERIMENT_SAVE_MODE_ON = 0
-    WRITE_PLOT              = 0
+    WRITE_PLOT              = 1
     CONTROL_ON              = 1
     TRACKER_ON              = 1
     TRACKER_DISPLAY_ON      = 1
     USE_TRUE_KINEMATICS     = 0
     
-    RUN_EXPERIMENT          = 0
-    RUN_TRACK_PLOT          = 0
+    RUN_EXPERIMENT          = 1
+    RUN_TRACK_PLOT          = 1
 
-    RUN_VIDEO_WRITER        = 1
+    RUN_VIDEO_WRITER        = 0
 
     if RUN_EXPERIMENT:
         experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_PLOT, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON, USE_TRUE_KINEMATICS)
@@ -1826,7 +1840,7 @@ if __name__ == "__main__":
         mcy=[]
         mcvx=[]
         mcvy=[]
-        
+        alt=[]
         # get all the data in memory
         for line in f.readlines():
             data = tuple(map(float, list(map(str.strip, line.strip().split(',')))))
@@ -1859,6 +1873,7 @@ if __name__ == "__main__":
             mcy.append(data[26])            
             mcvx.append(data[27])            
             mcvy.append(data[28])            
+            alt.append(data[29])            
 
         f.close()
 
@@ -1873,8 +1888,7 @@ if __name__ == "__main__":
         shutil.copyfile('plot_info.txt', f'{_path}/plot_info.txt')
         plt.style.use('seaborn-whitegrid')
 
-        SUPTITLE_ON = 1
-
+        
         # ----------------------------------------------------------------------------------------- figure 1
         # line of sight kinematics
         f0, axs = plt.subplots(2, 2, sharex=True, gridspec_kw={'wspace':0.4, 'hspace':0.25})
@@ -2005,7 +2019,7 @@ if __name__ == "__main__":
 
         axs[0].plot(t, mcvx, color='gainsboro', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_x$')
         axs[0].plot(t, tcvx, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$estimated\ V_x$')
-        axs[0].plot(t, cvx, color='crimson', linestyle=':', linewidth=LINE_WIDTH_2, label=r'$true\ V_x$')
+        axs[0].plot(t, cvx, color='crimson', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$true\ V_x$')
         axs[0].set(ylabel=r'$V_x\ (\frac{m}{s})$')
         axs[0].set_title(r'$\mathbf{V_x}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs[0].legend(loc='upper right')
@@ -2042,6 +2056,8 @@ if __name__ == "__main__":
 
         f6.savefig(f'{_path}/7_speed_head.png', dpi=300)
         f6.show()
+        
+        # plt.plot(t, alt)
 
         plt.show()
         

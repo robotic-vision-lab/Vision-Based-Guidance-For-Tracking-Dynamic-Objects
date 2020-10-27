@@ -41,7 +41,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 200.0                                  # meters
+ALTITUDE = 350.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -123,7 +123,7 @@ USE_WORLD_FRAME = 0
 CLEAR_TOP = 1
 
 # console settings
-CLEAN_CONSOLE = 1
+CLEAN_CONSOLE = 0
 
 # resolution settings
 SCALE_1 = 1.0
@@ -141,16 +141,18 @@ if OPTION==2:
     SCALE_2 = 4.0
 
 # salt pepper SNR settings
-SNR = 0.99
+SNR = 1.0#0.99
 
 # filter choice
+USE_FILTER = 1
 USE_KALMAN = 1  # else Moving average
 
 # plot settings
-LINE_WIDTH_1 = 1.5
-LINE_WIDTH_2 = 2
+LINE_WIDTH_1 = 1.0
+LINE_WIDTH_2 = 1.5
 TITLE_FONT_SIZE = 14
 SUB_TITLE_FONT_SIZE = 11
+SUPTITLE_ON = 1
 
 #--------------------------------------------------------------------------------
 CAR_RADIUS = 5
