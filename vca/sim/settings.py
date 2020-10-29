@@ -41,7 +41,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 350.0                                  # meters
+ALTITUDE = 500.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -155,7 +155,7 @@ SUB_TITLE_FONT_SIZE = 11
 SUPTITLE_ON = 1
 
 #--------------------------------------------------------------------------------
-CAR_RADIUS = 5
+CAR_RADIUS = 1
 # initial conditions
 
 # # 1 OPEN
@@ -186,25 +186,16 @@ CAR_RADIUS = 5
 # w_                      = -0.1              #DO NOT TOUCH
 
 # #4 CLOSED [world frame, truekin, c2 with den .01, bound=10, R=10]
-# CAR_INITIAL_POSITION    = (200.0, 100.0)    # DO NOT TOUCH
-# CAR_INITIAL_VELOCITY    = (22.22, 0.0)      # DO NOT TOUCH
-# DRONE_POSITION          = (0.0, 0.0)        # DO NOT TOUCH
-# DRONE_INITIAL_VELOCITY  = (31.11, 0.0)      # DO NOT TOUCH
-# K_1                     = 0.1               # DO NOT TOUCH
-# K_2                     = 0.05              # DO NOT TOUCH
-# w_                      = -0.1              # DO NOT TOUCH
+CAR_INITIAL_POSITION    = (200.0, 100.0)    # DO NOT TOUCH
+CAR_INITIAL_VELOCITY    = (22.22, 0.0)      # DO NOT TOUCH
+DRONE_POSITION          = (0.0, 0.0)        # DO NOT TOUCH
+DRONE_INITIAL_VELOCITY  = (31.11, 0.0)      # DO NOT TOUCH
+K_1                     = 0.1               # DO NOT TOUCH
+K_2                     = 0.05              # DO NOT TOUCH
+w_                      = -0.1              # DO NOT TOUCH
 
 # 5 open
-CAR_INITIAL_POSITION    = (50.0, 50.0)
-CAR_INITIAL_VELOCITY    = (22.22, 0.0)
-DRONE_POSITION          = (0.0, 0.0)
-DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
-K_1                     = 0.1
-K_2                     = 0.05
-w_                      = -0.1
-
-# # 6 open
-# CAR_INITIAL_POSITION    = (-70.0, -70.0)
+# CAR_INITIAL_POSITION    = (50.0, 50.0)
 # CAR_INITIAL_VELOCITY    = (22.22, 0.0)
 # DRONE_POSITION          = (0.0, 0.0)
 # DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
@@ -212,11 +203,20 @@ w_                      = -0.1
 # K_2                     = 0.05
 # w_                      = -0.1
 
-# # 7 open
-# CAR_INITIAL_POSITION    = (-70.0, -70.0)
+# # 6 open
+# CAR_INITIAL_POSITION    = (-200.0, -150.0)
+# CAR_INITIAL_VELOCITY    = (31.11, 0.0)
+# DRONE_POSITION          = (0.0, 0.0)
+# DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
+# K_1                     = 0.08
+# K_2                     = 0.04
+# w_                      = -0.1
+
+# 7 open
+# CAR_INITIAL_POSITION    = (-50.0, 10.0)
 # CAR_INITIAL_VELOCITY    = (22.22, 0.0)
 # DRONE_POSITION          = (0.0, 0.0)
-# DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+# DRONE_INITIAL_VELOCITY  = (0.11, 0.0)
 # K_1                     = 0.1
 # K_2                     = 0.05
 # w_                      = -0.1
