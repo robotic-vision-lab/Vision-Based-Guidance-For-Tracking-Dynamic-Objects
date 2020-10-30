@@ -1832,7 +1832,7 @@ if __name__ == "__main__":
     TRACKER_DISPLAY_ON      = 1
     USE_TRUE_KINEMATICS     = 0
     
-    RUN_EXPERIMENT          = 1
+    RUN_EXPERIMENT          = 0
     RUN_TRACK_PLOT          = 1
 
     RUN_VIDEO_WRITER        = 0
