@@ -910,7 +910,7 @@ class Tracker:
         car_vx /= d
         car_vy /= d
         
-        # form (MEASURED) car_position and car_velocity vectors (in PIXELS and PIXELS/secs)
+        # form (MEASURED, camera frame) car_position and car_velocity vectors (in PIXELS and PIXELS/secs)
         car_position = pygame.Vector2((car_x , car_y))
         car_velocity = pygame.Vector2((car_vx, car_vy))
 
@@ -1673,7 +1673,7 @@ class Kalman:
         #                     [0, 0.000001, 0, 0],    \
         #                     [0, 0, .000001, 0],     \
         #                     [0, 0, 0, .000001]  ])
-        self.var_R = np.array([10**-6, 10**-6, 10**-6, 10**-6])
+        self.var_R = np.array([10**-6, 10**-6, 10**-5, 10**-5])
         self.R = np.diag(self.var_R.flatten())
         # self.R = np.array([ [0.000001, 0, 0, 0],    \
         #                     [0, 0.000001, 0, 0],    \
@@ -1688,8 +1688,9 @@ class Kalman:
         #                     [0, 0.00001, 0, 0],    \
         #                     [0, 0, 0.00001, 0],       \
         #                     [0, 0, 0, 0.00001]    ])
-        # self.var_Q = np.array([10**-5, 10**-5, 10**-4, 10**-4])
-        self.var_Q = np.array([0.0156*10**-5, 0.0155*10**-5, 7.3811*10**-5, 6.5040*10**-5])
+        # self.var_Q = np.array([10**-5, 10**-5, 10**-5, 10**-5])
+        self.var_Q = np.array([0.0156*10**-3, 0.0155*10**-3, 7.3811*10**-3, 6.5040*10**-3])
+        # self.var_Q = np.array([0.0156, 0.0155, 7.3811, 6.5040])
         self.Q = np.diag(self.var_Q.flatten())
         # self.Q = np.array([ [0.00001, 0, 0.0, 0],    \
         #                     [0, 0.00001, 0, 0.0],    \
@@ -2126,8 +2127,8 @@ if __name__ == "__main__":
         # viridis = cm.get_map('viridis', 512)
         axs.scatter3D(ndx, ndy, alt, c=alt, cmap='plasma')
         axs.set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$', zlabel=r'$z\ (m)$')
-        # axs.view_init(elev=4, azim=-52)
-        axs.view_init(elev=47, azim=-47)
+        axs.view_init(elev=4, azim=-52)
+        # axs.view_init(elev=47, azim=-47)
         axs.set_title(r'$\mathbf{World\ frame}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs.legend()
 

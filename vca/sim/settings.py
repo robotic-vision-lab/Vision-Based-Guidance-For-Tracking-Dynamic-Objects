@@ -123,7 +123,7 @@ USE_WORLD_FRAME = 0
 CLEAR_TOP = 1
 
 # console settings
-CLEAN_CONSOLE = 0
+CLEAN_CONSOLE = 1
 
 # resolution settings
 SCALE_1 = 1.0
@@ -155,7 +155,7 @@ SUB_TITLE_FONT_SIZE = 11
 SUPTITLE_ON = 1
 
 #--------------------------------------------------------------------------------
-CAR_RADIUS = 1
+CAR_RADIUS = 0.01
 # initial conditions
 
 # # 1 OPEN
@@ -208,8 +208,8 @@ w_                      = -0.1              # DO NOT TOUCH
 # CAR_INITIAL_VELOCITY    = (31.11, 0.0)
 # DRONE_POSITION          = (0.0, 0.0)
 # DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
-# K_1                     = 0.08
-# K_2                     = 0.04
+# K_1                     = 0.1
+# K_2                     = 0.05
 # w_                      = -0.1
 
 # 7 open
