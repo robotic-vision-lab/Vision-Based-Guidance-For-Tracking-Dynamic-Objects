@@ -144,8 +144,11 @@ if OPTION==2:
 SNR = 1.0#0.99
 
 # filter choice
-USE_FILTER = 1
+# use filter will make tracker use filter, it may use kalman or moving average
+USE_FILTER = 1  
 USE_KALMAN = 1  # else Moving average
+# EKF used by controller
+USE_EXTENDED_KALMAN = 1
 
 # plot settings
 LINE_WIDTH_1 = 1.0
