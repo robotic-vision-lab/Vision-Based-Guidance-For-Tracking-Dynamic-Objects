@@ -145,8 +145,8 @@ SNR = 1.0#0.99
 
 # filter choice
 # use filter will make tracker use filter, it may use kalman or moving average
-USE_FILTER = 1  
-USE_KALMAN = 1  # else Moving average
+USE_FILTER = 0  
+USE_KALMAN = 0  # else Moving average
 # EKF used by controller
 USE_EXTENDED_KALMAN = 1
 

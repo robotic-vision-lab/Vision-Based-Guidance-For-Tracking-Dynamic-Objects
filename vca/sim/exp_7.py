@@ -1906,12 +1906,12 @@ class ExtendedKalman:
         state = np.array([[self.r], [self.theta], [self.Vtheta], [self.Vr]])
         dyn = np.array([[self.Vr], [self.Vtheta/self.r], [-self.Vtheta*self.Vr/self.r], [self.Vtheta**2/self.r]])
 
-        state_dot = dyn + np.matmul(self.B, U) + np.matmul(self.K, (self.Z - np.matmul(H, state)))
-        P_dot = np.matmul(self.A, self.P) + np.matmul(self.P, np.transpose(A)) - np.matmul(np.matmul(self.K, self.H),self.P) + 
+        state_dot = dyn + np.matmul(self.B, U) + np.matmul(self.K, (self.Z - np.matmul(self.H, state)))
+        P_dot = np.matmul(self.A, self.P) + np.matmul(self.P, np.transpose(self.A)) - np.matmul(np.matmul(self.K, self.H),self.P) + self.Q
 
         dt = self.manager.get_sim_dt()
         state = state + state_dot * dt
-        P = P + P_dot * dt
+        self.P = self.P + P_dot * dt
 
         self.r = state.flatten()[0]
         self.theta = state.flatten()[1]
@@ -1951,7 +1951,7 @@ if __name__ == "__main__":
     TRACKER_DISPLAY_ON      = 1
     USE_TRUE_KINEMATICS     = 0
     
-    RUN_EXPERIMENT          = 0
+    RUN_EXPERIMENT          = 1
     RUN_TRACK_PLOT          = 1
 
     RUN_VIDEO_WRITER        = 0
