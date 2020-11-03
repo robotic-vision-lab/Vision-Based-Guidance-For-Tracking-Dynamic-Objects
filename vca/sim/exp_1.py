@@ -64,6 +64,8 @@ class Game:
 
         # create a Group with all sprites 
         self.all_sprites = pygame.sprite.Group()
+        self.car_block_sprites = pygame.sprite.Group()
+        self.drone_sprite = pygame.sprite.Group()
 
         # spawn block, instantiating the Block sprite would add itself to all_sprites
         self.blocks = []

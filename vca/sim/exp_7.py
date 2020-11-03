@@ -41,25 +41,24 @@ from algorithms.optical_flow import (compute_optical_flow_farneback,
                                      compute_optical_flow_LK)
 
 
-""" 
+""" Summary:
+    Experiment 7:
+    In this module we try to experiment with EKF.
 
-There is a game simulation.
-Has a car and a green alien (drone with camera).
-Car starts from some fixed set position and constant velocity.
-Camera (on alien) placed at the center and can be moved by giving acceleration commands.
+    Pygame runs a simulation.
+    In the simulation, we have 3 kinds of sprites:
+        - Blocks
+        - Car
+        - DroneCamera
+    There are multiple Blocks, 1 Car and 1 DroneCamera.
+    All sprites have a position, velocity and acceleration.
+    The Simulator object can call the update() method on all sprites at a specified FPS clock rate.
+    Simulator runs in the main thread, and it's clock runs in parallel to all other processes.
 
-Idea is to have the car move with certain velocity.
-The Car will be drawn on the screen. 
-These screens can be captured and stored.
-From these screenshot images we figure out the position and velocity of the car.
-Give the position and velocity information to the controlling agent.
+    The Manager object instantiates Simulator, Tracker and Controller.
+    Manager can call Simulator's update().
 
-Agent generates an acceleration command for the alien drone (with the camera).
-Game loop takes this into account and accordingly renders updated screens.
-
-In doing so, the goal is for the drone to try and hover over the car
-or in other words have the car right in the center of it's view.
-
+    In this module the Manager runs the experiment, by calling methods from Simulator, Tracker and Controller.
 
 """
 
@@ -302,7 +301,6 @@ class DroneCamera(pygame.sprite.Sprite):
         delta_pos = self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2      # i know how this looks like but,
         self.position = self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2  # donot touch ☠
         self.origin += delta_pos
-
 
 
     def compensate_camera_motion(self, sprite_obj):
@@ -564,8 +562,6 @@ class Simulator:
         # compensate camera motion for all sprites
         for sprite in self.all_sprites:
             self.camera.compensate_camera_motion(sprite)
-
-        
 
 
     def draw(self):
@@ -1133,6 +1129,7 @@ class Controller:
         self.a_ln = 0.0
         self.a_lt = 0.0
 
+
     def run(self):
         print('Controller running')
         if self.manager.write_plot:
@@ -1227,8 +1224,10 @@ class Controller:
         if self.manager.write_plot:
             f.close()
 
+
     def sat(self, x, bound):
         return min(max(x, -bound), bound)
+
 
     def generate_acceleration(self, kin):
         X, Y            = kin[0]
@@ -1612,6 +1611,7 @@ class MA:
         self.new_pos = self.avg_pos()
         self.new_vel = self.avg_vel()
 
+
     def add_pos(self, pos):
         # remember the last new average before adding to deque
         self.old_pos = self.new_pos
@@ -1622,6 +1622,7 @@ class MA:
 
         # compute new average
         self.new_pos = self.avg_pos()
+
 
     def add_vel(self, vel):
         # remember the last new average before adding to deque
@@ -1634,21 +1635,26 @@ class MA:
         # compute new average
         self.new_vel = self.avg_vel()
 
+
     def get_pos(self):
         return self.new_pos
 
+
     def get_vel(self):
         return self.new_vel
+
 
     def avg_pos(self):
         x = sum(self.car_x) / len(self.car_x)
         y = sum(self.car_y) / len(self.car_y)
         return pygame.Vector2(x,y)
 
+
     def avg_vel(self):
         vx = sum(self.car_vx) / len(self.car_vx)
         vy = sum(self.car_vy) / len(self.car_vy)
         return pygame.Vector2(vx,vy)
+
 
 
 class Kalman:
@@ -1768,6 +1774,7 @@ class Kalman:
         # self.simple_predict()
         # self.simple_correct()
 
+
     def predict(self):
         # collect params
         dt = self.manager.get_sim_dt()
@@ -1788,6 +1795,7 @@ class Kalman:
         # predict
         self.Mu = np.matmul(A, self.Mu) + np.matmul(B, U)
         self.S = np.matmul(np.matmul(A, self.S), np.transpose(A)) + R
+
 
     def correct(self):
         # Z = np.matmul(self.C, self.X) + self.Eq
@@ -1832,12 +1840,15 @@ class Kalman:
     def add_vel(self, vel):
         self.add((self.x, self.y), vel)
 
+
     def get_pos(self):
         return pygame.Vector2(self.Mu.flatten()[0], self.Mu.flatten()[1])
 
+
     def get_vel(self):
         return pygame.Vector2(self.Mu.flatten()[2], self.Mu.flatten()[3])
-        
+
+
 
 class ExtendedKalman:
     """Implement continuous-continuous EKF for the UAS anf Vehicle system
@@ -1859,8 +1870,10 @@ class ExtendedKalman:
         self.filter_initialized_flag = False
         self.ready = False
 
+
     def is_initialized(self):
         return self.filter_initialized_flag
+
 
     def initialize_filter(self, r, theta, Vr, Vtheta, alpha, a_lat, a_long):
         self.prev_r = r
@@ -1904,6 +1917,7 @@ class ExtendedKalman:
         self.prev_Vr = self.Vr
         self.prev_Vtheta = self.Vtheta
 
+
     def predict(self):
         # perform predictor step
         self.A = np.array([[0.0, 0.0, 0.0, 1.0],
@@ -1937,14 +1951,12 @@ class ExtendedKalman:
         self.Vtheta = state.flatten()[2]
         self.Vr = state.flatten()[3]
 
+
     def get_estimated_state(self):
         if self.ready:
             return (self.r, self.theta, self.Vr, self.Vtheta)
         else:
             return (self.prev_r, self.prev_theta, self.prev_Vr, self.prev_Vtheta)
-
-    
-
 
 
 
@@ -1959,6 +1971,7 @@ def get_moving_average(a, w):
         ret.append(sum(b) / len(b))
 
     return ret
+
 
 
 if __name__ == "__main__":
@@ -1981,6 +1994,7 @@ if __name__ == "__main__":
         # experiment_manager.run_experiment()
         experiment_manager.run()
         print("\n\nExperiment finished.\n")
+
 
     if RUN_TRACK_PLOT:
         f = open('plot_info.txt', 'r')
