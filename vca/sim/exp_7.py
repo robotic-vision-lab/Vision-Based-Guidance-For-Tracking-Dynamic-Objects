@@ -1225,7 +1225,8 @@ class Controller:
             f.close()
 
 
-    def sat(self, x, bound):
+    @staticmethod
+    def sat(x, bound):
         return min(max(x, -bound), bound)
 
 
@@ -1531,7 +1532,8 @@ class ExperimentManager:
             self.controller.f.close()
 
 
-    def make_video(self, video_name, folder_path):
+    @staticmethod
+    def make_video(video_name, folder_path):
         """Helper function, looks for frames in given folder,
         writes them into a video file, with the given name. 
         Also removes the folder after creating the video.
