@@ -2,7 +2,7 @@
 __pycache__
 tutorial.py
 test_OF.py
-logs/debug.log
+logs/*
 out_imgs*
 tmp*
 *vid_out*.avi
@@ -13,3 +13,7 @@ out_sim_track_control.avi
 track.txt
 relative_vx.png
 plot_info.txt
+
+# exceptions
+!logs/.gitkeep
+!sim_outputs/.gitkeep
