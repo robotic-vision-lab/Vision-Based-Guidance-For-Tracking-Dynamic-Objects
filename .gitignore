@@ -2,7 +2,7 @@
 __pycache__
 tutorial.py
 test_OF.py
-debug.log
+logs/debug.log
 out_imgs*
 tmp*
 *vid_out*.avi
