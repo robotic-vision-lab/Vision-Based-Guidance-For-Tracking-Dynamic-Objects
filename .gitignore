@@ -1,3 +1,8 @@
+# exceptions
+!logs/.gitkeep
+!sim_outputs/.gitkeep
+
+
 .vscode
 __pycache__
 tutorial.py
@@ -13,7 +18,3 @@ out_sim_track_control.avi
 track.txt
 relative_vx.png
 plot_info.txt
-
-# exceptions
-!logs/.gitkeep
-!sim_outputs/.gitkeep
