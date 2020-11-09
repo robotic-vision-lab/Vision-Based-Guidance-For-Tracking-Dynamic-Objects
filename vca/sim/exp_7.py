@@ -1,23 +1,23 @@
 import os
 import sys
 import random
-import cv2 as cv
-import numpy as np
 import shutil
 import time
-import pygame 
 import threading as th
-
 from queue import deque
-from PIL import Image
 from copy import deepcopy
 from random import randrange
 from datetime import timedelta
-from math import atan2, degrees, cos, sin, pi, copysign
+from math import atan2, degrees, cos, sin, pi
 
-from pygame.locals import *
-from settings import *
-from optical_flow_config import (FARNEBACK_PARAMS,
+import numpy as np
+import cv2 as cv
+import pygame 
+
+
+from pygame.locals import *                                 #pylint: disable=unused-wildcard-import
+from settings import *                                      #pylint: disable=unused-wildcard-import
+from optical_flow_config import (FARNEBACK_PARAMS,          #pylint: disable=unused-import
                                  FARN_TEMP_FOLDER,
                                  FEATURE_PARAMS, 
                                  LK_PARAMS,
@@ -30,15 +30,23 @@ if vca_path not in sys.path:
     sys.path.append(vca_path)
 
 from utils.vid_utils import create_video_from_images
-from utils.optical_flow_utils import (get_OF_color_encoded, 
-                                      draw_sparse_optical_flow_arrows,
-                                      draw_tracks)
-from utils.img_utils import convert_to_grayscale, put_text, images_assemble, add_salt_pepper
+from utils.optical_flow_utils \
+                import (get_OF_color_encoded,               #pylint: disable=unused-import
+                        draw_sparse_optical_flow_arrows,
+                        draw_tracks)
+from utils.img_utils import (convert_to_grayscale,          #pylint: disable=unused-import
+                             put_text,
+                             images_assemble,
+                             add_salt_pepper)
 from utils.img_utils import scale_image as cv_scale_img
-from game_utils import load_image, _prep_temp_folder, vec_str, scale_img
-from algorithms.optical_flow import (compute_optical_flow_farneback, 
-                                     compute_optical_flow_HS, 
-                                     compute_optical_flow_LK)
+from game_utils import (load_image,                         #pylint: disable=unused-import
+                        _prep_temp_folder,
+                        vec_str, 
+                        scale_img)
+from algorithms.optical_flow \
+                import (compute_optical_flow_farneback,     #pylint: disable=unused-import
+                        compute_optical_flow_HS, 
+                        compute_optical_flow_LK)
 
 
 """ Summary:
@@ -427,7 +435,7 @@ class Simulator:
         
         # spawn blocks
         self.blocks = []
-        for i in range(NUM_BLOCKS):
+        for _ in range(NUM_BLOCKS):
             self.blocks.append(Block(self))
 
         # spawn car
@@ -485,6 +493,8 @@ class Simulator:
 
 
     def show_drawing(self):
+        """Flip the drawing board to show drawings.
+        """
         pygame.display.flip()          
         
 
@@ -673,6 +683,8 @@ class Simulator:
 
 
     def drone_up(self):
+        """Helper function to implement drone altitude increments.
+        """
         self.camera.fly_higher()
         self.pxm_fac = ((self.camera.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
         car_scale = (CAR_LENGTH / (CAR_LENGTH_PX * self.pxm_fac)) / self.alt_change_fac
@@ -683,6 +695,8 @@ class Simulator:
 
 
     def drone_down(self):
+        """Helper function to implement drone altitude decrements.
+        """
         self.camera.fly_lower()
         self.pxm_fac = ((self.camera.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
         car_scale = (CAR_LENGTH / (CAR_LENGTH_PX * self.pxm_fac)) / self.alt_change_fac
@@ -693,14 +707,29 @@ class Simulator:
 
 
     def get_drone_position(self):
+        """Returns drone(UAS) true position
+
+        Returns:
+            pygame.Vector2: UAS true position
+        """ 
         return self.camera.position
 
     
     def get_camera_fov(self):
+        """Helper function, returns drone camera field of view.
+
+        Returns:
+            tuple(float32, float32): Drone camera field of view
+        """
         return (WIDTH * self.pxm_fac, HEIGHT * self.pxm_fac)
 
 
     def can_begin_tracking(self):
+        """Indicates the green signal for tracking to start
+
+        Returns:
+            bool: Can tracker begin tracking
+        """
         # ready = True
 
         # not ready if bb not selected or if simulated is still paused
@@ -872,8 +901,7 @@ class Tracker:
 
 
     def compute_kinematics(self, cur_pts, nxt_pts):
-        """Helper function, takes in current and next points (corresponding to an object) and 
-        computes the average velocity using elapsed simulation time from it's ExperimentManager.
+        """Helper function, takes in current and next points (corresponding to an object) and computes the average velocity using elapsed simulation time from it's ExperimentManager.
 
         Args:
             cur_pts (np.ndarray): feature points in frame_1 or current frame (prev frame)
@@ -971,22 +999,30 @@ class Tracker:
         return (drone_position, drone_velocity, car_position, car_velocity+drone_velocity, cp, cv+drone_velocity)
         # return (drone_position, drone_velocity, car_position, car_velocity, cp, cv)
 
-    
-    def get_centroid(self, points):
+    @staticmethod
+    def get_centroid(points):
         """Returns centroid of given list of points
 
         Args:
             points (np.ndarray): List of points
         """
-        cx, cy = 0, 0
-        for x, y in points:
-            cx += x
-            cy += y
+        centroid_x, centroid_y = 0, 0
+        for point in points:
+            centroid_x += point[0]
+            centroid_y += point[1]
 
-        return np.array([[int(cx/len(points)), int(cy/len(points))]])
+        return np.array([[int(centroid_x/len(points)), int(centroid_y/len(points))]])
 
 
     def process_image(self, img):
+        """Processes given image and generates manages tracking
+
+        Args:
+            img (np.ndarray): Image given with object to be tracked
+
+        Returns:
+            [type]: [description]
+        """
         if self.cur_frame is None:
             # print('tracker 1st frame')
             self.frame_1 = img
@@ -1573,6 +1609,8 @@ class ExperimentManager:
 
 
 class MA:
+    """Filters statefully using a moving average technique
+    """
     def __init__(self, window_size=10):
         self.car_x  = deque(maxlen=window_size)
         self.car_y  = deque(maxlen=window_size)
@@ -1587,10 +1625,21 @@ class MA:
 
 
     def done_waiting(self):
+        """Indicates readiness of filter
+
+        Returns:
+            bool: Ready or not
+        """
         return len(self.car_vx) > 5
 
 
     def init_filter(self, pos, vel):
+        """Initializes filter. Meant to be run for the first time only.
+
+        Args:
+            pos (pygame.Vector2): Car position measurement
+            vel (pygame.Vector2): Car velocity measurement
+        """
         self.new_pos = pygame.Vector2(pos)
         self.new_vel = pygame.Vector2(vel)
         self.add_pos(pos)
@@ -1599,6 +1648,12 @@ class MA:
 
 
     def add(self, pos, vel):
+        """Add a measurement
+
+        Args:
+            pos (pygame.Vector2): Car position measurement
+            vel (pygame.Vector2): Car velocity measurement
+        """
         # remember the last new average before adding to deque
         self.old_pos = self.new_pos
         self.old_vel = self.new_vel
@@ -1615,6 +1670,11 @@ class MA:
 
 
     def add_pos(self, pos):
+        """Add position measurement
+
+        Args:
+            pos (pygame.Vector2): Car position measurement
+        """
         # remember the last new average before adding to deque
         self.old_pos = self.new_pos
 
@@ -1627,6 +1687,11 @@ class MA:
 
 
     def add_vel(self, vel):
+        """Add velocity measurement
+
+        Args:
+            vel (pygame.Vector2): Car velocity measurement
+        """
         # remember the last new average before adding to deque
         self.old_vel = self.new_vel
 
@@ -1639,20 +1704,40 @@ class MA:
 
 
     def get_pos(self):
+        """Fetch estimated position
+
+        Returns:
+            pygame.Vector2: Car estimate position
+        """
         return self.new_pos
 
 
     def get_vel(self):
+        """Get estimated velocity
+
+        Returns:
+            pygame.Vector2: Car estimated velocity
+        """ 
         return self.new_vel
 
 
     def avg_pos(self):
+        """Helper function to average position measurements
+
+        Returns:
+            pygame.Vector2: Averaged car position
+        """
         x = sum(self.car_x) / len(self.car_x)
         y = sum(self.car_y) / len(self.car_y)
         return pygame.Vector2(x,y)
 
 
     def avg_vel(self):
+        """Helper function to average velocity measurements
+
+        Returns:
+            pygame.Vector2: Averaged car velocity
+        """
         vx = sum(self.car_vx) / len(self.car_vx)
         vy = sum(self.car_vy) / len(self.car_vy)
         return pygame.Vector2(vx,vy)
@@ -1660,6 +1745,8 @@ class MA:
 
 
 class Kalman:
+    """Implements Discrete-time Kalman filtering in a stateful fashion
+    """
     def __init__(self, manager):
         self.x  = 0.0
         self.y  = 0.0
@@ -1671,89 +1758,46 @@ class Kalman:
         self.manager = manager
         
         # process noise
-        # self.Er = np.array([[0.01], [0.01], [0.01], [0.01]])
         self.Er = np.array([[0.01], [0.01], [0.01], [0.01]])
 
         # measurement noise
-        # self.Eq = np.array([[0.01], [0.01], [0.01], [0.01]])
         self.Eq = np.array([[0.01], [0.01], [0.01], [0.01]])
 
-        # predicted belief state
+        # initialize belief state and covariance
         self.Mu = np.array([[self.x], [self.y], [self.vx], [self.vy]])
-        # self.S = np.array([ [0.00001, 0, 0, 0],    \
-        #                     [0, 0.00001, 0, 0],    \
-        #                     [0, 0, 1, 0],     \
-        #                     [0, 0, 0, 1]  ])
-        # self.S = np.array([ [1, 0, 0, 0],    \
-        #                     [0, 1, 0, 0],    \
-        #                     [0, 0, 1, 0],     \
-        #                     [0, 0, 0, 1]  ])
-        # self.S = np.array([ [0.0001, 0, 0, 0],    \
-        #                     [0, 0.0001, 0, 0],    \
-        #                     [0, 0, 0.0001, 0],     \
-        #                     [0, 0, 0, 0.0001]  ])
         self.var_S = np.array([10**-4, 10**-4, 10**-4, 10**-4])
         self.S = np.diag(self.var_S.flatten())
 
         # noiseless connection between state vector and measurement vector
-        # self.C = np.identity(4)
-        self.C = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        self.C = np.identity(4)
         
         # covariance of process noise model
-        # self.R = np.matmul(self.Er, np.transpose(self.Er))
-        # self.R = np.array([ [0.01, 0, 0.1, 0],    \
-        #                     [0, 0.01, 0, 0.1],    \
-        #                     [0, 0, .01, 0],     \
-        #                     [0, 0, 0, .01]  ])
-        # self.R = np.array([ [0.000001, 0, 0, 0],    \
-        #                     [0, 0.000001, 0, 0],    \
-        #                     [0, 0, .000001, 0],     \
-        #                     [0, 0, 0, .000001]  ])
         self.var_R = np.array([10**-6, 10**-6, 10**-5, 10**-5])
-        self.R = np.diag(self.var_R.flatten())
-        # self.R = np.array([ [0.000001, 0, 0, 0],    \
-        #                     [0, 0.000001, 0, 0],    \
-        #                     [0, 0, .000001, 0],     \
-        #                     [0, 0, 0, .000001]  ])
-        
+        self.R = np.diag(self.var_R.flatten())        
 
         # covariance of measurement noise model
-        # self.Q = np.matmul(self.Eq, np.transpose(self.Eq))
-        # self.Q = np.array([[0.01, 0.01, 0.01, 0.0], [0.01, 0.01, 0, 0.01], [0.01, 0, 0.01, 0.01], [0, 0.01, 0.01, 0.01]])
-        # self.Q = np.array([ [0.00001, 0, 0, 0],    \
-        #                     [0, 0.00001, 0, 0],    \
-        #                     [0, 0, 0.00001, 0],       \
-        #                     [0, 0, 0, 0.00001]    ])
-        # self.var_Q = np.array([10**-5, 10**-5, 10**-5, 10**-5])
         self.var_Q = np.array([0.0156*10**-3, 0.0155*10**-3, 7.3811*10**-3, 6.5040*10**-3])
-        # self.var_Q = np.array([0.0156, 0.0155, 7.3811, 6.5040])
         self.Q = np.diag(self.var_Q.flatten())
-        # self.Q = np.array([ [0.00001, 0, 0.0, 0],    \
-        #                     [0, 0.00001, 0, 0.0],    \
-        #                     [0, 0, 0.0001, 0],       \
-        #                     [0, 0, 0, 0.0001]    ])
-        # self.Q = np.array([ [0.00001, 0, 0.0, 0],    \
-        #                     [0, 0.00001, 0, 0.0],    \
-        #                     [0, 0, 0.00001, 0],       \
-        #                     [0, 0, 0, 0.00001]    ])
-        # self.Q = np.array([ [0.0154, -0.0008, 0.0555, -0.0010],    \
-        #                     [-0.0008, 0.0144, -0.0010, 0.0532],    \
-        #                     [0.0555, -0.0010, 1.8173, -0.0791],       \
-        #                     [-0.0010, 0.0532, -0.0791, 1.7557]    ])
-        # self.Q = np.array([ [0.0158, 0.000, 0.0666, -0.0001],    \
-        #                     [0.000, 0.0151, -0.0006, 0.0650],    \
-        #                     [0.0666, -0.0010, 1.8173, -0.0119],       \
-        #                     [-0.0001, 0.0650, -0.0119, 3.7924]    ])
-        # self.Q = np.matmul(self.Eq, np.transpose(self.Eq))
 
         self.ready = False
   
 
     def done_waiting(self):
+        """Indicates filter readiness
+
+        Returns:
+            bool: Ready or not
+        """
         return self.ready
 
 
     def init_filter(self, pos, vel):
+        """Initializes filter. Meant to be run only at first.
+
+        Args:
+            pos (pygame.Vector2): Car position measurement
+            vel (pygame.Vector2): Car velocity measurement
+        """
         self.x  = pos[0]
         self.y  = pos[1]
         self.vx = vel[0]
@@ -1764,6 +1808,12 @@ class Kalman:
 
 
     def add(self, pos, vel):
+        """Add a measurement.
+
+        Args:
+            pos (pygame.Vector2): Car position measurement
+            vel (pygame.Vector2): Car velocity measurement
+        """
         # pos and vel are the measured values. (remember x_bar)
         self.x  = pos[0]
         self.y  = pos[1]
@@ -1773,11 +1823,11 @@ class Kalman:
 
         self.predict()
         self.correct()
-        # self.simple_predict()
-        # self.simple_correct()
 
 
     def predict(self):
+        """Implement discrete-time Kalman filter prediction/forecast step
+        """
         # collect params
         dt = self.manager.get_sim_dt()
         dt2 = dt**2
@@ -1800,84 +1850,98 @@ class Kalman:
 
 
     def correct(self):
-        # Z = np.matmul(self.C, self.X) + self.Eq
-        # Z = np.matmul(self.C, self.X) 
+        """Implement discrete-time Kalman filter correction/update step
+        """
         Z = self.X
         K = np.matmul( np.matmul(self.S, self.C), np.linalg.pinv( np.matmul(np.matmul(self.C, self.S), np.transpose(self.C)) + self.Q ))
-        # K = np.matmul( self.S, np.linalg.pinv( self.S + self.Q ))
 
         self.Mu = self.Mu + np.matmul(K, (Z - np.matmul(self.C, self.Mu)))
         self.S = np.matmul((np.identity(4) - np.matmul(K, self.C)), self.S)
-        # self.Mu = self.Mu + np.matmul(K, (Z - self.Mu))
-        # self.S = np.matmul((np.identity(4) - K), self.S)
-        
- 
-    def simple_predict(self):
-        # collect params
-        dt = self.manager.get_sim_dt()
-        dt2 = dt**2
-        A = np.array([[1, 0, dt, 0], [0, 1, 0, dt], [0, 0, 1, 0], [0, 0, 0, 1]])
-        B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [dt, 0], [0, dt]])
-        # B = np.array([[0.5*dt2, 0], [0, 0.5*dt2], [0, 0], [0, 0]])
-        commmand = self.manager.simulator.camera.acceleration
-        U = np.array([[commmand[0]],[commmand[1]]])
-        
-        # predict
-        self.Mu = np.matmul(A,self.Mu) + np.matmul(B, U)
-        self.S = np.matmul(np.matmul(A, self.S), np.transpose(A))
-
-
-    def simple_correct(self):
-        Z = self.X + self.Eq
-        K = np.matmul( self.S, np.linalg.pinv( self.S + self.Q ))
-
-        self.Mu = self.Mu + np.matmul(K, (Z - self.Mu))
-        self.S = np.matmul((np.identity(4) - K), self.S)
 
 
     def add_pos(self, pos):
+        """Add position measurement
+
+        Args:
+            pos (pygame.Vector2): Car position measurement
+        """
         self.add(pos, (self.vx, self.vy))
 
 
     def add_vel(self, vel):
+        """Add velocity measurement
+
+        Args:
+            vel (pygame.Vector2): Car velocity measurement
+        """
         self.add((self.x, self.y), vel)
 
 
     def get_pos(self):
+        """Get estimated car position
+
+        Returns:
+            pygame.Vector2: Car estimated position
+        """
         return pygame.Vector2(self.Mu.flatten()[0], self.Mu.flatten()[1])
 
 
     def get_vel(self):
+        """Get estimated car velocity
+
+        Returns:
+            pygame.Vector2: Car estimated velocity
+        """
         return pygame.Vector2(self.Mu.flatten()[2], self.Mu.flatten()[3])
 
 
 
 class ExtendedKalman:
-    """Implement continuous-continuous EKF for the UAS anf Vehicle system
+    """Implement continuous-continuous EKF for the UAS and Vehicle system in stateful fashion
     """
     def __init__(self, manager):
         self.manager = manager
+
         self.prev_r = None
         self.prev_theta = None
         self.prev_Vr = None
         self.prev_Vtheta = None
+        self.alpha = None
+        self.a_lat = None
+        self.a_long = None
+        self.filter_initialized_flag = False
+
         self.H = np.array([[1.0, 0.0, 0.0, 0.0], 
                            [0.0, 1.0, 0.0, 0.0]])
 
         self.P = np.diag([0.1, 0.1, 0.1, 0.1])
         self.R = np.diag([0.1, 0.1])
-        # self.Q = np.diag([0.001, 0.001, 0.1, 0.1])
         self.Q = np.diag([0.1, 0.1, 1, 0.1])
 
-        self.filter_initialized_flag = False
         self.ready = False
 
 
     def is_initialized(self):
+        """Indicates if EKF is initialized
+
+        Returns:
+            bool: EKF initalized or not
+        """
         return self.filter_initialized_flag
 
 
     def initialize_filter(self, r, theta, Vr, Vtheta, alpha, a_lat, a_long):
+        """Initializes EKF. Meant to run only once at first.
+
+        Args:
+            r (float32): Euclidean distance between vehicle and UAS (m)
+            theta (float32): Angle (atan2) of LOS from UAS to vehicle (rad)
+            Vr (float32): Relative LOS velocity of vehicle w.r.t UAS (m/s)
+            Vtheta (float32): Relative LOS angular velocity of vehicle w.r.t UAS (rad/s)
+            alpha (float32): Angle of UAS velocity vector w.r.t to inertial frame
+            a_lat (float32): Lateral acceleration control command for UAS
+            a_long (float32): Longitudinal acceleration control command for UAS
+        """
         self.prev_r = r
         self.prev_theta = theta
         self.prev_Vr = -5
@@ -1889,15 +1953,26 @@ class ExtendedKalman:
         
 
     def add(self, r, theta, Vr, Vtheta, alpha, a_lat, a_long):
+        """Add measurements and auxiliary data for filtering
+
+        Args:
+            r (float32): Euclidean distance between vehicle and UAS (m)
+            theta (float32): Angle (atan2) of LOS from UAS to vehicle (rad)
+            Vr (float32): Relative LOS velocity of vehicle w.r.t UAS (m/s)
+            Vtheta (float32): Relative LOS angular velocity of vehicle w.r.t UAS (rad/s)
+            alpha (float32): Angle of UAS velocity vector w.r.t to inertial frame
+            a_lat (float32): Lateral acceleration control command for UAS
+            a_long (float32): Longitudinal acceleration control command for UAS
+        """
         # make sure filter is initialized
         if not self.is_initialized():
             self.initialize_filter(r, theta, Vr, Vtheta, alpha, a_lat, a_long)
             return
-        else:
-            self.ready = True
+        
+        # filter is initialized; set ready to true 
+        self.ready = True
 
-        # next part executes only when filter is initialized and ready
-        if not (np.sign(self.prev_theta) == np.sign(theta)):
+        if (np.sign(self.prev_theta) != np.sign(theta)):
             self.prev_theta = theta
 
         # store measurement 
@@ -1921,6 +1996,8 @@ class ExtendedKalman:
 
 
     def predict(self):
+        """Implement continuous-continuous EKF prediction (implicit) step. 
+        """
         # perform predictor step
         self.A = np.array([[0.0, 0.0, 0.0, 1.0],
                            [-self.prev_Vtheta/self.prev_r**2, 0.0, 1/self.prev_r, 0.0],
@@ -1934,6 +2011,8 @@ class ExtendedKalman:
 
 
     def correct(self):
+        """Implement continuous-continuous EKF correction (implicit) step.
+        """
         self.Z = np.array([[self.r], [self.theta]])
         self.K = np.matmul(np.matmul(self.P, np.transpose(self.H)) , np.linalg.pinv(self.R))
 
@@ -1955,6 +2034,11 @@ class ExtendedKalman:
 
 
     def get_estimated_state(self):
+        """Get estimated state information.
+
+        Returns:
+            tuple(float32, float32, float, float32): (r, theta, V_r, V_theta)
+        """
         if self.ready:
             return (self.r, self.theta, self.Vr, self.Vtheta)
         else:
@@ -1964,42 +2048,57 @@ class ExtendedKalman:
 
         
 # dummy moving average for testing (not used)
-def get_moving_average(a, w):
-    ret = []
-    for i in range(len(a)):
-        start = max(0,i - w+1)
-        stop = i+1
-        b = a[start:stop]
-        ret.append(sum(b) / len(b))
+def compute_moving_average(sequence, window_size):
+    """Generate moving average sequence of given sequence using given window size.
 
-    return ret
+    Args:
+        sequence (list): Sequence to be averaged
+        window_size (int): Window size
+
+    Returns:
+        list: Averaged sequence
+    """
+
+    mov_avg_seq = []
+
+    for i in range(len(sequence)):
+        start = max(0, i - window_size+1)
+        stop = i+1
+        seq_window = sequence[start:stop]
+        mov_avg_seq.append(sum(seq_window) / len(seq_window))
+
+    return mov_avg_seq
 
 
 
 if __name__ == "__main__":
 
-    EXPERIMENT_SAVE_MODE_ON = 0
-    WRITE_PLOT              = 1
-    CONTROL_ON              = 1
-    TRACKER_ON              = 1
-    TRACKER_DISPLAY_ON      = 1
-    USE_TRUE_KINEMATICS     = 0
-    
-    RUN_EXPERIMENT          = 0
-    RUN_TRACK_PLOT          = 1
-
-    RUN_VIDEO_WRITER        = 0
+    EXPERIMENT_SAVE_MODE_ON = 0         #pylint: disable=bad-whitespace
+    WRITE_PLOT              = 0         #pylint: disable=bad-whitespace
+    CONTROL_ON              = 1         #pylint: disable=bad-whitespace
+    TRACKER_ON              = 1         #pylint: disable=bad-whitespace
+    TRACKER_DISPLAY_ON      = 1         #pylint: disable=bad-whitespace
+    USE_TRUE_KINEMATICS     = 0         #pylint: disable=bad-whitespace
+    RUN_EXPERIMENT          = 1         #pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT          = 0         #pylint: disable=bad-whitespace
+    RUN_VIDEO_WRITER        = 0         #pylint: disable=bad-whitespace
 
     if RUN_EXPERIMENT:
-        experiment_manager = ExperimentManager(EXPERIMENT_SAVE_MODE_ON, WRITE_PLOT, CONTROL_ON, TRACKER_ON, TRACKER_DISPLAY_ON, USE_TRUE_KINEMATICS)
+        EXPERIMENT_MANAGER = ExperimentManager(save_on=EXPERIMENT_SAVE_MODE_ON,
+                                               write_plot=WRITE_PLOT,
+                                               control_on=CONTROL_ON,
+                                               tracker_on=TRACKER_ON,
+                                               tracker_display_on=TRACKER_DISPLAY_ON,
+                                               use_true_kin=USE_TRUE_KINEMATICS)
         print("\nExperiment started.\n")
-        # experiment_manager.run_experiment()
-        experiment_manager.run()
+        EXPERIMENT_MANAGER.run()
+
         print("\n\nExperiment finished.\n")
 
 
     if RUN_TRACK_PLOT:
-        f = open('plot_info.txt', 'r')
+        FILE = open('plot_info.txt', 'r')
+
         t = []
         r = []
         theta = []
@@ -2024,13 +2123,13 @@ if __name__ == "__main__":
         S = []
         alpha = []
         dvx = []
-        dvy=[]
-        mcx=[]
-        mcy=[]
-        mcvx=[]
-        mcvy=[]
-        alt=[]
-        d=[]
+        dvy = []
+        mcx = []
+        mcy = []
+        mcvx = []
+        mcvy = []
+        alt = []
+        d = []
         mr = []
         mtheta = []
         mvr = []
@@ -2043,9 +2142,9 @@ if __name__ == "__main__":
 
 
         # get all the data in memory
-        for line in f.readlines():
+        for line in FILE.readlines():
             data = tuple(map(float, list(map(str.strip, line.strip().split(',')))))
-            t.append(data[0])            
+            t.append(data[0])
             r.append(data[1])
             theta.append(data[2])
             vtheta.append(data[3])
@@ -2055,26 +2154,26 @@ if __name__ == "__main__":
             cx.append(data[7])
             cy.append(data[8])
             ax.append(data[9])
-            ay.append(data[10])            
-            a_lat.append(data[11])            
-            a_long.append(data[12])            
-            cvx.append(data[13])            
-            cvy.append(data[14])            
-            tcx.append(data[15])            
-            tcy.append(data[16])            
-            tcvx.append(data[17])            
-            tcvy.append(data[18])            
-            dox.append(data[19])            
-            doy.append(data[20])            
-            S.append(data[21])            
-            alpha.append(data[22])            
-            dvx.append(data[23])            
-            dvy.append(data[24])            
-            mcx.append(data[25])            
-            mcy.append(data[26])            
-            mcvx.append(data[27])            
-            mcvy.append(data[28])            
-            alt.append(data[29])            
+            ay.append(data[10])
+            a_lat.append(data[11])
+            a_long.append(data[12])
+            cvx.append(data[13])
+            cvy.append(data[14])
+            tcx.append(data[15])
+            tcy.append(data[16])
+            tcvx.append(data[17])
+            tcvy.append(data[18])
+            dox.append(data[19])
+            doy.append(data[20])
+            S.append(data[21])
+            alpha.append(data[22])
+            dvx.append(data[23])
+            dvy.append(data[24])
+            mcx.append(data[25])
+            mcy.append(data[26])
+            mcvx.append(data[27])
+            mcvy.append(data[28])
+            alt.append(data[29])
             d.append(data[30])
             mr.append(data[31])
             mtheta.append(data[32])
@@ -2085,80 +2184,76 @@ if __name__ == "__main__":
             tvr.append(data[37])
             tvtheta.append(data[38])
 
-        f.close()
+        FILE.close()
 
         # plot
-        import matplotlib
         import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
-        from matplotlib import cm
-        from matplotlib.colors import ListedColormap
 
         
-        _path = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
-        _prep_temp_folder(os.path.realpath(_path))
+        _PATH = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
+        _prep_temp_folder(os.path.realpath(_PATH))
 
         # copy the plot_info file to the where plots figured will be saved
-        shutil.copyfile('plot_info.txt', f'{_path}/plot_info.txt')
+        shutil.copyfile('plot_info.txt', f'{_PATH}/plot_info.txt')
         plt.style.use('seaborn-whitegrid')
 
         
-        # ----------------------------------------------------------------------------------------- figure 1
+        # -------------------------------------------------------------------------------- figure 1
         # line of sight kinematics 1
         f0, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.25})
         if SUPTITLE_ON:
             f0.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
  
         # t vs r
-        axs[0].plot(t, mr, color='goldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ r$',alpha=0.9)
-        axs[0].plot(t, r, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ r$',alpha=0.9)
-        axs[0].plot(t, tr, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ r$',alpha=0.9)
+        axs[0].plot(t, mr, color='goldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ r$', alpha=0.9)
+        axs[0].plot(t, r, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ r$', alpha=0.9)
+        axs[0].plot(t, tr, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ r$', alpha=0.9)
 
         axs[0].legend(loc='upper right')
         axs[0].set(ylabel=r'$r\ (m)$')
         axs[0].set_title(r'$\mathbf{r}$', fontsize=SUB_TITLE_FONT_SIZE)
 
         # t vs θ
-        axs[1].plot(t, mtheta, color='goldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ \theta$',alpha=0.9)
-        axs[1].plot(t, theta, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ \theta$',alpha=0.9)
-        axs[1].plot(t, ttheta, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ \theta$',alpha=0.9)
+        axs[1].plot(t, mtheta, color='goldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ \theta$', alpha=0.9)
+        axs[1].plot(t, theta, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ \theta$', alpha=0.9)
+        axs[1].plot(t, ttheta, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ \theta$', alpha=0.9)
 
         axs[1].legend(loc='upper right')
         axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$\theta\ (^{\circ})$')
         axs[1].set_title(r'$\mathbf{\theta}$', fontsize=SUB_TITLE_FONT_SIZE)
 
-        f0.savefig(f'{_path}/1_los1.png', dpi=300)
+        f0.savefig(f'{_PATH}/1_los1.png', dpi=300)
         f0.show()
 
 
-        # ----------------------------------------------------------------------------------------- figure 2
+        # -------------------------------------------------------------------------------- figure 2
         # line of sight kinematics 2
         f1, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.25})
         if SUPTITLE_ON:
             f1.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ II}$', fontsize=TITLE_FONT_SIZE)
 
         # t vs vr
-        axs[0].plot(t, mvr, color='palegoldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_{r}$',alpha=0.9)
-        axs[0].plot(t, vr, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$estimated\ V_{r}$',alpha=0.9)
-        axs[0].plot(t, tvr, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ V_{r}$',alpha=0.9)
+        axs[0].plot(t, mvr, color='palegoldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_{r}$', alpha=0.9)
+        axs[0].plot(t, vr, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$estimated\ V_{r}$', alpha=0.9)
+        axs[0].plot(t, tvr, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ V_{r}$', alpha=0.9)
 
         axs[0].legend(loc='upper right')
         axs[0].set(ylabel=r'$V_{r}\ (\frac{m}{s})$')
         axs[0].set_title(r'$\mathbf{V_{r}}$', fontsize=SUB_TITLE_FONT_SIZE)
 
         # t vs vtheta
-        axs[1].plot(t, mvtheta, color='palegoldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_{\theta}$',alpha=0.9)
-        axs[1].plot(t, vtheta, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$estimated\ V_{\theta}$',alpha=0.9)
-        axs[1].plot(t, tvtheta, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ V_{\theta}$',alpha=0.9)
+        axs[1].plot(t, mvtheta, color='palegoldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_{\theta}$', alpha=0.9)
+        axs[1].plot(t, vtheta, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$estimated\ V_{\theta}$', alpha=0.9)
+        axs[1].plot(t, tvtheta, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ V_{\theta}$', alpha=0.9)
 
         axs[1].legend(loc='upper right')
         axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_{\theta}\ (\frac{^{\circ}}{s})$')
         axs[1].set_title(r'$\mathbf{V_{\theta}}$', fontsize=SUB_TITLE_FONT_SIZE)
 
-        f1.savefig(f'{_path}/1_los2.png', dpi=300)
+        f1.savefig(f'{_PATH}/1_los2.png', dpi=300)
         f1.show()
         
-        # ----------------------------------------------------------------------------------------- figure 2
+        # -------------------------------------------------------------------------------- figure 2
         # acceleration commands
         f2, axs = plt.subplots()
         if SUPTITLE_ON:
@@ -2169,10 +2264,10 @@ if __name__ == "__main__":
         axs.legend()
         axs.set(xlabel=r'$time\ (s)$', ylabel=r'$acceleration\ (\frac{m}{s_{2}})$')
 
-        f2.savefig(f'{_path}/2_accel.png', dpi=300)
+        f2.savefig(f'{_PATH}/2_accel.png', dpi=300)
         f2.show()
 
-        # ----------------------------------------------------------------------------------------- figure 3
+        # -------------------------------------------------------------------------------- figure 3
         # trajectories
         f3, axs = plt.subplots(2, 1, gridspec_kw={'hspace':0.4})
         if SUPTITLE_ON:
@@ -2198,56 +2293,56 @@ if __name__ == "__main__":
         y_pad = (max(ncy) - min(ncy)) * 0.05
         xl = max(abs(max(ncx)), abs(min(ncx))) + x_pad
         yl = max(abs(max(ncy)), abs(min(ncy))) + y_pad
-        axs[1].plot(ndx, ndy, color='darkslategray', marker='+', markersize=10, label=r'$UAS$',alpha=0.7)
-        axs[1].plot(ncx, ncy, color='limegreen', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$Vehicle$',alpha=0.9)
+        axs[1].plot(ndx, ndy, color='darkslategray', marker='+', markersize=10, label=r'$UAS$', alpha=0.7)
+        axs[1].plot(ncx, ncy, color='limegreen', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$Vehicle$', alpha=0.9)
         axs[1].set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$')
         axs[1].set_title(r'$\mathbf{Camera\ frame}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs[1].legend(loc='lower right')
-        axs[1].set_xlim(-xl,xl)
-        axs[1].set_ylim(-yl,yl)
-        f3.savefig(f'{_path}/3_traj.png',dpi=300)
+        axs[1].set_xlim(-xl, xl)
+        axs[1].set_ylim(-yl, yl)
+        f3.savefig(f'{_PATH}/3_traj.png', dpi=300)
         f3.show()
 
 
-        # ----------------------------------------------------------------------------------------- figure 4
+        # -------------------------------------------------------------------------------- figure 4
         # true and estimated trajectories
         if 0:
             f4, axs = plt.subplots()
             if SUPTITLE_ON:
                 f4.suptitle(r'$\mathbf{Vehicle\ True\ and\ Estimated\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
 
-            axs.plot(tcx, tcy, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ trajectory$',alpha=0.9)
-            axs.plot(cx, cy, color='crimson', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ trajectory$',alpha=0.9)
+            axs.plot(tcx, tcy, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ trajectory$', alpha=0.9)
+            axs.plot(cx, cy, color='crimson', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ trajectory$', alpha=0.9)
             axs.set_title(r'$\mathbf{camera\ frame}$', fontsize=SUB_TITLE_FONT_SIZE)
             axs.legend()
             axs.axis('equal')
             axs.set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$')
-            f4.savefig(f'{_path}/4_traj_comp.png', dpi=300)
+            f4.savefig(f'{_PATH}/4_traj_comp.png', dpi=300)
             f4.show()
 
 
-        # ----------------------------------------------------------------------------------------- figure 5
+        # -------------------------------------------------------------------------------- figure 5
         # true and tracked pos
         if 0:
-            f4, axs = plt.subplots(2,1, sharex=True, gridspec_kw={'hspace':0.4})
+            f4, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
             if SUPTITLE_ON:
                 f4.suptitle(r'$\mathbf{Vehicle\ True\ and\ Estimated\ Positions}$', fontsize=TITLE_FONT_SIZE)
 
-            axs[0].plot(t, tcx, color='rosybrown', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ x$',alpha=0.9)
-            axs[0].plot(t, cx, color='red', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ x$',alpha=0.9)
+            axs[0].plot(t, tcx, color='rosybrown', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ x$', alpha=0.9)
+            axs[0].plot(t, cx, color='red', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ x$', alpha=0.9)
             axs[0].set(ylabel=r'$x\ (m)$')
             axs[0].set_title(r'$\mathbf{x}$', fontsize=SUB_TITLE_FONT_SIZE)
             axs[0].legend()
-            axs[1].plot(t, tcy, color='mediumseagreen', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ y$',alpha=0.9)
-            axs[1].plot(t, cy, color='green', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ y$',alpha=0.9)
+            axs[1].plot(t, tcy, color='mediumseagreen', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ y$', alpha=0.9)
+            axs[1].plot(t, cy, color='green', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ y$', alpha=0.9)
             axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$y\ (m)$')
             axs[1].set_title(r'$\mathbf{y}$', fontsize=SUB_TITLE_FONT_SIZE)
             axs[1].legend()
-            f4.savefig(f'{_path}/5_pos_comp.png', dpi=300)
+            f4.savefig(f'{_PATH}/5_pos_comp.png', dpi=300)
             f4.show()
 
 
-        # ----------------------------------------------------------------------------------------- figure 6
+        # -------------------------------------------------------------------------------- figure 6
         # true and tracked velocities
         if 0:
             f5, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
@@ -2256,24 +2351,24 @@ if __name__ == "__main__":
             
 
 
-            axs[0].plot(t, mcvx, color='paleturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_x$',alpha=0.9)
-            axs[0].plot(t, tcvx, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ V_x$',alpha=0.9)
-            axs[0].plot(t, cvx, color='crimson', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$true\ V_x$',alpha=0.7)
+            axs[0].plot(t, mcvx, color='paleturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_x$', alpha=0.9)
+            axs[0].plot(t, tcvx, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ V_x$', alpha=0.9)
+            axs[0].plot(t, cvx, color='crimson', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$true\ V_x$', alpha=0.7)
             axs[0].set(ylabel=r'$V_x\ (\frac{m}{s})$')
             axs[0].set_title(r'$\mathbf{V_x}$', fontsize=SUB_TITLE_FONT_SIZE)
             axs[0].legend(loc='upper right')
 
-            axs[1].plot(t, mcvy, color='paleturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_y$',alpha=0.9)
-            axs[1].plot(t, tcvy, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ V_y$',alpha=0.9)
-            axs[1].plot(t, cvy, color='crimson', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$true\ V_y$',alpha=0.7)
+            axs[1].plot(t, mcvy, color='paleturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_y$', alpha=0.9)
+            axs[1].plot(t, tcvy, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ V_y$', alpha=0.9)
+            axs[1].plot(t, cvy, color='crimson', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$true\ V_y$', alpha=0.7)
             axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_y\ (\frac{m}{s})$')
             axs[1].set_title(r'$\mathbf{V_y}$', fontsize=SUB_TITLE_FONT_SIZE)
             axs[1].legend(loc='upper right')
 
-            f5.savefig(f'{_path}/6_vel_comp.png', dpi=300)
+            f5.savefig(f'{_PATH}/6_vel_comp.png', dpi=300)
             f5.show()
 
-        # ----------------------------------------------------------------------------------------- figure 7
+        # -------------------------------------------------------------------------------- figure 7
         # speed and heading
         f6, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
         if SUPTITLE_ON:
@@ -2281,33 +2376,33 @@ if __name__ == "__main__":
         c_speed = (CAR_INITIAL_VELOCITY[0]**2 + CAR_INITIAL_VELOCITY[1]**2)**0.5
         c_heading = degrees(atan2(CAR_INITIAL_VELOCITY[1], CAR_INITIAL_VELOCITY[0]))
 
-        axs[0].plot(t, [c_speed for i in S], color='lightblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$|V_{vehicle}|$',alpha=0.9)
-        axs[0].plot(t, S, color='blue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$|V_{UAS}|$',alpha=0.9)
+        axs[0].plot(t, [c_speed for i in S], color='lightblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$|V_{vehicle}|$', alpha=0.9)
+        axs[0].plot(t, S, color='blue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$|V_{UAS}|$', alpha=0.9)
         axs[0].set(ylabel=r'$|V|\ (\frac{m}{s})$')
         axs[0].set_title(r'$\mathbf{speed}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs[0].legend()
 
-        axs[1].plot(t, [c_heading for i in alpha], color='lightgreen', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$\angle V_{vehicle}$',alpha=0.9)
-        axs[1].plot(t, alpha, color='green', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$\angle V_{UAS}$',alpha=0.9)
-        axs[1].set(xlabel=r'$time\ (s)$',ylabel=r'$\angle V\ (^{\circ})$')
+        axs[1].plot(t, [c_heading for i in alpha], color='lightgreen', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$\angle V_{vehicle}$', alpha=0.9)
+        axs[1].plot(t, alpha, color='green', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$\angle V_{UAS}$', alpha=0.9)
+        axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$\angle V\ (^{\circ})$')
         axs[1].set_title(r'$\mathbf{heading}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs[1].legend()
 
-        f6.savefig(f'{_path}/7_speed_head.png', dpi=300)
+        f6.savefig(f'{_PATH}/7_speed_head.png', dpi=300)
         f6.show()
         
-        # ----------------------------------------------------------------------------------------- figure 7
+        # -------------------------------------------------------------------------------- figure 7
         # altitude profile
         f7, axs = plt.subplots()
         if SUPTITLE_ON:
             f7.suptitle(r'$\mathbf{Altitude\ profile}$', fontsize=TITLE_FONT_SIZE)
-        axs.plot(t, alt, color='darkgoldenrod', linestyle='-', linewidth=2, label=r'$altitude$',alpha=0.9)
+        axs.plot(t, alt, color='darkgoldenrod', linestyle='-', linewidth=2, label=r'$altitude$', alpha=0.9)
         axs.set(xlabel=r'$time\ (s)$', ylabel=r'$z\ (m)$')
 
-        f7.savefig(f'{_path}/8_alt_profile.png', dpi=300)
+        f7.savefig(f'{_PATH}/8_alt_profile.png', dpi=300)
         f7.show()
 
-        # ----------------------------------------------------------------------------------------- figure 7
+        # -------------------------------------------------------------------------------- figure 7
         # 3D Trajectories
         ndx = np.array(dx) + np.array(dox)
         ncx = np.array(cx) + np.array(dox)
@@ -2318,17 +2413,17 @@ if __name__ == "__main__":
         if SUPTITLE_ON:
             f8.suptitle(r'$\mathbf{3D\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
         axs = f8.add_subplot(111, projection='3d')
-        axs.plot3D(ncx, ncy, 0,color='limegreen', linestyle='-', linewidth=2, label=r'$Vehicle$',alpha=0.9)
-        axs.plot3D(ndx, ndy, alt, color='darkslategray', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$UAS$',alpha=0.9)
+        axs.plot3D(ncx, ncy, 0, color='limegreen', linestyle='-', linewidth=2, label=r'$Vehicle$', alpha=0.9)
+        axs.plot3D(ndx, ndy, alt, color='darkslategray', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$UAS$', alpha=0.9)
         # viridis = cm.get_map('viridis', 512)
 
-        for point in zip(ndx,ndy,alt):
+        for point in zip(ndx, ndy, alt):
             x = [point[0], point[0]]
             y = [point[1], point[1]]
             z = [point[2], 0]
-            axs.plot3D(x,y,z,color='gainsboro', linestyle='-', linewidth=0.5,alpha=0.1)
-        axs.plot3D(ndx, ndy, 0,color='silver', linestyle='-', linewidth=1, alpha=0.9)
-        axs.scatter3D(ndx, ndy, alt, c=alt, cmap='plasma',alpha=0.3)
+            axs.plot3D(x, y, z, color='gainsboro', linestyle='-', linewidth=0.5, alpha=0.1)
+        axs.plot3D(ndx, ndy, 0, color='silver', linestyle='-', linewidth=1, alpha=0.9)
+        axs.scatter3D(ndx, ndy, alt, c=alt, cmap='plasma', alpha=0.3)
 
         axs.set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$', zlabel=r'$z\ (m)$')
         axs.view_init(elev=41, azim=-105)
@@ -2336,16 +2431,16 @@ if __name__ == "__main__":
         axs.set_title(r'$\mathbf{World\ frame}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs.legend()
 
-        f8.savefig(f'{_path}/9_3D_traj.png', dpi=300)
+        f8.savefig(f'{_PATH}/9_3D_traj.png', dpi=300)
         f8.show()
         plt.show()
         
 
     if RUN_VIDEO_WRITER:
-        experiment_manager = ExperimentManager()
+        EXPERIMENT_MANAGER = ExperimentManager()
         # create folder path inside ./sim_outputs
-        _path = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
-        _prep_temp_folder(os.path.realpath(_path))
-        vid_path = f'{_path}/sim_track_control.avi'
+        _PATH = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
+        _prep_temp_folder(os.path.realpath(_PATH))
+        VID_PATH = f'{_PATH}/sim_track_control.avi'
         print('Making video.')
-        experiment_manager.make_video(vid_path, TEMP_FOLDER)
+        EXPERIMENT_MANAGER.make_video(VID_PATH, TEMP_FOLDER)
