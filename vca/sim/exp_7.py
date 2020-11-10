@@ -2071,7 +2071,7 @@ def compute_moving_average(sequence, window_size):
 
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0         #pylint: disable=bad-whitespace
     WRITE_PLOT              = 0         #pylint: disable=bad-whitespace
@@ -2079,8 +2079,10 @@ if __name__ == "__main__":
     TRACKER_ON              = 1         #pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON      = 1         #pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS     = 0         #pylint: disable=bad-whitespace
-    RUN_EXPERIMENT          = 1         #pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT          = 0         #pylint: disable=bad-whitespace
+
+    RUN_EXPERIMENT          = 0         #pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT          = 1         #pylint: disable=bad-whitespace
+
     RUN_VIDEO_WRITER        = 0         #pylint: disable=bad-whitespace
 
     if RUN_EXPERIMENT:
@@ -2098,91 +2100,92 @@ if __name__ == "__main__":
 
     if RUN_TRACK_PLOT:
         FILE = open('plot_info.txt', 'r')
+        SHOW_CARTESIAN_PLOTS = 0
 
-        t = []
-        r = []
-        theta = []
-        vtheta = []
-        vr = []
-        dx = []
-        dy = []
-        cx = []
-        cy = []
-        ax = []
-        ay = []
-        a_lat = []
-        a_long = []
-        cvx = []
-        cvy = []
-        tcx = []
-        tcy = []
-        tcvx = []
-        tcvy = []
-        dox = []
-        doy = []
-        S = []
-        alpha = []
-        dvx = []
-        dvy = []
-        mcx = []
-        mcy = []
-        mcvx = []
-        mcvy = []
-        alt = []
-        d = []
-        mr = []
-        mtheta = []
-        mvr = []
-        mvtheta = []
-        tr = []
-        ttheta = []
-        tvr = []
-        tvtheta = []
+        _TIME = []
+        _R = []
+        _THETA = []
+        _V_THETA = []
+        _V_R = []
+        _DRONE_POS_X = []
+        _DRONE_POS_Y = []
+        _CAR_POS_X = []
+        _CAR_POS_Y = []
+        _DRONE_ACC_X = []
+        _DRONE_ACC_Y = []
+        _DRONE_ACC_LAT = []
+        _DRONE_ACC_LNG = []
+        _CAR_VEL_X = []
+        _CAR_VEL_Y = []
+        _TRACKED_CAR_POS_X = []
+        _TRACKED_CAR_POS_Y = []
+        _TRACKED_CAR_VEL_X = []
+        _TRACKED_CAR_VEL_Y = []
+        _CAM_ORIGIN_X = []
+        _CAM_ORIGIN_Y = []
+        _CAR_SPEED = []
+        _DRONE_ALPHA = []
+        _DRONE_VEL_X = []
+        _DRONE_VEL_Y = []
+        _MEASURED_CAR_POS_X = []
+        _MEASURED_CAR_POS_Y = []
+        _MEASURED_CAR_VEL_X = []
+        _MEASURED_CAR_VEL_Y = []
+        _DRONE_ALTITUDE = []
+        _ABS_DEN = []
+        _MEASURED_R = []
+        _MEASURED_THETA = []
+        _MEASURED_V_R = []
+        _MEASURED_V_THETA = []
+        _TRUE_R = []
+        _TRUE_THETA = []
+        _TRUE_V_R = []
+        _TRUE_V_THETA = []
 
 
 
         # get all the data in memory
         for line in FILE.readlines():
             data = tuple(map(float, list(map(str.strip, line.strip().split(',')))))
-            t.append(data[0])
-            r.append(data[1])
-            theta.append(data[2])
-            vtheta.append(data[3])
-            vr.append(data[4])
-            dx.append(data[5])
-            dy.append(data[6])
-            cx.append(data[7])
-            cy.append(data[8])
-            ax.append(data[9])
-            ay.append(data[10])
-            a_lat.append(data[11])
-            a_long.append(data[12])
-            cvx.append(data[13])
-            cvy.append(data[14])
-            tcx.append(data[15])
-            tcy.append(data[16])
-            tcvx.append(data[17])
-            tcvy.append(data[18])
-            dox.append(data[19])
-            doy.append(data[20])
-            S.append(data[21])
-            alpha.append(data[22])
-            dvx.append(data[23])
-            dvy.append(data[24])
-            mcx.append(data[25])
-            mcy.append(data[26])
-            mcvx.append(data[27])
-            mcvy.append(data[28])
-            alt.append(data[29])
-            d.append(data[30])
-            mr.append(data[31])
-            mtheta.append(data[32])
-            mvr.append(data[33])
-            mvtheta.append(data[34])
-            tr.append(data[35])
-            ttheta.append(data[36])
-            tvr.append(data[37])
-            tvtheta.append(data[38])
+            _TIME.append(data[0])
+            _R.append(data[1])
+            _THETA.append(data[2])
+            _V_THETA.append(data[3])
+            _V_R.append(data[4])
+            _DRONE_POS_X.append(data[5])
+            _DRONE_POS_Y.append(data[6])
+            _CAR_POS_X.append(data[7])
+            _CAR_POS_Y.append(data[8])
+            _DRONE_ACC_X.append(data[9])
+            _DRONE_ACC_Y.append(data[10])
+            _DRONE_ACC_LAT.append(data[11])
+            _DRONE_ACC_LNG.append(data[12])
+            _CAR_VEL_X.append(data[13])
+            _CAR_VEL_Y.append(data[14])
+            _TRACKED_CAR_POS_X.append(data[15])
+            _TRACKED_CAR_POS_Y.append(data[16])
+            _TRACKED_CAR_VEL_X.append(data[17])
+            _TRACKED_CAR_VEL_Y.append(data[18])
+            _CAM_ORIGIN_X.append(data[19])
+            _CAM_ORIGIN_Y.append(data[20])
+            _CAR_SPEED.append(data[21])
+            _DRONE_ALPHA.append(data[22])
+            _DRONE_VEL_X.append(data[23])
+            _DRONE_VEL_Y.append(data[24])
+            _MEASURED_CAR_POS_X.append(data[25])
+            _MEASURED_CAR_POS_Y.append(data[26])
+            _MEASURED_CAR_VEL_X.append(data[27])
+            _MEASURED_CAR_VEL_Y.append(data[28])
+            _DRONE_ALTITUDE.append(data[29])
+            _ABS_DEN.append(data[30])
+            _MEASURED_R.append(data[31])
+            _MEASURED_THETA.append(data[32])
+            _MEASURED_V_R.append(data[33])
+            _MEASURED_V_THETA.append(data[34])
+            _TRUE_R.append(data[35])
+            _TRUE_THETA.append(data[36])
+            _TRUE_V_R.append(data[37])
+            _TRUE_V_THETA.append(data[38])
 
         FILE.close()
 
@@ -2205,18 +2208,18 @@ if __name__ == "__main__":
             f0.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
  
         # t vs r
-        axs[0].plot(t, mr, color='goldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ r$', alpha=0.9)
-        axs[0].plot(t, r, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ r$', alpha=0.9)
-        axs[0].plot(t, tr, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ r$', alpha=0.9)
+        axs[0].plot(_TIME, _MEASURED_R, color='goldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ r$', alpha=0.9)
+        axs[0].plot(_TIME, _R, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ r$', alpha=0.9)
+        axs[0].plot(_TIME, _TRUE_R, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ r$', alpha=0.9)
 
         axs[0].legend(loc='upper right')
         axs[0].set(ylabel=r'$r\ (m)$')
         axs[0].set_title(r'$\mathbf{r}$', fontsize=SUB_TITLE_FONT_SIZE)
 
         # t vs θ
-        axs[1].plot(t, mtheta, color='goldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ \theta$', alpha=0.9)
-        axs[1].plot(t, theta, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ \theta$', alpha=0.9)
-        axs[1].plot(t, ttheta, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ \theta$', alpha=0.9)
+        axs[1].plot(_TIME, _MEASURED_THETA, color='goldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ \theta$', alpha=0.9)
+        axs[1].plot(_TIME, _THETA, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ \theta$', alpha=0.9)
+        axs[1].plot(_TIME, _TRUE_THETA, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ \theta$', alpha=0.9)
 
         axs[1].legend(loc='upper right')
         axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$\theta\ (^{\circ})$')
@@ -2233,18 +2236,18 @@ if __name__ == "__main__":
             f1.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ II}$', fontsize=TITLE_FONT_SIZE)
 
         # t vs vr
-        axs[0].plot(t, mvr, color='palegoldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_{r}$', alpha=0.9)
-        axs[0].plot(t, vr, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$estimated\ V_{r}$', alpha=0.9)
-        axs[0].plot(t, tvr, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ V_{r}$', alpha=0.9)
+        axs[0].plot(_TIME, _MEASURED_V_R, color='palegoldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_{r}$', alpha=0.9)
+        axs[0].plot(_TIME, _V_R, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$estimated\ V_{r}$', alpha=0.9)
+        axs[0].plot(_TIME, _TRUE_V_R, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ V_{r}$', alpha=0.9)
 
         axs[0].legend(loc='upper right')
         axs[0].set(ylabel=r'$V_{r}\ (\frac{m}{s})$')
         axs[0].set_title(r'$\mathbf{V_{r}}$', fontsize=SUB_TITLE_FONT_SIZE)
 
         # t vs vtheta
-        axs[1].plot(t, mvtheta, color='palegoldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_{\theta}$', alpha=0.9)
-        axs[1].plot(t, vtheta, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$estimated\ V_{\theta}$', alpha=0.9)
-        axs[1].plot(t, tvtheta, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ V_{\theta}$', alpha=0.9)
+        axs[1].plot(_TIME, _MEASURED_V_THETA, color='palegoldenrod', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_{\theta}$', alpha=0.9)
+        axs[1].plot(_TIME, _V_THETA, color='royalblue', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$estimated\ V_{\theta}$', alpha=0.9)
+        axs[1].plot(_TIME, _TRUE_V_THETA, color='red', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$true\ V_{\theta}$', alpha=0.9)
 
         axs[1].legend(loc='upper right')
         axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_{\theta}\ (\frac{^{\circ}}{s})$')
@@ -2259,8 +2262,8 @@ if __name__ == "__main__":
         if SUPTITLE_ON:
             f2.suptitle(r'$\mathbf{Acceleration\ commands}$', fontsize=TITLE_FONT_SIZE)
 
-        axs.plot(t, a_lat, color='forestgreen', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$a_{lat}$', alpha=0.9)
-        axs.plot(t, a_long, color='deeppink', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$a_{long}$', alpha=0.9)
+        axs.plot(_TIME, _DRONE_ACC_LAT, color='forestgreen', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$a_{lat}$', alpha=0.9)
+        axs.plot(_TIME, _DRONE_ACC_LNG, color='deeppink', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$a_{long}$', alpha=0.9)
         axs.legend()
         axs.set(xlabel=r'$time\ (s)$', ylabel=r'$acceleration\ (\frac{m}{s_{2}})$')
 
@@ -2273,10 +2276,10 @@ if __name__ == "__main__":
         if SUPTITLE_ON:
             f3.suptitle(r'$\mathbf{Vehicle\ and\ UAS\ True\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
 
-        ndx = np.array(dx) + np.array(dox)
-        ncx = np.array(cx) + np.array(dox)
-        ndy = np.array(dy) + np.array(doy)
-        ncy = np.array(cy) + np.array(doy)
+        ndx = np.array(_DRONE_POS_X) + np.array(_CAM_ORIGIN_X)
+        ncx = np.array(_CAR_POS_X) + np.array(_CAM_ORIGIN_X)
+        ndy = np.array(_DRONE_POS_Y) + np.array(_CAM_ORIGIN_Y)
+        ncy = np.array(_CAR_POS_Y) + np.array(_CAM_ORIGIN_Y)
 
         axs[0].plot(ndx, ndy, color='darkslategray', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$UAS$', alpha=0.9)
         axs[0].plot(ncx, ncy, color='limegreen', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$Vehicle$', alpha=0.9)
@@ -2284,10 +2287,10 @@ if __name__ == "__main__":
         axs[0].set_title(r'$\mathbf{World\ frame}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs[0].legend()
 
-        ndx = np.array(dx)
-        ncx = np.array(cx)
-        ndy = np.array(dy)
-        ncy = np.array(cy)
+        ndx = np.array(_DRONE_POS_X)
+        ncx = np.array(_CAR_POS_X)
+        ndy = np.array(_DRONE_POS_Y)
+        ncy = np.array(_CAR_POS_Y)
 
         x_pad = (max(ncx) - min(ncx)) * 0.05
         y_pad = (max(ncy) - min(ncy)) * 0.05
@@ -2306,13 +2309,13 @@ if __name__ == "__main__":
 
         # -------------------------------------------------------------------------------- figure 4
         # true and estimated trajectories
-        if 0:
+        if SHOW_CARTESIAN_PLOTS:
             f4, axs = plt.subplots()
             if SUPTITLE_ON:
                 f4.suptitle(r'$\mathbf{Vehicle\ True\ and\ Estimated\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
 
-            axs.plot(tcx, tcy, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ trajectory$', alpha=0.9)
-            axs.plot(cx, cy, color='crimson', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ trajectory$', alpha=0.9)
+            axs.plot(_TRACKED_CAR_POS_X, _TRACKED_CAR_POS_Y, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ trajectory$', alpha=0.9)
+            axs.plot(_CAR_POS_X, _CAR_POS_Y, color='crimson', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ trajectory$', alpha=0.9)
             axs.set_title(r'$\mathbf{camera\ frame}$', fontsize=SUB_TITLE_FONT_SIZE)
             axs.legend()
             axs.axis('equal')
@@ -2323,18 +2326,18 @@ if __name__ == "__main__":
 
         # -------------------------------------------------------------------------------- figure 5
         # true and tracked pos
-        if 0:
+        if SHOW_CARTESIAN_PLOTS:
             f4, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
             if SUPTITLE_ON:
                 f4.suptitle(r'$\mathbf{Vehicle\ True\ and\ Estimated\ Positions}$', fontsize=TITLE_FONT_SIZE)
 
-            axs[0].plot(t, tcx, color='rosybrown', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ x$', alpha=0.9)
-            axs[0].plot(t, cx, color='red', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ x$', alpha=0.9)
+            axs[0].plot(_TIME, _TRACKED_CAR_POS_X, color='rosybrown', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ x$', alpha=0.9)
+            axs[0].plot(_TIME, _CAR_POS_X, color='red', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ x$', alpha=0.9)
             axs[0].set(ylabel=r'$x\ (m)$')
             axs[0].set_title(r'$\mathbf{x}$', fontsize=SUB_TITLE_FONT_SIZE)
             axs[0].legend()
-            axs[1].plot(t, tcy, color='mediumseagreen', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ y$', alpha=0.9)
-            axs[1].plot(t, cy, color='green', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ y$', alpha=0.9)
+            axs[1].plot(_TIME, _TRACKED_CAR_POS_Y, color='mediumseagreen', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ y$', alpha=0.9)
+            axs[1].plot(_TIME, _CAR_POS_Y, color='green', linestyle=':', linewidth=LINE_WIDTH_1, label=r'$true\ y$', alpha=0.9)
             axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$y\ (m)$')
             axs[1].set_title(r'$\mathbf{y}$', fontsize=SUB_TITLE_FONT_SIZE)
             axs[1].legend()
@@ -2344,23 +2347,23 @@ if __name__ == "__main__":
 
         # -------------------------------------------------------------------------------- figure 6
         # true and tracked velocities
-        if 0:
+        if SHOW_CARTESIAN_PLOTS:
             f5, axs = plt.subplots(2, 1, sharex=True, gridspec_kw={'hspace':0.4})
             if SUPTITLE_ON:
                 f5.suptitle(r'$\mathbf{True,\ Measured\ and\ Estimated\ Vehicle\ Velocities}$', fontsize=TITLE_FONT_SIZE)
             
 
 
-            axs[0].plot(t, mcvx, color='paleturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_x$', alpha=0.9)
-            axs[0].plot(t, tcvx, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ V_x$', alpha=0.9)
-            axs[0].plot(t, cvx, color='crimson', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$true\ V_x$', alpha=0.7)
+            axs[0].plot(_TIME, _MEASURED_CAR_VEL_X, color='paleturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_x$', alpha=0.9)
+            axs[0].plot(_TIME, _TRACKED_CAR_VEL_X, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ V_x$', alpha=0.9)
+            axs[0].plot(_TIME, _CAR_VEL_X, color='crimson', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$true\ V_x$', alpha=0.7)
             axs[0].set(ylabel=r'$V_x\ (\frac{m}{s})$')
             axs[0].set_title(r'$\mathbf{V_x}$', fontsize=SUB_TITLE_FONT_SIZE)
             axs[0].legend(loc='upper right')
 
-            axs[1].plot(t, mcvy, color='paleturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_y$', alpha=0.9)
-            axs[1].plot(t, tcvy, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ V_y$', alpha=0.9)
-            axs[1].plot(t, cvy, color='crimson', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$true\ V_y$', alpha=0.7)
+            axs[1].plot(_TIME, _MEASURED_CAR_VEL_Y, color='paleturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$measured\ V_y$', alpha=0.9)
+            axs[1].plot(_TIME, _TRACKED_CAR_VEL_Y, color='darkturquoise', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$estimated\ V_y$', alpha=0.9)
+            axs[1].plot(_TIME, _CAR_VEL_Y, color='crimson', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$true\ V_y$', alpha=0.7)
             axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_y\ (\frac{m}{s})$')
             axs[1].set_title(r'$\mathbf{V_y}$', fontsize=SUB_TITLE_FONT_SIZE)
             axs[1].legend(loc='upper right')
@@ -2376,14 +2379,14 @@ if __name__ == "__main__":
         c_speed = (CAR_INITIAL_VELOCITY[0]**2 + CAR_INITIAL_VELOCITY[1]**2)**0.5
         c_heading = degrees(atan2(CAR_INITIAL_VELOCITY[1], CAR_INITIAL_VELOCITY[0]))
 
-        axs[0].plot(t, [c_speed for i in S], color='lightblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$|V_{vehicle}|$', alpha=0.9)
-        axs[0].plot(t, S, color='blue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$|V_{UAS}|$', alpha=0.9)
+        axs[0].plot(_TIME, [c_speed for i in _CAR_SPEED], color='lightblue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$|V_{vehicle}|$', alpha=0.9)
+        axs[0].plot(_TIME, _CAR_SPEED, color='blue', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$|V_{UAS}|$', alpha=0.9)
         axs[0].set(ylabel=r'$|V|\ (\frac{m}{s})$')
         axs[0].set_title(r'$\mathbf{speed}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs[0].legend()
 
-        axs[1].plot(t, [c_heading for i in alpha], color='lightgreen', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$\angle V_{vehicle}$', alpha=0.9)
-        axs[1].plot(t, alpha, color='green', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$\angle V_{UAS}$', alpha=0.9)
+        axs[1].plot(_TIME, [c_heading for i in _DRONE_ALPHA], color='lightgreen', linestyle='-', linewidth=LINE_WIDTH_2, label=r'$\angle V_{vehicle}$', alpha=0.9)
+        axs[1].plot(_TIME, _DRONE_ALPHA, color='green', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$\angle V_{UAS}$', alpha=0.9)
         axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$\angle V\ (^{\circ})$')
         axs[1].set_title(r'$\mathbf{heading}$', fontsize=SUB_TITLE_FONT_SIZE)
         axs[1].legend()
@@ -2396,7 +2399,7 @@ if __name__ == "__main__":
         f7, axs = plt.subplots()
         if SUPTITLE_ON:
             f7.suptitle(r'$\mathbf{Altitude\ profile}$', fontsize=TITLE_FONT_SIZE)
-        axs.plot(t, alt, color='darkgoldenrod', linestyle='-', linewidth=2, label=r'$altitude$', alpha=0.9)
+        axs.plot(_TIME, _DRONE_ALTITUDE, color='darkgoldenrod', linestyle='-', linewidth=2, label=r'$altitude$', alpha=0.9)
         axs.set(xlabel=r'$time\ (s)$', ylabel=r'$z\ (m)$')
 
         f7.savefig(f'{_PATH}/8_alt_profile.png', dpi=300)
@@ -2404,26 +2407,25 @@ if __name__ == "__main__":
 
         # -------------------------------------------------------------------------------- figure 7
         # 3D Trajectories
-        ndx = np.array(dx) + np.array(dox)
-        ncx = np.array(cx) + np.array(dox)
-        ndy = np.array(dy) + np.array(doy)
-        ncy = np.array(cy) + np.array(doy)
+        ndx = np.array(_DRONE_POS_X) + np.array(_CAM_ORIGIN_X)
+        ncx = np.array(_CAR_POS_X) + np.array(_CAM_ORIGIN_X)
+        ndy = np.array(_DRONE_POS_Y) + np.array(_CAM_ORIGIN_Y)
+        ncy = np.array(_CAR_POS_Y) + np.array(_CAM_ORIGIN_Y)
 
         f8 = plt.figure()
         if SUPTITLE_ON:
             f8.suptitle(r'$\mathbf{3D\ Trajectories}$', fontsize=TITLE_FONT_SIZE)
         axs = f8.add_subplot(111, projection='3d')
         axs.plot3D(ncx, ncy, 0, color='limegreen', linestyle='-', linewidth=2, label=r'$Vehicle$', alpha=0.9)
-        axs.plot3D(ndx, ndy, alt, color='darkslategray', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$UAS$', alpha=0.9)
-        # viridis = cm.get_map('viridis', 512)
+        axs.plot3D(ndx, ndy, _DRONE_ALTITUDE, color='darkslategray', linestyle='-', linewidth=LINE_WIDTH_1, label=r'$UAS$', alpha=0.9)
 
-        for point in zip(ndx, ndy, alt):
+        for point in zip(ndx, ndy, _DRONE_ALTITUDE):
             x = [point[0], point[0]]
             y = [point[1], point[1]]
             z = [point[2], 0]
             axs.plot3D(x, y, z, color='gainsboro', linestyle='-', linewidth=0.5, alpha=0.1)
         axs.plot3D(ndx, ndy, 0, color='silver', linestyle='-', linewidth=1, alpha=0.9)
-        axs.scatter3D(ndx, ndy, alt, c=alt, cmap='plasma', alpha=0.3)
+        axs.scatter3D(ndx, ndy, _DRONE_ALTITUDE, c=_DRONE_ALTITUDE, cmap='plasma', alpha=0.3)
 
         axs.set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$', zlabel=r'$z\ (m)$')
         axs.view_init(elev=41, azim=-105)
