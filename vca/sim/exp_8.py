@@ -1,5 +1,6 @@
 import os
 import sys
+import ctypes
 import random
 import shutil
 import time
@@ -376,6 +377,53 @@ class DroneCamera(pygame.sprite.Sprite):
         self.altitude -= self.alt_change
 
 
+class HighPrecisionClock:
+    """High precision clock for time resolution in microseconds
+    """
+    def __init__(self):
+        self.micro_timestamp = self.micros()
+
+    def tick(self, framerate):
+        """[summary]
+
+        Args:
+            framerate ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
+        self.delay_microseconds(1/framerate)
+
+        _new_micro_ts = self.micros()
+        self.time_diff = _new_micro_ts - self.micro_timestamp
+        self.micro_timestamp = _new_micro_ts
+
+        return self.time_diff
+
+
+    @staticmethod
+    def micros():
+        """return timestamp in microseconds"""
+        tics = ctypes.c_int64()
+        freq = ctypes.c_int64()
+
+        # get ticks on the internal ~3.2GHz QPC clock
+        ctypes.windll.Kernel32.QueryPerformanceCounter(ctypes.byref(tics)) 
+        # get the actual freq. of the internal ~3.2GHz QPC clock
+        ctypes.windll.Kernel32.QueryPerformanceFrequency(ctypes.byref(freq))  
+        
+        t_us = tics.value*1e6/freq.value
+        return t_us
+
+
+    def delay_microseconds(self, delay_us):
+        """delay for delay_us microseconds (us)"""
+        t_start = self.micros()
+        while (self.micros() - t_start < delay_us):
+            pass    # do nothing 
+        return 
+
+
 class Simulator:
     """Simulator object creates the simulation game. 
     Responds to keypresses 'SPACE' to toggle play/pause, 's' to save screen mode, ESC to quit.
@@ -393,7 +441,8 @@ class Simulator:
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
 
         # create clock 
-        self.clock = pygame.time.Clock()
+        # self.clock = pygame.time.Clock()
+        self.clock = HighPrecisionClock()
 
         # load sprite images
         self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
@@ -450,8 +499,10 @@ class Simulator:
         self.running = True
         while self.running:
             # make clock tick and measure time elapsed
-            self.dt = self.clock.tick(FPS) / 1000.0 
-            if self.pause:          # DO NOT TOUCH! clock needs to tick regardless
+            self.dt = self.clock.tick(FPS) / 1000.0
+            if not self.manager.use_real_clock:
+                self.dt = DELTA_TIME
+            if self.pause:          # DO NOT TOUCH! CLOCK MUST TICK REGARDLESS!
                 self.dt = 0.0
             self.time += self.dt
 
@@ -803,10 +854,10 @@ class Tracker:
             nxt_frame = convert_to_grayscale(frame_2)
 
             # compute optical flow between current and next frame
-            cur_points, nxt_points, stdev, err = compute_optical_flow_LK( cur_frame, 
-                                                                          nxt_frame, 
-                                                                          cur_points, 
-                                                                          LK_PARAMS )
+            cur_points, nxt_points, stdev, err = compute_optical_flow_LK(cur_frame, 
+                                                                         nxt_frame, 
+                                                                         cur_points, 
+                                                                         LK_PARAMS)
             
             # select good points, with standard deviation 1. use numpy index trick
             good_cur = cur_points[stdev==1]
@@ -1304,7 +1355,8 @@ class Controller:
 
         # calculate y from drone to car
         y2 = Vtheta**2 + Vr**2
-        y1 = r**2 * Vtheta**2 - y2 * self.R**2
+        # y1 = r**2 * Vtheta**2 - y2 * self.R**2
+        y1 = Vtheta**2 * (r**2 - self.R**2) - self.R**2 * Vr**2
 
         # time to collision from drone to car
         # tm = -vr * r / (vtheta**2 + vr**2)
@@ -1355,7 +1407,7 @@ class Controller:
         ay = a_lat * sin(delta) + a_long * sin(alpha)
         
         if not CLEAN_CONSOLE:
-            print(f'CCC0 >> r:{r:0.2f} | theta:{theta:0.2f} | alpha:{alpha:0.2f} | car_speed:{car_speed:0.2f} | S:{S:0.2f} | Vr:{Vr:0.2f} | Vtheta:{Vtheta:0.2f} | y1:{y1:0.2f} | y2:{y2:0.2f} | a_lat:{a_lat:0.2f} | a_long:{a_long:0.2f}')
+            print(f'CCC0 >> r:{r:0.2f} | theta:{theta:0.2f} | alpha:{alpha:0.2f} | car_speed:{car_speed:0.2f} | S:{S:0.2f} | Vr:{Vr:0.2f} | Vtheta:{Vtheta:0.2f} | y1:{y1:0.2f} | y2:{y2:0.2f} | a_lat:{a_lat:0.2f} | a_long:{a_long:0.2f} | _D:{_D:0.2f}')
         
         tru_kin = self.manager.get_true_kinematics()
         tX, tY            = tru_kin[0]
@@ -1374,7 +1426,7 @@ class Controller:
         if not CLEAN_CONSOLE:
             print(f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{X:0.2f}, {Y:0.2f}] | v:[{Vx:0.2f}, {Vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}] | COMMANDED a:[{ax:0.2f}, {ay:0.2f}] | TRACKED x:[{tra_kin[2][0]:0.2f},{tra_kin[2][1]:0.2f}] | v:[{tra_kin[3][0]:0.2f},{tra_kin[3][1]:0.2f}]')
         if self.manager.write_plot:
-            self.f.write(f'{self.manager.simulator.time},{r},{degrees(theta)},{degrees(Vtheta)},{Vr},{tru_kin[0][0]},{tru_kin[0][1]},{tru_kin[2][0]},{tru_kin[2][1]},{ax},{ay},{a_lat},{a_long},{tru_kin[3][0]},{tru_kin[3][1]},{tra_kin[2][0]},{tra_kin[2][1]},{tra_kin[3][0]},{tra_kin[3][1]},{self.manager.simulator.camera.origin[0]},{self.manager.simulator.camera.origin[1]},{S},{degrees(alpha)},{tru_kin[1][0]},{tru_kin[1][1]},{tra_kin[4][0]},{tra_kin[4][1]},{tra_kin[5][0]},{tra_kin[5][1]},{self.manager.simulator.camera.altitude},{abs(_D)},{r_},{degrees(theta_)},{Vr_},{degrees(Vtheta_)},{tr},{degrees(ttheta)},{tVr},{degrees(tVtheta)}\n')
+            self.f.write(f'{self.manager.simulator.time},{r},{degrees(theta)},{degrees(Vtheta)},{Vr},{tru_kin[0][0]},{tru_kin[0][1]},{tru_kin[2][0]},{tru_kin[2][1]},{ax},{ay},{a_lat},{a_long},{tru_kin[3][0]},{tru_kin[3][1]},{tra_kin[2][0]},{tra_kin[2][1]},{tra_kin[3][0]},{tra_kin[3][1]},{self.manager.simulator.camera.origin[0]},{self.manager.simulator.camera.origin[1]},{S},{degrees(alpha)},{tru_kin[1][0]},{tru_kin[1][1]},{tra_kin[4][0]},{tra_kin[4][1]},{tra_kin[5][0]},{tra_kin[5][1]},{self.manager.simulator.camera.altitude},{abs(_D)},{r_},{degrees(theta_)},{Vr_},{degrees(Vtheta_)},{tr},{degrees(ttheta)},{tVr},{degrees(tVtheta)},{self.manager.simulator.dt}\n')
 
         return ax, ay
 
@@ -1397,7 +1449,7 @@ class ExperimentManager:
     The manager is responsible for running Simulator, Tracker and controller in separate threads and manage shared memory.
     The manager can start and stop Simulator, Tracker and Controller.
     """
-    def __init__(self, save_on=False, write_plot=False, control_on=False, tracker_on=True, tracker_display_on=False, use_true_kin=True):
+    def __init__(self, save_on=False, write_plot=False, control_on=False, tracker_on=True, tracker_display_on=False, use_true_kin=True, use_real_clock=True):
 
         self.save_on = save_on
         self.write_plot = write_plot
@@ -1405,6 +1457,7 @@ class ExperimentManager:
         self.tracker_on = tracker_on
         self.tracker_display_on = tracker_display_on
         self.use_true_kin = use_true_kin
+        self.use_real_clock = use_real_clock
 
         self.simulator = Simulator(self)
         self.tracker = Tracker(self)
@@ -1518,7 +1571,9 @@ class ExperimentManager:
 
         # start the experiment
         while self.simulator.running:
-            self.simulator.dt = self.simulator.clock.tick(FPS) / 1000.0
+            self.simulator.dt = self.simulator.clock.tick(FPS) / 1000000.0
+            if not self.use_real_clock:
+                self.simulator.dt = DELTA_TIME
             if self.simulator.pause:
                 self.simulator.dt = 0.0
             self.simulator.time += self.simulator.dt
@@ -2061,13 +2116,14 @@ def compute_moving_average(sequence, window_size):
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0         #pylint: disable=bad-whitespace
-    WRITE_PLOT              = 0         #pylint: disable=bad-whitespace
+    WRITE_PLOT              = 1         #pylint: disable=bad-whitespace
     CONTROL_ON              = 1         #pylint: disable=bad-whitespace
     TRACKER_ON              = 1         #pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON      = 1         #pylint: disable=bad-whitespace
-    USE_TRUE_KINEMATICS     = 0         #pylint: disable=bad-whitespace
+    USE_TRUE_KINEMATICS     = 1         #pylint: disable=bad-whitespace
+    USE_REAL_CLOCK          = 0         #pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT          = 0         #pylint: disable=bad-whitespace
+    RUN_EXPERIMENT          = 1         #pylint: disable=bad-whitespace
     RUN_TRACK_PLOT          = 1         #pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER        = 0         #pylint: disable=bad-whitespace
@@ -2078,7 +2134,8 @@ if __name__ == '__main__':
                                                control_on=CONTROL_ON,
                                                tracker_on=TRACKER_ON,
                                                tracker_display_on=TRACKER_DISPLAY_ON,
-                                               use_true_kin=USE_TRUE_KINEMATICS)
+                                               use_true_kin=USE_TRUE_KINEMATICS,
+                                               use_real_clock=USE_REAL_CLOCK)
         print("\nExperiment started.\n")
         EXPERIMENT_MANAGER.run()
 
@@ -2128,6 +2185,7 @@ if __name__ == '__main__':
         _TRUE_THETA = []
         _TRUE_V_R = []
         _TRUE_V_THETA = []
+        _DELTA_TIME = []
 
 
 
@@ -2173,6 +2231,7 @@ if __name__ == '__main__':
             _TRUE_THETA.append(data[36])
             _TRUE_V_R.append(data[37])
             _TRUE_V_THETA.append(data[38])
+            _DELTA_TIME.append(data[39])
 
         FILE.close()
 
@@ -2422,6 +2481,17 @@ if __name__ == '__main__':
 
         f8.savefig(f'{_PATH}/9_3D_traj.png', dpi=300)
         f8.show()
+
+        # -------------------------------------------------------------------------------- figure 7
+        # delta time 
+        f9, axs = plt.subplots()
+        if SUPTITLE_ON:
+            f9.suptitle(r'$\mathbf{Time\ Delay\ profile}$', fontsize=TITLE_FONT_SIZE)
+        axs.plot(_TIME, _DELTA_TIME, color='darkgoldenrod', linestyle='-', linewidth=2, label=r'$\delta t$', alpha=0.9)
+        axs.set(xlabel=r'$time\ (s)$', ylabel=r'$\delta t\ (s)$')
+
+        f9.savefig(f'{_PATH}/9_delta_time.png', dpi=300)
+        f9.show()
         plt.show()
         
 
