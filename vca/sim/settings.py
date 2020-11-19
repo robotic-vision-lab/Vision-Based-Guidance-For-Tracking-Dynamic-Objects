@@ -77,7 +77,8 @@ DRONE_ACCELERATION_LIMIT = 20   # +/-
 # time settings
 TIME_FONT = 'consolas'
 TIME_FONT_SIZE = 16
-TIME_COLOR = LIGHT_GRAY_2 # used for all simulator texts
+TIME_COLOR = LIGHT_GRAY_2   # used for all simulator texts
+DELTA_TIME = 0.001           # used in full blocking mode
 
 # Bounding box settings
 BB_COLOR = BLUE     # pygame color
@@ -87,7 +88,7 @@ METRICS_COLOR = LIGHT_GRAY_2
 TRACK_COLOR = (102, 255, 102)
 ARROW_SCALE = 15.0
 TRACKER_BLANK = 31
-ADD_METRICS = 0
+ADD_METRICS = 1
 ADD_ALTITUDE_INFO = 1
 
 # theme
@@ -120,28 +121,28 @@ else:
 USE_WORLD_FRAME = 0
 
 # simulator settings
-CLEAR_TOP = 1
+CLEAR_TOP = 0
 
 # console settings
-CLEAN_CONSOLE = 1
+CLEAN_CONSOLE = 0
 
 # resolution settings
 SCALE_1 = 1.0
 SCALE_2 = 1.0
 
 OPTION = 0
-if OPTION==0:
+if OPTION == 0:
     SCALE_1 = 1.0
     SCALE_2 = 1.0
-if OPTION==1:
+if OPTION == 1:
     SCALE_1 = 0.5
     SCALE_2 = 2.0
-if OPTION==2:
+if OPTION == 2:
     SCALE_1 = 0.25
     SCALE_2 = 4.0
 
 # salt pepper SNR settings
-SNR = 1.0#0.99
+SNR = 1.0   #0.99
 
 # filter choice
 # use filter will make tracker use filter, it may use kalman or moving average
@@ -157,8 +158,8 @@ TITLE_FONT_SIZE = 14
 SUB_TITLE_FONT_SIZE = 11
 SUPTITLE_ON = 1
 
-#--------------------------------------------------------------------------------
-CAR_RADIUS = 0.01
+# --------------------------------------------------------------------------------
+CAR_RADIUS = 1
 # initial conditions
 
 # # 1 OPEN

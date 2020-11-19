@@ -71,7 +71,6 @@ from algorithms.optical_flow \
 """
 
 
-
 class Block(pygame.sprite.Sprite):
     """Defines a Block sprite.
     """
@@ -179,7 +178,6 @@ class Block(pygame.sprite.Sprite):
         # self.rect.center = self.position
 
 
-
 class Car(pygame.sprite.Sprite):
     """Defines a car sprite.
     """
@@ -238,7 +236,6 @@ class Car(pygame.sprite.Sprite):
         self.image, self.rect = self.simulator.car_img
         self.update_rect()
         # self.rect.center = self.position + SCREEN_CENTER
-
 
 
 class DroneCamera(pygame.sprite.Sprite):
@@ -377,7 +374,6 @@ class DroneCamera(pygame.sprite.Sprite):
     def fly_lower(self):
         self.simulator.alt_change_fac = 1.0 - self.alt_change/self.altitude
         self.altitude -= self.alt_change
-
 
 
 class Simulator:
@@ -745,7 +741,6 @@ class Simulator:
         """
         self.running = False
         pygame.quit()
-
 
 
 class Tracker:
@@ -1155,7 +1150,6 @@ class Tracker:
         return img
 
 
-
 class Controller:
     def __init__(self, manager):
         self.manager = manager
@@ -1385,7 +1379,6 @@ class Controller:
         return ax, ay
 
 
-
 class ExperimentManager:
     """
     Experiment:
@@ -1607,7 +1600,6 @@ class ExperimentManager:
         return self.simulator.camera.origin
 
 
-
 class MA:
     """Filters statefully using a moving average technique
     """
@@ -1741,7 +1733,6 @@ class MA:
         vx = sum(self.car_vx) / len(self.car_vx)
         vy = sum(self.car_vy) / len(self.car_vy)
         return pygame.Vector2(vx,vy)
-
 
 
 class Kalman:
@@ -1895,7 +1886,6 @@ class Kalman:
         return pygame.Vector2(self.Mu.flatten()[2], self.Mu.flatten()[3])
 
 
-
 class ExtendedKalman:
     """Implement continuous-continuous EKF for the UAS and Vehicle system in stateful fashion
     """
@@ -2044,8 +2034,6 @@ class ExtendedKalman:
         else:
             return (self.prev_r, self.prev_theta, self.prev_Vr, self.prev_Vtheta)
 
-
-
         
 # dummy moving average for testing (not used)
 def compute_moving_average(sequence, window_size):
@@ -2068,7 +2056,6 @@ def compute_moving_average(sequence, window_size):
         mov_avg_seq.append(sum(seq_window) / len(seq_window))
 
     return mov_avg_seq
-
 
 
 if __name__ == '__main__':
