@@ -13,14 +13,14 @@ from math import atan2, degrees, cos, sin, pi
 
 import numpy as np
 import cv2 as cv
-import pygame 
+import pygame
 
 
 from pygame.locals import *                                 #pylint: disable=unused-wildcard-import
 from settings import *                                      #pylint: disable=unused-wildcard-import
 from optical_flow_config import (FARNEBACK_PARAMS,          #pylint: disable=unused-import
                                  FARN_TEMP_FOLDER,
-                                 FEATURE_PARAMS, 
+                                 FEATURE_PARAMS,
                                  LK_PARAMS,
                                  LK_TEMP_FOLDER)
 
@@ -42,17 +42,17 @@ from utils.img_utils import (convert_to_grayscale,          #pylint: disable=unu
 from utils.img_utils import scale_image as cv_scale_img
 from game_utils import (load_image,                         #pylint: disable=unused-import
                         _prep_temp_folder,
-                        vec_str, 
+                        vec_str,
                         scale_img)
 from algorithms.optical_flow \
                 import (compute_optical_flow_farneback,     #pylint: disable=unused-import
-                        compute_optical_flow_HS, 
+                        compute_optical_flow_HS,
                         compute_optical_flow_LK)
 
 
 """ Summary:
-    Experiment 7:
-    In this module we try to experiment with EKF.
+    Experiment 8:
+    In this module we try to implement a new full blocking debug mode.
 
     Pygame runs a simulation.
     In the simulation, we have 3 kinds of sprites:
@@ -67,7 +67,7 @@ from algorithms.optical_flow \
     The Manager object instantiates Simulator, Tracker and Controller.
     Manager can call Simulator's update().
 
-    In this module the Manager runs the experiment, by calling methods from Simulator, Tracker and Controller.
+    In this module, Manager runs experiment, calls methods from Simulator, Tracker and Controller.
 
 """
 
@@ -76,11 +76,9 @@ class Block(pygame.sprite.Sprite):
     """Defines a Block sprite.
     """
 
-    # Constructor. Pass in the color of the block,
-    # and its x and y position
     def __init__(self, simulator):
         self.groups = [simulator.all_sprites, simulator.car_block_sprites]
-        
+
         # Call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self, self.groups)
 
@@ -96,8 +94,10 @@ class Block(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
 
         # self.reset_kinematics()
-        self.position = pygame.Vector2(randrange(-(WIDTH - self.rect.width),(WIDTH - self.rect.width))*self.simulator.pxm_fac, randrange(-(HEIGHT - self.rect.height),(HEIGHT - self.rect.height))*self.simulator.pxm_fac)
-        self.velocity = pygame.Vector2(0.0,0.0)#(randrange(-50, 50), randrange(-50, 50))
+        _x = randrange(-(WIDTH - self.rect.width), (WIDTH - self.rect.width))
+        _y = randrange(-(HEIGHT - self.rect.height), (HEIGHT - self.rect.height))
+        self.position = pygame.Vector2(_x, _y) * self.simulator.pxm_fac
+        self.velocity = pygame.Vector2(0.0, 0.0)
         self.acceleration = pygame.Vector2(0.0, 0.0)
 
         # self.rect.center = self.position
@@ -111,9 +111,11 @@ class Block(pygame.sprite.Sprite):
         # note the velocity we assign below will be interpreted as pixels/sec
         fov = self.simulator.get_camera_fov()
         drone_pos = self.simulator.get_drone_position()
-        self.position = pygame.Vector2(random.uniform(drone_pos[0]-fov[0]/2,drone_pos[0]+fov[0]), random.uniform(drone_pos[1]-fov[1]/2,drone_pos[1]+fov[1]))
-        # self.position = pygame.Vector2(randrange(-(WIDTH - self.rect.width),(WIDTH - self.rect.width))*self.simulator.pxm_fac, randrange(-(HEIGHT - self.rect.height),(HEIGHT - self.rect.height))*self.simulator.pxm_fac)
-        self.velocity = pygame.Vector2(0.0,0.0)#(randrange(-50, 50), randrange(-50, 50))
+
+        _x = random.uniform(drone_pos[0] - fov[0]/2, drone_pos[0] + fov[0])
+        _y = random.uniform(drone_pos[1] - fov[1]/2, drone_pos[1] + fov[1])
+        self.position = pygame.Vector2(_x, _y)
+        self.velocity = pygame.Vector2(0.0, 0.0)
         self.acceleration = pygame.Vector2(0.0, 0.0)
 
 
@@ -122,7 +124,7 @@ class Block(pygame.sprite.Sprite):
         """
         # update velocity and position
         self.velocity += self.acceleration * self.simulator.dt
-        self.position += self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2
+        self.position += self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2     #pylint: disable=line-too-long
 
         # re-spawn in view
         if self.rect.centerx > WIDTH or \
@@ -133,16 +135,16 @@ class Block(pygame.sprite.Sprite):
 
 
     def update_rect(self):
-        """Position information is in bottom-left reference frame. 
+        """Position information is in bottom-left reference frame.
         This method transforms it to top-left reference frame and update the sprite's rect.
         This is for rendering purposes only, to decide where to draw the sprite.
         """
-        
+
         x, y = self.position.elementwise() * (1, -1) / self.simulator.pxm_fac
         self.rect.centerx = int(x)
         self.rect.centery = int(y) + HEIGHT
-        self.rect.center += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1) 
-        
+        self.rect.center += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1)
+
 
     def update(self):
         """Overwrites Sprite.update()
@@ -156,16 +158,20 @@ class Block(pygame.sprite.Sprite):
 
 
     def fill_image(self):
-        r,g,b = BLOCK_COLOR
+        """Helper function fills block image
+        """
+        r, g, b = BLOCK_COLOR
         d = BLOCK_COLOR_DELTA
         r += random.randint(-d, d)
         g += random.randint(-d, d)
         b += random.randint(-d, d)
-        self.image.fill((r,g,b))
-        # self.image.fill(BLOCK_COLOR)
+        self.image.fill((r, g, b))
 
 
     def load(self):
+        """Helper function updates width and height of image and fills image.
+        Also, updates rect.
+        """
         self.w /= self.simulator.alt_change_fac
         self.h /= self.simulator.alt_change_fac
 
@@ -176,24 +182,23 @@ class Block(pygame.sprite.Sprite):
         # Fetch the rectangle object that has the dimensions of the image
         self.rect = self.image.get_rect()
 
-        # self.rect.center = self.position
 
 
 class Car(pygame.sprite.Sprite):
     """Defines a car sprite.
     """
     def __init__(self, simulator, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0):
-        # assign itself to the all_sprites group 
+        # assign itself to the all_sprites group
         self.groups = [simulator.all_sprites, simulator.car_block_sprites]
 
         # call Sprite initializer with group info
-        pygame.sprite.Sprite.__init__(self, self.groups) 
-        
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
         # assign Sprite.image and Sprite.rect attributes for this Sprite
         self.image, self.rect = simulator.car_img
 
         # set kinematics
-        # note the velocity and acceleration we assign below 
+        # note the velocity and acceleration we assign below
         # will be interpreted as pixels/sec
         self.position = pygame.Vector2(x, y)
         self.velocity = pygame.Vector2(vx, vy)
@@ -212,7 +217,7 @@ class Car(pygame.sprite.Sprite):
         """
         # update velocity and position
         self.velocity += self.acceleration * self.simulator.dt
-        self.position += self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2
+        self.position += self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2     #pylint: disable=line-too-long
 
 
     def update_rect(self):
@@ -225,15 +230,17 @@ class Car(pygame.sprite.Sprite):
 
 
     def update(self):
-        """ update sprite attributes. 
+        """ update sprite attributes.
             This will get called in game loop for every frame
         """
         self.update_kinematics()
         # self.update_rect()
         # self.rect.center = self.position + SCREEN_CENTER
-    
+
 
     def load(self):
+        """Helper function called when altitude is changed. Updates image and rect.
+        """
         self.image, self.rect = self.simulator.car_img
         self.update_rect()
         # self.rect.center = self.position + SCREEN_CENTER
@@ -246,27 +253,23 @@ class DroneCamera(pygame.sprite.Sprite):
         # call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self, self.groups)
 
-        # self.drone = pygame.Rect(0, 0, WIDTH, HEIGHT)
-        # self.image = pygame.Surface((20, 20))
-        # self.image.fill(BLUE)
-        # self.rect = self.image.get_rect()
         self.image, self.rect = simulator.drone_img
         self.image.fill((255, 255, 255, DRONE_IMG_ALPHA), None, pygame.BLEND_RGBA_MULT)
         self.reset_kinematics()
         self.origin = self.position
         self.altitude = ALTITUDE
         self.alt_change = 1.0
-        
+
         # self.rect.center = self.position + SCREEN_CENTER
         self.simulator = simulator
         self.update_rect()
-        
+
         self.vel_limit = DRONE_VELOCITY_LIMIT
         self.acc_limit = DRONE_ACCELERATION_LIMIT
 
 
     def update(self):
-        """[summary]
+        """helper function update kinematics
         """
         self.update_kinematics()
         # self.update_rect()
@@ -283,7 +286,7 @@ class DroneCamera(pygame.sprite.Sprite):
 
 
     def reset_kinematics(self):
-        """[summary]
+        """helper function to reset kinematics
         """
         self.position = pygame.Vector2(DRONE_POSITION)
         self.velocity = pygame.Vector2(DRONE_INITIAL_VELOCITY)
@@ -298,27 +301,25 @@ class DroneCamera(pygame.sprite.Sprite):
         # print(f'a {self.acceleration}, v {self.velocity}, dt {self.game.dt}')
         # self.acceleration -= self.acceleration * COEFF
         # print(f'a {self.acceleration}, v {self.velocity}')
-        
+
         # update velocity and position
         self.velocity += self.acceleration * self.simulator.dt
         if abs(self.velocity.length()) > self.vel_limit:
             self.velocity -= self.acceleration * self.simulator.dt
 
-        delta_pos = self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2      # i know how this looks like but,
-        self.position = self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2  # donot touch ☠
+        delta_pos = self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2      # i know how this looks like but,   pylint: disable=line-too-long
+        self.position = self.velocity * self.simulator.dt + 0.5 * self.acceleration * self.simulator.dt**2  # donot touch ☠                    pylint: disable=line-too-long
         self.origin += delta_pos
 
 
     def compensate_camera_motion(self, sprite_obj):
-        """[summary]
+        """Compensates camera motion by updating position of sprite object.
 
         Args:
-            sprite_obj ([type]): [description]
+            sprite_obj (pygame.sprite.Sprite): Sprite object whose motion needs compensation.
         """
-        sprite_obj.position -= self.position #self.velocity * self.game.dt + 0.5 * self.acceleration * self.game.dt**2
+        sprite_obj.position -= self.position
         sprite_obj.update_rect()
-        # sprite_obj.rect.centerx = sprite_obj.rect.centerx - self.rect.centerx + WIDTH//2
-        # sprite_obj.rect.centery = sprite_obj.rect.centery - self.rect.centery + HEIGHT//2
         
 
     def change_acceleration(self, command_vec):
@@ -332,16 +333,16 @@ class DroneCamera(pygame.sprite.Sprite):
         command_vec *= COMMAND_SENSITIVITY
         self.acceleration += command_vec
 
-        # counter floating point arithmetic noise 
+        # counter floating point arithmetic noise
         if abs(self.acceleration[0]) < COMMAND_SENSITIVITY:
             self.acceleration[0] = 0.0
         if abs(self.acceleration[1]) < COMMAND_SENSITIVITY:
             self.acceleration[1] = 0.0
-        
+
         # make sure acceleration magnitude stays within a set limit
         if abs(self.acceleration.length()) > self.acc_limit:
             self.acceleration -= command_vec
-        
+
 
     def convert_px_to_m(self, p):
         """Convert pixels to meters
@@ -368,11 +369,15 @@ class DroneCamera(pygame.sprite.Sprite):
 
     
     def fly_higher(self):
+        """Helper function to implement drone raise altitude
+        """
         self.simulator.alt_change_fac = 1.0 + self.alt_change/self.altitude
         self.altitude += self.alt_change
         
 
     def fly_lower(self):
+        """Helper function to implement drone lower altitude
+        """
         self.simulator.alt_change_fac = 1.0 - self.alt_change/self.altitude
         self.altitude -= self.alt_change
 
@@ -384,13 +389,13 @@ class HighPrecisionClock:
         self.micro_timestamp = self.micros()
 
     def tick(self, framerate):
-        """[summary]
+        """Implements appropriate delay given a framerate.
 
         Args:
-            framerate ([type]): [description]
+            framerate (float): Desired framerate
 
         Returns:
-            [type]: [description]
+            float: time elapsed
         """
         self.delay_microseconds(1/framerate)
 
@@ -411,7 +416,7 @@ class HighPrecisionClock:
         ctypes.windll.Kernel32.QueryPerformanceCounter(ctypes.byref(tics)) 
         # get the actual freq. of the internal ~3.2GHz QPC clock
         ctypes.windll.Kernel32.QueryPerformanceFrequency(ctypes.byref(freq))  
-        
+
         t_us = tics.value*1e6/freq.value
         return t_us
 
@@ -435,12 +440,12 @@ class Simulator:
         self.manager = manager
 
         # initialize screen
-        os.environ['SDL_VIDEO_WINDOW_POS'] = "2,30"        
+        os.environ['SDL_VIDEO_WINDOW_POS'] = "2,30"  
         pygame.init()
         self.screen_surface = pygame.display.set_mode(SCREEN_SIZE)
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
 
-        # create clock 
+        # create clock
         # self.clock = pygame.time.Clock()
         self.clock = HighPrecisionClock()
 
