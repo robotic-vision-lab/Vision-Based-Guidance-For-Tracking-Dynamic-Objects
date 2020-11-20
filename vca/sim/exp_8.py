@@ -2125,10 +2125,10 @@ if __name__ == '__main__':
     CONTROL_ON              = 1         #pylint: disable=bad-whitespace
     TRACKER_ON              = 1         #pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON      = 1         #pylint: disable=bad-whitespace
-    USE_TRUE_KINEMATICS     = 1         #pylint: disable=bad-whitespace
-    USE_REAL_CLOCK          = 0         #pylint: disable=bad-whitespace
+    USE_TRUE_KINEMATICS     = 0         #pylint: disable=bad-whitespace
+    USE_REAL_CLOCK          = 1         #pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT          = 1         #pylint: disable=bad-whitespace
+    RUN_EXPERIMENT          = 0         #pylint: disable=bad-whitespace
     RUN_TRACK_PLOT          = 1         #pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER        = 0         #pylint: disable=bad-whitespace
@@ -2242,6 +2242,7 @@ if __name__ == '__main__':
 
         # plot
         import matplotlib.pyplot as plt
+        import scipy.stats as st
 
         
         _PATH = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
@@ -2489,13 +2490,23 @@ if __name__ == '__main__':
 
         # -------------------------------------------------------------------------------- figure 7
         # delta time 
-        f9, axs = plt.subplots()
+        f9, axs = plt.subplots(2, 1, gridspec_kw={'hspace':0.4})
         if SUPTITLE_ON:
             f9.suptitle(r'$\mathbf{Time\ Delay\ profile}$', fontsize=TITLE_FONT_SIZE)
-        axs.plot(_TIME, _DELTA_TIME, color='darkgoldenrod', linestyle='-', linewidth=2, label=r'$\delta t$', alpha=0.9)
-        axs.set(xlabel=r'$time\ (s)$', ylabel=r'$\delta t\ (s)$')
+        axs[0].plot(_TIME, _DELTA_TIME, color='rosybrown', linestyle='-', linewidth=2, label=r'$\Delta\ t$', alpha=0.9)
+        axs[0].set(xlabel=r'$time\ (s)$', ylabel=r'$\delta t\ (s)$')
+
+        axs[1].hist(_DELTA_TIME, density=True, bins=100, label=r'$\Delta\ t$')  # `density=False` would make counts
+        # _MIN, _MAX = axs[1].get_xlim()
+        # axs[1].set_xlim(_MIN, _MAX)
+        # _KDE_X = np.linspace(_MIN, _MAX, 301)
+        axs[1].plot(st.gaussian_kde(_DELTA_TIME), color='cornflowerblue', linestyle='-', linewidth=2, label=r'$Gaussian Kernel Estimate PDF$', alpha=0.9)        
+        axs[1].ylabel(r'$Probability\ Density\ (frequentist)$')
+        axs[1].xlabel(r'$\Delta\ Time\ Data\ (high\ precision)$')
+        axs[1].legend()
 
         f9.savefig(f'{_PATH}/9_delta_time.png', dpi=300)
+
         f9.show()
         plt.show()
         
