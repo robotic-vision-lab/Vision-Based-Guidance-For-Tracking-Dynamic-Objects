@@ -8877,5 +8877,3 @@ DEBUG:matplotlib.font_manager:findfont: score(<Font 'Copperplate Gothic Bold' (C
 DEBUG:matplotlib.font_manager:findfont: score(<Font 'Franklin Gothic Medium' (framdit.ttf) italic normal medium normal>) = 11.145
 DEBUG:matplotlib.font_manager:findfont: Matching sans\-serif:style=normal:variant=normal:weight=normal:stretch=normal:size=14.0 to Arial ('C:\\Windows\\Fonts\\arial.ttf') with score of 0.050000.
 DEBUG:matplotlib.axes._base:not adjusting title pos because a title was already placed manually: 0.920000
-DEBUG:matplotlib.axes._base:title position was updated manually, not adjusting
-DEBUG:matplotlib.axes._base:title position was updated manually, not adjusting
