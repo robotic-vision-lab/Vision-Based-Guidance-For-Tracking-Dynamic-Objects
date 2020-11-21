@@ -382,7 +382,7 @@ class HighPrecisionClock:
         Returns:
             float: time elapsed
         """
-        self.delay_microseconds(1 / framerate)
+        self.delay_microseconds(1000000 // framerate )
 
         _new_micro_ts = self.micros()
         self.time_diff = _new_micro_ts - self.micro_timestamp
@@ -2759,23 +2759,28 @@ if __name__ == '__main__':
         axs[0].plot(
             _TIME,
             _DELTA_TIME,
-            color='rosybrown',
+            color='darksalmon',
             linestyle='-',
             linewidth=2,
             label=r'$\Delta\ t$',
             alpha=0.9)
-        axs[0].set(xlabel=r'$time\ (s)$', ylabel=r'$\delta t\ (s)$')
+        axs[0].set(xlabel=r'$time\ (s)$', ylabel=r'$\Delta t\ (s)$')
 
-        # `density=False` would make counts
-        axs[1].hist(_DELTA_TIME, density=True, bins=100, label=r'$\Delta\ t$')
-        # _MIN, _MAX = axs[1].get_xlim()
-        # axs[1].set_xlim(_MIN, _MAX)
-        # _KDE_X = np.linspace(_MIN, _MAX, 301)
-        axs[1].plot(st.gaussian_kde(_DELTA_TIME), color='cornflowerblue', linestyle='-',
-                    linewidth=2, label=r'$Gaussian Kernel Estimate PDF$', alpha=0.9)
-        axs[1].ylabel(r'$Probability\ Density\ (frequentist)$')
-        axs[1].xlabel(r'$\Delta\ Time\ Data\ (high\ precision)$')
-        axs[1].legend()
+        _NUM_BINS = 300
+        _DIFF = max(_DELTA_TIME) - min(_DELTA_TIME)
+        _BAR_WIDTH = _DIFF/_NUM_BINS
+        _HIST = np.histogram(_DELTA_TIME, bins=_NUM_BINS, density=1)
+        axs[1].bar(_HIST[1][:-1], _HIST[0]/sum(_HIST[0]), width=_BAR_WIDTH*0.9, color='lightsteelblue', label=r'$Frequentist\ probabilities$', alpha=0.9)
+        
+        _MIN, _MAX = axs[1].get_xlim()
+        axs[1].set_xlim(_MIN, _MAX)
+        _KDE_X = np.linspace(_MIN, _MAX, 301)
+        _GAUSS_KER = st.gaussian_kde(_DELTA_TIME)
+        _PDF_DELTA_T = _GAUSS_KER.pdf(_KDE_X)
+        axs[1].plot(_KDE_X, _PDF_DELTA_T/sum(_PDF_DELTA_T), color='royalblue', linestyle='-',
+                    linewidth=2, label=r'$Gaussian\ Kernel\ Estimate\ PDF$', alpha=0.8)
+        axs[1].set(ylabel=r'$Probabilities$', xlabel=r'$\Delta t\ values$')
+        axs[1].legend(loc='upper left')
 
         f9.savefig(f'{_PATH}/9_delta_time.png', dpi=300)
 
