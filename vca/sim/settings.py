@@ -78,7 +78,7 @@ DRONE_ACCELERATION_LIMIT = 20   # +/-
 TIME_FONT = 'consolas'
 TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY_2   # used for all simulator texts
-DELTA_TIME = 3/30           # used in full blocking mode
+DELTA_TIME = 0.01           # used in full blocking mode
 
 # Bounding box settings
 BB_COLOR = BLUE     # pygame color
@@ -124,7 +124,7 @@ USE_WORLD_FRAME = 0
 CLEAR_TOP = 0
 
 # console settings
-CLEAN_CONSOLE = 0
+CLEAN_CONSOLE = 1
 
 # resolution settings
 SCALE_1 = 1.0

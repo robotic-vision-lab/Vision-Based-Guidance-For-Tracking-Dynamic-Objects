@@ -121,9 +121,9 @@ class Block(pygame.sprite.Sprite):
         """helper function to update kinematics of object
         """
         # update velocity and position
+        self.position += self.velocity * self.simulator.dt #+ 0.5 * \
+            #self.acceleration * self.simulator.dt**2  # pylint: disable=line-too-long
         self.velocity += self.acceleration * self.simulator.dt
-        self.position += self.velocity * self.simulator.dt + 0.5 * \
-            self.acceleration * self.simulator.dt**2  # pylint: disable=line-too-long
 
         # re-spawn in view
         if self.rect.centerx > WIDTH or \
@@ -210,9 +210,9 @@ class Car(pygame.sprite.Sprite):
         """helper function to update kinematics of object
         """
         # update velocity and position
+        self.position += self.velocity * self.simulator.dt #+ 0.5 * \
+            # self.acceleration * self.simulator.dt**2  # pylint: disable=line-too-long
         self.velocity += self.acceleration * self.simulator.dt
-        self.position += self.velocity * self.simulator.dt + 0.5 * \
-            self.acceleration * self.simulator.dt**2  # pylint: disable=line-too-long
 
     def update_rect(self):
         """update car sprite's rect.
@@ -291,15 +291,15 @@ class DroneCamera(pygame.sprite.Sprite):
         # print(f'a {self.acceleration}, v {self.velocity}')
 
         # update velocity and position
+
+        delta_pos = self.velocity * self.simulator.dt #+ 0.5 * self.acceleration * \
+            # self.simulator.dt**2      # i know how this looks like but,   pylint: disable=line-too-long
+        self.position = self.velocity * self.simulator.dt #+ 0.5 * self.acceleration * \
+            # self.simulator.dt**2  # donot touch ☠                    pylint: disable=line-too-long
+        self.origin += delta_pos
         self.velocity += self.acceleration * self.simulator.dt
         if abs(self.velocity.length()) > self.vel_limit:
             self.velocity -= self.acceleration * self.simulator.dt
-
-        delta_pos = self.velocity * self.simulator.dt + 0.5 * self.acceleration * \
-            self.simulator.dt**2      # i know how this looks like but,   pylint: disable=line-too-long
-        self.position = self.velocity * self.simulator.dt + 0.5 * self.acceleration * \
-            self.simulator.dt**2  # donot touch ☠                    pylint: disable=line-too-long
-        self.origin += delta_pos
 
     def compensate_camera_motion(self, sprite_obj):
         """Compensates camera motion by updating position of sprite object.
@@ -308,6 +308,7 @@ class DroneCamera(pygame.sprite.Sprite):
             sprite_obj (pygame.sprite.Sprite): Sprite object whose motion needs compensation.
         """
         sprite_obj.position -= self.position
+        sprite_obj.velocity -= self.velocity    # consider investigating for correctness
         sprite_obj.update_rect()
 
     def change_acceleration(self, command_vec):
@@ -442,7 +443,7 @@ class Simulator:
 
         self.cam_accel_command = pygame.Vector2(0, 0)
         self.euc_factor = 1.0
-        self.pause = False
+        self.pause = True
         self.time_font = pygame.font.SysFont(TIME_FONT, 16, False, False)
         self.bb_start = None
         self.bb_end = None
@@ -2135,10 +2136,10 @@ if __name__ == '__main__':
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
-    USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
-    USE_REAL_CLOCK = 1  # pylint: disable=bad-whitespace
+    USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
+    USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
@@ -2151,10 +2152,10 @@ if __name__ == '__main__':
                                                tracker_display_on=TRACKER_DISPLAY_ON,
                                                use_true_kin=USE_TRUE_KINEMATICS,
                                                use_real_clock=USE_REAL_CLOCK)
-        print("\nExperiment started.\n")
+        print(f'\nExperiment started. [{time.strftime("%H:%M:%S")}]\n')
         EXPERIMENT_MANAGER.run()
 
-        print("\n\nExperiment finished.\n")
+        print(f'\n\nExperiment finished. [{time.strftime("%H:%M:%S")}]\n')
 
     if RUN_TRACK_PLOT:
         FILE = open('plot_info.txt', 'r')
@@ -2768,17 +2769,21 @@ if __name__ == '__main__':
 
         _NUM_BINS = 300
         _DIFF = max(_DELTA_TIME) - min(_DELTA_TIME)
-        _BAR_WIDTH = _DIFF/_NUM_BINS
-        _HIST = np.histogram(_DELTA_TIME, bins=_NUM_BINS, density=1)
-        axs[1].bar(_HIST[1][:-1], _HIST[0]/sum(_HIST[0]), width=_BAR_WIDTH*0.9, color='lightsteelblue', label=r'$Frequentist\ probabilities$', alpha=0.9)
+        _BAR_WIDTH = _DIFF/_NUM_BINS if USE_REAL_CLOCK else DELTA_TIME * 0.1
+        _RANGE = (min(_DELTA_TIME), max(_DELTA_TIME)) if USE_REAL_CLOCK else (-2*abs(DELTA_TIME), 4*abs(DELTA_TIME))
+        _HIST = np.histogram(_DELTA_TIME, bins=_NUM_BINS, range=_RANGE, density=1)
+        axs[1].bar(_HIST[1][:-1], _HIST[0]/sum(_HIST[0]), width=_BAR_WIDTH*0.9, 
+                    color='lightsteelblue', label=r'$Frequentist\ PMF\ distribution$', alpha=0.9)
+        axs[1].set_xlim(-2*abs(DELTA_TIME), 4*abs(DELTA_TIME))
         
-        _MIN, _MAX = axs[1].get_xlim()
-        axs[1].set_xlim(_MIN, _MAX)
-        _KDE_X = np.linspace(_MIN, _MAX, 301)
-        _GAUSS_KER = st.gaussian_kde(_DELTA_TIME)
-        _PDF_DELTA_T = _GAUSS_KER.pdf(_KDE_X)
-        axs[1].plot(_KDE_X, _PDF_DELTA_T/sum(_PDF_DELTA_T), color='royalblue', linestyle='-',
-                    linewidth=2, label=r'$Gaussian\ Kernel\ Estimate\ PDF$', alpha=0.8)
+        if USE_REAL_CLOCK:
+            _MIN, _MAX = axs[1].get_xlim()
+            axs[1].set_xlim(_MIN, _MAX)
+            _KDE_X = np.linspace(_MIN, _MAX, 301)
+            _GAUSS_KER = st.gaussian_kde(_DELTA_TIME)
+            _PDF_DELTA_T = _GAUSS_KER.pdf(_KDE_X)
+            axs[1].plot(_KDE_X, _PDF_DELTA_T/sum(_PDF_DELTA_T), color='royalblue', linestyle='-',
+                        linewidth=2, label=r'$Gaussian\ Kernel\ Estimate\ PDF$', alpha=0.8)
         axs[1].set(ylabel=r'$Probabilities$', xlabel=r'$\Delta t\ values$')
         axs[1].legend(loc='upper left')
 
