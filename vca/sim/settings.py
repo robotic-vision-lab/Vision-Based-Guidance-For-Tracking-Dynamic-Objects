@@ -124,7 +124,7 @@ USE_WORLD_FRAME = 0
 CLEAR_TOP = 0
 
 # console settings
-CLEAN_CONSOLE = 1
+CLEAN_CONSOLE = 0
 
 # resolution settings
 SCALE_1 = 1.0

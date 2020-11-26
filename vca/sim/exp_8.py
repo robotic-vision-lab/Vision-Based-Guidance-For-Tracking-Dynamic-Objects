@@ -1460,6 +1460,9 @@ class Controller:
         if self.manager.write_plot:
             self.f.write(f'{self.manager.simulator.time},{r},{degrees(theta)},{degrees(Vtheta)},{Vr},{tru_kin[0][0]},{tru_kin[0][1]},{tru_kin[2][0]},{tru_kin[2][1]},{ax},{ay},{a_lat},{a_long},{tru_kin[3][0]},{tru_kin[3][1]},{tra_kin[2][0]},{tra_kin[2][1]},{tra_kin[3][0]},{tra_kin[3][1]},{self.manager.simulator.camera.origin[0]},{self.manager.simulator.camera.origin[1]},{S},{degrees(alpha)},{tru_kin[1][0]},{tru_kin[1][1]},{tra_kin[4][0]},{tra_kin[4][1]},{tra_kin[5][0]},{tra_kin[5][1]},{self.manager.simulator.camera.altitude},{abs(_D)},{r_},{degrees(theta_)},{Vr_},{degrees(Vtheta_)},{tr},{degrees(ttheta)},{tVr},{degrees(tVtheta)},{self.manager.simulator.dt}\n')
 
+        if not self.manager.control_on:
+            ax, ay = pygame.Vector2((0.0, 0.0))
+
         return ax, ay
 
 
@@ -2133,13 +2136,13 @@ if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
     WRITE_PLOT = 1  # pylint: disable=bad-whitespace
-    CONTROL_ON = 1  # pylint: disable=bad-whitespace
+    CONTROL_ON = 0  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
