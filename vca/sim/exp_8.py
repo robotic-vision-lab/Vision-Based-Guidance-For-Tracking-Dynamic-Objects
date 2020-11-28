@@ -367,6 +367,115 @@ class DroneCamera(pygame.sprite.Sprite):
         self.altitude -= self.alt_change
 
 
+class Bar(pygame.sprite.Sprite):
+    """Defines a Block sprite.
+    """
+
+    def __init__(self, simulator):
+        self.groups = [simulator.all_sprites, simulator.bar_sprites]
+
+        # Call the parent class (Sprite) constructor
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
+        self.simulator = simulator
+        # Create an image of the block, and fill it with a color.
+        # This could also be an image loaded from the disk.
+        self.w = BAR_WIDTH / PIXEL_TO_METERS_FACTOR
+        self.h = BAR_HEIGHT / PIXEL_TO_METERS_FACTOR
+        self.image = pygame.Surface((int(self.w), int(self.h)))
+        self.fill_image()
+
+        # Fetch the rectangle object that has the dimensions of the image
+        self.rect = self.image.get_rect()
+
+        # self.reset_kinematics()
+        _x = WIDTH + self.rect.centerx
+        _x = randrange(-(WIDTH - self.rect.width), (WIDTH - self.rect.width))
+        _y = randrange(-(HEIGHT - self.rect.height), (HEIGHT - self.rect.height))
+        self.position = pygame.Vector2(_x, _y) * self.simulator.pxm_fac
+        self.velocity = pygame.Vector2(0.0, 0.0)
+        self.acceleration = pygame.Vector2(0.0, 0.0)
+
+        # self.rect.center = self.position
+        self.update_rect()
+
+    def reset_kinematics(self):
+        """resets the kinematics of block
+        """
+        # set vectors representing the position, velocity and acceleration
+        # note the velocity we assign below will be interpreted as pixels/sec
+        fov = self.simulator.get_camera_fov()
+        drone_pos = self.simulator.get_drone_position()
+
+        _x = drone_pos[0] + fov[0] * random.uniform(0.5, 1.0) #+ self.rect.centerx * self.simulator.pxm_fac
+        # _x = random.uniform(drone_pos[0] - fov[0] / 2, drone_pos[0] + fov[0])
+        _y = random.uniform(drone_pos[1] - fov[1] / 2, drone_pos[1] + fov[1])
+        self.position = pygame.Vector2(_x, _y)
+        self.velocity = pygame.Vector2(0.0, 0.0)
+        self.acceleration = pygame.Vector2(0.0, 0.0)
+
+    def update_kinematics(self):
+        """helper function to update kinematics of object
+        """
+        # update velocity and position
+        self.position += self.velocity * self.simulator.dt #+ 0.5 * \
+            #self.acceleration * self.simulator.dt**2  # pylint: disable=line-too-long
+        self.velocity += self.acceleration * self.simulator.dt
+
+        # re-spawn in view
+        if self.rect.centerx > WIDTH or \
+                self.rect.centerx < 0 - self.rect.width or \
+                self.rect.centery > HEIGHT or \
+                self.rect.centery < 0 - self.rect.height:
+            self.reset_kinematics()
+
+    def update_rect(self):
+        """Position information is in bottom-left reference frame.
+        This method transforms it to top-left reference frame and update the sprite's rect.
+        This is for rendering purposes only, to decide where to draw the sprite.
+        """
+
+        x, y = self.position.elementwise() * (1, -1) / self.simulator.pxm_fac
+        self.rect.centerx = int(x)
+        self.rect.centery = int(y) + HEIGHT
+        self.rect.center += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1)
+
+    def update(self):
+        """Overwrites Sprite.update()
+            When we call update() on a group this methods gets called.
+            Every next frame while running the game loop this will get called
+        """
+        # for example if we want the sprite to move 5 pixels to the right
+        self.update_kinematics()
+        print(f'Bar : {self.position}')
+        # self.update_rect()
+        # self.rect.center = self.position
+
+    def fill_image(self):
+        """Helper function fills block image
+        """
+        r, g, b = BLOCK_COLOR
+        d = BAR_COLOR_DELTA
+        r += random.randint(-d[0], d[0])
+        g += random.randint(-d[1], d[1])
+        b += random.randint(-d[2], d[2])
+        self.image.fill((r, g, b))
+
+    def load(self):
+        """Helper function updates width and height of image and fills image.
+        Also, updates rect.
+        """
+        self.w /= self.simulator.alt_change_fac
+        self.h /= self.simulator.alt_change_fac
+
+        if self.w >= 2 and self.h >= 2:
+            self.image = pygame.Surface((int(self.w), int(self.h)))
+            self.fill_image()
+
+        # Fetch the rectangle object that has the dimensions of the image
+        self.rect = self.image.get_rect()
+
+
 class HighPrecisionClock:
     """High precision clock for time resolution in microseconds
     """
@@ -466,6 +575,7 @@ class Simulator:
         self.all_sprites = pygame.sprite.Group()
         self.drone_sprite = pygame.sprite.Group()
         self.car_block_sprites = pygame.sprite.Group()
+        self.bar_sprites = pygame.sprite.Group()
 
         # spawn blocks
         self.blocks = []
@@ -474,6 +584,11 @@ class Simulator:
 
         # spawn car
         self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION)
+
+        #spawn bar
+        self.bars = []
+        for _ in range(NUM_BARS):
+            self.bars.append(Bar(self))
 
         # spawn drone camera
         self.camera = DroneCamera(self)
@@ -617,6 +732,9 @@ class Simulator:
 
         # draw only car and blocks (not drone)
         self.car_block_sprites.draw(self.screen_surface)
+
+        # draw bars
+        self.bar_sprites.draw(self.screen_surface)
 
     def draw_extra(self):
         """Components to be drawn after screen capture for tracking/controllers is performed.
@@ -976,8 +1094,6 @@ class Tracker:
 
         cv = car_velocity.elementwise() * (1, -1)
         cv *= self.manager.simulator.pxm_fac
-        # cp = car_position
-        # cv = car_velocity
 
         # filter car kin
         if USE_FILTER:
@@ -2135,15 +2251,15 @@ def compute_moving_average(sequence, window_size):
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
-    CONTROL_ON = 0  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
+    CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
-    USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
+    USE_REAL_CLOCK = 1  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
