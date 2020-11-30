@@ -1486,16 +1486,15 @@ class Controller:
         beta = 0
 
         # compute vr and vtheta
-        print(f'car_speed={car_speed}, beta={beta}, theta={theta}, S={S}')
         Vr = car_speed * cos(beta - theta) - S * cos(alpha - theta)
         Vtheta = car_speed * sin(beta - theta) - S * sin(alpha - theta)
-        print(f'Vr={Vr}, Vtheta={Vtheta}')
 
-
+        # save measured r, θ, Vr, Vθ
         r_ = r
         theta_ = theta
         Vr_ = Vr
         Vtheta_ = Vtheta
+
         # at this point r, theta, Vr, Vtheta are computed
         # we can consider EKF filtering [r, theta, Vr, Vtheta]
         if not USE_TRUE_KINEMATICS and USE_EXTENDED_KALMAN:
@@ -1522,36 +1521,16 @@ class Controller:
             a_lat = 0.0
             a_long = 0.0
         else:
-            # _c = cos(alpha - theta)
-            # _s = sin(alpha - theta)
-            # _A = K2 * y2 / (2 * Vr)
-            # _B = K2 * y2 * self.R**2 - K1 * w + K1 * y1
-
-            # 2
-            # a_lat = ((Vr * _c + Vtheta * _s) * (_B / _D)) - _A * _s
-            # a_long = - ((Vtheta * _c + Vr * _s) * (_B / _D)) + _A * _s
-
-            # 1
-            # a_lat = (K1*Vr*y1*cos(alpha - theta) + K1*Vtheta*y1*sin(alpha - theta) + K2*self.R**2*Vr*y2*cos(alpha - theta) + K2*self.R**2*Vtheta*y2*sin(alpha - theta) - K2*Vtheta*r**2*y2*sin(alpha - theta))/(2*(Vr*Vtheta*r**2*cos(alpha - theta)**2 + Vr*Vtheta*r**2*sin(alpha - theta)**2))
-            # a_long = (K1*Vr*y1*sin(alpha - theta) - K1*Vtheta*y1*cos(alpha - theta) - K2*self.R**2*Vtheta*y2*cos(alpha - theta) + K2*self.R**2*Vr*y2*sin(alpha - theta) + K2*Vtheta*r**2*y2*cos(alpha - theta))/(2*(Vr*Vtheta*r**2*cos(alpha - theta)**2 + Vr*Vtheta*r**2*sin(alpha - theta)**2))
-
-            #3
-            print(f'K1={K1}, K2={K2}, w={w}, Vr_est={Vr}, Vth_est={Vtheta}, y1={y1}, y2={y2}, R={self.R}, r={r}, alpha={alpha}, th_est={theta}')
             a_lat = (K1 * Vr * y1 * cos(alpha - theta) - K1 * Vr * w * cos(alpha - theta) - K1 * Vtheta * w * sin(alpha - theta) + K1 * Vtheta * y1 * sin(alpha - theta) +
                      K2 * self.R**2 * Vr * y2 * cos(alpha - theta) + K2 * self.R**2 * Vtheta * y2 * sin(alpha - theta) - K2 * Vtheta * r**2 * y2 * sin(alpha - theta)) / _D
             a_long = (K1 * Vtheta * w * cos(alpha - theta) - K1 * Vtheta * y1 * cos(alpha - theta) - K1 * Vr * w * sin(alpha - theta) + K1 * Vr * y1 * sin(alpha - theta) -
                       K2 * self.R**2 * Vtheta * y2 * cos(alpha - theta) + K2 * self.R**2 * Vr * y2 * sin(alpha - theta) + K2 * Vtheta * r**2 * y2 * cos(alpha - theta)) / _D
 
-            print(f'computed accs: a_lat={a_lat}, a_long={a_long}')
         a_long_bound = 5
         a_lat_bound = 5
 
         a_long = self.sat(a_long, a_long_bound)
         a_lat = self.sat(a_lat, a_lat_bound)
-
-        # experimental
-        # a_lat = 0.1
-        # a_long = 0.0
 
         self.a_ln = a_long
         self.a_lt = a_lat
@@ -2258,11 +2237,11 @@ def compute_moving_average(sequence, window_size):
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
-    USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
+    USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
