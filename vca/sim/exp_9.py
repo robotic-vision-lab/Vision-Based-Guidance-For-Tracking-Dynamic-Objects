@@ -121,9 +121,9 @@ class Block(pygame.sprite.Sprite):
         """helper function to update kinematics of object
         """
         # update velocity and position
+        self.velocity += self.acceleration * self.simulator.dt
         self.position += self.velocity * self.simulator.dt #+ 0.5 * \
             #self.acceleration * self.simulator.dt**2  # pylint: disable=line-too-long
-        self.velocity += self.acceleration * self.simulator.dt
 
         # re-spawn in view
         if self.rect.centerx > WIDTH or \
@@ -417,9 +417,9 @@ class Bar(pygame.sprite.Sprite):
         """helper function to update kinematics of object
         """
         # update velocity and position
+        self.velocity += self.acceleration * self.simulator.dt
         self.position += self.velocity * self.simulator.dt #+ 0.5 * \
             #self.acceleration * self.simulator.dt**2  # pylint: disable=line-too-long
-        self.velocity += self.acceleration * self.simulator.dt
 
         # re-spawn in view
         if self.rect.centerx > WIDTH or \
@@ -998,6 +998,9 @@ class Tracker:
         # draw tracks on the mask, add mask to frame, save mask for future use
         img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(
             good_nxt), [TRACK_COLOR], mask, track_thickness=2)
+        for cur, nxt in zip(good_cur, good_nxt):
+            img, mask = draw_tracks(frame, [cur], [nxt], [DARK_GRAY], mask, track_thickness=1, radius=3)
+            
 
         # add optical flow arrows
         img = draw_sparse_optical_flow_arrows(
@@ -1211,6 +1214,8 @@ class Tracker:
 
             # compute and create kinematics tuple
             if len(good_cur) == 0 or len(good_nxt) == 0:
+                self.cur_frame = self.nxt_frame.copy()
+                self.cur_points = good_nxt.reshape(-1, 1, 2)
                 return False, None
 
             self.kin = self.compute_kinematics(good_cur.copy(),
@@ -1230,6 +1235,8 @@ class Tracker:
 
                 # show resultant img
                 cv.imshow(self.win_name, img)
+                cv.imshow("prev_frame", self.cur_frame)
+                cv.imshow("cur_frame", self.nxt_frame)
 
             # ready for next iteration. set cur frame and points to next frame and points
             self.cur_frame = self.nxt_frame.copy()
@@ -2244,12 +2251,12 @@ if __name__ == '__main__':
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
-    USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
+    USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
-    DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
+    DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 

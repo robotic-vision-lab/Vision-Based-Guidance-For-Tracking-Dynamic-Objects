@@ -33,7 +33,7 @@ TEMP_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'tmp')
 FPS = 30
 
 # screen settings
-SCREEN_SIZE = WIDTH, HEIGHT = 800, 600
+SCREEN_SIZE = WIDTH, HEIGHT = 640, 480 #800, 600
 SCREEN_CENTER = (WIDTH//2, HEIGHT//2)
 SCREEN_DISPLAY_TITLE = "Car Simulation"
 SCREEN_BG_COLOR = DARK_GRAY
@@ -41,7 +41,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 500.0                                  # meters
+ALTITUDE = 100.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -68,7 +68,7 @@ NUM_BLOCKS = 50
 # bar settings
 BAR_COLOR = BLUE
 BAR_COLOR_DELTA = (18, 18, 0)
-BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 15.0, 150.0
+BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 10.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
 NUM_BARS = 4
 
 # drone camera settings
@@ -84,7 +84,7 @@ DRONE_ACCELERATION_LIMIT = 20   # +/-
 TIME_FONT = 'consolas'
 TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY_2   # used for all simulator texts
-DELTA_TIME = 0.01           # used in full blocking mode
+DELTA_TIME = 0.1           # used in full blocking mode
 
 # Bounding box settings
 BB_COLOR = BLUE     # pygame color
@@ -94,8 +94,8 @@ METRICS_COLOR = LIGHT_GRAY_2
 TRACK_COLOR = (102, 255, 102)
 ARROW_SCALE = 15.0
 TRACKER_BLANK = 31
-ADD_METRICS = 1
-ADD_ALTITUDE_INFO = 1
+ADD_METRICS = 0
+ADD_ALTITUDE_INFO = 0
 
 # theme
 DARK_ON = 0
@@ -127,7 +127,7 @@ else:
 USE_WORLD_FRAME = 0
 
 # simulator settings
-CLEAR_TOP = 0
+CLEAR_TOP = 1
 
 # console settings
 CLEAN_CONSOLE = 0
@@ -196,22 +196,22 @@ CAR_RADIUS = 1
 # w_                      = -0.1              #DO NOT TOUCH
 
 # #4 CLOSED [world frame, truekin, c2 with den .01, bound=10, R=10]
-CAR_INITIAL_POSITION    = (200.0, 100.0)    # DO NOT TOUCH
-CAR_INITIAL_VELOCITY    = (22.22, 0.0)      # DO NOT TOUCH
-DRONE_POSITION          = (0.0, 0.0)        # DO NOT TOUCH
-DRONE_INITIAL_VELOCITY  = (31.11, 0.0)      # DO NOT TOUCH
-K_1                     = 0.1               # DO NOT TOUCH
-K_2                     = 0.05              # DO NOT TOUCH
-w_                      = -0.1              # DO NOT TOUCH
+# CAR_INITIAL_POSITION    = (200.0, 100.0)    # DO NOT TOUCH
+# CAR_INITIAL_VELOCITY    = (22.22, 0.0)      # DO NOT TOUCH
+# DRONE_POSITION          = (0.0, 0.0)        # DO NOT TOUCH
+# DRONE_INITIAL_VELOCITY  = (31.11, 0.0)      # DO NOT TOUCH
+# K_1                     = 0.1               # DO NOT TOUCH
+# K_2                     = 0.05              # DO NOT TOUCH
+# w_                      = -0.1              # DO NOT TOUCH
 
 # 5 open
-# CAR_INITIAL_POSITION    = (50.0, 50.0)
-# CAR_INITIAL_VELOCITY    = (22.22, 0.0)
-# DRONE_POSITION          = (0.0, 0.0)
-# DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
-# K_1                     = 0.1
-# K_2                     = 0.05
-# w_                      = -0.1
+CAR_INITIAL_POSITION    = (30.0, 25.0)
+CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+DRONE_POSITION          = (0.0, 0.0)
+DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+K_1                     = 0.1
+K_2                     = 0.05
+w_                      = -0.1
 
 # # 6 open
 # CAR_INITIAL_POSITION    = (-200.0, -150.0)
