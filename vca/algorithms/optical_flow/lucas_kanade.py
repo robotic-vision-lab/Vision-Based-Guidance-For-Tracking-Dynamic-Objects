@@ -28,7 +28,7 @@ def compute_optical_flow_LK(img_1,
     """
     # if previous feature points for previous frame are not given, compute them!
     if pts_1 is None:
-        # if feature_params are not given the initialise a default one
+        # if feature_params are not given the initialize a default one
         if feature_params is None:
             feature_params = dict( maxCorners = 100,
                                    qualityLevel = 0.3,
