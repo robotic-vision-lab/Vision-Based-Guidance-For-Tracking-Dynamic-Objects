@@ -41,7 +41,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 100.0                                  # meters
+ALTITUDE = 300.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -62,13 +62,13 @@ TRACK_COLOR = (102, 255, 102)
 
 # block settings
 BLOCK_COLOR = DARK_GRAY_2
-BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 18.0, 1.0
+BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 15.0, 0.5 #18.0, 1.0
 NUM_BLOCKS = 50
 
 # bar settings
 BAR_COLOR = BLUE
 BAR_COLOR_DELTA = (18, 18, 0)
-BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 10.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
+BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 8.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
 NUM_BARS = 4
 
 # drone camera settings
@@ -94,8 +94,8 @@ METRICS_COLOR = LIGHT_GRAY_2
 TRACK_COLOR = (102, 255, 102)
 ARROW_SCALE = 15.0
 TRACKER_BLANK = 31
-ADD_METRICS = 0
-ADD_ALTITUDE_INFO = 0
+ADD_METRICS = 1
+ADD_ALTITUDE_INFO = 1
 
 # theme
 DARK_ON = 0
@@ -127,10 +127,10 @@ else:
 USE_WORLD_FRAME = 0
 
 # simulator settings
-CLEAR_TOP = 1
+CLEAR_TOP = 0
 
 # console settings
-CLEAN_CONSOLE = 0
+CLEAN_CONSOLE = 1
 
 # resolution settings
 SCALE_1 = 1.0
@@ -165,7 +165,7 @@ SUB_TITLE_FONT_SIZE = 11
 SUPTITLE_ON = 1
 
 # --------------------------------------------------------------------------------
-CAR_RADIUS = 1
+CAR_RADIUS = 0.1
 # initial conditions
 
 # # 1 OPEN
@@ -205,10 +205,10 @@ CAR_RADIUS = 1
 # w_                      = -0.1              # DO NOT TOUCH
 
 # 5 open
-CAR_INITIAL_POSITION    = (30.0, 25.0)
+CAR_INITIAL_POSITION    = (30.0, -20.0)
 CAR_INITIAL_VELOCITY    = (22.22, 0.0)
 DRONE_POSITION          = (0.0, 0.0)
-DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+DRONE_INITIAL_VELOCITY  = (25.25, 0.0)
 K_1                     = 0.1
 K_2                     = 0.05
 w_                      = -0.1

@@ -758,11 +758,11 @@ class Simulator:
 
         if not CLEAR_TOP:
             # draw drone altitude info
-            alt_str = f'car location - {self.car.rect.center}, Drone Altitude - {self.camera.altitude:0.2f}m, fac - {self.alt_change_fac:0.4f}, pxm - {self.pxm_fac:0.4f}'
+            alt_str = f'car loc - {self.car.rect.center}, Alt - {self.camera.altitude:0.2f}m, fac - {self.alt_change_fac:0.4f}, pxm - {self.pxm_fac:0.4f}'
             alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
             alt_rect = alt_surf.get_rect()
             self.screen_surface.blit(alt_surf, (15, 15))
-            alt_str = f'drone location - {self.camera.rect.center}, FOV - {WIDTH * self.pxm_fac:0.2f}m x {HEIGHT * self.pxm_fac:0.2f}m'
+            alt_str = f'drone loc - {self.camera.rect.center}, FOV - {WIDTH * self.pxm_fac:0.2f}m x {HEIGHT * self.pxm_fac:0.2f}m'
             alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
             alt_rect = alt_surf.get_rect()
             self.screen_surface.blit(alt_surf, (15, 35))
@@ -902,6 +902,7 @@ class Tracker:
         self.window_size = 5
         self.prev_car_pos = None
         self.count = 0
+        self.occluded = False
 
         # self.nxt_points = None
         # self.car_position = None
@@ -999,7 +1000,7 @@ class Tracker:
         img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(
             good_nxt), [TRACK_COLOR], mask, track_thickness=2)
         for cur, nxt in zip(good_cur, good_nxt):
-            img, mask = draw_tracks(frame, [cur], [nxt], [DARK_GRAY], mask, track_thickness=1, radius=3)
+            img, mask = draw_tracks(frame, [cur], [nxt], [(204, 204, 204)], mask, track_thickness=1, radius=3)
             
 
         # add optical flow arrows
@@ -1212,6 +1213,11 @@ class Tracker:
             good_cur = self.cur_points[stdev == 1]
             good_nxt = self.nxt_points[stdev == 1]
 
+            print(f'TTTT0>> \nOCCLUDED: {self.occluded} \nstdev: \n{stdev.all()} \nmax err: {err.max()}\n')
+            # detect occlusion
+            if not stdev.all() or err.max() > 15:
+                self.occluded = True
+
             # compute and create kinematics tuple
             if len(good_cur) == 0 or len(good_nxt) == 0:
                 self.cur_frame = self.nxt_frame.copy()
@@ -1221,6 +1227,9 @@ class Tracker:
             self.kin = self.compute_kinematics(good_cur.copy(),
                                                good_nxt.copy())
 
+            # note: the drone position and velocity is taken from simulator
+            # drone kinematic are assumed to be known (IMU and/or FPGA optical flow)
+            # only the car kinematics are tracked/measured by tracker,
             drone_position, drone_velocity, car_position, car_velocity, cp_, cv_ = self.kin
             if not CLEAN_CONSOLE:
                 print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
@@ -1352,6 +1361,10 @@ class Tracker:
             img = put_text(img, kin_str_15, (50, HEIGHT - 15),
                            font_scale=0.45, color=METRICS_COLOR, thickness=1)
 
+        occ_str = "TARGET OCCLUDED" if self.occluded else "TARGET TRACKED"
+        occ_color = RED_CV if self.occluded else METRICS_COLOR
+        img = put_text(img, occ_str, (WIDTH//2 - 50, HEIGHT - 40),
+                           font_scale=0.55, color=occ_color, thickness=1)
         return img
 
 
@@ -1363,6 +1376,7 @@ class Controller:
         self.f = None
         self.a_ln = 0.0
         self.a_lt = 0.0
+        self.est_def = False
 
     def run(self):
         print('Controller running')
@@ -1464,6 +1478,60 @@ class Controller:
     @staticmethod
     def sat(x, bound):
         return min(max(x, -bound), bound)
+
+
+    def generate_acceleration_2(self, kin):
+        X, Y = kin[0]
+        Vx, Vy = kin[1]
+        car_x, car_y = kin[2]
+        car_vx, car_vy = kin[3]
+
+        # compute estimates
+        # what we got 
+        cx = car_x - X
+        cy = car_y - Y
+        cvx = car_vx - Vx
+        cvy = car_vy - Vy
+        dt = self.manager.sim_dt
+        gamma_a = 0.1
+        gamma_b = 0.1
+        lam = 0.5
+        a_m = dt
+        b_m = -dt
+        # what we estimate
+        if not self.est_def:
+            self.cx_est = 30.0
+            self.cy_est = 25.0
+            self.cvx_est = 22.22
+            self.cvy_est = 0.0
+            self.manager.simulator.camera.acceleration[0] = 0.030
+            self.manager.simulator.camera.acceleration[1] = 0.025
+            self.a_est = dt
+            self.b_est = -dt
+            self.est_def = True
+        self.cx_est = self.cx_est + a_m * self.cvx_est
+        self.cy_est = self.cy_est + a_m * self.cvy_est
+        self.cvx_est = self.cvx_est + b_m * self.manager.simulator.camera.acceleration[0]
+        self.cvy_est = self.cvy_est + b_m * self.manager.simulator.camera.acceleration[1]
+
+        # error between what we got and what was estimated
+        e_cx = cx - self.cx_est
+        e_cy = cy - self.cy_est
+        e_cvx = cvx - self.cvx_est
+        e_cvy = cvy - self.cvy_est
+
+        self.a_est = a_m + gamma_a * self.cx_est * e_cx
+        self.b_est = b_m + gamma_b * self.manager.simulator.camera.acceleration[0] * e_cvx
+
+        r = lam * 0.03
+        ax = cx * self.manager.simulator.camera.acceleration[0] * (r)
+        ay = cy * self.manager.simulator.camera.acceleration[1] * (r)
+
+        return ax, ay
+
+        
+
+
 
     def generate_acceleration(self, kin):
         X, Y = kin[0]
@@ -2246,8 +2314,8 @@ def compute_moving_average(sequence, window_size):
 
 if __name__ == '__main__':
 
-    EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
+    EXPERIMENT_SAVE_MODE_ON = 1  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
@@ -2256,7 +2324,7 @@ if __name__ == '__main__':
     DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -2278,7 +2346,7 @@ if __name__ == '__main__':
         FILE = open('plot_info.txt', 'r')
         
         # plot switches
-        SHOW_ALL = 0    # set to 1 to show all plots 
+        SHOW_ALL = 1    # set to 1 to show all plots 
 
         SHOW_CARTESIAN_PLOTS = 0
         SHOW_LOS_KIN_1 = 1
