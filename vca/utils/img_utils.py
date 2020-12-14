@@ -127,6 +127,7 @@ def add_salt_pepper(img, SNR):
     img_ = img_.transpose(2,1,0)
     return img_
 
+
 def scale_image(img, scale_factor=1.0):
     """ takes in img and scale_factor and returns scaled image with aspect ratio preserved """
     # compute dsize
