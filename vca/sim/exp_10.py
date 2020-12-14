@@ -926,93 +926,6 @@ class Tracker:
 
         self.win_name = 'Tracking in progress'
 
-    def run(self):
-        """Keeps running the tracker main functions.
-        Reads bounding box from it's ExperimentManager and computed features to be tracked.
-        """
-        # get first frame once bounding box is selected
-        frame_1, cur_frame = self.get_first_frame()
-
-        # compute feature mask from selected bounding box
-        feature_mask = np.zeros_like(cur_frame)
-        x, y, w, h = self.manager.simulator.bounding_box
-        feature_mask[y:y + h + 1, x:x + w + 1] = 1
-
-        # compute good features in the selected bounding box
-        cur_points = cv.goodFeaturesToTrack(cur_frame, mask=feature_mask, **FEATURE_PARAMS)
-
-        # create mask for drawing tracks
-        mask = np.zeros_like(frame_1)
-
-        # set tracker window location
-        if self.manager.tracker_display_on:
-            from win32api import GetSystemMetrics
-            win_name = 'Tracking in progress'
-            cv.namedWindow(win_name)
-            cv.moveWindow(win_name, GetSystemMetrics(0) - frame_1.shape[1] - 10, 0)
-
-        # begin tracking
-        while self.manager.simulator.running:
-
-            # make sure there is more than 0 frames in the deque
-            if len(self.manager.image_deque) < 0 or self.manager.get_sim_dt() == 0:
-                continue
-
-            # get next frame from image deque and convert to grayscale
-            frame_2 = self.manager.get_from_image_deque()
-            nxt_frame = convert_to_grayscale(frame_2)
-
-            # compute optical flow between current and next frame
-            cur_points, nxt_points, stdev, err = compute_optical_flow_LK(cur_frame,
-                                                                         nxt_frame,
-                                                                         cur_points,
-                                                                         LK_PARAMS)
-
-            # select good points, with standard deviation 1. use numpy index trick
-            good_cur = cur_points[stdev == 1]
-            good_nxt = nxt_points[stdev == 1]
-
-            # compute and create kinematics tuple
-            if len(good_cur) == 0 or len(good_nxt) == 0:
-                continue
-
-            kin = self.compute_kinematics(good_cur.copy(),
-                                          good_nxt.copy())
-            drone_position, drone_velocity, car_position, car_velocity = kin
-            if not CLEAN_CONSOLE:
-                print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
-
-            # add kinematics tuple to manager's kinematics deque
-            self.manager.add_to_kinematics_deque(kin)
-
-            # cosmetics/visual aids if the display is on
-            # create img with added tracks for all point pairs on next frame
-            # give car positions in current and next frame
-            # self.cur_img = nxt_frame
-            if self.manager.tracker_display_on:
-                # add cosmetics to frame_2 for display purpose
-                img, mask = self.add_cosmetics(frame_2, mask, good_cur, good_nxt, kin)
-
-                # set cur_img; to be used for saving
-                self.cur_img = img
-
-                # show resultant img
-                cv.imshow(win_name, img)
-
-            # ready for next iteration. set cur frame and points to next frame and points
-            cur_frame = nxt_frame.copy()
-            cur_points = good_nxt.reshape(-1, 1, 2)  # -1 indicates to infer that dim size
-
-            # every n seconds (n*FPS frames), get good points
-            # num_seconds = 1
-            # if frame_num % (num_seconds*FPS) == 0:
-            #     pass#cur_points = cv.goodFeaturesToTrack(cur_frame, mask=None, **FEATURE_PARAMS)
-            # for every point in good point if its not there in cur points, add , update color too
-
-            cv.waitKey(1)
-
-        cv.destroyAllWindows()
-
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         # draw tracks on the mask, add mask to frame, save mask for future use
         img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(
@@ -1041,22 +954,6 @@ class Tracker:
         img = self.put_metrics(img, kin)
 
         return img, mask
-
-    def get_first_frame(self):
-        while True:
-            # do nothing until bounding box is selected
-            if not self.manager.simulator.can_begin_tracking():
-                continue
-
-            # get a frame from the image deque and break
-            if len(self.manager.image_deque) > 0:
-                frame_1 = self.manager.image_deque.popleft()
-                cur_frame = convert_to_grayscale(frame_1)
-                break
-
-        self._can_begin_control_flag = True
-
-        return frame_1, cur_frame
 
     def can_begin_control(self):
         return self._can_begin_control_flag  # and self.prev_car_pos is not None
@@ -1273,37 +1170,6 @@ class Tracker:
 
             return True, self.kin
 
-    def put_velocity_text(self, img, velocity):
-        """Helper function, put computed velocity in text form on (opencv) image.
-
-        Args:
-            img (np.ndarray): Image on which text is to be put.
-            velocity (tuple(float, float)): velocity to be put in text form on image.
-
-        Returns:
-            np.ndarray: Image with velotcity text.
-        """
-        img = put_text(img, f'computed velocity: ', (WIDTH - 180, 25),
-                       font_scale=0.5, color=LIGHT_GRAY_2, thickness=1)
-        img = put_text(
-            img,
-            f'vx = {velocity[0]:.2f} ',
-            (WIDTH - 130,
-             50),
-            font_scale=0.5,
-            color=LIGHT_GRAY_2,
-            thickness=1)
-        img = put_text(
-            img,
-            f'vy = {velocity[1]:.2f} ',
-            (WIDTH - 130,
-             75),
-            font_scale=0.5,
-            color=LIGHT_GRAY_2,
-            thickness=1)
-
-        return img
-
     def put_metrics(self, img, k):
         """Helper function, put metrics and stuffs on opencv image.
 
@@ -1396,160 +1262,10 @@ class Controller:
         self.a_lt = 0.0
         self.est_def = False
 
-    def run(self):
-        print('Controller running')
-        if self.manager.write_plot:
-            f = open(self.plot_info_file, '+w')
-        R = CAR_RADIUS
-        while True:
-            # if self.manager.tracker_on and len(self.manager.kinematics_deque) == 0:
-            #     continue
-            if not self.manager.simulator.running:
-                break
-            if self.manager.simulator.pause:
-                continue
-
-            # kin = self.manager.get_from_kinematics_deque()
-            kin = self.manager.get_true_kinematics(
-            ) if self.manager.use_true_kin else self.manager.get_from_kinematics_deque()
-
-            mpx_fac = 1 / self.manager.simulator.pxm_fac
-
-            x, y = kin[0]  # .elementwise() * (1, -1) * mpx_fac + SCREEN_CENTER#(0, HEIGHT)
-            vx, vy = kin[1]  # .elementwise() * (1, -1) * mpx_fac
-            car_x, car_y = kin[2]  # .elementwise() * (1, -1) * mpx_fac + SCREEN_CENTER#(0, HEIGHT)
-            car_speed, cvy = kin[3]  # .elementwise() * (1, -1) * mpx_fac
-
-            if not CLEAN_CONSOLE:
-                print(
-                    f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{x:0.2f}, {y:0.2f}] | v:[{vx:0.2f}, {vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}]')
-
-            # speed of drone
-            s = (vx**2 + vy**2) ** 0.5
-
-            # distance between the drone and car
-            r = ((car_x - x)**2 + (car_y - y)**2)**0.5
-
-            # heading angle of drone wrt x axis
-            # alpha = kin[4]
-            alpha = atan2(vy, vx)
-
-            # angle of LOS from drone to car
-            theta = atan2(car_y - y, car_x - x)
-
-            # heading angle of car
-            beta = 0
-
-            # compute vr and vtheta
-            vr = car_speed * cos(beta - theta) - s * cos(alpha - theta)
-            vtheta = car_speed * sin(beta - theta) - s * sin(alpha - theta)
-            # print(car_speed, theta, vr, vtheta)
-            # calculate y from drone to car
-            y2 = vtheta**2 + vr**2
-            y1 = r**2 * vtheta**2 - y2 * R**2
-
-            # time to collision from drone to car
-            # tm = -vr * r / (vtheta**2 + vr**2)
-
-            # compute desired acceleration
-            w = -0.1
-            K1 = 0.1 * np.sign(-vr)
-            K2 = 0.05
-
-            # c = cos(alpha - theta)
-            # s = sin(alpha - theta)
-            # K1y1 = K1*y1
-            # K2y2Vrr2 = K2*y2*vr*r**2
-            # d = 2*vr*vtheta*r**2
-
-            # a_lat = (K1y1 * (vr*c + vtheta*s) + K2y2Vrr2*c) / d
-            # a_long = (K1y1 * (vr*s - vtheta*c) + K2y2Vrr2*s) / d
-
-            # a_lat = (K1*vr*y1*cos(alpha - theta) + K1*vtheta*y1*sin(alpha - theta) + K2*R**2*vr*y2*cos(alpha - theta) + K2*R**2*vtheta*y2*sin(alpha - theta) - K2*vtheta*r**2*y2*sin(alpha - theta))/(2*(vr*vtheta*r**2*cos(alpha - theta)**2 + vr*vtheta*r**2*sin(alpha - theta)**2))
-            # a_long = (K1*vr*y1*sin(alpha - theta) - K1*vtheta*y1*cos(alpha - theta) - K2*R**2*vtheta*y2*cos(alpha - theta) + K2*R**2*vr*y2*sin(alpha - theta) + K2*vtheta*r**2*y2*cos(alpha - theta))/(2*(vr*vtheta*r**2*cos(alpha - theta)**2 + vr*vtheta*r**2*sin(alpha - theta)**2))
-
-            a_lat = (K1 * vr * y1 * cos(alpha - theta) + K1 * vtheta * y1 * sin(alpha - theta) + K2 * R**2 * vr * y2 * cos(alpha - theta) + K2 * R**2 * vtheta * y2 * sin(
-                alpha - theta) - K2 * vtheta * r**2 * y2 * sin(alpha - theta)) / (2 * (vr * vtheta * r**2 * cos(alpha - theta)**2 + vr * vtheta * r**2 * sin(alpha - theta)**2))
-            a_long = (K1 * vr * y1 * sin(alpha - theta) - K1 * vtheta * y1 * cos(alpha - theta) - K2 * R**2 * vtheta * y2 * cos(alpha - theta) + K2 * R**2 * vr * y2 * sin(
-                alpha - theta) + K2 * vtheta * r**2 * y2 * cos(alpha - theta)) / (2 * (vr * vtheta * r**2 * cos(alpha - theta)**2 + vr * vtheta * r**2 * sin(alpha - theta)**2))
-
-            a_long_bound = 8
-            a_lat_bound = 8
-
-            # a_long = self.sat(a_long, a_long_bound)
-            # a_lat = self.sat(a_lat, a_lat_bound)
-
-            delta = alpha + pi / 2
-            ax = a_lat * cos(delta) + a_long * cos(alpha)
-            ay = a_lat * sin(delta) + a_long * sin(alpha)
-
-            # self.manager.add_to_command_deque((ax, ay))
-            self.manager.simulator.camera.acceleration = pygame.Vector2((ax, ay))
-
-            if self.manager.write_plot:
-                f.write(
-                    f'{self.manager.simulator.time},{r},{theta},{vtheta},{vr},{x},{y},{car_x},{car_y},{ax},{ay},{a_lat},{a_long}\n')
-
-        if self.manager.write_plot:
-            f.close()
 
     @staticmethod
     def sat(x, bound):
         return min(max(x, -bound), bound)
-
-
-    def generate_acceleration_2(self, kin):
-        X, Y = kin[0]
-        Vx, Vy = kin[1]
-        car_x, car_y = kin[2]
-        car_vx, car_vy = kin[3]
-
-        # compute estimates
-        # what we got 
-        cx = car_x - X
-        cy = car_y - Y
-        cvx = car_vx - Vx
-        cvy = car_vy - Vy
-        dt = self.manager.sim_dt
-        gamma_a = 0.1
-        gamma_b = 0.1
-        lam = 0.5
-        a_m = dt
-        b_m = -dt
-        # what we estimate
-        if not self.est_def:
-            self.cx_est = 30.0
-            self.cy_est = 25.0
-            self.cvx_est = 22.22
-            self.cvy_est = 0.0
-            self.manager.simulator.camera.acceleration[0] = 0.030
-            self.manager.simulator.camera.acceleration[1] = 0.025
-            self.a_est = dt
-            self.b_est = -dt
-            self.est_def = True
-        self.cx_est = self.cx_est + a_m * self.cvx_est
-        self.cy_est = self.cy_est + a_m * self.cvy_est
-        self.cvx_est = self.cvx_est + b_m * self.manager.simulator.camera.acceleration[0]
-        self.cvy_est = self.cvy_est + b_m * self.manager.simulator.camera.acceleration[1]
-
-        # error between what we got and what was estimated
-        e_cx = cx - self.cx_est
-        e_cy = cy - self.cy_est
-        e_cvx = cvx - self.cvx_est
-        e_cvy = cvy - self.cvy_est
-
-        self.a_est = a_m + gamma_a * self.cx_est * e_cx
-        self.b_est = b_m + gamma_b * self.manager.simulator.camera.acceleration[0] * e_cvx
-
-        r = lam * 0.03
-        ax = cx * self.manager.simulator.camera.acceleration[0] * (r)
-        ay = cy * self.manager.simulator.camera.acceleration[1] * (r)
-
-        return ax, ay
-
-        
-
-
 
     def generate_acceleration(self, kin):
         X, Y = kin[0]
