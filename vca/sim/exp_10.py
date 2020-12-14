@@ -913,7 +913,7 @@ class Tracker:
     def __init__(self, manager):
 
         self.manager = manager
-        
+
         self.frame_cur_gray = None
         self.frame_cur_color = None
         self.frame_cur_color_edited = None
@@ -938,10 +938,12 @@ class Tracker:
         self.count = 0
         self.occluded = False
 
+        self.track_length = 10
+        self.tracker_info_mask = None
         self.win_name = 'Tracking in progress'
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
-        # draw tracks on the mask, add mask to frame, save mask for future use
+        # draw tracks on the mask, apply mask to frame, save mask for future use
         img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(
             good_nxt), [TRACK_COLOR], mask, track_thickness=2)
         for cur, nxt in zip(good_cur, good_nxt):
