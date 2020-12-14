@@ -1497,60 +1497,6 @@ class Controller:
     def sat(x, bound):
         return min(max(x, -bound), bound)
 
-
-    def generate_acceleration_2(self, kin):
-        X, Y = kin[0]
-        Vx, Vy = kin[1]
-        car_x, car_y = kin[2]
-        car_vx, car_vy = kin[3]
-
-        # compute estimates
-        # what we got 
-        cx = car_x - X
-        cy = car_y - Y
-        cvx = car_vx - Vx
-        cvy = car_vy - Vy
-        dt = self.manager.sim_dt
-        gamma_a = 0.1
-        gamma_b = 0.1
-        lam = 0.5
-        a_m = dt
-        b_m = -dt
-        # what we estimate
-        if not self.est_def:
-            self.cx_est = 30.0
-            self.cy_est = 25.0
-            self.cvx_est = 22.22
-            self.cvy_est = 0.0
-            self.manager.simulator.camera.acceleration[0] = 0.030
-            self.manager.simulator.camera.acceleration[1] = 0.025
-            self.a_est = dt
-            self.b_est = -dt
-            self.est_def = True
-        self.cx_est = self.cx_est + a_m * self.cvx_est
-        self.cy_est = self.cy_est + a_m * self.cvy_est
-        self.cvx_est = self.cvx_est + b_m * self.manager.simulator.camera.acceleration[0]
-        self.cvy_est = self.cvy_est + b_m * self.manager.simulator.camera.acceleration[1]
-
-        # error between what we got and what was estimated
-        e_cx = cx - self.cx_est
-        e_cy = cy - self.cy_est
-        e_cvx = cvx - self.cvx_est
-        e_cvy = cvy - self.cvy_est
-
-        self.a_est = a_m + gamma_a * self.cx_est * e_cx
-        self.b_est = b_m + gamma_b * self.manager.simulator.camera.acceleration[0] * e_cvx
-
-        r = lam * 0.03
-        ax = cx * self.manager.simulator.camera.acceleration[0] * (r)
-        ay = cy * self.manager.simulator.camera.acceleration[1] * (r)
-
-        return ax, ay
-
-        
-
-
-
     def generate_acceleration(self, kin):
         X, Y = kin[0]
         Vx, Vy = kin[1]
