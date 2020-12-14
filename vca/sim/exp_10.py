@@ -913,6 +913,19 @@ class Tracker:
     def __init__(self, manager):
 
         self.manager = manager
+        
+        self.frame_cur_gray = None
+        self.frame_cur_color = None
+        self.frame_cur_color_edited = None
+        self.frame_nxt_gray = None
+        self.frame_nxt_color = None
+        self.frame_nxt_color_edited = None
+
+        self.key_point_set_cur = None
+        self.key_point_set_nxt = None
+        self.key_point_set_cur_good = None
+        self.key_point_set_nxt_good = None
+
         self.frame_1 = None
         self.cur_frame = None
         self.cur_img = None
@@ -1085,7 +1098,7 @@ class Tracker:
 
     def process_image(self, img):
         """Processes given image and generates tracking information
-        
+
 
         Args:
             img (np.ndarray): Image given with object to be tracked
