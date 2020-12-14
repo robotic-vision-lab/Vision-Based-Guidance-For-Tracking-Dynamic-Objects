@@ -916,6 +916,7 @@ class Tracker:
         self.frame_1 = None
         self.cur_frame = None
         self.cur_img = None
+        self.nxt_frame = None
         self.cur_points = None
         self._can_begin_control_flag = False    # will be modified in process_image
         self.kin = None
@@ -1083,7 +1084,8 @@ class Tracker:
         return np.array([[int(centroid_x / len(points)), int(centroid_y / len(points))]])
 
     def process_image(self, img):
-        """Processes given image and generates manages tracking
+        """Processes given image and generates tracking information
+        
 
         Args:
             img (np.ndarray): Image given with object to be tracked
@@ -1472,44 +1474,6 @@ class ExperimentManager:
         """Helper function, gets kinematics from manager's kinematics deque
         """
         return self.kinematics_deque.popleft()
-
-    def run_simulator(self):
-        """Run Simulator
-        """
-        self.simulator.start_new()
-        self.simulator.run()
-
-    def run_controller(self):
-        """Run Controller
-        """
-        self.controller.run()
-
-    def run_tracker(self):
-        """Run Tracker
-        """
-        self.tracker.run()
-
-    def run_experiment(self):
-        """Run Experiment by running Simulator, Tracker and Controller.
-        """
-
-        if self.tracker_on:
-            self.tracker_thread = th.Thread(target=self.run_tracker, daemon=True)
-            self.tracker_thread.start()
-
-        if self.control_on:
-            self.controller_thread = th.Thread(target=self.run_controller, daemon=True)
-            self.controller_thread.start()
-
-        self.run_simulator()
-
-        if self.save_on:
-            # create folder path inside ./sim_outputs
-            _path = f'./sim_outputs/{time.strftime("%Y-%m-%d_%H-%M-%S")}'
-            _prep_temp_folder(os.path.realpath(_path))
-            vid_path = f'{_path}/sim_track_control.avi'
-            print('Making video.')
-            self.make_video(vid_path, TEMP_FOLDER)
 
     def run(self):
         # initialize simulator
