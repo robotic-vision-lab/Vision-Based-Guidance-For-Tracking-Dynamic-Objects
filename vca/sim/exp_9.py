@@ -555,6 +555,7 @@ class Simulator:
         self.bb_start = None
         self.bb_end = None
         self.bb_drag = False
+        self.bounding_box_drawn = False
         self.running = True
         self.tracker_ready = False
 
@@ -649,18 +650,22 @@ class Simulator:
         """
         # respond to all events posted in the event queue
         for event in pygame.event.get():
+            # QUIT event
             if event.type == pygame.QUIT or     \
                     event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.quit()
                 break
-
+            
+            # KEYDOWN events
             if event.type == pygame.KEYDOWN:
+                # K_s => toggle save_screen
                 if event.key == pygame.K_s:
                     self.save_screen = not self.save_screen
                     if self.save_screen:
                         print("\nScreen recording started.")
                     else:
                         print("\nScreen recording stopped.")
+                # K_SPACE => toggle play/pause
                 if event.key == pygame.K_SPACE:
                     self.pause = not self.pause
                     if self.pause:
@@ -668,11 +673,14 @@ class Simulator:
                         print("\nSimulation paused.")
                     else:
                         print("\nSimulation running.")
+                # K_i => drone_up
                 if event.key == pygame.K_i:
                     self.drone_up()
+                # K_k => drone_down
                 if event.key == pygame.K_k:
                     self.drone_down()
-
+            
+            # mutliple keypresses for manual acceleration control
             key_state = pygame.key.get_pressed()
             if key_state[pygame.K_LEFT]:
                 self.cam_accel_command.x = -1
@@ -683,17 +691,28 @@ class Simulator:
             if key_state[pygame.K_DOWN]:
                 self.cam_accel_command.y = 1
 
-            self.euc_factor = 0.7071 if self.cam_accel_command == (1, 1) else 1.0
+            self.euc_factor = 0.7071 if abs(self.cam_accel_command.elementwise()) == (1, 1) else 1.0
 
-            if event.type == pygame.MOUSEBUTTONDOWN and self.pause:
+            # capture bounding box input 
+            # Bounding box will be input in the following manner
+            #   1. Simulator will be paused
+            #   2. MOUSEBUTTONDOWN event (triggers bb corner (start and end) points collection)
+            #   3. MOUSEMOTION event (triggers instantaneous end point update while mouse drag)
+            #   4. MOUSEBUTTONUP event (triggers end of drag along with final end point update)
+            # At step 4, we have a bounding box
+            # Bounding Box input event handling will be statefully managed
+            if self.pause and event.type == pygame.MOUSEBUTTONDOWN:
                 self.bb_start = self.bb_end = pygame.mouse.get_pos()
                 self.bb_drag = True
-            if self.bb_drag and event.type == pygame.MOUSEMOTION:
+            if event.type == pygame.MOUSEMOTION and self.bb_drag:
                 self.bb_end = pygame.mouse.get_pos()
 
             if event.type == pygame.MOUSEBUTTONUP:
                 self.bb_end = pygame.mouse.get_pos()
                 self.bb_drag = False
+                # at this point bounding box is assumed to be drawn
+                self.bounding_box_drawn = True
+                # assume appropriate bounding box was inputted and indicate green flag for tracker
                 self.tracker_ready = True
 
             pygame.event.pump()
@@ -863,7 +882,9 @@ class Simulator:
         return (WIDTH * self.pxm_fac, HEIGHT * self.pxm_fac)
 
     def can_begin_tracking(self):
-        """Indicates the green signal for tracking to start
+        """Indicates the green signal from Simulator for proceeding with tracking
+        Simulator gives green signal if
+            1. simulator is not paused
 
         Returns:
             bool: Can tracker begin tracking
@@ -896,17 +917,14 @@ class Tracker:
         self.cur_frame = None
         self.cur_img = None
         self.cur_points = None
-        self.win_name = 'Tracking in progress'
-        self._can_begin_control_flag = False
+        self._can_begin_control_flag = False    # will be modified in process_image
         self.kin = None
         self.window_size = 5
         self.prev_car_pos = None
         self.count = 0
         self.occluded = False
 
-        # self.nxt_points = None
-        # self.car_position = None
-        # self.car_velocity = None
+        self.win_name = 'Tracking in progress'
 
     def run(self):
         """Keeps running the tracker main functions.
@@ -1176,8 +1194,8 @@ class Tracker:
         Returns:
             [type]: [description]
         """
+        # first frame will get different treatment
         if self.cur_frame is None:
-            # print('tracker 1st frame')
             self.frame_1 = img
             self.cur_frame = convert_to_grayscale(self.frame_1)
 
@@ -1186,7 +1204,7 @@ class Tracker:
             x, y, w, h = self.manager.simulator.bounding_box
             feature_mask[y:y + h + 1, x:x + w + 1] = 1
 
-            # compute good features in the selected bounding box
+            # compute good features within the selected bounding box
             self.cur_points = cv.goodFeaturesToTrack(
                 self.cur_frame, mask=feature_mask, **FEATURE_PARAMS)
 
@@ -1778,12 +1796,16 @@ class ExperimentManager:
             self.make_video(vid_path, TEMP_FOLDER)
 
     def run(self):
+        # initialize simulator
         self.simulator.start_new()
+
+        # open plot file if write_plot is indicated
         if self.write_plot:
             self.controller.f = open(self.controller.plot_info_file, '+w')
 
-        # start the experiment
+        # run experiment
         while self.simulator.running:
+            # get delta time between ticks (0 when paused), update elapsed simulated time
             self.simulator.dt = self.simulator.clock.tick(FPS) / 1000000.0
             if not self.use_real_clock:
                 self.simulator.dt = DELTA_TIME
@@ -1791,25 +1813,31 @@ class ExperimentManager:
                 self.simulator.dt = 0.0
             self.simulator.time += self.simulator.dt
 
+            # handle events on simulator
             self.simulator.handle_events()
+
+            # if quit event occurs, running will be updated; respond to it
             if not self.simulator.running:
                 break
-
+            
+            # update rects and images for all sprites (not when paused)
             if not self.simulator.pause:
                 self.simulator.update()
                 if not CLEAN_CONSOLE:
                     print(f'SSSS >> {str(timedelta(seconds=self.simulator.time))} >> DRONE - x:{vec_str(self.simulator.camera.position)} | v:{vec_str(self.simulator.camera.velocity)} | CAR - x:{vec_str(self.simulator.car.position)}, v: {vec_str(self.simulator.car.velocity)} | COMMANDED a:{vec_str(self.simulator.camera.acceleration)} | a_comm:{vec_str(self.simulator.cam_accel_command)} | rel_car_pos: {vec_str(self.simulator.car.position - self.simulator.camera.position)}', end='\n')
 
-            # draw stuffs
+            # draw updated car, blocks and bars (drone will be drawn later)
             self.simulator.draw()
 
             # process screen capture *PARTY IS HERE*
             if not self.simulator.pause:
-                # let tracker process image, when simulator says so
+
+                # let tracker process image, when simulator indicates ok
                 if self.simulator.can_begin_tracking():
                     screen_capture = self.simulator.get_screen_capture()
                     self.tracker.process_image(screen_capture)
-                    # let controller generate acceleration, when tracker says so
+
+                    # let controller generate acceleration, when tracker indicates ok
                     if self.tracker.can_begin_control() and (
                             self.use_true_kin or self.tracker.kin is not None) and (
                             self.filter.done_waiting() or not USE_FILTER):
@@ -2315,7 +2343,7 @@ def compute_moving_average(sequence, window_size):
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 1  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
@@ -2324,7 +2352,7 @@ if __name__ == '__main__':
     DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
