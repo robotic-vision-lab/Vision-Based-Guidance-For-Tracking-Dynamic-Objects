@@ -916,10 +916,9 @@ class Tracker:
 
         self.frame_cur_gray = None
         self.frame_cur_color = None
-        self.frame_cur_color_edited = None
+        self.frame_color_edited = None
         self.frame_nxt_gray = None
         self.frame_nxt_color = None
-        self.frame_nxt_color_edited = None
 
         self.key_point_set_cur = None
         self.key_point_set_nxt = None
@@ -940,6 +939,7 @@ class Tracker:
 
         self.track_length = 10
         self.tracker_info_mask = None
+        self.target_feature_mask = None
         self.win_name = 'Tracking in progress'
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
@@ -1103,33 +1103,38 @@ class Tracker:
 
 
         Args:
-            img (np.ndarray): Image given with object to be tracked
+            img (np.ndarray): Rendered image capture from Simulator. (grayscale not guaranteed)
 
         Returns:
             [type]: [description]
         """
         # first frame will get different treatment
-        if self.cur_frame is None:
-            self.frame_1 = img
-            self.cur_frame = convert_to_grayscale(self.frame_1)
+        if self.frame_cur_gray is None: # TODO this condition needs to be polished
+                                        # this should determine if it's the first frame
+            self.frame_cur_color = img
+
+            # all processing to be done on grayscale of image
+            self.frame_cur_gray = convert_to_grayscale(self.frame_cur_color)
 
             # compute feature mask from selected bounding box
-            feature_mask = np.zeros_like(self.cur_frame)
+             self.target_feature_mask = np.zeros_like(self.frame_cur_gray)
             x, y, w, h = self.manager.simulator.bounding_box
-            feature_mask[y:y + h + 1, x:x + w + 1] = 1
+             self.target_feature_mask[y : y+h+1, x : x+w+1] = 1
 
             # compute good features within the selected bounding box
             self.cur_points = cv.goodFeaturesToTrack(
-                self.cur_frame, mask=feature_mask, **FEATURE_PARAMS)
+                self.frame_cur_gray, mask= self.target_feature_mask, **FEATURE_PARAMS)
 
-            # create mask for drawing tracks
-            self.mask = np.zeros_like(self.frame_1)
+            # create mask for adding tracker information
+            # tracker information mask will be applied to 3 channel RGB image, 
+            # so mask will have 3 channels too
+            self.tracker_info_mask = np.zeros_like(self.frame_cur_color)
 
-            # set tracker window location
+            # if display is on, set window location
             if self.manager.tracker_display_on:
                 from win32api import GetSystemMetrics
                 cv.namedWindow(self.win_name)
-                cv.moveWindow(self.win_name, GetSystemMetrics(0) - self.frame_1.shape[1] - 10, 0)
+                cv.moveWindow(self.win_name, GetSystemMetrics(0) - self.frame_cur_gray.shape[1] - 10, 0)
         else:
             self._can_begin_control_flag = True
             self.frame_2 = img
@@ -1168,8 +1173,8 @@ class Tracker:
 
             if self.manager.tracker_display_on:
                 # add cosmetics to frame_2 for display purpose
-                img, self.mask = self.add_cosmetics(
-                    self.frame_2, self.mask, good_cur, good_nxt, self.kin)
+                img, self.tracker_info_mask = self.add_cosmetics(
+                    self.frame_2, self.tracker_info_mask, good_cur, good_nxt, self.kin)
 
                 # set cur_img; to be used for saving
                 self.cur_img = img
