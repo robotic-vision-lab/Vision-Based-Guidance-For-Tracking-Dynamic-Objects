@@ -1117,9 +1117,9 @@ class Tracker:
             self.frame_cur_gray = convert_to_grayscale(self.frame_cur_color)
 
             # compute feature mask from selected bounding box
-             self.target_feature_mask = np.zeros_like(self.frame_cur_gray)
+            self.target_feature_mask = np.zeros_like(self.frame_cur_gray)
             x, y, w, h = self.manager.simulator.bounding_box
-             self.target_feature_mask[y : y+h+1, x : x+w+1] = 1
+            self.target_feature_mask[y : y+h+1, x : x+w+1] = 1
 
             # compute good features within the selected bounding box
             self.cur_points = cv.goodFeaturesToTrack(
@@ -1137,32 +1137,32 @@ class Tracker:
                 cv.moveWindow(self.win_name, GetSystemMetrics(0) - self.frame_cur_gray.shape[1] - 10, 0)
         else:
             self._can_begin_control_flag = True
-            self.frame_2 = img
-            self.nxt_frame = convert_to_grayscale(self.frame_2)
+            self.frame_nxt_color = img
+            self.frame_nxt_gray = convert_to_grayscale(self.frame_nxt_color)
 
             # track current points in next frame, compute optical flow
-            self.cur_points, self.nxt_points, stdev, err = compute_optical_flow_LK(self.cur_frame,
-                                                                                   self.nxt_frame,
-                                                                                   self.cur_points,
-                                                                                   LK_PARAMS)
+            self.key_point_set_cur, self.key_point_set_nxt, stdev, err = compute_optical_flow_LK(self.frame_cur_gray,
+                                                                                                 self.frame_nxt_gray,
+                                                                                                 self.key_point_set_cur,
+                                                                                                 LK_PARAMS)
 
             # select good points, with standard deviation 1. use numpy index trick
-            good_cur = self.cur_points[stdev == 1]
-            good_nxt = self.nxt_points[stdev == 1]
+            self.key_point_set_cur_good = self.key_point_set_cur[stdev == 1]
+            self.key_point_set_nxt_good = self.key_point_set_nxt[stdev == 1]
 
-            print(f'TTTT0>> \nOCCLUDED: {self.occluded} \nstdev: \n{stdev.all()} \nmax err: {err.max()}\n')
+            # print(f'TTTT0>> \nOCCLUDED: {self.occluded} \nstdev: \n{stdev.all()} \nmax err: {err.max()}\n')
             # detect occlusion
             if not stdev.all() or err.max() > 15:
                 self.occluded = True
 
-            # compute and create kinematics tuple
-            if len(good_cur) == 0 or len(good_nxt) == 0:
-                self.cur_frame = self.nxt_frame.copy()
-                self.cur_points = good_nxt.reshape(-1, 1, 2)
+            # compute and create kinematics tuple # TODO this part needs to change
+            if len(self.key_point_set_cur_good) == 0 or len(self.key_point_set_nxt_good) == 0:
+                self.frame_cur_gray = self.frame_nxt_gray.copy()
+                self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)
                 return False, None
 
-            self.kin = self.compute_kinematics(good_cur.copy(),
-                                               good_nxt.copy())
+            self.kin = self.compute_kinematics(self.key_point_set_cur_good.copy(),
+                                               self.key_point_set_nxt_good.copy())
 
             # note: the drone position and velocity is taken from simulator
             # drone kinematic are assumed to be known (IMU and/or FPGA optical flow)
@@ -1173,20 +1173,20 @@ class Tracker:
 
             if self.manager.tracker_display_on:
                 # add cosmetics to frame_2 for display purpose
-                img, self.tracker_info_mask = self.add_cosmetics(
-                    self.frame_2, self.tracker_info_mask, good_cur, good_nxt, self.kin)
+                self.frame_color_edited, self.tracker_info_mask = self.add_cosmetics(
+                    self.frame_nxt_color, self.tracker_info_mask, self.key_point_set_cur_good, self.key_point_set_nxt_good, self.kin)
 
-                # set cur_img; to be used for saving
-                self.cur_img = img
+                # set cur_img; to be used for saving # TODO investigate need and fix
+                self.cur_img = self.frame_color_edited
 
                 # show resultant img
-                cv.imshow(self.win_name, img)
-                cv.imshow("prev_frame", self.cur_frame)
-                cv.imshow("cur_frame", self.nxt_frame)
+                cv.imshow(self.win_name, self.frame_color_edited)
+                cv.imshow("prev_frame", self.frame_cur_gray)
+                cv.imshow("cur_frame", self.frame_nxt_gray)
 
             # ready for next iteration. set cur frame and points to next frame and points
-            self.cur_frame = self.nxt_frame.copy()
-            self.cur_points = good_nxt.reshape(-1, 1, 2)  # -1 indicates to infer that dim size
+            self.frame_cur_gray = self.frame_nxt_gray.copy()
+            self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)  # -1 indicates to infer that dim size
 
             cv.waitKey(1)
 
