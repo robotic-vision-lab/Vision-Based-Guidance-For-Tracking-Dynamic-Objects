@@ -1116,13 +1116,13 @@ class Tracker:
             # all processing to be done on grayscale of image
             self.frame_cur_gray = convert_to_grayscale(self.frame_cur_color)
 
-            # compute feature mask from selected bounding box
+            # initialize and compute target feature mask from bounding box
             self.target_feature_mask = np.zeros_like(self.frame_cur_gray)
             x, y, w, h = self.manager.simulator.bounding_box
             self.target_feature_mask[y : y+h+1, x : x+w+1] = 1
 
             # compute good features within the selected bounding box
-            self.cur_points = cv.goodFeaturesToTrack(
+            self.key_point_set_cur = cv.goodFeaturesToTrack(
                 self.frame_cur_gray, mask= self.target_feature_mask, **FEATURE_PARAMS)
 
             # create mask for adding tracker information
