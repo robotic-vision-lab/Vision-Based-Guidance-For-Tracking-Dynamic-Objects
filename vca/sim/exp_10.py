@@ -1122,7 +1122,7 @@ class Tracker:
             self.target_feature_mask[y : y+h+1, x : x+w+1] = 1
 
             # compute good features within the selected bounding box
-            self.cur_points = cv.goodFeaturesToTrack(
+            self.key_point_set_cur = cv.goodFeaturesToTrack(
                 self.frame_cur_gray, mask= self.target_feature_mask, **FEATURE_PARAMS)
 
             # create mask for adding tracker information
@@ -1181,8 +1181,8 @@ class Tracker:
 
                 # show resultant img
                 cv.imshow(self.win_name, self.frame_color_edited)
-                cv.imshow("prev_frame", self.frame_cur_gray)
-                cv.imshow("cur_frame", self.frame_nxt_gray)
+                cv.imshow("cur_frame", self.frame_cur_gray)
+                cv.imshow("nxt_frame", self.frame_nxt_gray)
 
             # ready for next iteration. set cur frame and points to next frame and points
             self.frame_cur_gray = self.frame_nxt_gray.copy()
