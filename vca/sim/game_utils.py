@@ -1,9 +1,28 @@
 import os
 import shutil
 import pygame
-
+import cv2 as cv
 from pygame.locals import *
 from settings import *
+
+class ImageDumper:
+    def __init__(self, path):
+        self.path = os.path.realpath(path)
+        
+        self._folder_prep_success = _prep_temp_folder(self.path)
+        self._frame_num = 0
+
+    def _get_next_path(self):
+        self._frame_num += 1
+        img_name = f'frame_{str(self._frame_num).zfill(6)}.png'
+        file_path = os.path.join(self.path, img_name)
+
+        return file_path 
+
+    def dump(self, img):
+        file_name = self._get_next_path()
+        cv.imwrite(file_name, img)
+
 
 # helper function to load images
 def load_image(img_name, colorkey=None, alpha=True, scale=1.0):
@@ -54,7 +73,6 @@ def scale_img(img, scale):
     return img
 
 
-
 def screen_saver(screen, path):
     """ generator function saves current frame on given screen as .jpg image file """
     # prep folder path 
@@ -80,6 +98,8 @@ def _prep_temp_folder(folder_path):
     else:
         shutil.rmtree(folder_path)
         os.mkdir(folder_path)
+
+    return os.path.isdir(folder_path)
 
 
 def vec_str(vec):

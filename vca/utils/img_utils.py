@@ -183,10 +183,20 @@ def images_assemble(images,
                     bg_color=[255, 255, 255], 
                     border=True, 
                     scale_to_fit=False):
-    """ Assembles an array of images into a single image grid.
+    """Assembles an array of images into a single image grid.
         Also, scale all images by the scale_factor.
         Images (1D list) of different sizes may be scaled to fit the row.
 
+    Args:
+        images (list(np.ndarray,..)): List of images 
+        grid_shape (tuple(int,int)): Definition of shape of 2D grid
+        scale_factor (float, optional): Scale that applies on all images and therefore the grid. Defaults to 1.0.
+        bg_color (list, optional): Background color of the grid. Defaults to [255, 255, 255].
+        border (bool, optional): Adds border (default thickness 5) to images. Defaults to True.
+        scale_to_fit (bool, optional): Scale images to fit the grid cell (not implemented). Defaults to False.
+
+    Returns:
+        np.ndarray: Assembled image
     """
     # validate grid_shape and num of elements in images
     if not len(grid_shape) == 2:

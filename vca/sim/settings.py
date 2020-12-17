@@ -28,6 +28,7 @@ YELLOW_CV = (0, 255, 255)
 # resources settings
 ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets')
 TEMP_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'tmp')
+TRACKER_TEMP_FOLDER = os.path.join(os.path.abspath(TEMP_FOLDER), 'track_tmp')
 
 # frame settings
 FPS = 30
@@ -41,7 +42,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 300.0                                  # meters
+ALTITUDE = 100.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
