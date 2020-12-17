@@ -43,7 +43,8 @@ from utils.img_utils import scale_image as cv_scale_img
 from game_utils import (load_image,                         #pylint: disable=unused-import
                         _prep_temp_folder,
                         vec_str,
-                        scale_img)
+                        scale_img,
+                        ImageDumper)
 from algorithms.optical_flow \
                 import (compute_optical_flow_farneback,     #pylint: disable=unused-import
                         compute_optical_flow_HS,
@@ -797,20 +798,20 @@ class Simulator:
 
         frame_num = 0
         while True:
-            # make full file path string
+            # construct full path string with incremental next image name
             frame_num += 1
             image_name = f'frame_{str(frame_num).zfill(4)}.png'
             file_path = os.path.join(path, image_name)
 
-            # get capture from simulator
+            # collect screen capture from simulator
             img_sim = self.get_screen_capture(save_mode=True)
 
-            # get tracker image
+            # collect tracker output image
             img_track = self.manager.tracker.cur_img
             if img_track is None:
                 img_track = np.ones_like(img_sim, dtype='uint8') * TRACKER_BLANK
 
-            # assemble images
+            # assemble simulator and tracker images in a grid
             img = images_assemble([img_sim, img_track], (1, 2))
 
             # write image
@@ -937,17 +938,19 @@ class Tracker:
         self.count = 0
         self.occluded = False
 
+        self._frame_num = 0
         self.track_length = 10
         self.tracker_info_mask = None
         self.target_feature_mask = None
         self.win_name = 'Tracking in progress'
+        self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         # draw tracks on the mask, apply mask to frame, save mask for future use
         img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(
-            good_nxt), [TRACK_COLOR], mask, track_thickness=2)
+            good_nxt), [TRACK_COLOR], mask, track_thickness=2, radius=3, circle_thickness=1)
         for cur, nxt in zip(good_cur, good_nxt):
-            img, mask = draw_tracks(frame, [cur], [nxt], [(204, 204, 204)], mask, track_thickness=1, radius=3)
+            img, mask = draw_tracks(frame, [cur], [nxt], [(204, 204, 204)], mask, track_thickness=1, radius=2, circle_thickness=-1)
             
 
         # add optical flow arrows
@@ -1098,6 +1101,17 @@ class Tracker:
 
         return np.array([[int(centroid_x / len(points)), int(centroid_y / len(points))]])
 
+    def process_image_new(self, nxt_frame):
+        # save the new frame 
+        self.frame_nxt_color = nxt_frame
+        self.frame_nxt_gray = convert_to_grayscale(self.frame_nxt_color)
+        
+        # compute new key points, corresponding to target
+        # if target is occluded .. we will see about in a bit
+        # assuming target was detected and old key points correspond to target in old frame
+        # frame_cur_gray is old frame, key_point_set_cur is old point set
+
+
     def process_image(self, img):
         """Processes given image and generates tracking information
 
@@ -1147,6 +1161,7 @@ class Tracker:
                                                                                                  LK_PARAMS)
 
             # select good points, with standard deviation 1. use numpy index trick
+            # note: keypointset shape: (n,1,2); keypoint_good shape: (n,2)
             self.key_point_set_cur_good = self.key_point_set_cur[stdev == 1]
             self.key_point_set_nxt_good = self.key_point_set_nxt[stdev == 1]
 
@@ -1161,14 +1176,14 @@ class Tracker:
                 self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)
                 return False, None
 
-            self.kin = self.compute_kinematics(self.key_point_set_cur_good.copy(),
+            self.kin = self.compute_kinematics(self.key_point_set_cur_good.copy(),  # TODO can not pass any arguments instead
                                                self.key_point_set_nxt_good.copy())
 
             # note: the drone position and velocity is taken from simulator
             # drone kinematic are assumed to be known (IMU and/or FPGA optical flow)
             # only the car kinematics are tracked/measured by tracker,
-            drone_position, drone_velocity, car_position, car_velocity, cp_, cv_ = self.kin
             if not CLEAN_CONSOLE:
+                drone_position, drone_velocity, car_position, car_velocity, cp_, cv_ = self.kin
                 print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
 
             if self.manager.tracker_display_on:
@@ -1183,6 +1198,10 @@ class Tracker:
                 cv.imshow(self.win_name, self.frame_color_edited)
                 cv.imshow("cur_frame", self.frame_cur_gray)
                 cv.imshow("nxt_frame", self.frame_nxt_gray)
+
+            # dump frames for analysis
+            assembled_img = images_assemble([self.frame_cur_gray.copy(), self.frame_nxt_gray.copy(), self.frame_color_edited.copy()], (1,3))
+            self.img_dumper.dump(assembled_img)
 
             # ready for next iteration. set cur frame and points to next frame and points
             self.frame_cur_gray = self.frame_nxt_gray.copy()
@@ -2042,7 +2061,7 @@ def compute_moving_average(sequence, window_size):
 
 if __name__ == '__main__':
 
-    EXPERIMENT_SAVE_MODE_ON = 1  # pylint: disable=bad-whitespace
+    EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
     WRITE_PLOT = 0  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
