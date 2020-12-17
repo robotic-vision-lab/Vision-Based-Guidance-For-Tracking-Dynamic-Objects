@@ -50,6 +50,14 @@ def compute_optical_flow_LK(img_1,
                                               nextPts=None,
                                               **lk_params )
 
+    # old_points, new_points, found_status, error
+    # note:
+    # error is L1 (Hamming) distances between the features (basic image difference), averaged 
+    # over all pixels in the feature patch
+    # found status is updated based on the error
+    # if OPTFLOW_LK_GET_MIN_EIGENVALS  flag is set then minimum eigen value of spatial gradient matrix 
+    # is computed in which case found status will be update based on if the minimum eigen value is less than 
+    # minEigThreshold
     return pts_1, pts_2, st, err
 
 
