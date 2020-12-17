@@ -1111,6 +1111,15 @@ class Tracker:
         # assuming target was detected and old key points correspond to target in old frame
         # frame_cur_gray is old frame, key_point_set_cur is old point set
 
+        # difference between pts and good_pts is that good_pts correspond to stronger features
+
+        # -------------------------------------------------------------------------------
+        # prepare for next iteration (cur <-- next) points, frames (gray only) 
+        # old color frames are not important 
+        self.frame_cur_gray = self.frame_nxt_gray
+        self.frame_cur_color = self.frame_nxt_color
+        self.key_point_set_cur = self.key_point_set_nxt_good
+
 
     def process_image(self, img):
         """Processes given image and generates tracking information
