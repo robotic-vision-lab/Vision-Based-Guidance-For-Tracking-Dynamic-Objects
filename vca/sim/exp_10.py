@@ -936,7 +936,7 @@ class Tracker:
         self.window_size = 5
         self.prev_car_pos = None
         self.count = 0
-        self.occluded = False
+        self._target_occluded_flag = False
 
         self._frame_num = 0
         self.track_length = 10
@@ -944,6 +944,13 @@ class Tracker:
         self.target_feature_mask = None
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
+
+    def is_target_occluded(self):
+        # given the context and mechanism, it indicates if target is occluded in old frame
+        # the function call would semantically equate to a question asked about occlusion 
+        # in the previous frame
+        # syntactically, we could return the occlusion flag to serve the purpose
+        return self._target_occluded_flag
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         # draw tracks on the mask, apply mask to frame, save mask for future use
@@ -1105,6 +1112,9 @@ class Tracker:
         # save the new frame 
         self.frame_nxt_color = nxt_frame
         self.frame_nxt_gray = convert_to_grayscale(self.frame_nxt_color)
+
+        if self.is_target_occluded():
+            # we need will 
         
         # compute new key points, corresponding to target
         # if target is occluded .. we will see about in a bit
