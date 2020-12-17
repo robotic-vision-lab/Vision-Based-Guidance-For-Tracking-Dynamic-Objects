@@ -126,7 +126,7 @@ def draw_sparse_optical_flow_arrows(img, prev_points, cur_points, thickness=1, a
     return img
 
 
-def draw_tracks(img, old_pts, new_pts, colors=None, mask=None, track_thickness=1, radius=3):
+def draw_tracks(img, old_pts, new_pts, colors=None, mask=None, track_thickness=1, radius=3, circle_thickness=-1):
     """Draw tracks on a mask, circles on the image, adds them and returns it. 
         Given new and old points, 
         draws a track between each pair of a new point and old point.
@@ -140,6 +140,7 @@ def draw_tracks(img, old_pts, new_pts, colors=None, mask=None, track_thickness=1
         mask (np.ndarray): Mask on which lines are to be drawn or already drawn previously
         track_thickness (int): Thickness of track lines
         radius (int): Radius of filled circle to be drawn on img
+        circle_thickness (int): Thickness of circle. -1 indicates fill. Defaults to -1.
 
     """
     # if image is grayscale it need to be converted to BGR
@@ -158,7 +159,7 @@ def draw_tracks(img, old_pts, new_pts, colors=None, mask=None, track_thickness=1
         else:
             color = (102, 255, 102) if colors is None else colors[i].tolist()
         mask = cv.line(mask, (a,b), (c,d), color, track_thickness)
-        img = cv.circle(img, (a,b), radius, color, -1)
+        img = cv.circle(img, (a,b), radius, color, circle_thickness)
 
     # add img and mask
     img[mask>0]=0
