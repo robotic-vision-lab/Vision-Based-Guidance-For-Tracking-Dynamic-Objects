@@ -926,6 +926,9 @@ class Tracker:
         self.keypoints_old_good = None
         self.keypoints_new_good = None
 
+        self.feature_found_statuses = None
+        self.cross_feature_errors = None
+
         self.frame_1 = None
         self.cur_frame = None
         self.cur_img = None
@@ -946,14 +949,28 @@ class Tracker:
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
 
     def was_target_occluded(self):
-        # given the context and mechanism, it indicates if target is occluded in old frame
+        # Given the context and mechanism, it indicates if target was occluded in old frame;
         # the function call would semantically equate to a question asked about occlusion 
         # in the previous frame
         # syntactically, we could return the occlusion flag to serve the purpose
         return self._target_occluded_flag
 
     def is_target_occluded(self):
-        pass
+        # Given the context and mechanism, it indicates if target is occluded in new frame;
+        # the function call would semantically equate to a question asked about occlusion in 
+        # the new frame, which would entail inferring from flow computations and descriptor matching
+        
+        # occlusion detection from flow criterion
+        # 1. Rise in flow computation error residual.
+        # occlusion detection from feature matching
+        # 1. Drop in similarity of descriptor at old and new points
+        if (not self.feature_found_statuses.all() or 
+                self.cross_feature_errors.max() > 15 or
+                not self.is_target_descriptor_matching()):
+            self._target_occluded_flag = True
+        return 
+
+
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         # draw tracks on the mask, apply mask to frame, save mask for future use
@@ -1148,7 +1165,7 @@ class Tracker:
         So we compute new key points, corresponding to the target
         '''
         # track current points in next frame, compute optical flow
-        self.key_point_set_cur, self.key_point_set_nxt, stdev, err = compute_optical_flow_LK(self.frame_cur_gray,
+        self.key_point_set_cur, self.key_point_set_nxt, self.feature_found_statuses, self.cross_feature_errors = compute_optical_flow_LK(self.frame_cur_gray,
                                                                                              self.frame_nxt_gray,
                                                                                              self.key_point_set_cur,
                                                                                              LK_PARAMS)
