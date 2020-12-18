@@ -978,6 +978,16 @@ class Tracker:
     def save_target_descriptor(self):
         pass
 
+    def compute_flow(self):
+        flow_output = compute_optical_flow_LK(self.frame_cur_gray,
+                                              self.frame_new_gray,
+                                              self.keypoints_old, # good from previous frame
+                                              LK_PARAMS)
+        self.keypoints_old = flow_output[0]
+        self.keypoints_new = flow_output[1]
+        self.feature_found_statuses = flow_output[2]
+        self.cross_feature_errors  = flow_output[3]
+
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         # draw tracks on the mask, apply mask to frame, save mask for future use
         img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(
@@ -1172,18 +1182,18 @@ class Tracker:
         Also old frame is available. 
         So we compute new key points, corresponding to the target
         '''
-        # track current points in next frame, compute optical flow
-        self.keypoints_old, self.keypoints_new, self.feature_found_statuses, self.cross_feature_errors = compute_optical_flow_LK(self.frame_cur_gray,
-                                                                                             self.frame_nxt_gray,
-                                                                                             self.key_point_set_cur,
-                                                                                             LK_PARAMS)
+        # compute optical flow
+        # track current points in next frame, update new points, status and error
+        self.compute_flow()
 
         # if target is occluded, it implies that the position tracking is far from accurate
         # therefore to sustain reliability in computed measurements, they will not be computed 
         # when occlusion is detected. We do not save new frame into old frame and return failure. 
         if self.is_target_occluded():
             return self._FAILURE
-        
+        # NOTE:
+        # selecting good points does not make sense if we are not interested in partial occlusion
+        # however, if we are, we use "centroid adjustment" to recover bad keypoints using good keypoints
         # at this point we can assume target was detected successfully and old key points 
         # corresponded to target in old frame, we are in business!
         # We are good to now use measurements to compute kinematics
