@@ -948,6 +948,8 @@ class Tracker:
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
 
+        self._FAILURE = False, None
+
     def was_target_occluded(self):
         # Given the context and mechanism, it indicates if target was occluded in old frame;
         # the function call would semantically equate to a question asked about occlusion 
@@ -970,7 +972,11 @@ class Tracker:
             self._target_occluded_flag = True
         return 
 
+    def is_target_descriptor_matching(self):
+        pass
 
+    def save_target_descriptor(self):
+        pass
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         # draw tracks on the mask, apply mask to frame, save mask for future use
@@ -1151,11 +1157,13 @@ class Tracker:
                 so that in next iteration, tracker will assume no occlusion and use 
                 the saved positions as old points to then compute new points.
                 '''
+                return self._FAILURE
             else:                       # target not found
                 '''
                 if we don't find it then, let the occlusion flag be,
                 don't save new frame into old frame and return failure
                 '''
+                return self._FAILURE
 
         '''
         We reach this point, means target is not occluded in old frame.
@@ -1165,14 +1173,23 @@ class Tracker:
         So we compute new key points, corresponding to the target
         '''
         # track current points in next frame, compute optical flow
-        self.key_point_set_cur, self.key_point_set_nxt, self.feature_found_statuses, self.cross_feature_errors = compute_optical_flow_LK(self.frame_cur_gray,
+        self.keypoints_old, self.keypoints_new, self.feature_found_statuses, self.cross_feature_errors = compute_optical_flow_LK(self.frame_cur_gray,
                                                                                              self.frame_nxt_gray,
                                                                                              self.key_point_set_cur,
                                                                                              LK_PARAMS)
 
-        # if target is occluded .. we will see about in a bit
-        # assuming target was detected and old key points correspond to target in old frame
-        # frame_cur_gray is old frame, key_point_set_cur is old point set
+        # if target is occluded, it implies that the position tracking is far from accurate
+        # therefore to sustain reliability in computed measurements, they will not be computed 
+        # when occlusion is detected. We do not save new frame into old frame and return failure. 
+        if self.is_target_occluded():
+            return self._FAILURE
+        
+        # at this point we can assume target was detected successfully and old key points 
+        # corresponded to target in old frame, we are in business!
+        # We are good to now use measurements to compute kinematics
+
+
+            
 
         # difference between pts and good_pts is that good_pts correspond to stronger features
 
