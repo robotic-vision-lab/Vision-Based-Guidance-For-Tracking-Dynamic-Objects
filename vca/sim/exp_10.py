@@ -988,6 +988,12 @@ class Tracker:
         self.feature_found_statuses = flow_output[2]
         self.cross_feature_errors  = flow_output[3]
 
+
+    def update_measured_kinematics(self):
+        self.kin = self.compute_kinematics(self.keypoints_old_good.copy(),
+                                           self.keypoints_new_good.copy())
+            
+
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         # draw tracks on the mask, apply mask to frame, save mask for future use
         img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(
@@ -1191,17 +1197,54 @@ class Tracker:
         # when occlusion is detected. We do not save new frame into old frame and return failure. 
         if self.is_target_occluded():
             return self._FAILURE
+        
         # NOTE:
         # selecting good points does not make sense if we are not interested in partial occlusion
-        # however, if we are, we use "centroid adjustment" to recover bad keypoints using good keypoints
+        # however, if we were, we would use "centroid adjustment" to recover bad keypoints using good keypoints
+
         # at this point we can assume target was detected successfully and old key points 
-        # corresponded to target in old frame, we are in business!
-        # We are good to now use measurements to compute kinematics
+        # indeed correspond to the target in old frame, we are in business!
+        # Also, we can assume that each set keypoints_old_good and keypoints_new_good is not empty.
+        # We can now use measurements (good points) to compute and update kinematics
+        self.update_measured_kinematics()
+
+        # NOTE: 
+        # drone kinematics are assumed to be known (IMU and/or FPGA optical flow)
+        # here, the drone position and velocity is known from Simulator
+        # only the car kinematics are tracked/measured by tracker
+        if not CLEAN_CONSOLE:
+            drone_position, drone_velocity, car_position, car_velocity, cp_, cv_ = self.kin
+            print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
+
+        if self.manager.tracker_display_on:
+            # add cosmetics to frame_2 for display purpose
+            self.frame_color_edited, self.tracker_info_mask = self.add_cosmetics(
+                self.frame_new_color, self.tracker_info_mask, self.keypoints_old_good, self.keypoints_new_good, self.kin)
+
+            # set cur_img; to be used for saving # TODO investigated it's need, used in Simulator, fix it
+            self.cur_img = self.frame_color_edited
+
+            # show resultant img
+            cv.imshow(self.win_name, self.frame_color_edited)
+            cv.imshow("cur_frame", self.frame_cur_gray)
+            cv.imshow("nxt_frame", self.frame_nxt_gray)
+
+        # dump frames for analysis
+        assembled_img = images_assemble([self.frame_cur_gray.copy(), self.frame_nxt_gray.copy(), self.frame_color_edited.copy()], (1,3))
+        self.img_dumper.dump(assembled_img)
+
+        # ready for next iteration. set cur frame and points to next frame and points
+        self.frame_cur_gray = self.frame_nxt_gray.copy()
+        self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)  # -1 indicates to infer that dim size
+
+        cv.waitKey(1)
+
+        return True, self.kin
 
 
             
 
-        # difference between pts and good_pts is that good_pts correspond to stronger features
+        # difference between pts and good_pts is that good_pts correspond to stronger feature matches
 
         # -------------------------------------------------------------------------------
         # prepare for next iteration (cur <-- next) points, frames (gray only) 
