@@ -992,7 +992,24 @@ class Tracker:
     def update_measured_kinematics(self):
         self.kin = self.compute_kinematics(self.keypoints_old_good.copy(),
                                            self.keypoints_new_good.copy())
-            
+    
+    @staticmethod
+    def get_bounding_box_mask(img, x, y, width, height):
+        # assume image is grayscale
+        mask = np.zeros_like(img)
+        mask[y:y+height, x:x+width] = 1
+        return mask
+
+    @staticmethod
+    def get_patch_mask(img, patch_center, patch_size):
+        x = patch_center[0] - patch_size //2
+        y = patch_center[1] - patch_size //2
+        mask = np.zeros_like(img)
+        mask[y:y+patch_size[1], x:x+patch_size[0]]
+        return mask
+        
+
+
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         # draw tracks on the mask, apply mask to frame, save mask for future use
