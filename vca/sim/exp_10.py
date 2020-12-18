@@ -526,6 +526,7 @@ class Simulator:
     Responds to keypresses 'SPACE' to toggle play/pause, 's' to save screen mode, ESC to quit.
     While running simulation, it also dumps the screens to a shared memory location.
     Designed to work with an ExperimentManager object.
+    Computer Graphics techniques are employed here.
     """
 
     def __init__(self, manager):
@@ -909,6 +910,7 @@ class Simulator:
 class Tracker:
     """Tracker object is desgined to work with and ExperimentManager object.
     It can be used to process screen captures and produce tracking information for feature points.
+    Computer Vision techniques employed here.
     """
 
     def __init__(self, manager):
@@ -928,6 +930,8 @@ class Tracker:
 
         self.feature_found_statuses = None
         self.cross_feature_errors = None
+
+        self.target_descriptor = None
 
         self.frame_1 = None
         self.cur_frame = None
@@ -949,6 +953,9 @@ class Tracker:
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
 
         self._FAILURE = False, None
+
+    def is_first_time(self):
+        return self.frame_old_gray is None
 
     def was_target_occluded(self):
         # Given the context and mechanism, it indicates if target was occluded in old frame;
@@ -983,6 +990,7 @@ class Tracker:
                                               self.frame_new_gray,
                                               self.keypoints_old, # good from previous frame
                                               LK_PARAMS)
+        
         self.keypoints_old = flow_output[0]
         self.keypoints_new = flow_output[1]
         self.feature_found_statuses = flow_output[2]
@@ -1008,6 +1016,10 @@ class Tracker:
         mask[y:y+patch_size[1], x:x+patch_size[0]]
         return mask
         
+    def save_new_to_old(self):
+        self.frame_old_gray = self.frame_new_gray.copy()
+        # self.frame_old_color = self.frame_new_color.copy()
+        self.keypoints_old = self.keypoints_new_good.copy()
 
 
 
@@ -1169,13 +1181,24 @@ class Tracker:
 
     def process_image_new(self, nxt_frame):
         # save new frame 
-        self.frame_nxt_color = nxt_frame
-        self.frame_nxt_gray = convert_to_grayscale(self.frame_nxt_color)
+        self.frame_new_color = nxt_frame
+        self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
+
+        if self.is_first_time():
+            # comply with selected the bounding box; compute feature points within
+            x, y, w, h = self.manager.get_target_bounding_box()
+            self.target_feature_mask = self.get_bounding_box_mask(self.frame_new_gray)
+
+            # compute good features within the selected bounding box
+            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_feature_mask, **FEATURE_PARAMS)
+
+            # store new in old for next iteration
+            self.save_new_to_old()
 
         if self.was_target_occluded():
             '''
-            Target was occluded, meaning old frame had occlusion
-            in the new frame we will need to conclude if we still have occlusion
+            Target was occluded, meaning old frame had occlusion.
+            In the new frame we will need to conclude if we still have occlusion
             Presumption is that upon occlusion, the descriptor from old image was 
             saved earlier. Positions (old points) would have to be either estimated 
             or known magically without using tracker. 
@@ -1235,8 +1258,11 @@ class Tracker:
 
         if self.manager.tracker_display_on:
             # add cosmetics to frame_2 for display purpose
-            self.frame_color_edited, self.tracker_info_mask = self.add_cosmetics(
-                self.frame_new_color, self.tracker_info_mask, self.keypoints_old_good, self.keypoints_new_good, self.kin)
+            self.frame_color_edited, self.tracker_info_mask = self.add_cosmetics(self.frame_new_color, 
+                                                                                 self.tracker_info_mask,
+                                                                                 self.keypoints_old_good,
+                                                                                 self.keypoints_new_good,
+                                                                                 self.kin)
 
             # set cur_img; to be used for saving # TODO investigated it's need, used in Simulator, fix it
             self.cur_img = self.frame_color_edited
@@ -1266,9 +1292,9 @@ class Tracker:
         # -------------------------------------------------------------------------------
         # prepare for next iteration (cur <-- next) points, frames (gray only) 
         # old color frames are not important 
-        self.frame_cur_gray = self.frame_nxt_gray
-        self.frame_cur_color = self.frame_nxt_color
-        self.key_point_set_cur = self.key_point_set_nxt_good
+        self.frame_cur_gray = self.frame_nxt_gray.copy()
+        self.frame_cur_color = self.frame_nxt_color.copy()
+        self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)
 
 
     def process_image(self, img):
@@ -1445,7 +1471,7 @@ class Tracker:
             img = put_text(img, kin_str_15, (50, HEIGHT - 15),
                            font_scale=0.45, color=METRICS_COLOR, thickness=1)
 
-        occ_str = "TARGET OCCLUDED" if self.occluded else "TARGET TRACKED"
+        occ_str = "TARGET OCCLUDED" if self.is_target_occluded() else "TARGET TRACKED"
         occ_color = RED_CV if self.occluded else METRICS_COLOR
         img = put_text(img, occ_str, (WIDTH//2 - 50, HEIGHT - 40),
                            font_scale=0.55, color=occ_color, thickness=1)
@@ -1672,6 +1698,9 @@ class ExperimentManager:
         """Helper function, gets kinematics from manager's kinematics deque
         """
         return self.kinematics_deque.popleft()
+
+    def get_target_bounding_box(self):
+        return self.simulator.bounding_box
 
     def run(self):
         # initialize simulator
