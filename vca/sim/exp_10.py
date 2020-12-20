@@ -953,8 +953,11 @@ class Tracker:
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
 
         self._FAILURE = False, None
+        self._SUCCESS = True, self.kin
 
     def is_first_time(self):
+        # this function is called in process_image in the beginning. 
+        # it indicates if this the first time process_image received a frame
         return self.frame_old_gray is None
 
     def was_target_occluded(self):
@@ -983,6 +986,11 @@ class Tracker:
         pass
 
     def save_target_descriptor(self):
+        # use keypoints from old frame, 
+        # save descriptor or centroid
+        pass
+
+    def target_redetected(self):
         pass
 
     def compute_flow(self):
@@ -1016,10 +1024,11 @@ class Tracker:
         mask[y:y+patch_size[1], x:x+patch_size[0]]
         return mask
         
-    def save_new_to_old(self):
+    def copy_new_to_old(self):
         self.frame_old_gray = self.frame_new_gray.copy()
-        # self.frame_old_color = self.frame_new_color.copy()
-        self.keypoints_old = self.keypoints_new_good.copy()
+        self.frame_old_color = self.frame_new_color.copy()
+        self.keypoints_old = self.keypoints_new.copy()
+        self.keypoints_old_good = self.keypoints_new_good.copy()
 
 
 
@@ -1191,12 +1200,18 @@ class Tracker:
 
             # compute good features within the selected bounding box
             self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_feature_mask, **FEATURE_PARAMS)
+            self.keypoints_new_good = self.keypoints_new.copy()
 
             # store new in old for next iteration
-            self.save_new_to_old()
+            self.copy_new_to_old()
 
-        if self.was_target_occluded():
+            # save descriptor, first old frame will always have no occlusion
+            self.save_target_descriptor()
+
+        # target was occluded
+        if self.was_target_occluded():  
             '''
+            Assume target was not occluded in first frame.
             Target was occluded, meaning old frame had occlusion.
             In the new frame we will need to conclude if we still have occlusion
             Presumption is that upon occlusion, the descriptor from old image was 
@@ -1207,20 +1222,22 @@ class Tracker:
             in the new frame. Since success is returned only when kin was computed successfully,
             which can only be done if target was no occluded in both old and new frames.
             '''
-            if self.target_detected():  # target found
+            if self.target_redetected():      # target re-detected
                 '''
                 if we find it then, save it and set occlusion to false, return failure
                 so that in next iteration, tracker will assume no occlusion and use 
                 the saved positions as old points to then compute new points.
                 '''
+
                 return self._FAILURE
-            else:                       # target not found
+            else:                           # target not re-detected
                 '''
                 if we don't find it then, let the occlusion flag be,
                 don't save new frame into old frame and return failure
                 '''
                 return self._FAILURE
 
+        # target was not occluded
         '''
         We reach this point, means target is not occluded in old frame.
         no guarantees that it won't be occluded in new frame, so caution is necessary.
@@ -1236,26 +1253,37 @@ class Tracker:
         # therefore to sustain reliability in computed measurements, they will not be computed 
         # when occlusion is detected. We do not save new frame into old frame and return failure. 
         if self.is_target_occluded():
-            return self._FAILURE
+            if self.target_recovered():  # can recover from occlusion (if partial)
+                # compute kin
+                self.update_measured_kinematics()
+                # save keypoints new to old, but not descriptor
+                self.copy_new_to_old()
+                
+                return self._SUCCESS
+            else:                   # cannot recover from occlusion 
+                # do not save new to old, do not save target descriptor
+                return self._FAILURE
         
         # NOTE:
         # selecting good points does not make sense if we are not interested in partial occlusion
         # however, if we were, we would use "centroid adjustment" to recover bad keypoints using good keypoints
 
         # at this point we can assume target was detected successfully and old key points 
-        # indeed correspond to the target in old frame, we are in business!
+        # indeed correspond to the target in old frame, the trivial case!
         # Also, we can assume that each set keypoints_old_good and keypoints_new_good is not empty.
         # We can now use measurements (good points) to compute and update kinematics
         self.update_measured_kinematics()
+        self.copy_new_to_old()
 
-        # NOTE: 
-        # drone kinematics are assumed to be known (IMU and/or FPGA optical flow)
-        # here, the drone position and velocity is known from Simulator
-        # only the car kinematics are tracked/measured by tracker
         if not CLEAN_CONSOLE:
+            # NOTE: 
+            # drone kinematics are assumed to be known (IMU and/or FPGA optical flow)
+            # here, the drone position and velocity is known from Simulator
+            # only the car kinematics are tracked/measured by tracker
             drone_position, drone_velocity, car_position, car_velocity, cp_, cv_ = self.kin
             print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
 
+        return self._SUCCESS
         if self.manager.tracker_display_on:
             # add cosmetics to frame_2 for display purpose
             self.frame_color_edited, self.tracker_info_mask = self.add_cosmetics(self.frame_new_color, 
