@@ -50,6 +50,15 @@ from algorithms.optical_flow \
                         compute_optical_flow_HS,
                         compute_optical_flow_LK)
 
+from algorithms.feature_detection \
+                import (Sift,)
+
+from algorithms.feature_match \
+                import (BruteL2,)
+
+from algorithms.template_match \
+                import CorrelationCoeffNormed
+
 
 """ Summary:
     Experiment 9:
@@ -931,7 +940,13 @@ class Tracker:
         self.feature_found_statuses = None
         self.cross_feature_errors = None
 
-        self.target_descriptor = None
+        self.target_descriptors = None
+        self.target_template_gray = None
+        self.target_template_color = None
+
+        self.detector = Sift()
+        self.descriptor_matcher = BruteL2()
+        self.template_matcher = CorrelationCoeffNormed()
 
         self.frame_1 = None
         self.cur_frame = None
@@ -943,7 +958,8 @@ class Tracker:
         self.window_size = 5
         self.prev_car_pos = None
         self.count = 0
-        self._target_occluded_flag = False
+        self._target_old_occluded_flag = False
+        self._target_new_occluded_flag = False
 
         self._frame_num = 0
         self.track_length = 10
@@ -960,14 +976,14 @@ class Tracker:
         # it indicates if this the first time process_image received a frame
         return self.frame_old_gray is None
 
-    def was_target_occluded(self):
+    def is_target_occluded_in_old_frame(self):
         # Given the context and mechanism, it indicates if target was occluded in old frame;
         # the function call would semantically equate to a question asked about occlusion 
         # in the previous frame
         # syntactically, we could return the occlusion flag to serve the purpose
-        return self._target_occluded_flag
+        return self._target_old_occluded_flag
 
-    def is_target_occluded(self):
+    def is_target_occluded_in_new_frame(self):
         # Given the context and mechanism, it indicates if target is occluded in new frame;
         # the function call would semantically equate to a question asked about occlusion in 
         # the new frame, which would entail inferring from flow computations and descriptor matching
@@ -976,25 +992,94 @@ class Tracker:
         # 1. Rise in flow computation error residual.
         # occlusion detection from feature matching
         # 1. Drop in similarity of descriptor at old and new points
+        # if (not self.feature_found_statuses.all() or 
+        #         self.cross_feature_errors.max() > 15 or
+        #         not self.is_target_descriptor_matching()):
+        #     self._target_new_occluded_flag = True
+        return self._target_new_occluded_flag
+
+    def detect_occlusion_in_new_frame(self):
+        # Infers from flow computations and descriptor and template matching algorithms
+        # if target is occluded (partial/total)
+        
+        # occlusion detection from flow criterion
+        # 1. Rise in flow computation error residual.
+        # occlusion detection from feature matching
+        # 1. Drop in similarity of descriptor pairs at old and new points
         if (not self.feature_found_statuses.all() or 
                 self.cross_feature_errors.max() > 15 or
                 not self.is_target_descriptor_matching()):
-            self._target_occluded_flag = True
-        return 
+            self._target_new_occluded_flag = True
 
     def is_target_descriptor_matching(self):
-        pass
+        # check if target descriptors are matching
+        keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in self.keypoints_new_good]
+        descriptors_new = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, 
+                                                                       keyPoints) #self.keypoints_new_good)
+        
+        matches = self.descriptor_matcher.compute_matches(self.target_descriptors, descriptors_new)
+        distances = [m.distance for m in matches]
+        mxd = max(distances)
+        is_match = True if mxd < 70 else False
+        return is_match
 
-    def save_target_descriptor(self):
+    def is_target_template_matching(self):
+        # check if target template is matching
+        new_location = self._get_target_image_location()
+        new_location_patch = self.get_neighborhood_patch(self.frame_new_gray, new_location, (25,25))
+        match_result = self.template_matcher.compute_match(new_location_patch, self.target_template_gray)
+        min_val, max_val, min_loc, max_loc = cv.minMaxLoc(match_result)
+
+        is_match = True if match_result[max_loc] < 0.95 else False
+
+    def target_recovered(self):
+        return False
+
+    @staticmethod
+    def get_bb_patch_from_image(img, bounding_box):
+        x, y, w, h = bounding_box
+        return img[y:y+h, x:x+w] # same for color or gray
+
+    @staticmethod
+    def get_neighborhood_patch(img, center, size):
+        x = center[0] - size[0]/2
+        y = center[1] - size[1]/2
+
+        return get_bb_patch_from_image(img, (x, y, *size))
+
+    def save_target_descriptors(self):
         # use keypoints from old frame, 
-        # save descriptor or centroid
-        pass
+        # save descriptors of good keypoints
+        keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in self.keypoints_old_good]
+        self.target_descriptors = self.detector.get_descriptors_at_keypoints(self.frame_old_gray, 
+                                                                             keyPoints) #self.keypoints_old_good)
+
+    def save_target_template(self):
+        # use the bounding box location to save the template
+        # compute bounding box center
+        x, y, w, h = bb = self.manager.get_target_bounding_box()
+        center = tuple(map(int, (x+w/2, y+h/2)))
+
+        self.target_template_color = self.get_bb_patch_from_image(self.frame_old_color, bb)
+        self.target_template_gray = self.get_bb_patch_from_image(self.frame_old_gray, bb)
+
+    def _get_kin_from_manager(self):
+        #TODO switch based true or est 
+        return self.manager.get_true_kinematics()
+
+    def _get_target_image_location(self):
+        kin = self._get_kin_from_manager()
+        x,y = kin[2].elementwise()* (1,-1) / self.manager.simulator.pxm_fac
+        target_location = (int(x), int(y))
+        return target_location
 
     def target_redetected(self):
-        pass
+        return self.is_target_template_matching()
 
     def compute_flow(self):
-        flow_output = compute_optical_flow_LK(self.frame_cur_gray,
+        # it's main purpose is to compute new points
+        # looks at 2 frames, uses flow, tells where old points went
+        flow_output = compute_optical_flow_LK(self.frame_old_gray,
                                               self.frame_new_gray,
                                               self.keypoints_old, # good from previous frame
                                               LK_PARAMS)
@@ -1004,10 +1089,9 @@ class Tracker:
         self.feature_found_statuses = flow_output[2]
         self.cross_feature_errors  = flow_output[3]
 
-
     def update_measured_kinematics(self):
-        self.kin = self.compute_kinematics(self.keypoints_old_good.copy(),
-                                           self.keypoints_new_good.copy())
+        self.kin = self.compute_kinematics(self.keypoints_old_good.reshape(-1,2),
+                                           self.keypoints_new_good.reshape(-1,2))
     
     @staticmethod
     def get_bounding_box_mask(img, x, y, width, height):
@@ -1021,7 +1105,7 @@ class Tracker:
         x = patch_center[0] - patch_size //2
         y = patch_center[1] - patch_size //2
         mask = np.zeros_like(img)
-        mask[y:y+patch_size[1], x:x+patch_size[0]]
+        mask[y:y+patch_size[1], x:x+patch_size[0]] = 1
         return mask
         
     def copy_new_to_old(self):
@@ -1029,15 +1113,14 @@ class Tracker:
         self.frame_old_color = self.frame_new_color.copy()
         self.keypoints_old = self.keypoints_new.copy()
         self.keypoints_old_good = self.keypoints_new_good.copy()
-
-
+        self._target_old_occluded_flag = self._target_new_occluded_flag
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         # draw tracks on the mask, apply mask to frame, save mask for future use
         img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(
-            good_nxt), [TRACK_COLOR], mask, track_thickness=2, radius=3, circle_thickness=1)
+            good_nxt), [TRACK_COLOR], mask, track_thickness=2, radius=5, circle_thickness=1)
         for cur, nxt in zip(good_cur, good_nxt):
-            img, mask = draw_tracks(frame, [cur], [nxt], [(204, 204, 204)], mask, track_thickness=1, radius=2, circle_thickness=-1)
+            img, mask = draw_tracks(frame, [cur], [nxt], [(204, 204, 204)], mask, track_thickness=1, radius=5, circle_thickness=1)
             
 
         # add optical flow arrows
@@ -1189,14 +1272,14 @@ class Tracker:
         return np.array([[int(centroid_x / len(points)), int(centroid_y / len(points))]])
 
     def process_image_new(self, nxt_frame):
-        # save new frame 
+        # save as new frame 
         self.frame_new_color = nxt_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
 
         if self.is_first_time():
-            # comply with selected the bounding box; compute feature points within
-            x, y, w, h = self.manager.get_target_bounding_box()
-            self.target_feature_mask = self.get_bounding_box_mask(self.frame_new_gray)
+            # comply with the selected bounding box, create target feature mask
+            bounding_box = self.manager.get_target_bounding_box()
+            self.target_feature_mask = self.get_bounding_box_mask(self.frame_new_gray, *bounding_box)
 
             # compute good features within the selected bounding box
             self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_feature_mask, **FEATURE_PARAMS)
@@ -1205,11 +1288,14 @@ class Tracker:
             # store new in old for next iteration
             self.copy_new_to_old()
 
-            # save descriptor, first old frame will always have no occlusion
-            self.save_target_descriptor()
+            # save descriptors and template, first frame will always have no occlusion
+            self.save_target_descriptors()
+            self.save_target_template()
+            return self._FAILURE
+            
 
         # target was occluded
-        if self.was_target_occluded():  
+        if self.is_target_occluded_in_old_frame():  
             '''
             Assume target was not occluded in first frame.
             Target was occluded, meaning old frame had occlusion.
@@ -1228,6 +1314,8 @@ class Tracker:
                 so that in next iteration, tracker will assume no occlusion and use 
                 the saved positions as old points to then compute new points.
                 '''
+                self.save_target_descriptors()
+                self._target_occluded_flag = False
 
                 return self._FAILURE
             else:                           # target not re-detected
@@ -1252,7 +1340,7 @@ class Tracker:
         # if target is occluded, it implies that the position tracking is far from accurate
         # therefore to sustain reliability in computed measurements, they will not be computed 
         # when occlusion is detected. We do not save new frame into old frame and return failure. 
-        if self.is_target_occluded():
+        if self.is_target_occluded_in_new_frame():
             if self.target_recovered():  # can recover from occlusion (if partial)
                 # compute kin
                 self.update_measured_kinematics()
@@ -1275,6 +1363,10 @@ class Tracker:
         self.update_measured_kinematics()
         self.copy_new_to_old()
 
+        
+        return self._SUCCESS
+
+    def print_to_console(self):
         if not CLEAN_CONSOLE:
             # NOTE: 
             # drone kinematics are assumed to be known (IMU and/or FPGA optical flow)
@@ -1283,7 +1375,7 @@ class Tracker:
             drone_position, drone_velocity, car_position, car_velocity, cp_, cv_ = self.kin
             print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
 
-        return self._SUCCESS
+    def display(self):
         if self.manager.tracker_display_on:
             # add cosmetics to frame_2 for display purpose
             self.frame_color_edited, self.tracker_info_mask = self.add_cosmetics(self.frame_new_color, 
@@ -1305,12 +1397,11 @@ class Tracker:
         self.img_dumper.dump(assembled_img)
 
         # ready for next iteration. set cur frame and points to next frame and points
-        self.frame_cur_gray = self.frame_nxt_gray.copy()
-        self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)  # -1 indicates to infer that dim size
+        # self.frame_cur_gray = self.frame_nxt_gray.copy()
+        # self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)  # -1 indicates to infer that dim size
 
         cv.waitKey(1)
 
-        return True, self.kin
 
 
             
@@ -1320,10 +1411,9 @@ class Tracker:
         # -------------------------------------------------------------------------------
         # prepare for next iteration (cur <-- next) points, frames (gray only) 
         # old color frames are not important 
-        self.frame_cur_gray = self.frame_nxt_gray.copy()
-        self.frame_cur_color = self.frame_nxt_color.copy()
-        self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)
-
+        # self.frame_cur_gray = self.frame_nxt_gray.copy()
+        # self.frame_cur_color = self.frame_nxt_color.copy()
+        # self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)
 
     def process_image(self, img):
         """Processes given image and generates tracking information
@@ -1499,7 +1589,7 @@ class Tracker:
             img = put_text(img, kin_str_15, (50, HEIGHT - 15),
                            font_scale=0.45, color=METRICS_COLOR, thickness=1)
 
-        occ_str = "TARGET OCCLUDED" if self.is_target_occluded() else "TARGET TRACKED"
+        occ_str = "TARGET OCCLUDED" if self._target_occluded_flag else "TARGET TRACKED"
         occ_color = RED_CV if self.occluded else METRICS_COLOR
         img = put_text(img, occ_str, (WIDTH//2 - 50, HEIGHT - 40),
                            font_scale=0.55, color=occ_color, thickness=1)
@@ -1770,7 +1860,10 @@ class ExperimentManager:
                 # let tracker process image, when simulator indicates ok
                 if self.simulator.can_begin_tracking():
                     screen_capture = self.simulator.get_screen_capture()
-                    self.tracker.process_image(screen_capture)
+                    status = self.tracker.process_image_new(screen_capture)
+                    self.tracker.print_to_console()
+                    self.tracker.display
+                    # kin = self.tracker.kin if status[0] else 
 
                     # let controller generate acceleration, when tracker indicates ok
                     if self.tracker.can_begin_control() and (
@@ -1778,6 +1871,7 @@ class ExperimentManager:
                             self.filter.done_waiting() or not USE_FILTER):
                         # collect kinematics tuple
                         kin = self.get_true_kinematics() if self.use_true_kin else self.tracker.kin
+                        kin = self.tracker.kin if status[0] else self.get_true_kinematics()
                         # let controller process kinematics
                         ax, ay = self.controller.generate_acceleration(kin)
                         # feed controller generated acceleration commands to simulator
