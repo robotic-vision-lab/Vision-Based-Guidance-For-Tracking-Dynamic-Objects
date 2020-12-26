@@ -1056,21 +1056,20 @@ class Tracker:
 
         return get_bb_patch_from_image(img, (x, y, *size))
 
-    def save_target_descriptors(self):
-        # use keypoints from old frame, 
-        # save descriptors of good keypoints
-        keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in self.keypoints_old_good]
-        self.target_descriptors = self.detector.get_descriptors_at_keypoints(self.frame_old_gray, 
-                                                                             keyPoints) #self.keypoints_old_good)
+    def save_initial_target_descriptors(self):
+        # use keypoints from new frame, 
+        # save descriptors of new keypoints(good)
+        keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in self.keypoints_new]
+        self.target_descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, 
+                                                                             keyPoints)
 
-    def save_target_template(self):
-        # use the bounding box location to save the template
-        # compute bounding box center
-        x, y, w, h = bb = self.manager.get_target_bounding_box()
-        center = tuple(map(int, (x+w/2, y+h/2)))
+    def save_initial_target_template(self):
+        # use the bounding box location to save the target template
+        # x, y, w, h = bb = self.manager.get_target_bounding_box()
+        # center = tuple(map(int, (x+w/2, y+h/2)))
 
-        self.target_template_color = self.get_bb_patch_from_image(self.frame_old_color, bb)
-        self.target_template_gray = self.get_bb_patch_from_image(self.frame_old_gray, bb)
+        self.target_template_color = self.get_bb_patch_from_image(self.frame_old_color, self.target_bounding_box)
+        self.target_template_gray = self.get_bb_patch_from_image(self.frame_old_gray, self.target_bounding_box)
 
     def _get_kin_from_manager(self):
         #TODO switch based true or est 
@@ -1288,13 +1287,31 @@ class Tracker:
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
 
         if self.is_first_time():
-            # compute feature keypoints, centroid, bb
+            # compute bb, feature keypoints, centroid
             self.target_bounding_box = self.manager.get_target_bounding_box()
             self.target_feature_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
 
             self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_feature_mask, **FEATURE_PARAMS)
             self.centroid_new = self.get_centroid(self.keypoints_new)
 
+            # compute and save descriptors at keypoints, save target template
+            self.save_initial_target_descriptors()
+            self.save_initial_target_template()
+
+            # posterity
+            self.frame_old_gray = self.frame_new_gray
+            self.frame_old_color = self.frame_new_color
+            self.keypoints_old = self.keypoints_new
+            # self.keypoints_old_good = self.keypoints_new_good # not needed, since next iter will have from_no_occ
+            self.centroid_old = self.centroid_new
+            self.target_occlusion_case_old = self.target_occlusion_case_new
+
+            return self._FAILURE
+
+        # handle from_no_occ cases
+        if self.target_occlusion_case_old == self._NO_OCC:
+            # old could have been start or no_occ, or partial_occ or total_occ
+            # we should have all keypoints, if it was no_occ in last iteration
 
 
 
