@@ -948,11 +948,9 @@ class Tracker:
         self.descriptor_matcher = BruteL2()
         self.template_matcher = CorrelationCoeffNormed()
 
-        self.frame_1 = None
-        self.cur_frame = None
+
         self.cur_img = None
-        self.nxt_frame = None
-        self.cur_points = None
+
         self._can_begin_control_flag = False    # will be modified in process_image
         self.kin = None
         self.window_size = 5
@@ -960,6 +958,10 @@ class Tracker:
         self.count = 0
         self._target_old_occluded_flag = False
         self._target_new_occluded_flag = False
+
+        self._NO_OCC = 0
+        self._PARTIAL_OCC = 1
+        self._TOTAL_OCC = 2
 
         self._frame_num = 0
         self.track_length = 10
@@ -1270,6 +1272,13 @@ class Tracker:
             centroid_y += point[1]
 
         return np.array([[int(centroid_x / len(points)), int(centroid_y / len(points))]])
+
+
+    def process_image_complete(self, new_frame):
+        # save new frame, compute grayscale
+        self.frame_new_color = new_frame
+        self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
+
 
 
     def process_image_new(self, nxt_frame):
