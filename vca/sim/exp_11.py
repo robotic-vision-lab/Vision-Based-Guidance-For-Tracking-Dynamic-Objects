@@ -928,26 +928,30 @@ class Tracker:
 
         self.frame_old_gray = None
         self.frame_old_color = None
-        self.frame_new_color_edited = None
         self.frame_new_gray = None
         self.frame_new_color = None
-
+        
         self.keypoints_old = None
-        self.keypoints_new = None
         self.keypoints_old_good = None
+        self.keypoints_new = None
         self.keypoints_new_good = None
 
+        self.centroid_old = None
+        self.centroid_new = None
+
+        self.frame_new_color_edited = None
+        
         self.feature_found_statuses = None
         self.cross_feature_errors = None
 
         self.target_descriptors = None
         self.target_template_gray = None
         self.target_template_color = None
+        self.target_bounding_box = None
 
         self.detector = Sift()
         self.descriptor_matcher = BruteL2()
         self.template_matcher = CorrelationCoeffNormed()
-
 
         self.cur_img = None
 
@@ -956,12 +960,15 @@ class Tracker:
         self.window_size = 5
         self.prev_car_pos = None
         self.count = 0
-        self._target_old_occluded_flag = False
-        self._target_new_occluded_flag = False
+        # self._target_old_occluded_flag = False
+        # self._target_new_occluded_flag = False
 
         self._NO_OCC = 0
         self._PARTIAL_OCC = 1
         self._TOTAL_OCC = 2
+
+        self.target_occlusion_case_old = None
+        self.target_occlusion_case_new = self._NO_OCC   # assumption: start with no_occ
 
         self._frame_num = 0
         self.track_length = 10
@@ -1266,18 +1273,28 @@ class Tracker:
         Args:
             points (np.ndarray): List of points
         """
+        points_ = np.array(points).reshape(-1,2)
         centroid_x, centroid_y = 0, 0
-        for point in points:
+        for point in points_:
             centroid_x += point[0]
             centroid_y += point[1]
 
-        return np.array([[int(centroid_x / len(points)), int(centroid_y / len(points))]])
+        return np.array([[int(centroid_x / len(points_)), int(centroid_y / len(points_))]])
 
 
     def process_image_complete(self, new_frame):
         # save new frame, compute grayscale
         self.frame_new_color = new_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
+
+        if self.is_first_time():
+            # compute feature keypoints, centroid, bb
+            self.target_bounding_box = self.manager.get_target_bounding_box()
+            self.target_feature_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
+
+            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_feature_mask, **FEATURE_PARAMS)
+            self.centroid_new = self.get_centroid(self.keypoints_new)
+
 
 
 
