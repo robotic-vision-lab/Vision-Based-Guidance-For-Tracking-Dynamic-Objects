@@ -977,8 +977,8 @@ class Tracker:
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
 
-        self._FAILURE = False, None
-        self._SUCCESS = True, self.kin
+        self._FAILURE = False   #, None
+        self._SUCCESS = True    # , self.kin
 
     def is_first_time(self):
         # this function is called in process_image in the beginning. 
@@ -1312,6 +1312,13 @@ class Tracker:
         if self.target_occlusion_case_old == self._NO_OCC:
             # old could have been start or no_occ, or partial_occ or total_occ
             # we should have all keypoints, if it was no_occ in last iteration
+
+            # compute flow and infer next occlusion case
+            self.compute_flow()
+
+            # check for to_no_occ case
+            if self.feature_found_statuses.all() and self.cross_feature_errors < 15:
+                return self._SUCCESS
 
 
 
