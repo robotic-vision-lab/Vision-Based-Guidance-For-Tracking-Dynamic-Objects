@@ -1165,6 +1165,8 @@ class Tracker:
         Returns:
             tuple(float, float), tuple(float, float): mean of positions and velocities computed from each point pair. Transformed to world coordinates.
         """
+        cur_pts = cur_pts.reshape(-1,2)
+        nxt_pts = nxt_pts.reshape(-1,2)
         # # check non-zero number of points
         num_pts = len(cur_pts)
         # if num_pts == 0:
@@ -1308,7 +1310,7 @@ class Tracker:
 
             return self._FAILURE
 
-        # handle from_no_occ cases
+        # case from_no_occ
         if self.target_occlusion_case_old == self._NO_OCC:
             # old could have been start or no_occ, or partial_occ or total_occ
             # we should have all keypoints, if it was no_occ in last iteration
@@ -1316,9 +1318,26 @@ class Tracker:
             # compute flow and infer next occlusion case
             self.compute_flow()
 
-            # check for to_no_occ case
-            if self.feature_found_statuses.all() and self.cross_feature_errors < 15:
+            # check to_no_occ 
+            if self.feature_found_statuses.all() and self.cross_feature_errors.max() < 15:
+                self.target_occlusion_case_new = self._NO_OCC
+
+
+
+                # posterity
+                self.frame_old_gray = self.frame_new_gray
+                self.frame_old_color = self.frame_new_color
+                self.keypoints_old = self.keypoints_new
+                self.centroid_old = self.centroid_new
+                self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
+
+            # check to_partial_occ
+            if self.feature_found_statuses.any() and self.cross_feature_errors[self.feature_found_statuses==1].max() < 15:
+                self.target_occlusion_case_new = self._PARTIAL_OCC
+
+                # in this case of no_occ to partial_occ no more keypoints are needed to be found
+                
 
 
 
