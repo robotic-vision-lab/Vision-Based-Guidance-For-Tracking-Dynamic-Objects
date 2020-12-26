@@ -977,8 +977,9 @@ class Tracker:
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
 
-        self._FAILURE = False   #, None
-        self._SUCCESS = True    # , self.kin
+        self._FAILURE = False, None
+        self._SUCCESS = True, self.kin
+        self.MAX_ERR = 15
 
     def is_first_time(self):
         # this function is called in process_image in the beginning. 
@@ -1167,6 +1168,7 @@ class Tracker:
         """
         cur_pts = cur_pts.reshape(-1,2)
         nxt_pts = nxt_pts.reshape(-1,2)
+
         # # check non-zero number of points
         num_pts = len(cur_pts)
         # if num_pts == 0:
@@ -1265,14 +1267,14 @@ class Tracker:
             cp,
             cv +
             drone_velocity)
-        # return (drone_position, drone_velocity, car_position, car_velocity, cp, cv)
+
 
     @staticmethod
     def get_centroid(points):
         """Returns centroid of given list of points
 
         Args:
-            points (np.ndarray): List of points
+            points (np.ndarray): Centroid point. [shape: (1,2)]
         """
         points_ = np.array(points).reshape(-1,2)
         centroid_x, centroid_y = 0, 0
@@ -1319,9 +1321,12 @@ class Tracker:
             self.compute_flow()
 
             # check to_no_occ 
-            if self.feature_found_statuses.all() and self.cross_feature_errors.max() < 15:
+            if self.feature_found_statuses.all() and self.cross_feature_errors.max() < self.MAX_ERR:
+                # from_no_occ, to_no_occ
                 self.target_occlusion_case_new = self._NO_OCC
 
+                # compute kinematics measurements
+                self.kin = self.compute_kinematics(self.keypoints_old, self.keypoints_new)
 
 
                 # posterity
@@ -1333,10 +1338,46 @@ class Tracker:
                 return self._SUCCESS
 
             # check to_partial_occ
-            if self.feature_found_statuses.any() and self.cross_feature_errors[self.feature_found_statuses==1].max() < 15:
+            if self.feature_found_statuses.any() and self.cross_feature_errors[self.feature_found_statuses==1].max() < self.MAX_ERR:
+                # from_no_occ, to_partial_occ
                 self.target_occlusion_case_new = self._PARTIAL_OCC
 
-                # in this case of no_occ to partial_occ no more keypoints are needed to be found
+                # in this case of from no_occ to partial_occ, no more keypoints are needed to be found
+                self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
+                self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
+
+                # compute kinematics measurements
+                self.kin = self.compute_kinematics(self.keypoints_old_good, self.keypoints_new_good)
+
+                # compute adjusted centroid
+                centroid_old_good = self.get_centroid(self.keypoints_old_good)
+                centroid_adj = self.centroid_old - centroid_old_good
+                centroid_new_good = self.get_centroid(self.keypoints_new_good)
+                self.centroid_new = centroid_new_good + centroid_adj
+
+                # posterity
+                self.frame_old_gray = self.frame_new_gray
+                self.frame_old_color = self.frame_new_color
+                self.keypoints_old = self.keypoints_new
+                self.keypoints_old_good = self.keypoints_new_good
+                self.centroid_old = self.centroid_new
+                self.target_occlusion_case_old = self.target_occlusion_case_new
+                return self._SUCCESS
+
+            # check to_total_occ
+            if not self.feature_found_statuses.all() or self.cross_feature_errors.max() >= self.MAX_ERR:
+                # from_no_occ, to_total_occ
+                self.target_occlusion_case_new = self._TOTAL_OCC
+
+                # cannot compute kinematics
+                self.kin = None
+
+                # posterity
+                self.frame_old_gray = self.frame_new_gray
+                self.frame_old_color = self.frame_new_color
+                self.target_occlusion_case_old = self.target_occlusion_case_new
+                return self._FAILURE
+
                 
 
 
