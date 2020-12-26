@@ -1069,8 +1069,8 @@ class Tracker:
         # x, y, w, h = bb = self.manager.get_target_bounding_box()
         # center = tuple(map(int, (x+w/2, y+h/2)))
 
-        self.target_template_color = self.get_bb_patch_from_image(self.frame_old_color, self.target_bounding_box)
-        self.target_template_gray = self.get_bb_patch_from_image(self.frame_old_gray, self.target_bounding_box)
+        self.target_template_color = self.get_bb_patch_from_image(self.frame_new_color, self.target_bounding_box)
+        self.target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
 
     def _get_kin_from_manager(self):
         #TODO switch based true or est 
@@ -1310,8 +1310,10 @@ class Tracker:
             self.centroid_old = self.centroid_new
             self.target_occlusion_case_old = self.target_occlusion_case_new
 
+            self.second = False
             return self._FAILURE
 
+        self.second = True
         # case from_no_occ
         if self.target_occlusion_case_old == self._NO_OCC:
             # old could have been start or no_occ, or partial_occ or total_occ
@@ -1325,8 +1327,12 @@ class Tracker:
                 # from_no_occ, to_no_occ
                 self.target_occlusion_case_new = self._NO_OCC
 
+                # set good points
+                self.keypoints_old_good = self.keypoints_old
+                self.keypoints_new_good = self.keypoints_new
+
                 # compute kinematics measurements
-                self.kin = self.compute_kinematics(self.keypoints_old, self.keypoints_new)
+                self.kin = self.compute_kinematics(self.keypoints_old_good, self.keypoints_new_good)
 
 
                 # posterity
@@ -1343,8 +1349,8 @@ class Tracker:
                 self.target_occlusion_case_new = self._PARTIAL_OCC
 
                 # in this case of from no_occ to partial_occ, no more keypoints are needed to be found
-                self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
                 self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
+                self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
 
                 # compute kinematics measurements
                 self.kin = self.compute_kinematics(self.keypoints_old_good, self.keypoints_new_good)
@@ -1500,11 +1506,11 @@ class Tracker:
 
             # show resultant img
             cv.imshow(self.win_name, self.frame_color_edited)
-            cv.imshow("cur_frame", self.frame_cur_gray)
-            cv.imshow("nxt_frame", self.frame_nxt_gray)
+            cv.imshow("cur_frame", self.frame_old_gray)
+            cv.imshow("nxt_frame", self.frame_new_gray)
 
         # dump frames for analysis
-        assembled_img = images_assemble([self.frame_cur_gray.copy(), self.frame_nxt_gray.copy(), self.frame_color_edited.copy()], (1,3))
+        assembled_img = images_assemble([self.frame_old_gray.copy(), self.frame_new_gray.copy(), self.frame_color_edited.copy()], (1,3))
         self.img_dumper.dump(assembled_img)
 
         # ready for next iteration. set cur frame and points to next frame and points
@@ -1700,8 +1706,8 @@ class Tracker:
             img = put_text(img, kin_str_15, (50, HEIGHT - 15),
                            font_scale=0.45, color=METRICS_COLOR, thickness=1)
 
-        occ_str = "TARGET OCCLUDED" if self._target_occluded_flag else "TARGET TRACKED"
-        occ_color = RED_CV if self.occluded else METRICS_COLOR
+        occ_str = "TARGET OCCLUDED" if not self.target_occlusion_case_new==self._NO_OCC else "TARGET TRACKED"
+        occ_color = RED_CV if not self.target_occlusion_case_new==self._NO_OCC else METRICS_COLOR
         img = put_text(img, occ_str, (WIDTH//2 - 50, HEIGHT - 40),
                            font_scale=0.55, color=occ_color, thickness=1)
         return img
@@ -1971,9 +1977,10 @@ class ExperimentManager:
                 # let tracker process image, when simulator indicates ok
                 if self.simulator.can_begin_tracking():
                     screen_capture = self.simulator.get_screen_capture()
-                    status = self.tracker.process_image_new(screen_capture)
+                    status = self.tracker.process_image_complete(screen_capture)
                     self.tracker.print_to_console()
-                    self.tracker.display
+                    if self.tracker.second :
+                        self.tracker.display()
                     # kin = self.tracker.kin if status[0] else 
 
                     # let controller generate acceleration, when tracker indicates ok
