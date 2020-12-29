@@ -573,6 +573,8 @@ class Simulator:
         self.alt_change_fac = 1.0
         self.pxm_fac = PIXEL_TO_METERS_FACTOR
 
+        self.car_rect_center_bb_offset = [0,0]
+
     def start_new(self):
         """Initializes simulation components.
         """
@@ -725,6 +727,9 @@ class Simulator:
                 self.bounding_box_drawn = True
                 # assume appropriate bounding box was inputted and indicate green flag for tracker
                 self.tracker_ready = True
+                # set car rect center offset from bounding box topleft
+                self.car_rect_center_bb_offset[0] = self.bb_start[0] - self.car.rect.centerx 
+                self.car_rect_center_bb_offset[1] = self.bb_start[1] - self.car.rect.centery
 
             pygame.event.pump()
 
@@ -896,6 +901,7 @@ class Simulator:
         """Indicates the green signal from Simulator for proceeding with tracking
         Simulator gives green signal if
             1. simulator is not paused
+            2. bounding box is selected
 
         Returns:
             bool: Can tracker begin tracking
@@ -940,6 +946,7 @@ class Tracker:
         self.centroid_new = None
 
         self.frame_new_color_edited = None
+        self.img_tracker_display = None
         
         self.feature_found_statuses = None
         self.cross_feature_errors = None
@@ -976,6 +983,8 @@ class Tracker:
         self.target_feature_mask = None
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
+        self.DES_MATCH_DISTANCE_THRESH = 50
+        self.DES_MATCH_DEV_THRESH = 0.50 # float('inf') to get every match
 
         self._FAILURE = False, None
         self._SUCCESS = True, self.kin
@@ -1072,6 +1081,12 @@ class Tracker:
         self.target_template_color = self.get_bb_patch_from_image(self.frame_new_color, self.target_bounding_box)
         self.target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
 
+
+    def get_descriptors_at_keypoints(self, img, keypoints):
+        kps = [cv.KeyPoint(*kp.ravel(), 15) for kp in keypoints]
+        descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, kps)
+        return descriptors
+
     def _get_kin_from_manager(self):
         #TODO switch based true or est 
         return self.manager.get_true_kinematics()
@@ -1085,14 +1100,25 @@ class Tracker:
     def target_redetected(self):
         return self.is_target_template_matching()
 
-    def compute_flow(self):
+    def compute_flow(self, use_good=False):
         # it's main purpose is to compute new points
         # looks at 2 frames, uses flow, tells where old points went
-        flow_output = compute_optical_flow_LK(self.frame_old_gray,
-                                              self.frame_new_gray,
-                                              self.keypoints_old, # good from previous frame
-                                              LK_PARAMS)
-        
+        # make clever use of this function, we want to use good 
+        # for from_partial_occ case
+
+        if use_good:
+            flow_output = compute_optical_flow_LK(self.frame_old_gray,
+                                                self.frame_new_gray,
+                                                self.keypoints_old_good, # good from previous frame
+                                                LK_PARAMS)
+            # self.keypoints_old_good = flow_output[0]
+        else:
+            flow_output = compute_optical_flow_LK(self.frame_old_gray,
+                                                self.frame_new_gray,
+                                                self.keypoints_old, # good from previous frame
+                                                LK_PARAMS)
+
+        # note that new keypoints are going to be of cardinality at most that of old keypoints
         self.keypoints_old = flow_output[0]
         self.keypoints_new = flow_output[1]
         self.feature_found_statuses = flow_output[2]
@@ -1309,20 +1335,21 @@ class Tracker:
             # self.keypoints_old_good = self.keypoints_new_good # not needed, since next iter will have from_no_occ
             self.centroid_old = self.centroid_new
             self.target_occlusion_case_old = self.target_occlusion_case_new
-
+            self.manager.set_target_centroid_offset()
             self.second = False
             return self._FAILURE
 
         self.second = True
-        # case from_no_occ
+
+        # CASE FROM_NO_OCC
         if self.target_occlusion_case_old == self._NO_OCC:
-            # old could have been start or no_occ, or partial_occ or total_occ
-            # we should have all keypoints, if it was no_occ in last iteration
+            # (a priori) older could have been start or no_occ, or partial_occ or total_occ
+            # we should have all keypoints as good ones, if old now has no_occ
 
             # compute flow and infer next occlusion case
             self.compute_flow()
 
-            # check to_no_occ 
+            # check TO_NO_OCC 
             if self.feature_found_statuses.all() and self.cross_feature_errors.max() < self.MAX_ERR:
                 # from_no_occ, to_no_occ
                 self.target_occlusion_case_new = self._NO_OCC
@@ -1343,12 +1370,13 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
 
-            # check to_partial_occ
+            # check TO_PARTIAL_OCC
             if self.feature_found_statuses.any() and self.cross_feature_errors[self.feature_found_statuses==1].max() < self.MAX_ERR:
                 # from_no_occ, to_partial_occ
                 self.target_occlusion_case_new = self._PARTIAL_OCC
 
                 # in this case of from no_occ to partial_occ, no more keypoints are needed to be found
+                # good keypoints need to be computed for kinematics computation as well as posterity
                 self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
                 self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
 
@@ -1370,7 +1398,7 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
 
-            # check to_total_occ
+            # check TO_TOTAL_OCC
             if not self.feature_found_statuses.all() or self.cross_feature_errors.max() >= self.MAX_ERR:
                 # from_no_occ, to_total_occ
                 self.target_occlusion_case_new = self._TOTAL_OCC
@@ -1384,8 +1412,76 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._FAILURE
 
+        # CASE FROM_PARTIAL_OCC
+        if self.target_occlusion_case_old == self._PARTIAL_OCC:
+            # (a priori) older could have been no_occ, partial_occ or total_occ
+            # we should have some keypoints that are good, if old now has partial_occ
+            
+            # use good keypoints, to compute flow (good points will be input, and outputs into points)
+            self.compute_flow(use_good=True)
+
+            # compute good old and new
+            # good keypoints need to be computed for kinematics computation as well as posterity
+            self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
+            self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
+
+
+            # check TO_NO_OCC
+            # check TO_PARTIAL_OCC
+            # check TO_TOTAL_OCC
+            if not self.feature_found_statuses.all() or self.cross_feature_errors.max() >= self.MAX_ERR:
+                # from_no_occ, to_total_occ
+                self.target_occlusion_case_new = self._TOTAL_OCC
+
+                # cannot compute kinematics
+                self.kin = None
+
+                # posterity
+                self.frame_old_gray = self.frame_new_gray
+                self.frame_old_color = self.frame_new_color
+                self.target_occlusion_case_old = self.target_occlusion_case_new
+                return self._FAILURE
+
+        # CASE FROM_TOTAL_OCC
+        if self.target_occlusion_case_old == self._TOTAL_OCC:
+            # (a priori) older could have been no_occ, partial_occ or total_occ
+            # we should have no good keypoints, if old now has total_occ
+            pass
+
+            # no flow computations, ask help from 
+            # oracle or estimator (KF or EKF)
+            self.target_bounding_box = self.get_true_bb_from_oracle()
+            self.target_feature_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
+
+            # compute good feature keypoints
+            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_feature_mask, **FEATURE_PARAMS)
+
+            # compute descriptors at the new keypoints
+            descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, self.keypoints_new)
+
+            # compute match
+            matches = self.descriptor_matcher.compute_matches(self.target_descriptors, descriptors, threshold=self.DES_MATCH_DEV_THRESH)
+
+            distances = np.array([[m.distance for m in mathces]])
+            good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
+
+            # check TO_NO_OCC
+            if len(good_distances) == len(distances[0]):
+                # from_total_occ, to_no_occ
+                pass
+
+            # check TO_PARTIAL_OCC
+            if len(good_distances) < len(distances[0]):
+                pass
+
+            # check TO_TOTAL_OCC
+            if len(good_distances) == 0:
+                # from_total_occ, to total_occ
+                pass
                 
 
+    def get_true_bb_from_oracle(self):
+        return self.manager.get_target_bounding_box_from_offset()
 
 
     def process_image_new(self, nxt_frame):
@@ -1659,14 +1755,17 @@ class Tracker:
                 thickness=1)
 
         if ADD_METRICS:
+            if k in None:
+                dpos = self.manager.simulator.camera.position
+                dvel = self.manager.simulator.camera.velocity
             kin_str_1 = f'car_pos (m) : '      .rjust(20)
-            kin_str_2 = f'<{k[2][0]:6.2f}, {k[2][1]:6.2f}>'
+            kin_str_2 = '--' if k is None else f'<{k[2][0]:6.2f}, {k[2][1]:6.2f}>'
             kin_str_3 = f'car_vel (m/s) : '    .rjust(20)
-            kin_str_4 = f'<{k[3][0]:6.2f}, {k[3][1]:6.2f}>'
+            kin_str_4 = '--' if k is None else f'<{k[3][0]:6.2f}, {k[3][1]:6.2f}>'
             kin_str_5 = f'drone_pos (m) : '    .rjust(20)
-            kin_str_6 = f'<{k[0][0]:6.2f}, {k[0][1]:6.2f}>'
+            kin_str_6 = f'<{dpos[0]:6.2f}, {dpos[1]:6.2f}>' if k is None else f'<{k[0][0]:6.2f}, {k[0][1]:6.2f}>'
             kin_str_7 = f'drone_vel (m/s) : '  .rjust(20)
-            kin_str_8 = f'<{k[1][0]:6.2f}, {k[1][1]*-1:6.2f}>'
+            kin_str_8 = f'<{dvel[0]:6.2f}, {dvel[1]:6.2f}>' if k is None else f'<{k[1][0]:6.2f}, {k[1][1]*-1:6.2f}>'
             kin_str_9 = f'drone_acc (m/s^2) : '.rjust(20)
             kin_str_0 = f'<{self.manager.simulator.camera.acceleration[0]:6.2f}, {self.manager.simulator.camera.acceleration[1]:6.2f}>'
             kin_str_11 = f'r (m) : '       .rjust(20)
@@ -1885,57 +1984,75 @@ class ExperimentManager:
         self.filter = Kalman(self) if USE_KALMAN else MA(window_size=10)
         self.EKF = ExtendedKalman(self)
 
-        self.image_deque = deque(maxlen=2)
-        self.command_deque = deque(maxlen=2)
-        self.kinematics_deque = deque(maxlen=2)
+        # self.image_deque = deque(maxlen=2)
+        # self.command_deque = deque(maxlen=2)
+        # self.kinematics_deque = deque(maxlen=2)
 
         self.sim_dt = 0
         self.true_rel_vel = None
+        self.car_rect_center_centroid_offset = [0, 0]
 
         if self.save_on:
             self.simulator.save_screen = True
 
-    def add_to_image_deque(self, img):
-        """Helper function, adds given image to manager's image deque
+    # def add_to_image_deque(self, img):
+    #     """Helper function, adds given image to manager's image deque
 
-        Args:
-            img (np.ndarray): Image to be added to manager's image deque
-        """
-        self.image_deque.append(img)
+    #     Args:
+    #         img (np.ndarray): Image to be added to manager's image deque
+    #     """
+    #     self.image_deque.append(img)
 
-    def add_to_command_deque(self, command):
-        """Helper function, adds given command to manager's command deque
+    # def add_to_command_deque(self, command):
+    #     """Helper function, adds given command to manager's command deque
 
-        Args:
-            command (tuple(float, float)): Command to be added to manager's command deque
-        """
-        self.command_deque.append(command)
+    #     Args:
+    #         command (tuple(float, float)): Command to be added to manager's command deque
+    #     """
+    #     self.command_deque.append(command)
 
-    def add_to_kinematics_deque(self, kinematics):
-        """Helper function, adds given kinematics to manager's kinematics deque
+    # def add_to_kinematics_deque(self, kinematics):
+    #     """Helper function, adds given kinematics to manager's kinematics deque
 
-        Args:
-            kinematics (tuple(Vector2, Vector2, Vector2, Vector2, float)): Kinematics to be added to manager's kinematics deque
-        """
-        self.kinematics_deque.append(kinematics)
+    #     Args:
+    #         kinematics (tuple(Vector2, Vector2, Vector2, Vector2, float)): Kinematics to be added to manager's kinematics deque
+    #     """
+    #     self.kinematics_deque.append(kinematics)
 
-    def get_from_image_deque(self):
-        """Helper function, gets image from manager's image deque
-        """
-        return self.image_deque.popleft()
+    # def get_from_image_deque(self):
+    #     """Helper function, gets image from manager's image deque
+    #     """
+    #     return self.image_deque.popleft()
 
-    def get_from_command_deque(self):
-        """Helper function, gets command from manager's command deque
-        """
-        return self.command_deque.popleft()
+    # def get_from_command_deque(self):
+    #     """Helper function, gets command from manager's command deque
+    #     """
+    #     return self.command_deque.popleft()
 
-    def get_from_kinematics_deque(self):
-        """Helper function, gets kinematics from manager's kinematics deque
-        """
-        return self.kinematics_deque.popleft()
+    # def get_from_kinematics_deque(self):
+    #     """Helper function, gets kinematics from manager's kinematics deque
+    #     """
+    #     return self.kinematics_deque.popleft()
 
     def get_target_bounding_box(self):
         return self.simulator.bounding_box
+
+    def set_target_centroid_offset(self):
+        # this will be called from tracker at the first run after first centroid calculation
+        # uses tracked new centroid to compute it's relative position from car center
+        self.car_rect_center_centroid_offset[0] = self.tracker.centroid_new.flatten[0] - self.simulator.car.rect.centerx
+        self.car_rect_center_centroid_offset[1] = self.tracker.centroid_new.flatten[1] - self.simulator.car.rect.centery
+
+    def get_target_centroid_offset(self):
+        return self.car_rect_center_centroid_offset
+
+    def get_bounding_box_offset(self):
+        return self.simulator.car_rect_center_bb_offset
+
+    def get_target_bounding_box_from_offset(self):
+        x, y, w, h = self.simulator.bounding_box
+        x, y = self.simulator.car.center + self.get_bounding_box_offset()
+        return x, y, w, h
 
     def run(self):
         # initialize simulator
