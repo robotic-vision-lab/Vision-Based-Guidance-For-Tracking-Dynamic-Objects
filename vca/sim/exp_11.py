@@ -1181,6 +1181,24 @@ class Tracker:
     def can_begin_control(self):
         return self._can_begin_control_flag  # and self.prev_car_pos is not None
 
+
+    def compute_kinematics_centroid(self, old_centroid, new_centroid):
+
+        # assumptions:
+        # - centroids are computed using get_centroid, therefore, centroid shape (1,2)
+        # - centroids represent the target location in old and new frames
+
+        # form pygame.Vector2 objects representing measured car_position and car_velocity 
+        # in image coord frame in units of image pixels 
+        measured_car_position = pygame.Vector2(list(new_centroid.flatten()))
+        dt = self.manager.get_sim_dt()
+        measured_car_velocity = pygame.Vector2(list( ((new_centroid-old_centroid)/dt).flatten() ))
+
+        # collect fov and true drone position and velocity from simulator
+        fov = self.manager.simulator.get_camera_fov()
+        true_drone_pos = self.manager.siml
+
+
     def compute_kinematics(self, cur_pts, nxt_pts):
         """Helper function, takes in current and next points (corresponding to an object) and computes the average velocity using elapsed simulation time from it's ExperimentManager.
 
@@ -1327,7 +1345,7 @@ class Tracker:
             self.save_initial_target_descriptors()
             self.save_initial_target_template()
 
-            # posterity
+            # posterity - save frames, keypoints, centroid, occ_case, centroid location relative to rect center
             self.frame_old_gray = self.frame_new_gray
             self.frame_old_color = self.frame_new_color
             self.keypoints_old = self.keypoints_new
@@ -1345,7 +1363,7 @@ class Tracker:
             # (a priori) older could have been start or no_occ, or partial_occ or total_occ
             # we should have all keypoints as good ones, if old now has no_occ
 
-            # compute flow and infer next occlusion case
+            # try to compute flow at keypoints and infer next occlusion case
             self.compute_flow()
 
             # check TO_NO_OCC 
@@ -1353,7 +1371,7 @@ class Tracker:
                 # from_no_occ, to_no_occ
                 self.target_occlusion_case_new = self._NO_OCC
 
-                # set good points
+                # set good points (set, not computed, lines added for consistent design)
                 self.keypoints_old_good = self.keypoints_old
                 self.keypoints_new_good = self.keypoints_new
 
@@ -1361,7 +1379,7 @@ class Tracker:
                 self.kin = self.compute_kinematics(self.keypoints_old_good, self.keypoints_new_good)
 
 
-                # posterity
+                # posterity - save frames, keypoints, centroid
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.keypoints_old = self.keypoints_new
@@ -2033,6 +2051,16 @@ class ExperimentManager:
     #     """Helper function, gets kinematics from manager's kinematics deque
     #     """
     #     return self.kinematics_deque.popleft()
+
+
+    def get_drone_cam_field_of_view(self):
+        return self.simulator.get_camera_fov()
+
+    def get_true_drone_position(self):
+        return self.simulator.camera.position
+
+    def get_true_drone_velocity(self):
+        return self.simulator.camera.velocity
 
     def get_target_bounding_box(self):
         return self.simulator.bounding_box
