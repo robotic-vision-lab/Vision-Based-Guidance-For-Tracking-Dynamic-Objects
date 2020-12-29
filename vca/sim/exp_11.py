@@ -980,7 +980,7 @@ class Tracker:
         self._frame_num = 0
         self.track_length = 10
         self.tracker_info_mask = None
-        self.target_feature_mask = None
+        self.target_bounding_box_mask = None
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
         self.DES_MATCH_DISTANCE_THRESH = 50
@@ -1080,7 +1080,6 @@ class Tracker:
 
         self.target_template_color = self.get_bb_patch_from_image(self.frame_new_color, self.target_bounding_box)
         self.target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
-
 
     def get_descriptors_at_keypoints(self, img, keypoints):
         kps = [cv.KeyPoint(*kp.ravel(), 15) for kp in keypoints]
@@ -1319,9 +1318,9 @@ class Tracker:
         if self.is_first_time():
             # compute bb, feature keypoints, centroid
             self.target_bounding_box = self.manager.get_target_bounding_box()
-            self.target_feature_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
+            self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
 
-            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_feature_mask, **FEATURE_PARAMS)
+            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
             self.centroid_new = self.get_centroid(self.keypoints_new)
 
             # compute and save descriptors at keypoints, save target template
@@ -1417,7 +1416,7 @@ class Tracker:
             # (a priori) older could have been no_occ, partial_occ or total_occ
             # we should have some keypoints that are good, if old now has partial_occ
             
-            # use good keypoints, to compute flow (good points will be input, and outputs into points)
+            # use good keypoints, to compute flow (good keypoints used as input, while outputs into keypoints)
             self.compute_flow(use_good=True)
 
             # compute good old and new
@@ -1446,20 +1445,21 @@ class Tracker:
         if self.target_occlusion_case_old == self._TOTAL_OCC:
             # (a priori) older could have been no_occ, partial_occ or total_occ
             # we should have no good keypoints, if old now has total_occ
-            pass
-
-            # no flow computations, ask help from 
-            # oracle or estimator (KF or EKF)
+            # here we are looking for the target again, see if we can spot it again
+            # purpose being redetecting target to recover from occlusion
+            
+            # where do we start, nothing in the old frame to work off of
+            # no flow computations, so ask help from oracle or estimator (KF or EKF)
             self.target_bounding_box = self.get_true_bb_from_oracle()
-            self.target_feature_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
+            self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
 
-            # compute good feature keypoints
-            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_feature_mask, **FEATURE_PARAMS)
+            # compute good feature keypoints in the new frame
+            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
 
             # compute descriptors at the new keypoints
             descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, self.keypoints_new)
 
-            # compute match
+            # match descriptors 
             matches = self.descriptor_matcher.compute_matches(self.target_descriptors, descriptors, threshold=self.DES_MATCH_DEV_THRESH)
 
             distances = np.array([[m.distance for m in mathces]])
@@ -1492,10 +1492,10 @@ class Tracker:
         if self.is_first_time():
             # comply with the selected bounding box, create target feature mask
             bounding_box = self.manager.get_target_bounding_box()
-            self.target_feature_mask = self.get_bounding_box_mask(self.frame_new_gray, *bounding_box)
+            self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *bounding_box)
 
             # compute good features within the selected bounding box
-            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_feature_mask, **FEATURE_PARAMS)
+            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
             self.keypoints_new_good = self.keypoints_new.copy()
 
             # store new in old for next iteration
@@ -1647,13 +1647,13 @@ class Tracker:
             self.frame_cur_gray = convert_to_grayscale(self.frame_cur_color)
 
             # initialize and compute target feature mask from bounding box
-            self.target_feature_mask = np.zeros_like(self.frame_cur_gray)
+            self.target_bounding_box_mask = np.zeros_like(self.frame_cur_gray)
             x, y, w, h = self.manager.simulator.bounding_box
-            self.target_feature_mask[y : y+h+1, x : x+w+1] = 1
+            self.target_bounding_box_mask[y : y+h+1, x : x+w+1] = 1
 
             # compute good features within the selected bounding box
             self.key_point_set_cur = cv.goodFeaturesToTrack(
-                self.frame_cur_gray, mask= self.target_feature_mask, **FEATURE_PARAMS)
+                self.frame_cur_gray, mask= self.target_bounding_box_mask, **FEATURE_PARAMS)
 
             # create mask for adding tracker information
             # tracker information mask will be applied to 3 channel RGB image, 
