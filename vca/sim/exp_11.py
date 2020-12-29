@@ -951,9 +951,9 @@ class Tracker:
         self.feature_found_statuses = None
         self.cross_feature_errors = None
 
-        self.target_descriptors = None
-        self.target_template_gray = None
-        self.target_template_color = None
+        self.initial_target_descriptors = None
+        self.initial_target_template_gray = None
+        self.initial_target_template_color = None
         self.target_bounding_box = None
 
         self.detector = Sift()
@@ -1036,7 +1036,7 @@ class Tracker:
         descriptors_new = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, 
                                                                        keyPoints) #self.keypoints_new_good)
         
-        matches = self.descriptor_matcher.compute_matches(self.target_descriptors, descriptors_new)
+        matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, descriptors_new)
         distances = [m.distance for m in matches]
         mxd = max(distances)
         is_match = True if mxd < 70 else False
@@ -1046,7 +1046,7 @@ class Tracker:
         # check if target template is matching
         new_location = self._get_target_image_location()
         new_location_patch = self.get_neighborhood_patch(self.frame_new_gray, new_location, (25,25))
-        match_result = self.template_matcher.compute_match(new_location_patch, self.target_template_gray)
+        match_result = self.template_matcher.compute_match(new_location_patch, self.initial_target_template_gray)
         min_val, max_val, min_loc, max_loc = cv.minMaxLoc(match_result)
 
         is_match = True if match_result[max_loc] < 0.95 else False
@@ -1070,7 +1070,7 @@ class Tracker:
         # use keypoints from new frame, 
         # save descriptors of new keypoints(good)
         keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in self.keypoints_new]
-        self.target_descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, 
+        self.initial_target_descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, 
                                                                              keyPoints)
 
     def save_initial_target_template(self):
@@ -1078,8 +1078,8 @@ class Tracker:
         # x, y, w, h = bb = self.manager.get_target_bounding_box()
         # center = tuple(map(int, (x+w/2, y+h/2)))
 
-        self.target_template_color = self.get_bb_patch_from_image(self.frame_new_color, self.target_bounding_box)
-        self.target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
+        self.initial_target_template_color = self.get_bb_patch_from_image(self.frame_new_color, self.target_bounding_box)
+        self.initial_target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
 
     def get_descriptors_at_keypoints(self, img, keypoints):
         kps = [cv.KeyPoint(*kp.ravel(), 15) for kp in keypoints]
@@ -1460,7 +1460,7 @@ class Tracker:
             descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, self.keypoints_new)
 
             # match descriptors 
-            matches = self.descriptor_matcher.compute_matches(self.target_descriptors, descriptors, threshold=self.DES_MATCH_DEV_THRESH)
+            matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, descriptors, threshold=self.DES_MATCH_DEV_THRESH)
 
             distances = np.array([[m.distance for m in mathces]])
             good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
