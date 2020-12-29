@@ -1189,14 +1189,21 @@ class Tracker:
         # - centroids represent the target location in old and new frames
 
         # form pygame.Vector2 objects representing measured car_position and car_velocity 
-        # in image coord frame in units of image pixels 
-        measured_car_position = pygame.Vector2(list(new_centroid.flatten()))
+        # in image coord frame in spatial units of image pixels 
+        measured_car_pos = pygame.Vector2(list(new_centroid.flatten()))
         dt = self.manager.get_sim_dt()
-        measured_car_velocity = pygame.Vector2(list( ((new_centroid-old_centroid)/dt).flatten() ))
+        measured_car_vel = pygame.Vector2(list( ((new_centroid-old_centroid)/dt).flatten() ))
 
         # collect fov and true drone position and velocity from simulator
-        fov = self.manager.simulator.get_camera_fov()
-        true_drone_pos = self.manager.siml
+        fov = self.manager.get_drone_cam_field_of_view()
+        true_drone_pos = self.manager.get_true_drone_position()
+        true_drone_vel = self.manager.get_true_drone_velocity()
+
+        # transform measured car kinematics from topleft img coord frame to centered world coord frame
+        # also, convert spatial units from image pixels to meters
+        measured_car_pos_cam_frame_meters = self.manager.transform_pos_corner_img_pixels_to_center_cam_meters(measured_car_pos)
+        measured_car_vel_cam_frame_meters = self.manager.transform_vel_img_pixels_to_cam_meters(measured_car_vel)
+
 
 
     def compute_kinematics(self, cur_pts, nxt_pts):
@@ -2064,6 +2071,20 @@ class ExperimentManager:
 
     def get_target_bounding_box(self):
         return self.simulator.bounding_box
+
+    def transform_pos_corner_img_pixels_to_center_cam_meters(self, pos):
+        pos = pos.elementwise() * (1, -1) + (0, HEIGHT)
+        pos *= self.simulator.pxm_fac
+        pos += -pygame.Vector2(self.get_drone_cam_field_of_view) / 2
+
+        return pos
+
+    def transform_vel_img_pixels_to_cam_meters(self, vel):
+        vel = vel.elementwise() * (1, -1)
+        vel *= self.simulator.pxm_fac
+
+        return vel
+
 
     def set_target_centroid_offset(self):
         # this will be called from tracker at the first run after first centroid calculation
