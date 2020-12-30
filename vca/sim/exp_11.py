@@ -910,7 +910,7 @@ class Simulator:
 
         # not ready if bb not selected or if simulated is still paused
         if (self.bb_start and self.bb_end) or not self.pause:
-            self.manager.image_deque.clear()
+            # self.manager.image_deque.clear()
             ready = True
 
         return self.tracker_ready
@@ -1233,15 +1233,24 @@ class Tracker:
             else:
                 kf_est_car_pos = NAN
                 kf_est_car_vel = NAN
+        else:
+            maf_est_car_pos = NAN
+            maf_est_car_vel = NAN
+            kf_est_car_pos = NAN
+            kf_est_car_vel = NAN
+
 
         # return kinematics in camera frame in spatial units of meters
+        ret_maf_est_car_vel = NAN if isnan(maf_est_car_vel) else maf_est_car_vel + true_drone_vel
+        ret_kf_est_car_vel = NAN if isnan(kf_est_car_vel) else kf_est_car_vel + true_drone_vel
+
         return (
             true_drone_pos,
             true_drone_vel,
             maf_est_car_pos,
-            maf_est_car_vel + true_drone_vel,
+            ret_maf_est_car_vel,
             kf_est_car_pos,
-            kf_est_car_vel + true_drone_vel,
+            ret_kf_est_car_vel,
             measured_car_pos_cam_frame_meters,
             measured_car_vel_cam_frame_meters
         )
@@ -1406,7 +1415,7 @@ class Tracker:
 
         self.second = True
 
-        # CASE FROM_NO_OCC
+        # CASE |NO_OCC, _>
         if self.target_occlusion_case_old == self._NO_OCC:
             # (a priori) older could have been start or no_occ, or partial_occ or total_occ
             # we should have all keypoints as good ones, and old centroid exists, if old now has no_occ
@@ -1414,9 +1423,9 @@ class Tracker:
             # try to compute flow at keypoints and infer next occlusion case
             self.compute_flow()
 
-            # check TO_NO_OCC 
+            # check NO_OCC 
             if self.feature_found_statuses.all() and self.cross_feature_errors.max() < self.MAX_ERR:
-                # from_no_occ, to_no_occ
+                # |NO_OCC, NO_OCC>
                 self.target_occlusion_case_new = self._NO_OCC
 
                 # set good points (set, not computed, lines added for consistent design)
@@ -1437,9 +1446,9 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
 
-            # check TO_PARTIAL_OCC
-            if self.feature_found_statuses.any() and self.cross_feature_errors[self.feature_found_statuses==1].max() < self.MAX_ERR:
-                # from_no_occ, to_partial_occ
+            # check PARTIAL_OCC
+            if self.feature_found_statuses.any() and self.cross_feature_errors.max() > self.MAX_ERR:
+                # |NO_OCC, PARTIAL_OCC>
                 self.target_occlusion_case_new = self._PARTIAL_OCC
 
                 # in this case of from no_occ to partial_occ, no more keypoints are needed to be found
@@ -1447,27 +1456,27 @@ class Tracker:
                 self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
                 self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
 
-                # compute kinematics measurements
-                self.kin = self.compute_kinematics(self.keypoints_old_good, self.keypoints_new_good)
-
                 # compute adjusted centroid
                 centroid_old_good = self.get_centroid(self.keypoints_old_good)
                 centroid_adj = self.centroid_old - centroid_old_good
                 centroid_new_good = self.get_centroid(self.keypoints_new_good)
                 self.centroid_new = centroid_new_good + centroid_adj
 
+                # compute kinematics measurements
+                self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
+
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.keypoints_old = self.keypoints_new
-                self.keypoints_old_good = self.keypoints_new_good
+                self.keypoints_old_good = self.keypoints_new_good.reshape(-1, 1, 2)
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
 
-            # check TO_TOTAL_OCC
-            if not self.feature_found_statuses.all() or self.cross_feature_errors.max() >= self.MAX_ERR:
-                # from_no_occ, to_total_occ
+            # check TOTAL_OCC
+            if not self.feature_found_statuses.all() or self.cross_feature_errors.min() >= self.MAX_ERR:
+                # |NO_OCC, TOTAL_OCC>
                 self.target_occlusion_case_new = self._TOTAL_OCC
 
                 # cannot compute kinematics
@@ -1479,7 +1488,7 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._FAILURE
 
-        # CASE FROM_PARTIAL_OCC
+        # CASE |PARTIAL_OCC, _>
         if self.target_occlusion_case_old == self._PARTIAL_OCC:
             # (a priori) older could have been no_occ, partial_occ or total_occ
             # we should have some keypoints that are good, if old now has partial_occ
@@ -1494,10 +1503,12 @@ class Tracker:
 
 
             # check TO_NO_OCC
+            # |PARTIAL_OCC, NO_OCC>
             # check TO_PARTIAL_OCC
+            # |PARTIAL_OCC, PARTIAL_OCC>
             # check TO_TOTAL_OCC
             if not self.feature_found_statuses.all() or self.cross_feature_errors.max() >= self.MAX_ERR:
-                # from_no_occ, to_total_occ
+                # |PARTIAL_OCC, TOTAL_OCC>
                 self.target_occlusion_case_new = self._TOTAL_OCC
 
                 # cannot compute kinematics
@@ -1530,7 +1541,7 @@ class Tracker:
             # match descriptors 
             matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, descriptors, threshold=self.DES_MATCH_DEV_THRESH)
 
-            distances = np.array([[m.distance for m in mathces]])
+            distances = np.array([[m.distance for m in matches]])
             good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
 
             # check TO_NO_OCC
@@ -1823,13 +1834,13 @@ class Tracker:
                 thickness=1)
 
         if ADD_METRICS:
-            if k in None:
+            if k is None:
                 dpos = self.manager.simulator.camera.position
                 dvel = self.manager.simulator.camera.velocity
             kin_str_1 = f'car_pos (m) : '      .rjust(20)
-            kin_str_2 = '--' if k is None else f'<{k[2][0]:6.2f}, {k[2][1]:6.2f}>'
+            kin_str_2 = '--' if k is None else f'<{k[6][0]:6.2f}, {k[6][1]:6.2f}>'
             kin_str_3 = f'car_vel (m/s) : '    .rjust(20)
-            kin_str_4 = '--' if k is None else f'<{k[3][0]:6.2f}, {k[3][1]:6.2f}>'
+            kin_str_4 = '--' if k is None else f'<{k[7][0]:6.2f}, {k[7][1]:6.2f}>'
             kin_str_5 = f'drone_pos (m) : '    .rjust(20)
             kin_str_6 = f'<{dpos[0]:6.2f}, {dpos[1]:6.2f}>' if k is None else f'<{k[0][0]:6.2f}, {k[0][1]:6.2f}>'
             kin_str_7 = f'drone_vel (m/s) : '  .rjust(20)
@@ -1873,8 +1884,10 @@ class Tracker:
             img = put_text(img, kin_str_15, (50, HEIGHT - 15),
                            font_scale=0.45, color=METRICS_COLOR, thickness=1)
 
-        occ_str = "TARGET OCCLUDED" if not self.target_occlusion_case_new==self._NO_OCC else "TARGET TRACKED"
-        occ_color = RED_CV if not self.target_occlusion_case_new==self._NO_OCC else METRICS_COLOR
+        occ_str_dict = {self._NO_OCC:'NO OCCLUSION', self._PARTIAL_OCC:'PARTIAL OCCLUSION', self._TOTAL_OCC:'TOTAL OCCLUSION'}
+        occ_color_dict = {self._NO_OCC:METRICS_COLOR, self._PARTIAL_OCC:ORANGE_CV, self._TOTAL_OCC:RED_CV}
+        occ_str = occ_str_dict[self.target_occlusion_case_new]
+        occ_color = occ_color_dict[self.target_occlusion_case_new]
         img = put_text(img, occ_str, (WIDTH//2 - 50, HEIGHT - 40),
                            font_scale=0.55, color=occ_color, thickness=1)
         return img
@@ -2119,7 +2132,7 @@ class ExperimentManager:
     def transform_pos_corner_img_pixels_to_center_cam_meters(self, pos):
         pos = pos.elementwise() * (1, -1) + (0, HEIGHT)
         pos *= self.simulator.pxm_fac
-        pos += -pygame.Vector2(self.get_drone_cam_field_of_view) / 2
+        pos += -pygame.Vector2(self.get_drone_cam_field_of_view()) / 2
 
         return pos
 
@@ -2133,8 +2146,8 @@ class ExperimentManager:
     def set_target_centroid_offset(self):
         # this will be called from tracker at the first run after first centroid calculation
         # uses tracked new centroid to compute it's relative position from car center
-        self.car_rect_center_centroid_offset[0] = self.tracker.centroid_new.flatten[0] - self.simulator.car.rect.centerx
-        self.car_rect_center_centroid_offset[1] = self.tracker.centroid_new.flatten[1] - self.simulator.car.rect.centery
+        self.car_rect_center_centroid_offset[0] = self.tracker.centroid_new.flatten()[0] - self.simulator.car.rect.centerx
+        self.car_rect_center_centroid_offset[1] = self.tracker.centroid_new.flatten()[1] - self.simulator.car.rect.centery
 
     def get_target_centroid_offset(self):
         return self.car_rect_center_centroid_offset
@@ -2144,7 +2157,9 @@ class ExperimentManager:
 
     def get_target_bounding_box_from_offset(self):
         x, y, w, h = self.simulator.bounding_box
-        x, y = self.simulator.car.center + self.get_bounding_box_offset()
+        bb_offset = self.get_bounding_box_offset()
+        x = self.simulator.car.rect.center[0] + bb_offset[0]
+        y = self.simulator.car.rect.center[1] + bb_offset[1]
         return x, y, w, h
 
     def run(self):
