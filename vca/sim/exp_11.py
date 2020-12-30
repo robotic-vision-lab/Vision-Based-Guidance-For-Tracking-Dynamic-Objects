@@ -9,7 +9,7 @@ from queue import deque
 from copy import deepcopy
 from random import randrange
 from datetime import timedelta
-from math import atan2, degrees, cos, sin, pi
+from math import atan2, degrees, cos, sin, pi, isnan
 
 import numpy as np
 import cv2 as cv
@@ -1182,14 +1182,14 @@ class Tracker:
         return self._can_begin_control_flag  # and self.prev_car_pos is not None
 
 
-    def compute_kinematics_centroid(self, old_centroid, new_centroid):
+    def compute_kinematics_by_centroid(self, old_centroid, new_centroid):
 
         # assumptions:
         # - centroids are computed using get_centroid, therefore, centroid shape (1,2)
         # - centroids represent the target location in old and new frames
 
         # form pygame.Vector2 objects representing measured car_position and car_velocity 
-        # in image coord frame in spatial units of image pixels 
+        # in corner image coord frame in spatial units of pixels 
         measured_car_pos = pygame.Vector2(list(new_centroid.flatten()))
         dt = self.manager.get_sim_dt()
         measured_car_vel = pygame.Vector2(list( ((new_centroid-old_centroid)/dt).flatten() ))
@@ -1204,6 +1204,47 @@ class Tracker:
         measured_car_pos_cam_frame_meters = self.manager.transform_pos_corner_img_pixels_to_center_cam_meters(measured_car_pos)
         measured_car_vel_cam_frame_meters = self.manager.transform_vel_img_pixels_to_cam_meters(measured_car_vel)
 
+        # filter tracked measurements
+        if USE_TRACKER_FILTER:
+            if USE_MA:
+                if not self.manager.MAF.ready:
+                    self.manager.MAF.init_filter(measured_car_pos_cam_frame_meters, measured_car_vel_cam_frame_meters)    
+                else:
+                    self.manager.MAF.add_pos(measured_car_pos_cam_frame_meters)
+                    maf_est_car_pos = self.manager.MAF.get_pos()
+                    if dt == 0:
+                        maf_est_car_vel = self.manager.MAF.get_vel()
+                    else:
+                        maf_est_car_vel = (self.manager.MAF.new_pos - self.manager.MAF.old_pos) / dt
+
+                    self.manager.MAF.add_vel(measured_car_vel_cam_frame_meters)
+            else:
+                maf_est_car_pos = NAN
+                maf_est_car_vel = NAN
+
+
+            if USE_KALMAN:
+                if not self.manager.KF.ready:
+                    self.manager.KF.init_filter(measured_car_pos_cam_frame_meters, measured_car_vel_cam_frame_meters)
+                else:
+                    self.manager.KF.add(measured_car_pos_cam_frame_meters, measured_car_vel_cam_frame_meters)
+                    kf_est_car_pos = self.manager.KF.get_pos()
+                    kf_est_car_vel = self.manager.KF.get_vel()
+            else:
+                kf_est_car_pos = NAN
+                kf_est_car_vel = NAN
+
+        # return kinematics in camera frame in spatial units of meters
+        return (
+            true_drone_pos,
+            true_drone_vel,
+            maf_est_car_pos,
+            maf_est_car_vel + true_drone_vel,
+            kf_est_car_pos,
+            kf_est_car_vel + true_drone_vel,
+            measured_car_pos_cam_frame_meters,
+            measured_car_vel_cam_frame_meters
+        )
 
 
     def compute_kinematics(self, cur_pts, nxt_pts):
@@ -1265,7 +1306,7 @@ class Tracker:
         cv *= self.manager.simulator.pxm_fac
 
         # filter car kin
-        if USE_FILTER:
+        if USE_TRACKER_FILTER:
             if not self.manager.filter.ready:
                 self.manager.filter.init_filter(car_position, car_velocity)
             else:
@@ -1368,7 +1409,7 @@ class Tracker:
         # CASE FROM_NO_OCC
         if self.target_occlusion_case_old == self._NO_OCC:
             # (a priori) older could have been start or no_occ, or partial_occ or total_occ
-            # we should have all keypoints as good ones, if old now has no_occ
+            # we should have all keypoints as good ones, and old centroid exists, if old now has no_occ
 
             # try to compute flow at keypoints and infer next occlusion case
             self.compute_flow()
@@ -1382,9 +1423,11 @@ class Tracker:
                 self.keypoints_old_good = self.keypoints_old
                 self.keypoints_new_good = self.keypoints_new
 
-                # compute kinematics measurements
-                self.kin = self.compute_kinematics(self.keypoints_old_good, self.keypoints_new_good)
+                # compute centroid
+                self.centroid_new = self.get_centroid(self.keypoints_new_good)
 
+                # compute kinematics measurements
+                self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
                 # posterity - save frames, keypoints, centroid
                 self.frame_old_gray = self.frame_new_gray
@@ -2006,7 +2049,8 @@ class ExperimentManager:
         self.tracker = Tracker(self)
         self.controller = Controller(self)
 
-        self.filter = Kalman(self) if USE_KALMAN else MA(window_size=10)
+        self.MAF = MA(window_size=10)
+        self.KF = Kalman(self)
         self.EKF = ExtendedKalman(self)
 
         # self.image_deque = deque(maxlen=2)
@@ -2152,7 +2196,7 @@ class ExperimentManager:
                     # let controller generate acceleration, when tracker indicates ok
                     if self.tracker.can_begin_control() and (
                             self.use_true_kin or self.tracker.kin is not None) and (
-                            self.filter.done_waiting() or not USE_FILTER):
+                            self.filter.done_waiting() or not USE_TRACKER_FILTER):
                         # collect kinematics tuple
                         kin = self.get_true_kinematics() if self.use_true_kin else self.tracker.kin
                         kin = self.tracker.kin if status[0] else self.get_true_kinematics()
