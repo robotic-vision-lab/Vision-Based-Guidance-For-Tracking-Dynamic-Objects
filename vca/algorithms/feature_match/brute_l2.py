@@ -6,7 +6,7 @@ class BruteL2:
         self.matcher = cv.DescriptorMatcher_create(cv.DescriptorMatcher_BRUTEFORCE)
 
     def compute_matches(self, descriptors_1, descriptors_2, threshold=0.15):
-        matchers = self.matcher.match(descriptors_1, descriptors_2)
+        matches = self.matcher.match(descriptors_1, descriptors_2)
 
         distances = [m.distance for m in matches]
         mxd = max(distances)
