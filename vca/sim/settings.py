@@ -21,7 +21,10 @@ GREEN_CV = (102, 255, 102)
 BLUE_CV = (255, 102, 102)
 YELLOW_CV = (0, 255, 255)
 
-
+# special constants
+POS_INF = float('inf')
+NEG_INF = float('-inf')
+NAN = float('nan')
 
 #   S E T T I N G S  #
 
