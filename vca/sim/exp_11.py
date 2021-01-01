@@ -944,6 +944,10 @@ class Tracker:
 
         self.centroid_old = None
         self.centroid_new = None
+        self.centroid_adjustment = None
+
+        self.initial_keypoints = None
+        self.initial_centroid = None
 
         self.frame_new_color_edited = None
         self.img_tracker_display = None
@@ -1069,7 +1073,7 @@ class Tracker:
     def save_initial_target_descriptors(self):
         # use keypoints from new frame, 
         # save descriptors of new keypoints(good)
-        keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in self.keypoints_new]
+        keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in self.initial_keypoints]
         self.initial_target_descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, 
                                                                              keyPoints)
 
@@ -1131,7 +1135,7 @@ class Tracker:
     def get_bounding_box_mask(img, x, y, width, height):
         # assume image is grayscale
         mask = np.zeros_like(img)
-        mask[y:y+height, x:x+width] = 1
+        mask[y:y+height, x:x+width] = 255
         return mask
 
     @staticmethod
@@ -1139,7 +1143,7 @@ class Tracker:
         x = patch_center[0] - patch_size //2
         y = patch_center[1] - patch_size //2
         mask = np.zeros_like(img)
-        mask[y:y+patch_size[1], x:x+patch_size[0]] = 1
+        mask[y:y+patch_size[1], x:x+patch_size[0]] = 255
         return mask
         
     def copy_new_to_old(self):
@@ -1151,8 +1155,8 @@ class Tracker:
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         # draw tracks on the mask, apply mask to frame, save mask for future use
-        img, mask = draw_tracks(frame, self.get_centroid(good_cur), self.get_centroid(
-            good_nxt), [TRACK_COLOR], mask, track_thickness=2, radius=5, circle_thickness=1)
+        img, mask = draw_tracks(frame, self.get_centroid(good_cur).astype(np.int), self.get_centroid(
+            good_nxt).astype(np.int), [TRACK_COLOR], mask, track_thickness=2, radius=5, circle_thickness=1)
         for cur, nxt in zip(good_cur, good_nxt):
             img, mask = draw_tracks(frame, [cur], [nxt], [(204, 204, 204)], mask, track_thickness=1, radius=5, circle_thickness=1)
             
@@ -1376,27 +1380,23 @@ class Tracker:
         Args:
             points (np.ndarray): Centroid point. [shape: (1,2)]
         """
-        points_ = np.array(points).reshape(-1,2)
-        centroid_x, centroid_y = 0, 0
-        for point in points_:
-            centroid_x += point[0]
-            centroid_y += point[1]
-
-        return np.array([[int(centroid_x / len(points_)), int(centroid_y / len(points_))]])
+        points_ = np.array(points).reshape(-1, 1, 2)
+        return np.mean(points_, axis=0)
 
 
     def process_image_complete(self, new_frame):
         # save new frame, compute grayscale
         self.frame_new_color = new_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
-
+        cv.imshow('nxt_frame', self.frame_new_gray)
+        cv.waitKey(1)
         if self.is_first_time():
-            # compute bb, feature keypoints, centroid
+            # compute bb, initial feature keypoints and centroid
             self.target_bounding_box = self.manager.get_target_bounding_box()
             self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
 
-            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
-            self.centroid_new = self.get_centroid(self.keypoints_new)
+            self.initial_keypoints = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
+            self.initial_centroid = self.get_centroid(self.initial_keypoints)
 
             # compute and save descriptors at keypoints, save target template
             self.save_initial_target_descriptors()
@@ -1405,16 +1405,17 @@ class Tracker:
             # posterity - save frames, keypoints, centroid, occ_case, centroid location relative to rect center
             self.frame_old_gray = self.frame_new_gray
             self.frame_old_color = self.frame_new_color
-            self.keypoints_old = self.keypoints_new
+            self.keypoints_old = self.keypoints_new = self.initial_keypoints
             # self.keypoints_old_good = self.keypoints_new_good # not needed, since next iter will have from_no_occ
-            self.centroid_old = self.centroid_new
+            self.centroid_old = self.centroid_new = self.initial_centroid
             self.target_occlusion_case_old = self.target_occlusion_case_new
             self.manager.set_target_centroid_offset()
             self.second = False
             return self._FAILURE
 
         self.second = True
-
+        
+        # ################################################################################
         # CASE |NO_OCC, _>
         if self.target_occlusion_case_old == self._NO_OCC:
             # (a priori) older could have been start or no_occ, or partial_occ or total_occ
@@ -1423,7 +1424,7 @@ class Tracker:
             # try to compute flow at keypoints and infer next occlusion case
             self.compute_flow()
 
-            # check NO_OCC 
+            # check NO_OCC
             if self.feature_found_statuses.all() and self.cross_feature_errors.max() < self.MAX_ERR:
                 # |NO_OCC, NO_OCC>
                 self.target_occlusion_case_new = self._NO_OCC
@@ -1435,7 +1436,7 @@ class Tracker:
                 # compute centroid
                 self.centroid_new = self.get_centroid(self.keypoints_new_good)
 
-                # compute kinematics measurements
+                # compute kinematics measurements using centroid
                 self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
                 # posterity - save frames, keypoints, centroid
@@ -1446,8 +1447,23 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
 
+            # check TOTAL_OCC
+            elif not self.feature_found_statuses.all() or self.cross_feature_errors.min() >= self.MAX_ERR:
+                # |NO_OCC, TOTAL_OCC>
+                self.target_occlusion_case_new = self._TOTAL_OCC
+
+                # cannot compute kinematics
+                self.kin = None
+
+                # posterity
+                self.frame_old_gray = self.frame_new_gray
+                self.frame_old_color = self.frame_new_color
+                self.centroid_adjustment = None
+                self.target_occlusion_case_old = self.target_occlusion_case_new
+                return self._FAILURE
+
             # check PARTIAL_OCC
-            if self.feature_found_statuses.any() and self.cross_feature_errors.max() > self.MAX_ERR:
+            else: # self.feature_found_statuses.any() and self.cross_feature_errors.max() > self.MAX_ERR:
                 # |NO_OCC, PARTIAL_OCC>
                 self.target_occlusion_case_new = self._PARTIAL_OCC
 
@@ -1458,9 +1474,9 @@ class Tracker:
 
                 # compute adjusted centroid
                 centroid_old_good = self.get_centroid(self.keypoints_old_good)
-                centroid_adj = self.centroid_old - centroid_old_good
                 centroid_new_good = self.get_centroid(self.keypoints_new_good)
-                self.centroid_new = centroid_new_good + centroid_adj
+                self.centroid_adjustment = self.centroid_old - centroid_old_good
+                self.centroid_new = centroid_new_good + self.centroid_adjustment
 
                 # compute kinematics measurements
                 self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
@@ -1474,20 +1490,7 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
 
-            # check TOTAL_OCC
-            if not self.feature_found_statuses.all() or self.cross_feature_errors.min() >= self.MAX_ERR:
-                # |NO_OCC, TOTAL_OCC>
-                self.target_occlusion_case_new = self._TOTAL_OCC
-
-                # cannot compute kinematics
-                self.kin = None
-
-                # posterity
-                self.frame_old_gray = self.frame_new_gray
-                self.frame_old_color = self.frame_new_color
-                self.target_occlusion_case_old = self.target_occlusion_case_new
-                return self._FAILURE
-
+        # ################################################################################
         # CASE |PARTIAL_OCC, _>
         if self.target_occlusion_case_old == self._PARTIAL_OCC:
             # (a priori) older could have been no_occ, partial_occ or total_occ
@@ -1496,18 +1499,17 @@ class Tracker:
             # use good keypoints, to compute flow (good keypoints used as input, while outputs into keypoints)
             self.compute_flow(use_good=True)
 
-            # compute good old and new
-            # good keypoints need to be computed for kinematics computation as well as posterity
+            # update good old and new
+            # good keypoints are used for kinematics computation as well as posterity
             self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
             self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
 
+            # these good keypoints are not sufficient for perfect/precise partial occlusion detection
+            # for precision, we will need to check if any other keypoints can be recovered
+            # we should still have old centroid 
 
-            # check TO_NO_OCC
-            # |PARTIAL_OCC, NO_OCC>
-            # check TO_PARTIAL_OCC
-            # |PARTIAL_OCC, PARTIAL_OCC>
             # check TO_TOTAL_OCC
-            if not self.feature_found_statuses.all() or self.cross_feature_errors.max() >= self.MAX_ERR:
+            if not self.feature_found_statuses.all() or self.cross_feature_errors.min() >= self.MAX_ERR:
                 # |PARTIAL_OCC, TOTAL_OCC>
                 self.target_occlusion_case_new = self._TOTAL_OCC
 
@@ -1520,6 +1522,12 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._FAILURE
 
+            # check TO_NO_OCC
+            # |PARTIAL_OCC, NO_OCC>
+            # check TO_PARTIAL_OCC
+            # |PARTIAL_OCC, PARTIAL_OCC>
+
+        # ################################################################################
         # CASE FROM_TOTAL_OCC
         if self.target_occlusion_case_old == self._TOTAL_OCC:
             # (a priori) older could have been no_occ, partial_occ or total_occ
@@ -1682,7 +1690,7 @@ class Tracker:
             # show resultant img
             cv.imshow(self.win_name, self.frame_color_edited)
             cv.imshow("cur_frame", self.frame_old_gray)
-            cv.imshow("nxt_frame", self.frame_new_gray)
+            # cv.imshow("nxt_frame", self.frame_new_gray)
 
         # dump frames for analysis
         assembled_img = images_assemble([self.frame_old_gray.copy(), self.frame_new_gray.copy(), self.frame_color_edited.copy()], (1,3))
