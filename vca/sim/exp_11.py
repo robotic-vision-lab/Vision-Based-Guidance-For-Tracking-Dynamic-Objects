@@ -1433,9 +1433,8 @@ class Tracker:
             # try to compute flow at keypoints and infer next occlusion case
             self.compute_flow()
 
-            # check NO_OCC
+            # |NO_OCC, NO_OCC>
             if self.feature_found_statuses.all() and self.cross_feature_errors.max() < self.MAX_ERR:
-                # |NO_OCC, NO_OCC>
                 self.target_occlusion_case_new = self._NO_OCC
 
                 # set good points (set, not computed, lines added for consistent design)
@@ -1456,9 +1455,8 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
 
-            # check TOTAL_OCC
+            # |NO_OCC, TOTAL_OCC>
             elif not self.feature_found_statuses.all() or self.cross_feature_errors.min() >= self.MAX_ERR:
-                # |NO_OCC, TOTAL_OCC>
                 self.target_occlusion_case_new = self._TOTAL_OCC
 
                 # cannot compute kinematics
@@ -1471,9 +1469,8 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._FAILURE
 
-            # check PARTIAL_OCC
+            # |NO_OCC, PARTIAL_OCC>
             else: # self.feature_found_statuses.any() and self.cross_feature_errors.max() > self.MAX_ERR:
-                # |NO_OCC, PARTIAL_OCC>
                 self.target_occlusion_case_new = self._PARTIAL_OCC
 
                 # in this case of from no_occ to partial_occ, no more keypoints are needed to be found
@@ -1489,7 +1486,7 @@ class Tracker:
 
                 # compute kinematics measurements
                 self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
-
+                
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
@@ -1517,25 +1514,29 @@ class Tracker:
             # for precision, we will need to check if any other keypoints can be recovered
             # we should still have old centroid, from initial computations we must still have
             self.target_bounding_box = self.get_true_bb_from_oracle()
-            self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
+            self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, 
+                                                                       *self.target_bounding_box)
 
             # compute good feature keypoints in the new frame
-            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
+            good_keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, 
+                                                        mask=self.target_bounding_box_mask, 
+                                                        **FEATURE_PARAMS)
 
             # compute descriptors at the new keypoints
-            descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, self.keypoints_new)
+            descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new)
 
             # match descriptors 
-            matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, descriptors, threshold=self.DES_MATCH_DEV_THRESH)
+            matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
+                                                              descriptors, 
+                                                              threshold=self.DES_MATCH_DEV_THRESH)
 
-            distances = np.array([[m.distance for m in matches]])
+            distances = np.array([m.distance for m in matches]).reshape(-1, 1)
             good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
 
-            # check TO_TOTAL_OCC
+            # |PARTIAL_OCC, TOTAL_OCC>
             if ((not self.feature_found_statuses.all() or 
                     self.cross_feature_errors.min() >= self.MAX_ERR) and 
                     len(good_distances) == 0):
-                # |PARTIAL_OCC, TOTAL_OCC>
                 self.target_occlusion_case_new = self._TOTAL_OCC
 
                 # cannot compute kinematics
@@ -1547,10 +1548,55 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._FAILURE
 
-            # check TO_NO_OCC
             # |PARTIAL_OCC, NO_OCC>
-            # check TO_PARTIAL_OCC
+            elif ((self.feature_found_statuses.all() and
+                    self.cross_feature_errors.max() < self.MAX_ERR) and 
+                    len(good_distances) == MAX_NUM_CORNERS):
+                self.target_occlusion_case_new = self._NO_OCC
+
+                # compute centroid and compute kinematics
+                self.centroid_new = self.get_centroid(self.keypoints_new_good)
+                self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
+
+                # adjust centroid
+                centroid_new_good = self.get_centroid(good_keypoints_new)
+                self.centroid_adjustment = centroid_new_good - self.centroid_new
+                self.centroid_new = centroid_new_good
+
+                # update keypoints
+                self.keypoints_new = self.centroid_new + self.rel_keypoints              
+
+                # posterity
+                self.frame_old_gray = self.frame_new_gray
+                self.frame_old_color = self.frame_new_color
+                self.keypoints_old = self.keypoints_new
+                self.centroid_old = self.centroid_new
+                self.target_occlusion_case_old = self.target_occlusion_case_new
+                return self._SUCCESS
+
             # |PARTIAL_OCC, PARTIAL_OCC>
+            else:
+                self.target_occlusion_case_new = self._PARTIAL_OCC
+
+
+                # here, we need to handle the non-pairing case
+                if self.keypoints_new_good.shape[0] == 0 and len(good_distances) > 0:
+                    # reconstruct 
+                
+                # compute centroid and compute kinematics
+                self.centroid_new = self.get_centroid(self.keypoints_new_good)
+                self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
+
+
+                
+                # posterity
+                self.frame_old_gray = self.frame_new_gray
+                self.frame_old_color = self.frame_new_color
+                self.keypoints_old = self.keypoints_new
+                self.keypoints_old_good = self.keypoints_new_good
+                self.centroid_old = self.centroid_new
+                self.target_occlusion_case_old = self.target_occlusion_case_new
+                return self._SUCCESS
 
         # ################################################################################
         # CASE FROM_TOTAL_OCC
@@ -1583,40 +1629,43 @@ class Tracker:
             # good distances indicate good matches
             good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
 
-            # check TO_NO_OCC
-            if len(good_distances) == len(distances[0]):
-                # |TOTAL_OCC, NO_OCC>
+
+            # |TOTAL_OCC, NO_OCC>
+            if len(good_distances) == MAX_NUM_CORNERS:
                 self.centroid_new = self.get_centroid(self.keypoints_new)
                 self.rel_keypoints = self.keypoints_new - self.centroid_new
 
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
-                self.keypoints_old = self.keypoints_new
-                self.centroid_old = self.centroid_new = self.initial_centroid
+                self.initial_keypoints = self.keypoints_old = self.keypoints_new
+                self.initial_centroid = self.centroid_old = self.centroid_new
                 self.centroid_adjustment = None
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 self.manager.set_target_centroid_offset()
                 return self._FAILURE
 
-            # check TO_PARTIAL_OCC
-            if len(good_distances) < len(distances[0]):
-                # |TOTAL_OCC, PARTIAL_OCC>
+            # |TOTAL_OCC, PARTIAL_OCC>
+            if len(good_distances) < MAX_NUM_CORNERS:
 
+                # compute good matches
+                good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
+                
                 # compute good points, centroid adjustments
+                self.keypoints_new_good = np.array([list(self.keypoints_new[gm.queryIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
+                self.centroid_new = self.manager.get_target_centroid()
                 
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.keypoints_old = self.keypoints_new
-                self.centroid_old = self.centroid_new = self.initial_centroid
+                self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 self.manager.set_target_centroid_offset()
                 return self._FAILURE
 
-            # check TO_TOTAL_OCC
+            # |TOTAL_OCC, TOTAL_OCC>
             if len(good_distances) == 0:
-                # |TOTAL_OCC, TOTAL_OCC>
                 self.target_occlusion_case_new = self._TOTAL_OCC
 
                 # cannot compute kinematics
@@ -2218,6 +2267,9 @@ class ExperimentManager:
         # uses tracked new centroid to compute it's relative position from car center
         self.car_rect_center_centroid_offset[0] = self.tracker.centroid_new.flatten()[0] - self.simulator.car.rect.centerx
         self.car_rect_center_centroid_offset[1] = self.tracker.centroid_new.flatten()[1] - self.simulator.car.rect.centery
+
+    def get_target_centroid(self):
+        return self.car_rect_center_centroid_offset + self.simulator.car.center
 
     def get_target_centroid_offset(self):
         return self.car_rect_center_centroid_offset
