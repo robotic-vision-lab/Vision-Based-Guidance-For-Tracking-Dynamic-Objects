@@ -941,6 +941,7 @@ class Tracker:
         self.keypoints_old_good = None
         self.keypoints_new = None
         self.keypoints_new_good = None
+        self.rel_keypoints = None
 
         self.centroid_old = None
         self.centroid_new = None
@@ -1404,6 +1405,7 @@ class Tracker:
 
             self.initial_keypoints = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
             self.initial_centroid = self.get_centroid(self.initial_keypoints)
+            self.rel_keypoints = self.initial_keypoints - self.initial_centroid
 
             # compute and save descriptors at keypoints, save target template
             self.save_initial_target_descriptors()
@@ -1513,10 +1515,26 @@ class Tracker:
 
             # these good keypoints are not sufficient for perfect/precise partial occlusion detection
             # for precision, we will need to check if any other keypoints can be recovered
-            # we should still have old centroid 
+            # we should still have old centroid, from initial computations we must still have
+            self.target_bounding_box = self.get_true_bb_from_oracle()
+            self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
+
+            # compute good feature keypoints in the new frame
+            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
+
+            # compute descriptors at the new keypoints
+            descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, self.keypoints_new)
+
+            # match descriptors 
+            matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, descriptors, threshold=self.DES_MATCH_DEV_THRESH)
+
+            distances = np.array([[m.distance for m in matches]])
+            good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
 
             # check TO_TOTAL_OCC
-            if not self.feature_found_statuses.all() or self.cross_feature_errors.min() >= self.MAX_ERR:
+            if ((not self.feature_found_statuses.all() or 
+                    self.cross_feature_errors.min() >= self.MAX_ERR) and 
+                    len(good_distances) == 0):
                 # |PARTIAL_OCC, TOTAL_OCC>
                 self.target_occlusion_case_new = self._TOTAL_OCC
 
@@ -1554,24 +1572,61 @@ class Tracker:
             descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, self.keypoints_new)
 
             # match descriptors 
-            matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, descriptors, threshold=self.DES_MATCH_DEV_THRESH)
+            # note, matching only finds best matching/pairing, 
+            # no guarantees of quality of match
+            matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
+                                                              descriptors, 
+                                                              threshold=self.DES_MATCH_DEV_THRESH)
 
-            distances = np.array([[m.distance for m in matches]])
+            distances = np.array([m.distance for m in matches]).reshape(-1, 1)
+
+            # good distances indicate good matches
             good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
 
             # check TO_NO_OCC
             if len(good_distances) == len(distances[0]):
-                # from_total_occ, to_no_occ
-                pass
+                # |TOTAL_OCC, NO_OCC>
+                self.centroid_new = self.get_centroid(self.keypoints_new)
+                self.rel_keypoints = self.keypoints_new - self.centroid_new
+
+                # posterity
+                self.frame_old_gray = self.frame_new_gray
+                self.frame_old_color = self.frame_new_color
+                self.keypoints_old = self.keypoints_new
+                self.centroid_old = self.centroid_new = self.initial_centroid
+                self.centroid_adjustment = None
+                self.target_occlusion_case_old = self.target_occlusion_case_new
+                self.manager.set_target_centroid_offset()
+                return self._FAILURE
 
             # check TO_PARTIAL_OCC
             if len(good_distances) < len(distances[0]):
-                pass
+                # |TOTAL_OCC, PARTIAL_OCC>
+
+                # compute good points, centroid adjustments
+                
+                # posterity
+                self.frame_old_gray = self.frame_new_gray
+                self.frame_old_color = self.frame_new_color
+                self.keypoints_old = self.keypoints_new
+                self.centroid_old = self.centroid_new = self.initial_centroid
+                self.target_occlusion_case_old = self.target_occlusion_case_new
+                self.manager.set_target_centroid_offset()
+                return self._FAILURE
 
             # check TO_TOTAL_OCC
             if len(good_distances) == 0:
-                # from_total_occ, to total_occ
-                pass
+                # |TOTAL_OCC, TOTAL_OCC>
+                self.target_occlusion_case_new = self._TOTAL_OCC
+
+                # cannot compute kinematics
+                self.kin = None
+
+                # posterity
+                self.frame_old_gray = self.frame_new_gray
+                self.frame_old_color = self.frame_new_color
+                self.target_occlusion_case_old = self.target_occlusion_case_new
+                return self._FAILURE
                 
 
     def get_true_bb_from_oracle(self):
