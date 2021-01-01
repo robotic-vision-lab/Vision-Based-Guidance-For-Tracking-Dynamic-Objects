@@ -1155,8 +1155,15 @@ class Tracker:
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         # draw tracks on the mask, apply mask to frame, save mask for future use
-        img, mask = draw_tracks(frame, self.get_centroid(good_cur).astype(np.int), self.get_centroid(
-            good_nxt).astype(np.int), [TRACK_COLOR], mask, track_thickness=2, radius=5, circle_thickness=1)
+        if self.centroid_adjustment is not None:
+            cent_old = self.get_centroid(good_cur) + self.centroid_adjustment
+            cent_new = self.get_centroid(good_nxt) + self.centroid_adjustment
+        else:
+            cent_old = self.get_centroid(good_cur)
+            cent_new = self.get_centroid(good_nxt)
+
+        img, mask = draw_tracks(frame, cent_old.astype(np.int), cent_new.astype(np.int), [TRACK_COLOR], mask, track_thickness=2, radius=5, circle_thickness=1)
+
         for cur, nxt in zip(good_cur, good_nxt):
             img, mask = draw_tracks(frame, [cur], [nxt], [(204, 204, 204)], mask, track_thickness=1, radius=5, circle_thickness=1)
             
