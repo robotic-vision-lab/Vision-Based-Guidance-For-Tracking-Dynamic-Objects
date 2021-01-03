@@ -1069,7 +1069,7 @@ class Tracker:
         x = center[0] - size[0]/2
         y = center[1] - size[1]/2
 
-        return get_bb_patch_from_image(img, (x, y, *size))
+        return self.get_bb_patch_from_image(img, (x, y, *size))
 
     def save_initial_target_descriptors(self):
         # use keypoints from new frame, 
@@ -1433,6 +1433,7 @@ class Tracker:
             # try to compute flow at keypoints and infer next occlusion case
             self.compute_flow()
 
+            # ---------------------------------------------------------------------
             # |NO_OCC, NO_OCC>
             if self.feature_found_statuses.all() and self.cross_feature_errors.max() < self.MAX_ERR:
                 self.target_occlusion_case_new = self._NO_OCC
@@ -1455,6 +1456,7 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
 
+            # ---------------------------------------------------------------------
             # |NO_OCC, TOTAL_OCC>
             elif not self.feature_found_statuses.all() or self.cross_feature_errors.min() >= self.MAX_ERR:
                 self.target_occlusion_case_new = self._TOTAL_OCC
@@ -1469,6 +1471,7 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._FAILURE
 
+            # ---------------------------------------------------------------------
             # |NO_OCC, PARTIAL_OCC>
             else: # self.feature_found_statuses.any() and self.cross_feature_errors.max() > self.MAX_ERR:
                 self.target_occlusion_case_new = self._PARTIAL_OCC
@@ -1533,6 +1536,7 @@ class Tracker:
             distances = np.array([m.distance for m in matches]).reshape(-1, 1)
             good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
 
+            # ---------------------------------------------------------------------
             # |PARTIAL_OCC, TOTAL_OCC>
             if ((not self.feature_found_statuses.all() or 
                     self.cross_feature_errors.min() >= self.MAX_ERR) and 
@@ -1548,6 +1552,7 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._FAILURE
 
+            # ---------------------------------------------------------------------
             # |PARTIAL_OCC, NO_OCC>
             elif ((self.feature_found_statuses.all() and
                     self.cross_feature_errors.max() < self.MAX_ERR) and 
@@ -1574,6 +1579,7 @@ class Tracker:
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
 
+            # ---------------------------------------------------------------------
             # |PARTIAL_OCC, PARTIAL_OCC>
             else:
                 self.target_occlusion_case_new = self._PARTIAL_OCC
@@ -1582,11 +1588,11 @@ class Tracker:
                 # here, we need to handle the non-pairing case
                 if self.keypoints_new_good.shape[0] == 0 and len(good_distances) > 0:
                     # reconstruct 
+                    pass
                 
                 # compute centroid and compute kinematics
                 self.centroid_new = self.get_centroid(self.keypoints_new_good)
                 self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
-
 
                 
                 # posterity
@@ -1597,6 +1603,7 @@ class Tracker:
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
+
 
         # ################################################################################
         # CASE FROM_TOTAL_OCC
@@ -1629,7 +1636,7 @@ class Tracker:
             # good distances indicate good matches
             good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
 
-
+            # ---------------------------------------------------------------------
             # |TOTAL_OCC, NO_OCC>
             if len(good_distances) == MAX_NUM_CORNERS:
                 self.centroid_new = self.get_centroid(self.keypoints_new)
@@ -1645,6 +1652,7 @@ class Tracker:
                 self.manager.set_target_centroid_offset()
                 return self._FAILURE
 
+            # ---------------------------------------------------------------------
             # |TOTAL_OCC, PARTIAL_OCC>
             if len(good_distances) < MAX_NUM_CORNERS:
 
@@ -1664,6 +1672,7 @@ class Tracker:
                 self.manager.set_target_centroid_offset()
                 return self._FAILURE
 
+            # ---------------------------------------------------------------------
             # |TOTAL_OCC, TOTAL_OCC>
             if len(good_distances) == 0:
                 self.target_occlusion_case_new = self._TOTAL_OCC
