@@ -61,9 +61,9 @@ class Sift:
         cv.destroyAllWindows()
     
     def get_descriptors_at_keypoints(self, img, keypoints):
-        _, descriptors = self.detector.compute(img, keypoints)
+        keypoints, descriptors = self.detector.compute(img, keypoints)
 
-        return descriptors
+        return keypoints, descriptors
 
     def get_descriptors(self, img, mask=None):
         _, descriptors = self.detector.detectAndCompute(img, mask)
