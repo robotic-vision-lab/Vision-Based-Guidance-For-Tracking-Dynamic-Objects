@@ -9,8 +9,11 @@ class BruteL2:
         matches = self.matcher.match(descriptors_1, descriptors_2)
 
         distances = [m.distance for m in matches]
-        mxd = max(distances)
         mnd = min(distances)
+        mxd = max(distances)
+        if mxd == 0.0:
+            return matches
+
         matches_ = [m for m in matches if m.distance/mxd < mnd/mxd + threshold]
 
         return matches_
