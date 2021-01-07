@@ -1,26 +1,7 @@
 import os
 import pygame
 from math import tan, radians
-
-# define some colors to be used with pygame 
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-DARK_GRAY = (31, 31, 31)
-DARK_GRAY_2 = (40, 40, 40)
-LIGHT_GRAY = (128, 128, 128)
-LIGHT_GRAY_2 = (153, 153, 153)
-LIGHT_GRAY_3 = (250, 250, 250)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (102, 102, 255)
-YELLOW = (255, 255, 0)
-
-# define colors to be used with opencv (BGR)
-RED_CV = (102, 102, 255)
-GREEN_CV = (102, 255, 102)
-BLUE_CV = (255, 102, 102)
-YELLOW_CV = (0, 255, 255)
-ORANGE_CV = (0, 165, 255)
+from colors import *
 
 # special constants
 POS_INF = float('inf')
@@ -108,7 +89,7 @@ if DARK_ON:
     BLOCK_COLOR = (40, 40, 40)
     BLOCK_COLOR_DELTA = 24
     SCREEN_BG_COLOR = (31, 31, 31)
-    TRACK_COLOR = (102, 255, 102)
+    TRACK_COLOR = CAROLINA_BLUE_BGR
     TRACKER_BLANK = 31
     TIME_COLOR = (153, 153, 153)
     METRICS_COLOR = (153, 153, 153)
@@ -119,7 +100,7 @@ else:
     BLOCK_COLOR = (230, 230, 230)
     BLOCK_COLOR_DELTA = 18
     SCREEN_BG_COLOR = (250, 250, 250)
-    TRACK_COLOR = (102, 255, 102)
+    TRACK_COLOR = TURQUOISE_GREEN_BGR
     TRACKER_BLANK = 250
     TIME_COLOR = (128, 128, 128)
     METRICS_COLOR = (128, 128, 128)
