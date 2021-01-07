@@ -9,7 +9,6 @@ class BruteL2:
         matches = self.matcher.match(descriptors_1, descriptors_2)
 
         if threshold == -1:
-            matches = [m for m in matches if m.distance < distance_threshold]
             return matches
 
         # use of the other threshold is deprecated 
