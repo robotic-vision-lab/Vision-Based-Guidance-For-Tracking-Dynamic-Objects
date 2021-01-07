@@ -5,9 +5,14 @@ class BruteL2:
     def __init__(self):
         self.matcher = cv.DescriptorMatcher_create(cv.DescriptorMatcher_BRUTEFORCE)
 
-    def compute_matches(self, descriptors_1, descriptors_2, threshold=0.15):
+    def compute_matches(self, descriptors_1, descriptors_2, threshold=-1, distance_threshold=float('inf')):
         matches = self.matcher.match(descriptors_1, descriptors_2)
 
+        if threshold == -1:
+            matches = [m for m in matches if m.distance < distance_threshold]
+            return matches
+
+        # use of the other threshold is deprecated 
         distances = [m.distance for m in matches]
         mnd = min(distances)
         mxd = max(distances)
