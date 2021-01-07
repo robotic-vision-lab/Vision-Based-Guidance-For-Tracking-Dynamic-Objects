@@ -924,7 +924,7 @@ class Simulator:
 
 
 class Tracker:
-    """Tracker object is desgined to work with and ExperimentManager object.
+    """Tracker object is designed to work with and ExperimentManager object.
     It can be used to process screen captures and produce tracking information for feature points.
     Computer Vision techniques employed here.
     """
@@ -1124,8 +1124,8 @@ class Tracker:
             # add optical flow arrows
             img = draw_sparse_optical_flow_arrows(
                 img,
-                self.get_centroid(good_cur),
-                self.get_centroid(good_nxt),
+                self.centroid_old, # self.get_centroid(good_cur),
+                self.centroid_new, # self.get_centroid(good_nxt),
                 thickness=2,
                 arrow_scale=ARROW_SCALE,
                 color=_ARROW_COLOR)
@@ -1369,7 +1369,7 @@ class Tracker:
             # handle the at least something case first
             # something was found, implying we can find kinematics and update centroid
             # EVENT: FOUND SOMETHING
-            if self.feature_found_statuses.any() and self.cross_feature_errors[self.feature_found_statuses==1].min() < self.MAX_ERR:
+            if self.feature_found_statuses.any() and self.cross_feature_errors[self.feature_found_statuses==1].max() < self.MAX_ERR:
                 # compute adjusted centroid
                 centroid_old_good = self.get_centroid(self.keypoints_old_good)
                 centroid_new_good = self.get_centroid(self.keypoints_new_good)
@@ -1404,9 +1404,9 @@ class Tracker:
                 # match descriptors 
                 matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
                                                                 descriptors, 
-                                                                threshold=self.DES_MATCH_DEV_THRESH)
+                                                                distance_threshold=self.DES_MATCH_DISTANCE_THRESH)
 
-                distances = np.array([m.distance for m in matches]).reshape(-1, 1)
+                distances = np.array([m.distance for m in matches]).reshape(-1, 1)  # redundant, TODO clean it
                 good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
 
             # ---------------------------------------------------------------------
@@ -1513,9 +1513,9 @@ class Tracker:
                 # no guarantees of quality of match
                 matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
                                                                 descriptors, 
-                                                                threshold=self.DES_MATCH_DEV_THRESH)
+                                                                distance_threshold=self.DES_MATCH_DISTANCE_THRESH)
 
-                distances = np.array([m.distance for m in matches]).reshape(-1, 1)
+                distances = np.array([m.distance for m in matches]).reshape(-1, 1)  # redundant TODO clean it
 
                 # good distances indicate good matches
                 good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
@@ -2101,7 +2101,7 @@ class ExperimentManager:
             self.tracker.kin[3],
             self.tracker.kin[4],
             self.tracker.kin[5]
-        )
+        ) if self.tracker.kin is not None else None
 
     def get_cam_origin(self):
         return self.simulator.camera.origin
