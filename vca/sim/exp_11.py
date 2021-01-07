@@ -22,7 +22,8 @@ from optical_flow_config import (FARNEBACK_PARAMS,          #pylint: disable=unu
                                  FARN_TEMP_FOLDER,
                                  FEATURE_PARAMS,
                                  LK_PARAMS,
-                                 LK_TEMP_FOLDER)
+                                 LK_TEMP_FOLDER,
+                                 MAX_NUM_CORNERS)
 
 
 # add vca\ to sys.path
@@ -939,8 +940,10 @@ class Tracker:
         
         self.keypoints_old = None
         self.keypoints_old_good = None
+        self.keypoints_old_bad = None
         self.keypoints_new = None
         self.keypoints_new_good = None
+        self.keypoints_new_bad = None
         self.rel_keypoints = None
 
         self.centroid_old = None
@@ -965,6 +968,9 @@ class Tracker:
         self.descriptor_matcher = BruteL2()
         self.template_matcher = CorrelationCoeffNormed()
 
+        self.true_old_pt = None
+        self.true_new_pt = None
+
         self.cur_img = None
 
         self._can_begin_control_flag = False    # will be modified in process_image
@@ -978,6 +984,7 @@ class Tracker:
         self._NO_OCC = 0
         self._PARTIAL_OCC = 1
         self._TOTAL_OCC = 2
+        self.display_arrow_color = {self._NO_OCC:GREEN_CV, self._PARTIAL_OCC:ORANGE_PEEL_BGR, self._TOTAL_OCC:CHINESE_RED_BGR}
 
         self.target_occlusion_case_old = None
         self.target_occlusion_case_new = self._NO_OCC   # assumption: start with no_occ
@@ -993,71 +1000,12 @@ class Tracker:
 
         self._FAILURE = False, None
         self._SUCCESS = True, self.kin
-        self.MAX_ERR = 15
+        self.MAX_ERR = 11
 
     def is_first_time(self):
         # this function is called in process_image in the beginning. 
         # it indicates if this the first time process_image received a frame
         return self.frame_old_gray is None
-
-    def is_target_occluded_in_old_frame(self):
-        # Given the context and mechanism, it indicates if target was occluded in old frame;
-        # the function call would semantically equate to a question asked about occlusion 
-        # in the previous frame
-        # syntactically, we could return the occlusion flag to serve the purpose
-        return self._target_old_occluded_flag
-
-    def is_target_occluded_in_new_frame(self):
-        # Given the context and mechanism, it indicates if target is occluded in new frame;
-        # the function call would semantically equate to a question asked about occlusion in 
-        # the new frame, which would entail inferring from flow computations and descriptor matching
-        
-        # occlusion detection from flow criterion
-        # 1. Rise in flow computation error residual.
-        # occlusion detection from feature matching
-        # 1. Drop in similarity of descriptor at old and new points
-        # if (not self.feature_found_statuses.all() or 
-        #         self.cross_feature_errors.max() > 15 or
-        #         not self.is_target_descriptor_matching()):
-        #     self._target_new_occluded_flag = True
-        return self._target_new_occluded_flag
-
-    def detect_occlusion_in_new_frame(self):
-        # Infers from flow computations and descriptor and template matching algorithms
-        # if target is occluded (partial/total)
-        
-        # occlusion detection from flow criterion
-        # 1. Rise in flow computation error residual.
-        # occlusion detection from feature matching
-        # 1. Drop in similarity of descriptor pairs at old and new points
-        if (not self.feature_found_statuses.all() or 
-                self.cross_feature_errors.max() > 15 or
-                not self.is_target_descriptor_matching()):
-            self._target_new_occluded_flag = True
-
-    def is_target_descriptor_matching(self):
-        # check if target descriptors are matching
-        keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in self.keypoints_new_good]
-        descriptors_new = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, 
-                                                                       keyPoints) #self.keypoints_new_good)
-        
-        matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, descriptors_new)
-        distances = [m.distance for m in matches]
-        mxd = max(distances)
-        is_match = True if mxd < 70 else False
-        return is_match
-
-    def is_target_template_matching(self):
-        # check if target template is matching
-        new_location = self._get_target_image_location()
-        new_location_patch = self.get_neighborhood_patch(self.frame_new_gray, new_location, (25,25))
-        match_result = self.template_matcher.compute_match(new_location_patch, self.initial_target_template_gray)
-        min_val, max_val, min_loc, max_loc = cv.minMaxLoc(match_result)
-
-        is_match = True if match_result[max_loc] < 0.95 else False
-
-    def target_recovered(self):
-        return False
 
     @staticmethod
     def get_bb_patch_from_image(img, bounding_box):
@@ -1068,14 +1016,16 @@ class Tracker:
     def get_neighborhood_patch(img, center, size):
         x = center[0] - size[0]/2
         y = center[1] - size[1]/2
+        w, h = size
 
-        return self.get_bb_patch_from_image(img, (x, y, *size))
+        return img[y:y+h, x:x+w] # same for color or gray
+        # return self.get_bb_patch_from_image(img, (x, y, *size))
 
     def save_initial_target_descriptors(self):
         # use keypoints from new frame, 
         # save descriptors of new keypoints(good)
         keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in self.initial_keypoints]
-        self.initial_target_descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, 
+        self.initial_kps, self.initial_target_descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, 
                                                                              keyPoints)
 
     def save_initial_target_template(self):
@@ -1088,8 +1038,8 @@ class Tracker:
 
     def get_descriptors_at_keypoints(self, img, keypoints):
         kps = [cv.KeyPoint(*kp.ravel(), 15) for kp in keypoints]
-        descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, kps)
-        return descriptors
+        kps, descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, kps)
+        return kps, descriptors
 
     def _get_kin_from_manager(self):
         #TODO switch based true or est 
@@ -1098,11 +1048,9 @@ class Tracker:
     def _get_target_image_location(self):
         kin = self._get_kin_from_manager()
         x,y = kin[2].elementwise()* (1,-1) / self.manager.simulator.pxm_fac
-        target_location = (int(x), int(y))
+        target_location = (int(x), int(y) + HEIGHT)
+        target_location += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1)
         return target_location
-
-    def target_redetected(self):
-        return self.is_target_template_matching()
 
     def compute_flow(self, use_good=False):
         # it's main purpose is to compute new points
@@ -1128,10 +1076,6 @@ class Tracker:
         self.feature_found_statuses = flow_output[2]
         self.cross_feature_errors  = flow_output[3]
 
-    def update_measured_kinematics(self):
-        self.kin = self.compute_kinematics(self.keypoints_old_good.reshape(-1,2),
-                                           self.keypoints_new_good.reshape(-1,2))
-    
     @staticmethod
     def get_bounding_box_mask(img, x, y, width, height):
         # assume image is grayscale
@@ -1146,37 +1090,45 @@ class Tracker:
         mask = np.zeros_like(img)
         mask[y:y+patch_size[1], x:x+patch_size[0]] = 255
         return mask
-        
-    def copy_new_to_old(self):
-        self.frame_old_gray = self.frame_new_gray.copy()
-        self.frame_old_color = self.frame_new_color.copy()
-        self.keypoints_old = self.keypoints_new.copy()
-        self.keypoints_old_good = self.keypoints_new_good.copy()
-        self._target_old_occluded_flag = self._target_new_occluded_flag
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
+        img = frame
+        old_pt = np.array(self.true_old_pt).astype(np.int).reshape(-1,1,2)
+        new_pt = np.array(self.true_new_pt).astype(np.int).reshape(-1,1,2)
+        self.true_old_pt = self.true_new_pt
+
+        _ARROW_COLOR = self.display_arrow_color[self.target_occlusion_case_new]
         # draw tracks on the mask, apply mask to frame, save mask for future use
-        if self.centroid_adjustment is not None:
-            cent_old = self.get_centroid(good_cur) + self.centroid_adjustment
-            cent_new = self.get_centroid(good_nxt) + self.centroid_adjustment
+        if kin is None:
+            img, mask = draw_tracks(frame, old_pt, new_pt, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
+            img = draw_sparse_optical_flow_arrows(img,
+                                                  old_pt,
+                                                  new_pt,
+                                                  thickness=2,
+                                                  arrow_scale=ARROW_SCALE,
+                                                  color=_ARROW_COLOR)
         else:
-            cent_old = self.get_centroid(good_cur)
-            cent_new = self.get_centroid(good_nxt)
+            if self.centroid_adjustment is not None:
+                cent_old = self.get_centroid(good_cur) + self.centroid_adjustment
+                cent_new = self.get_centroid(good_nxt) + self.centroid_adjustment
+            else:
+                cent_old = self.get_centroid(good_cur)
+                cent_new = self.get_centroid(good_nxt)
 
-        img, mask = draw_tracks(frame, cent_old.astype(np.int), cent_new.astype(np.int), [TRACK_COLOR], mask, track_thickness=2, radius=5, circle_thickness=1)
+            img, mask = draw_tracks(frame, cent_old.astype(np.int), cent_new.astype(np.int), [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
 
-        for cur, nxt in zip(good_cur, good_nxt):
-            img, mask = draw_tracks(frame, [cur], [nxt], [(204, 204, 204)], mask, track_thickness=1, radius=5, circle_thickness=1)
-            
+            for cur, nxt in zip(good_cur, good_nxt):
+                img, mask = draw_tracks(frame, [cur], [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=1, radius=7, circle_thickness=1)
+                
 
-        # add optical flow arrows
-        img = draw_sparse_optical_flow_arrows(
-            img,
-            self.get_centroid(good_cur),
-            self.get_centroid(good_nxt),
-            thickness=2,
-            arrow_scale=ARROW_SCALE,
-            color=RED_CV)
+            # add optical flow arrows
+            img = draw_sparse_optical_flow_arrows(
+                img,
+                self.get_centroid(good_cur),
+                self.get_centroid(good_nxt),
+                thickness=2,
+                arrow_scale=ARROW_SCALE,
+                color=_ARROW_COLOR)
 
         # add a center
         img = cv.circle(img, SCREEN_CENTER, radius=1, color=DOT_COLOR, thickness=2)
@@ -1192,7 +1144,6 @@ class Tracker:
 
     def can_begin_control(self):
         return self._can_begin_control_flag  # and self.prev_car_pos is not None
-
 
     def compute_kinematics_by_centroid(self, old_centroid, new_centroid):
 
@@ -1267,120 +1218,6 @@ class Tracker:
             measured_car_vel_cam_frame_meters
         )
 
-
-    def compute_kinematics(self, cur_pts, nxt_pts):
-        """Helper function, takes in current and next points (corresponding to an object) and computes the average velocity using elapsed simulation time from it's ExperimentManager.
-
-        Args:
-            cur_pts (np.ndarray): feature points in frame_1 or current frame (prev frame)
-            nxt_pts (np.ndarray): feature points in frame_2 or next frame
-
-        Returns:
-            tuple(float, float), tuple(float, float): mean of positions and velocities computed from each point pair. Transformed to world coordinates.
-        """
-        cur_pts = cur_pts.reshape(-1,2)
-        nxt_pts = nxt_pts.reshape(-1,2)
-
-        # # check non-zero number of points
-        num_pts = len(cur_pts)
-        # if num_pts == 0:
-        # return self.manager.simulator.camera.position,
-        # self.manager.simulator.camera.velocity, self.car_position,
-        # self.car_velocity
-
-        # sum over all pairs and deltas between them
-        car_x = 0
-        car_y = 0
-        car_vx = 0
-        car_vy = 0
-
-        for cur_pt, nxt_pt in zip(cur_pts, nxt_pts):
-            car_x += nxt_pt[0]
-            car_y += nxt_pt[1]
-            car_vx += nxt_pt[0] - cur_pt[0]
-            car_vy += nxt_pt[1] - cur_pt[1]
-
-        # converting from px/frame to px/secs. Averaging
-        d = self.manager.get_sim_dt() * num_pts
-        car_x /= num_pts
-        car_y /= num_pts
-        car_vx /= d
-        car_vy /= d
-
-        # form (MEASURED, camera frame) car_position and car_velocity vectors (in
-        # PIXELS and PIXELS/secs)
-        car_position = pygame.Vector2((car_x, car_y))
-        car_velocity = pygame.Vector2((car_vx, car_vy))
-
-        # collect drone position, drone velocity and fov from simulator
-        drone_position = self.manager.simulator.camera.position
-        drone_velocity = self.manager.simulator.camera.velocity
-        fov = self.manager.simulator.get_camera_fov()
-
-        # transform (MEASURED) car position and car velocity to world reference
-        # frame (also from PIXELS to METERS)
-        cp = car_position.elementwise() * (1, -1) + (0, HEIGHT)
-        cp *= self.manager.simulator.pxm_fac
-        cp += - pygame.Vector2(fov) / 2
-
-        cv = car_velocity.elementwise() * (1, -1)
-        cv *= self.manager.simulator.pxm_fac
-
-        # filter car kin
-        if USE_TRACKER_FILTER:
-            if not self.manager.filter.ready:
-                self.manager.filter.init_filter(car_position, car_velocity)
-            else:
-                if not USE_KALMAN:
-                    self.manager.filter.add_pos(car_position)
-                    car_position = self.manager.filter.get_pos()
-                    # car_velocity = self.manager.filter.get_vel()
-                    if self.manager.get_sim_dt() == 0:
-                        car_velocity = self.manager.filter.get_vel()
-                    else:
-                        car_velocity = (self.manager.filter.new_pos -
-                                        self.manager.filter.old_pos) / self.manager.get_sim_dt()
-                    # car_velocity = pygame.Vector2(car_velocity).elementwise() * (1, -1)
-                    # car_velocity *= self.manager.simulator.pxm_fac
-                    self.manager.filter.add_vel(car_velocity)
-                else:  # KALMAN CASE
-                    if self.count > 0:
-                        self.count -= 1
-                        car_position = self.manager.simulator.car.position
-                        car_velocity = self.manager.simulator.car.velocity - self.manager.simulator.camera.velocity
-                        self.manager.filter.add(car_position, car_velocity)
-                    else:
-                        # car_velocity = self.manager.simulator.car.velocity - self.manager.simulator.camera.velocity
-                        self.manager.filter.add(car_position, car_velocity)
-                        car_position = self.manager.filter.get_pos()
-                        car_velocity = self.manager.filter.get_vel()
-                    # if self.prev_car_pos is None:
-                    #     car_velocity = self.manager.filter.get_vel()
-                    # else:
-                    #     car_velocity = (car_position - self.prev_car_pos ) / self.manager.get_sim_dt()
-                    self.prev_car_pos = car_position
-
-        # transform (ESTIMATED) car position and car velocity to world reference
-        # frame (also from PIXELS to METERS)
-        car_position = car_position.elementwise() * (1, -1) + (0, HEIGHT)
-        car_position *= self.manager.simulator.pxm_fac
-        car_position += - pygame.Vector2(fov) / 2
-
-        car_velocity = car_velocity.elementwise() * (1, -1)
-        car_velocity *= self.manager.simulator.pxm_fac
-
-        # return kinematics in world reference frame
-        return (
-            drone_position,
-            drone_velocity,
-            car_position,
-            car_velocity +
-            drone_velocity,
-            cp,
-            cv +
-            drone_velocity)
-
-
     @staticmethod
     def get_centroid(points):
         """Returns centroid of given list of points
@@ -1391,11 +1228,11 @@ class Tracker:
         points_ = np.array(points).reshape(-1, 1, 2)
         return np.mean(points_, axis=0)
 
-
     def process_image_complete(self, new_frame):
         # save new frame, compute grayscale
         self.frame_new_color = new_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
+        self.true_new_pt = self._get_target_image_location()
         cv.imshow('nxt_frame', self.frame_new_gray)
         cv.waitKey(1)
         if self.is_first_time():
@@ -1419,10 +1256,10 @@ class Tracker:
             self.centroid_old = self.centroid_new = self.initial_centroid
             self.target_occlusion_case_old = self.target_occlusion_case_new
             self.manager.set_target_centroid_offset()
-            self.second = False
+            self.true_old_pt = self.true_new_pt
             return self._FAILURE
 
-        self.second = True
+        self._can_begin_control_flag = True
         
         # ################################################################################
         # CASE |NO_OCC, _>
@@ -1438,9 +1275,9 @@ class Tracker:
             if self.feature_found_statuses.all() and self.cross_feature_errors.max() < self.MAX_ERR:
                 self.target_occlusion_case_new = self._NO_OCC
 
-                # set good points (set, not computed, lines added for consistent design)
-                self.keypoints_old_good = self.keypoints_old
+                # set good points (since no keypoints were occluded all are good, no need to compute)
                 self.keypoints_new_good = self.keypoints_new
+                self.keypoints_old_good = self.keypoints_old
 
                 # compute centroid
                 self.centroid_new = self.get_centroid(self.keypoints_new_good)
@@ -1448,12 +1285,16 @@ class Tracker:
                 # compute kinematics measurements using centroid
                 self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
+                # update tracker display
+                self.display()
+
                 # posterity - save frames, keypoints, centroid
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.keypoints_old = self.keypoints_new
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
+                # self.true_old_pt = self.true_new_pt
                 return self._SUCCESS
 
             # ---------------------------------------------------------------------
@@ -1464,22 +1305,26 @@ class Tracker:
                 # cannot compute kinematics
                 self.kin = None
 
+                # update tracker display
+                self.display()
+
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.centroid_adjustment = None
                 self.target_occlusion_case_old = self.target_occlusion_case_new
+                # self.true_old_pt = self.true_new_pt
                 return self._FAILURE
 
             # ---------------------------------------------------------------------
             # |NO_OCC, PARTIAL_OCC>
-            else: # self.feature_found_statuses.any() and self.cross_feature_errors.max() > self.MAX_ERR:
+            else:
                 self.target_occlusion_case_new = self._PARTIAL_OCC
 
                 # in this case of from no_occ to partial_occ, no more keypoints are needed to be found
                 # good keypoints need to be computed for kinematics computation as well as posterity
-                self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
                 self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
+                self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
 
                 # compute adjusted centroid
                 centroid_old_good = self.get_centroid(self.keypoints_old_good)
@@ -1489,14 +1334,23 @@ class Tracker:
 
                 # compute kinematics measurements
                 self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
-                
+
+                # adjust missing old keypoints (no need to check recovery)
+                keypoints_missing = self.keypoints_old[(self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)]
+                self.keypoints_new_bad = keypoints_missing - self.centroid_old + self.centroid_new
+
+                # update tracker display
+                self.display()
+
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.keypoints_old = self.keypoints_new
                 self.keypoints_old_good = self.keypoints_new_good.reshape(-1, 1, 2)
+                self.keypoints_old_bad = self.keypoints_new_bad.reshape(-1, 1, 2)
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
+                # self.true_old_pt = self.true_new_pt
                 return self._SUCCESS
 
         # ################################################################################
@@ -1510,31 +1364,52 @@ class Tracker:
 
             # update good old and new
             # good keypoints are used for kinematics computation as well as posterity
-            self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
-            self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)]
+            self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
+            self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
+
+            # after flow computation we would have found either nothing or at least something 
+            # handle the at least something case first
+            # something was found, implying we can find kinematics and update centroid
+            # EVENT: FOUND SOMETHING
+            if self.feature_found_statuses.any() and self.cross_feature_errors[self.feature_found_statuses==1].min() < self.MAX_ERR:
+                # compute adjusted centroid
+                centroid_old_good = self.get_centroid(self.keypoints_old_good)
+                centroid_new_good = self.get_centroid(self.keypoints_new_good)
+                self.centroid_adjustment = self.centroid_old - centroid_old_good
+                self.centroid_new = centroid_new_good + self.centroid_adjustment
+
+                # compute kinematics measurements
+                self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
+
+            # EVENT: FOUND NOTHING
+            if not self.feature_found_statuses.all() and self.cross_feature_errors.min() >= self.MAX_ERR:
+                # explore and see if we can find something to compute centroid and kinematics, else it's TOTAL_OCC
+                pass
 
             # these good keypoints are not sufficient for perfect/precise partial occlusion detection
             # for precision, we will need to check if any other keypoints can be recovered
             # we should still have old centroid, from initial computations we must still have
             self.target_bounding_box = self.get_true_bb_from_oracle()
-            self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, 
-                                                                       *self.target_bounding_box)
+            self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
 
             # compute good feature keypoints in the new frame
             good_keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, 
                                                         mask=self.target_bounding_box_mask, 
                                                         **FEATURE_PARAMS)
 
-            # compute descriptors at the new keypoints
-            descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new)
+            if good_keypoints_new is None:
+                good_distances = []
+            else:
+                # compute descriptors at the new keypoints
+                kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new)
 
-            # match descriptors 
-            matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
-                                                              descriptors, 
-                                                              threshold=self.DES_MATCH_DEV_THRESH)
+                # match descriptors 
+                matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
+                                                                descriptors, 
+                                                                threshold=self.DES_MATCH_DEV_THRESH)
 
-            distances = np.array([m.distance for m in matches]).reshape(-1, 1)
-            good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
+                distances = np.array([m.distance for m in matches]).reshape(-1, 1)
+                good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
 
             # ---------------------------------------------------------------------
             # |PARTIAL_OCC, TOTAL_OCC>
@@ -1546,10 +1421,14 @@ class Tracker:
                 # cannot compute kinematics
                 self.kin = None
 
+                # update tracker display
+                self.display()
+
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.target_occlusion_case_old = self.target_occlusion_case_new
+                # self.true_old_pt = self.true_new_pt
                 return self._FAILURE
 
             # ---------------------------------------------------------------------
@@ -1571,12 +1450,16 @@ class Tracker:
                 # update keypoints
                 self.keypoints_new = self.centroid_new + self.rel_keypoints              
 
+                # update tracker display
+                self.display()
+
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.keypoints_old = self.keypoints_new
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
+                # self.true_old_pt = self.true_new_pt
                 return self._SUCCESS
 
             # ---------------------------------------------------------------------
@@ -1594,14 +1477,17 @@ class Tracker:
                 self.centroid_new = self.get_centroid(self.keypoints_new_good)
                 self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
-                
+                # update tracker display
+                self.display()
+
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.keypoints_old = self.keypoints_new
-                self.keypoints_old_good = self.keypoints_new_good
+                self.keypoints_old_good = self.keypoints_new_good.reshape(-1,1,2)
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
+                # self.true_old_pt = self.true_new_pt
                 return self._SUCCESS
 
 
@@ -1619,28 +1505,36 @@ class Tracker:
             self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
 
             # compute good feature keypoints in the new frame
-            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
+            good_keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
 
-            # compute descriptors at the new keypoints
-            descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, self.keypoints_new)
+            if good_keypoints_new is None:
+                good_distances = []
+            else:
+                # compute descriptors at the new keypoints
+                kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new)
 
-            # match descriptors 
-            # note, matching only finds best matching/pairing, 
-            # no guarantees of quality of match
-            matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
-                                                              descriptors, 
-                                                              threshold=self.DES_MATCH_DEV_THRESH)
+                # match descriptors 
+                # note, matching only finds best matching/pairing, 
+                # no guarantees of quality of match
+                matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
+                                                                descriptors, 
+                                                                threshold=self.DES_MATCH_DEV_THRESH)
 
-            distances = np.array([m.distance for m in matches]).reshape(-1, 1)
+                distances = np.array([m.distance for m in matches]).reshape(-1, 1)
 
-            # good distances indicate good matches
-            good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
+                # good distances indicate good matches
+                good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
+
 
             # ---------------------------------------------------------------------
             # |TOTAL_OCC, NO_OCC>
             if len(good_distances) == MAX_NUM_CORNERS:
+                self.target_occlusion_case_new = self._NO_OCC
                 self.centroid_new = self.get_centroid(self.keypoints_new)
                 self.rel_keypoints = self.keypoints_new - self.centroid_new
+
+                # update tracker display
+                self.display()
 
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
@@ -1650,26 +1544,33 @@ class Tracker:
                 self.centroid_adjustment = None
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 self.manager.set_target_centroid_offset()
+                # self.true_old_pt = self.true_new_pt
                 return self._FAILURE
 
             # ---------------------------------------------------------------------
             # |TOTAL_OCC, PARTIAL_OCC>
-            if len(good_distances) < MAX_NUM_CORNERS:
+            if len(good_distances) < MAX_NUM_CORNERS and len(good_distances) > 0:
+                self.target_occlusion_case_new = self._PARTIAL_OCC
 
                 # compute good matches
                 good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
                 
                 # compute good points, centroid adjustments
-                self.keypoints_new_good = np.array([list(self.keypoints_new[gm.queryIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
+                self.keypoints_new_good = np.array([list(good_keypoints_new[gm.queryIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
                 self.centroid_new = self.manager.get_target_centroid()
                 
+                # update tracker display
+                self.display()
+
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.keypoints_old = self.keypoints_new
+                self.keypoints_old_good = self.keypoints_new_good
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 self.manager.set_target_centroid_offset()
+                # self.true_old_pt = self.true_new_pt
                 return self._FAILURE
 
             # ---------------------------------------------------------------------
@@ -1680,111 +1581,18 @@ class Tracker:
                 # cannot compute kinematics
                 self.kin = None
 
+                # update tracker display
+                self.display()
+
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.target_occlusion_case_old = self.target_occlusion_case_new
+                # self.true_old_pt = self.true_new_pt
                 return self._FAILURE
                 
-
     def get_true_bb_from_oracle(self):
         return self.manager.get_target_bounding_box_from_offset()
-
-
-    def process_image_new(self, nxt_frame):
-        # save as new frame 
-        self.frame_new_color = nxt_frame
-        self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
-
-        if self.is_first_time():
-            # comply with the selected bounding box, create target feature mask
-            bounding_box = self.manager.get_target_bounding_box()
-            self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *bounding_box)
-
-            # compute good features within the selected bounding box
-            self.keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
-            self.keypoints_new_good = self.keypoints_new.copy()
-
-            # store new in old for next iteration
-            self.copy_new_to_old()
-
-            # save descriptors and template, first frame will always have no occlusion
-            self.save_target_descriptors()
-            self.save_target_template()
-            return self._FAILURE
-            
-
-        # target was occluded
-        if self.is_target_occluded_in_old_frame():  
-            '''
-            Assume target was not occluded in first frame.
-            Target was occluded, meaning old frame had occlusion.
-            In the new frame we will need to conclude if we still have occlusion
-            Presumption is that upon occlusion, the descriptor from old image was 
-            saved earlier. Positions (old points) would have to be either estimated 
-            or known magically without using tracker. 
-            Check if we find the features in vicinity of currently estimated position.
-            Note: This is return failure, regardless of whether or not the target is found
-            in the new frame. Since success is returned only when kin was computed successfully,
-            which can only be done if target was no occluded in both old and new frames.
-            '''
-            if self.target_redetected():      # target re-detected
-                '''
-                if we find it then, save it and set occlusion to false, return failure
-                so that in next iteration, tracker will assume no occlusion and use 
-                the saved positions as old points to then compute new points.
-                '''
-                self.save_target_descriptors()
-                self._target_occluded_flag = False
-
-                return self._FAILURE
-            else:                           # target not re-detected
-                '''
-                if we don't find it then, let the occlusion flag be,
-                don't save new frame into old frame and return failure
-                '''
-                return self._FAILURE
-
-        # target was not occluded
-        '''
-        We reach this point, means target is not occluded in old frame.
-        no guarantees that it won't be occluded in new frame, so caution is necessary.
-        All we can guarantee is that old points are available and probably correspond to our target.
-        Also old frame is available. 
-        So we compute new key points, corresponding to the target
-        '''
-        # compute optical flow
-        # track current points in next frame, update new points, status and error
-        self.compute_flow()
-
-        # if target is occluded, it implies that the position tracking is far from accurate
-        # therefore to sustain reliability in computed measurements, they will not be computed 
-        # when occlusion is detected. We do not save new frame into old frame and return failure. 
-        if self.is_target_occluded_in_new_frame():
-            if self.target_recovered():  # can recover from occlusion (if partial)
-                # compute kin
-                self.update_measured_kinematics()
-                # save keypoints new to old, but not descriptor
-                self.copy_new_to_old()
-                
-                return self._SUCCESS
-            else:                   # cannot recover from occlusion 
-                # do not save new to old, do not save target descriptor
-                return self._FAILURE
-        
-        # NOTE:
-        # selecting good points does not make sense if we are not interested in partial occlusion
-        # however, if we were, we would use "centroid adjustment" to recover bad keypoints using good keypoints
-
-        # at this point we can assume target was detected successfully and old key points 
-        # indeed correspond to the target in old frame, the trivial case!
-        # Also, we can assume that each set keypoints_old_good and keypoints_new_good is not empty.
-        # We can now use measurements (good points) to compute and update kinematics
-        self.update_measured_kinematics()
-        self.copy_new_to_old()
-
-        
-        return self._SUCCESS
 
     def print_to_console(self):
         if not CLEAN_CONSOLE:
@@ -1810,7 +1618,6 @@ class Tracker:
             # show resultant img
             cv.imshow(self.win_name, self.frame_color_edited)
             cv.imshow("cur_frame", self.frame_old_gray)
-            # cv.imshow("nxt_frame", self.frame_new_gray)
 
         # dump frames for analysis
         assembled_img = images_assemble([self.frame_old_gray.copy(), self.frame_new_gray.copy(), self.frame_color_edited.copy()], (1,3))
@@ -1821,118 +1628,6 @@ class Tracker:
         # self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)  # -1 indicates to infer that dim size
 
         cv.waitKey(1)
-
-
-
-            
-
-        # difference between pts and good_pts is that good_pts correspond to stronger feature matches
-
-        # -------------------------------------------------------------------------------
-        # prepare for next iteration (cur <-- next) points, frames (gray only) 
-        # old color frames are not important 
-        # self.frame_cur_gray = self.frame_nxt_gray.copy()
-        # self.frame_cur_color = self.frame_nxt_color.copy()
-        # self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)
-
-    def process_image(self, img):
-        """Processes given image and generates tracking information
-
-
-        Args:
-            img (np.ndarray): Rendered image capture from Simulator. (grayscale not guaranteed)
-
-        Returns:
-            [type]: [description]
-        """
-        # first frame will get different treatment
-        if self.frame_cur_gray is None: # TODO this condition needs to be polished
-                                        # this should determine if it's the first frame
-            self.frame_cur_color = img
-
-            # all processing to be done on grayscale of image
-            self.frame_cur_gray = convert_to_grayscale(self.frame_cur_color)
-
-            # initialize and compute target feature mask from bounding box
-            self.target_bounding_box_mask = np.zeros_like(self.frame_cur_gray)
-            x, y, w, h = self.manager.simulator.bounding_box
-            self.target_bounding_box_mask[y : y+h+1, x : x+w+1] = 1
-
-            # compute good features within the selected bounding box
-            self.key_point_set_cur = cv.goodFeaturesToTrack(
-                self.frame_cur_gray, mask= self.target_bounding_box_mask, **FEATURE_PARAMS)
-
-            # create mask for adding tracker information
-            # tracker information mask will be applied to 3 channel RGB image, 
-            # so mask will have 3 channels too
-            self.tracker_info_mask = np.zeros_like(self.frame_cur_color)
-
-            # if display is on, set window location
-            if self.manager.tracker_display_on:
-                from win32api import GetSystemMetrics
-                cv.namedWindow(self.win_name)
-                cv.moveWindow(self.win_name, GetSystemMetrics(0) - self.frame_cur_gray.shape[1] - 10, 0)
-        else:
-            self._can_begin_control_flag = True
-            self.frame_nxt_color = img
-            self.frame_nxt_gray = convert_to_grayscale(self.frame_nxt_color)
-
-            # track current points in next frame, compute optical flow
-            self.key_point_set_cur, self.key_point_set_nxt, stdev, err = compute_optical_flow_LK(self.frame_cur_gray,
-                                                                                                 self.frame_nxt_gray,
-                                                                                                 self.key_point_set_cur,
-                                                                                                 LK_PARAMS)
-
-            # select good points, with standard deviation 1. use numpy index trick
-            # note: keypointset shape: (n,1,2); keypoint_good shape: (n,2)
-            self.key_point_set_cur_good = self.key_point_set_cur[stdev == 1]
-            self.key_point_set_nxt_good = self.key_point_set_nxt[stdev == 1]
-
-            # print(f'TTTT0>> \nOCCLUDED: {self.occluded} \nstdev: \n{stdev.all()} \nmax err: {err.max()}\n')
-            # detect occlusion
-            if not stdev.all() or err.max() > 15:
-                self.occluded = True
-
-            # compute and create kinematics tuple # TODO this part needs to change
-            if len(self.key_point_set_cur_good) == 0 or len(self.key_point_set_nxt_good) == 0:
-                self.frame_cur_gray = self.frame_nxt_gray.copy()
-                self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)
-                return False, None
-
-            self.kin = self.compute_kinematics(self.key_point_set_cur_good.copy(),  # TODO can not pass any arguments instead
-                                               self.key_point_set_nxt_good.copy())
-
-            # note: the drone position and velocity is taken from simulator
-            # drone kinematic are assumed to be known (IMU and/or FPGA optical flow)
-            # only the car kinematics are tracked/measured by tracker,
-            if not CLEAN_CONSOLE:
-                drone_position, drone_velocity, car_position, car_velocity, cp_, cv_ = self.kin
-                print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
-
-            if self.manager.tracker_display_on:
-                # add cosmetics to frame_2 for display purpose
-                self.frame_color_edited, self.tracker_info_mask = self.add_cosmetics(
-                    self.frame_nxt_color, self.tracker_info_mask, self.key_point_set_cur_good, self.key_point_set_nxt_good, self.kin)
-
-                # set cur_img; to be used for saving # TODO investigate need and fix
-                self.cur_img = self.frame_color_edited
-
-                # show resultant img
-                cv.imshow(self.win_name, self.frame_color_edited)
-                cv.imshow("cur_frame", self.frame_cur_gray)
-                cv.imshow("nxt_frame", self.frame_nxt_gray)
-
-            # dump frames for analysis
-            assembled_img = images_assemble([self.frame_cur_gray.copy(), self.frame_nxt_gray.copy(), self.frame_color_edited.copy()], (1,3))
-            self.img_dumper.dump(assembled_img)
-
-            # ready for next iteration. set cur frame and points to next frame and points
-            self.frame_cur_gray = self.frame_nxt_gray.copy()
-            self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)  # -1 indicates to infer that dim size
-
-            cv.waitKey(1)
-
-            return True, self.kin
 
     def put_metrics(self, img, k):
         """Helper function, put metrics and stuffs on opencv image.
@@ -2013,7 +1708,7 @@ class Tracker:
                            font_scale=0.45, color=METRICS_COLOR, thickness=1)
 
         occ_str_dict = {self._NO_OCC:'NO OCCLUSION', self._PARTIAL_OCC:'PARTIAL OCCLUSION', self._TOTAL_OCC:'TOTAL OCCLUSION'}
-        occ_color_dict = {self._NO_OCC:METRICS_COLOR, self._PARTIAL_OCC:ORANGE_CV, self._TOTAL_OCC:RED_CV}
+        occ_color_dict = {self._NO_OCC:EMERALD_BGR, self._PARTIAL_OCC:MARIGOLD_BGR, self._TOTAL_OCC:VERMILION_BGR}
         occ_str = occ_str_dict[self.target_occlusion_case_new]
         occ_color = occ_color_dict[self.target_occlusion_case_new]
         img = put_text(img, occ_str, (WIDTH//2 - 50, HEIGHT - 40),
@@ -2139,7 +1834,49 @@ class Controller:
             print(
                 f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{X:0.2f}, {Y:0.2f}] | v:[{Vx:0.2f}, {Vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}] | COMMANDED a:[{ax:0.2f}, {ay:0.2f}] | TRACKED x:[{tra_kin[2][0]:0.2f},{tra_kin[2][1]:0.2f}] | v:[{tra_kin[3][0]:0.2f},{tra_kin[3][1]:0.2f}]')
         if self.manager.write_plot:
-            self.f.write(f'{self.manager.simulator.time},{r},{degrees(theta)},{degrees(Vtheta)},{Vr},{tru_kin[0][0]},{tru_kin[0][1]},{tru_kin[2][0]},{tru_kin[2][1]},{ax},{ay},{a_lat},{a_long},{tru_kin[3][0]},{tru_kin[3][1]},{tra_kin[2][0]},{tra_kin[2][1]},{tra_kin[3][0]},{tra_kin[3][1]},{self.manager.simulator.camera.origin[0]},{self.manager.simulator.camera.origin[1]},{S},{degrees(alpha)},{tru_kin[1][0]},{tru_kin[1][1]},{tra_kin[4][0]},{tra_kin[4][1]},{tra_kin[5][0]},{tra_kin[5][1]},{self.manager.simulator.camera.altitude},{abs(_D)},{r_},{degrees(theta_)},{Vr_},{degrees(Vtheta_)},{tr},{degrees(ttheta)},{tVr},{degrees(tVtheta)},{self.manager.simulator.dt},{y1},{y2}\n')
+            self.f.write(f'\
+                {self.manager.simulator.time},\
+                {r},\
+                {degrees(theta)},\
+                {degrees(Vtheta)},\
+                {Vr},\
+                {tru_kin[0][0]},\
+                {tru_kin[0][1]},\
+                {tru_kin[2][0]},\
+                {tru_kin[2][1]},\
+                {ax},\
+                {ay},\
+                {a_lat},\
+                {a_long},\
+                {tru_kin[3][0]},\
+                {tru_kin[3][1]},\
+                {tra_kin[2][0]},\
+                {tra_kin[2][1]},\
+                {tra_kin[3][0]},\
+                {tra_kin[3][1]},\
+                {self.manager.simulator.camera.origin[0]},\
+                {self.manager.simulator.camera.origin[1]},\
+                {S},\
+                {degrees(alpha)},\
+                {tru_kin[1][0]},\
+                {tru_kin[1][1]},\
+                {tra_kin[4][0]},\
+                {tra_kin[4][1]},\
+                {tra_kin[5][0]},\
+                {tra_kin[5][1]},\
+                {self.manager.simulator.camera.altitude},\
+                {abs(_D)},\
+                {r_},\
+                {degrees(theta_)},\
+                {Vr_},\
+                {degrees(Vtheta_)},\
+                {tr},\
+                {degrees(ttheta)},\
+                {tVr},\
+                {degrees(tVtheta)},\
+                {self.manager.simulator.dt},\
+                {y1},\
+                {y2}\n')\
 
         if not self.manager.control_on:
             ax, ay = pygame.Vector2((0.0, 0.0))
@@ -2205,46 +1942,6 @@ class ExperimentManager:
         if self.save_on:
             self.simulator.save_screen = True
 
-    # def add_to_image_deque(self, img):
-    #     """Helper function, adds given image to manager's image deque
-
-    #     Args:
-    #         img (np.ndarray): Image to be added to manager's image deque
-    #     """
-    #     self.image_deque.append(img)
-
-    # def add_to_command_deque(self, command):
-    #     """Helper function, adds given command to manager's command deque
-
-    #     Args:
-    #         command (tuple(float, float)): Command to be added to manager's command deque
-    #     """
-    #     self.command_deque.append(command)
-
-    # def add_to_kinematics_deque(self, kinematics):
-    #     """Helper function, adds given kinematics to manager's kinematics deque
-
-    #     Args:
-    #         kinematics (tuple(Vector2, Vector2, Vector2, Vector2, float)): Kinematics to be added to manager's kinematics deque
-    #     """
-    #     self.kinematics_deque.append(kinematics)
-
-    # def get_from_image_deque(self):
-    #     """Helper function, gets image from manager's image deque
-    #     """
-    #     return self.image_deque.popleft()
-
-    # def get_from_command_deque(self):
-    #     """Helper function, gets command from manager's command deque
-    #     """
-    #     return self.command_deque.popleft()
-
-    # def get_from_kinematics_deque(self):
-    #     """Helper function, gets kinematics from manager's kinematics deque
-    #     """
-    #     return self.kinematics_deque.popleft()
-
-
     def get_drone_cam_field_of_view(self):
         return self.simulator.get_camera_fov()
 
@@ -2270,7 +1967,6 @@ class ExperimentManager:
 
         return vel
 
-
     def set_target_centroid_offset(self):
         # this will be called from tracker at the first run after first centroid calculation
         # uses tracked new centroid to compute it's relative position from car center
@@ -2278,7 +1974,10 @@ class ExperimentManager:
         self.car_rect_center_centroid_offset[1] = self.tracker.centroid_new.flatten()[1] - self.simulator.car.rect.centery
 
     def get_target_centroid(self):
-        return self.car_rect_center_centroid_offset + self.simulator.car.center
+        target_cent = self.car_rect_center_centroid_offset
+        target_cent[0] += self.simulator.car.rect.centerx
+        target_cent[1] += self.simulator.car.rect.centery
+        return np.array(target_cent).reshape(1, 2)
 
     def get_target_centroid_offset(self):
         return self.car_rect_center_centroid_offset
@@ -2292,6 +1991,16 @@ class ExperimentManager:
         x = self.simulator.car.rect.center[0] + bb_offset[0]
         y = self.simulator.car.rect.center[1] + bb_offset[1]
         return x, y, w, h
+
+    def filters_ready(self):
+        ready = True
+        if USE_TRACKER_FILTER:
+            if USE_KALMAN:
+                ready = ready and self.KF.done_waiting()
+            if USE_MA:
+                ready = ready and self.MAF.done_waiting()
+        return ready
+
 
     def run(self):
         # initialize simulator
@@ -2335,17 +2044,18 @@ class ExperimentManager:
                     screen_capture = self.simulator.get_screen_capture()
                     status = self.tracker.process_image_complete(screen_capture)
                     self.tracker.print_to_console()
-                    if self.tracker.second :
-                        self.tracker.display()
+                    # if self.tracker.second :
+                    #     self.tracker.display()
                     # kin = self.tracker.kin if status[0] else 
 
                     # let controller generate acceleration, when tracker indicates ok
                     if self.tracker.can_begin_control() and (
                             self.use_true_kin or self.tracker.kin is not None) and (
-                            self.filter.done_waiting() or not USE_TRACKER_FILTER):
+                            # self.filter.done_waiting() or not USE_TRACKER_FILTER):
+                            self.filters_ready()):
                         # collect kinematics tuple
-                        kin = self.get_true_kinematics() if self.use_true_kin else self.tracker.kin
-                        kin = self.tracker.kin if status[0] else self.get_true_kinematics()
+                        # kin = self.tracker.kin if status[0] else self.get_true_kinematics()
+                        kin = self.get_true_kinematics() if (self.use_true_kin or not status[0]) else self.get_tracked_kinematics()
                         # let controller process kinematics
                         ax, ay = self.controller.generate_acceleration(kin)
                         # feed controller generated acceleration commands to simulator
@@ -2390,7 +2100,16 @@ class ExperimentManager:
         return kin
 
     def get_tracked_kinematics(self):
-        return self.tracker.kin
+        return (
+            self.tracker.kin[0],
+            self.tracker.kin[1],
+            self.tracker.kin[6],
+            self.tracker.kin[7],
+            self.tracker.kin[2],
+            self.tracker.kin[3],
+            self.tracker.kin[4],
+            self.tracker.kin[5]
+        )
 
     def get_cam_origin(self):
         return self.simulator.camera.origin
@@ -2847,7 +2566,7 @@ if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
     WRITE_PLOT = 0  # pylint: disable=bad-whitespace
-    CONTROL_ON = 1  # pylint: disable=bad-whitespace
+    CONTROL_ON = 0  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
