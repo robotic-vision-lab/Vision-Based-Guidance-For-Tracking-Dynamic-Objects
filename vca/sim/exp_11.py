@@ -976,8 +976,8 @@ class Tracker:
         self._can_begin_control_flag = False    # will be modified in process_image
         self.kin = None
         self.window_size = 5
-        self.prev_car_pos = None
-        self.count = 0
+        # self.prev_car_pos = None
+        # self.count = 0
         # self._target_old_occluded_flag = False
         # self._target_new_occluded_flag = False
 
@@ -1167,6 +1167,7 @@ class Tracker:
         measured_car_pos_cam_frame_meters = self.manager.transform_pos_corner_img_pixels_to_center_cam_meters(measured_car_pos)
         measured_car_vel_cam_frame_meters = self.manager.transform_vel_img_pixels_to_cam_meters(measured_car_vel)
 
+        #TODO consider handling the filtering part in a separate function
         # filter tracked measurements
         if USE_TRACKER_FILTER:
             if USE_MA:
@@ -1294,7 +1295,6 @@ class Tracker:
                 self.keypoints_old = self.keypoints_new
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
-                # self.true_old_pt = self.true_new_pt
                 return self._SUCCESS
 
             # ---------------------------------------------------------------------
@@ -1313,7 +1313,6 @@ class Tracker:
                 self.frame_old_color = self.frame_new_color
                 self.centroid_adjustment = None
                 self.target_occlusion_case_old = self.target_occlusion_case_new
-                # self.true_old_pt = self.true_new_pt
                 return self._FAILURE
 
             # ---------------------------------------------------------------------
@@ -1350,7 +1349,6 @@ class Tracker:
                 self.keypoints_old_bad = self.keypoints_new_bad.reshape(-1, 1, 2)
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
-                # self.true_old_pt = self.true_new_pt
                 return self._SUCCESS
 
         # ################################################################################
@@ -1428,7 +1426,6 @@ class Tracker:
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.target_occlusion_case_old = self.target_occlusion_case_new
-                # self.true_old_pt = self.true_new_pt
                 return self._FAILURE
 
             # ---------------------------------------------------------------------
@@ -1459,7 +1456,6 @@ class Tracker:
                 self.keypoints_old = self.keypoints_new
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
-                # self.true_old_pt = self.true_new_pt
                 return self._SUCCESS
 
             # ---------------------------------------------------------------------
@@ -1487,7 +1483,6 @@ class Tracker:
                 self.keypoints_old_good = self.keypoints_new_good.reshape(-1,1,2)
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
-                # self.true_old_pt = self.true_new_pt
                 return self._SUCCESS
 
 
@@ -1544,7 +1539,6 @@ class Tracker:
                 self.centroid_adjustment = None
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 self.manager.set_target_centroid_offset()
-                # self.true_old_pt = self.true_new_pt
                 return self._FAILURE
 
             # ---------------------------------------------------------------------
@@ -1570,7 +1564,6 @@ class Tracker:
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 self.manager.set_target_centroid_offset()
-                # self.true_old_pt = self.true_new_pt
                 return self._FAILURE
 
             # ---------------------------------------------------------------------
@@ -1588,7 +1581,6 @@ class Tracker:
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.target_occlusion_case_old = self.target_occlusion_case_new
-                # self.true_old_pt = self.true_new_pt
                 return self._FAILURE
                 
     def get_true_bb_from_oracle(self):
