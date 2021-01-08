@@ -959,7 +959,9 @@ class Tracker:
         self.feature_found_statuses = None
         self.cross_feature_errors = None
 
+        # desc are computed at keypoints, detected ones are all desc inside bounding box
         self.initial_target_descriptors = None
+        self.initial_detected_target_descriptors = None
         self.initial_target_template_gray = None
         self.initial_target_template_color = None
         self.target_bounding_box = None
@@ -984,7 +986,7 @@ class Tracker:
         self._NO_OCC = 0
         self._PARTIAL_OCC = 1
         self._TOTAL_OCC = 2
-        self.display_arrow_color = {self._NO_OCC:GREEN_CV, self._PARTIAL_OCC:ORANGE_PEEL_BGR, self._TOTAL_OCC:CHINESE_RED_BGR}
+        self.display_arrow_color = {self._NO_OCC:GREEN_CV, self._PARTIAL_OCC:ORANGE_PEEL_BGR, self._TOTAL_OCC:TOMATO_BGR}
 
         self.target_occlusion_case_old = None
         self.target_occlusion_case_new = self._NO_OCC   # assumption: start with no_occ
@@ -995,7 +997,7 @@ class Tracker:
         self.target_bounding_box_mask = None
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
-        self.DES_MATCH_DISTANCE_THRESH = 50
+        self.DES_MATCH_DISTANCE_THRESH = 200
         self.DES_MATCH_DEV_THRESH = 0.50 # float('inf') to get every match
 
         self._FAILURE = False, None
@@ -1234,7 +1236,7 @@ class Tracker:
         self.frame_new_color = new_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
         self.true_new_pt = self._get_target_image_location()
-        cv.imshow('nxt_frame', self.frame_new_gray)
+        cv.imshow('nxt_frame', self.frame_new_color)
         cv.waitKey(1)
         if self.is_first_time():
             # compute bb, initial feature keypoints and centroid
@@ -1368,21 +1370,21 @@ class Tracker:
             # after flow computation we would have found either nothing or at least something 
             # handle the at least something case first
             # something was found, implying we can find kinematics and update centroid
-            # EVENT: FOUND SOMETHING
-            if self.feature_found_statuses.any() and self.cross_feature_errors[self.feature_found_statuses==1].max() < self.MAX_ERR:
-                # compute adjusted centroid
-                centroid_old_good = self.get_centroid(self.keypoints_old_good)
-                centroid_new_good = self.get_centroid(self.keypoints_new_good)
-                self.centroid_adjustment = self.centroid_old - centroid_old_good
-                self.centroid_new = centroid_new_good + self.centroid_adjustment
+            # # EVENT: FOUND SOMETHING
+            # if self.feature_found_statuses.any() and self.cross_feature_errors[self.feature_found_statuses==1].max() < self.MAX_ERR:
+            #     # compute adjusted centroid
+            #     centroid_old_good = self.get_centroid(self.keypoints_old_good)
+            #     centroid_new_good = self.get_centroid(self.keypoints_new_good)
+            #     self.centroid_adjustment = self.centroid_old - centroid_old_good
+            #     self.centroid_new = centroid_new_good + self.centroid_adjustment
 
-                # compute kinematics measurements
-                self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
+            #     # compute kinematics measurements
+            #     self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
-            # EVENT: FOUND NOTHING
-            if not self.feature_found_statuses.all() and self.cross_feature_errors.min() >= self.MAX_ERR:
-                # explore and see if we can find something to compute centroid and kinematics, else it's TOTAL_OCC
-                pass
+            # # EVENT: FOUND NOTHING
+            # if not self.feature_found_statuses.all() and self.cross_feature_errors.min() >= self.MAX_ERR:
+            #     # explore and see if we can find something to compute centroid and kinematics, else it's TOTAL_OCC
+            #     pass
 
             # these good keypoints are not sufficient for perfect/precise partial occlusion detection
             # for precision, we will need to check if any other keypoints can be recovered
@@ -1404,7 +1406,7 @@ class Tracker:
                 # match descriptors 
                 matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
                                                                 descriptors, 
-                                                                distance_threshold=self.DES_MATCH_DISTANCE_THRESH)
+                                                                threshold=-1)
 
                 distances = np.array([m.distance for m in matches]).reshape(-1, 1)  # redundant, TODO clean it
                 good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
@@ -1469,8 +1471,12 @@ class Tracker:
                     # reconstruct 
                     pass
                 
-                # compute centroid and compute kinematics
-                self.centroid_new = self.get_centroid(self.keypoints_new_good)
+                # compute adjusted centroid and compute kinematics
+                centroid_old_good = self.get_centroid(self.keypoints_old_good)
+                centroid_new_good = self.get_centroid(self.keypoints_new_good)
+                self.centroid_adjustment = self.centroid_old - centroid_old_good
+                self.centroid_new = centroid_new_good + self.centroid_adjustment
+                # self.centroid_new = self.get_centroid(self.keypoints_new_good)
                 self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
                 # update tracker display
@@ -1513,7 +1519,7 @@ class Tracker:
                 # no guarantees of quality of match
                 matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
                                                                 descriptors, 
-                                                                distance_threshold=self.DES_MATCH_DISTANCE_THRESH)
+                                                                threshold=-1)
 
                 distances = np.array([m.distance for m in matches]).reshape(-1, 1)  # redundant TODO clean it
 
@@ -1609,7 +1615,7 @@ class Tracker:
 
             # show resultant img
             cv.imshow(self.win_name, self.frame_color_edited)
-            cv.imshow("cur_frame", self.frame_old_gray)
+            cv.imshow("cur_frame", self.frame_old_color)
 
         # dump frames for analysis
         assembled_img = images_assemble([self.frame_old_gray.copy(), self.frame_new_gray.copy(), self.frame_color_edited.copy()], (1,3))
