@@ -281,6 +281,13 @@ def put_text(img,
     return img
 
 
+def draw_point(img, pt_coords):
+    """
+    helper method to add a point (random color) in image
+    """
+    img = cv.circle(img, pt_coords, radius=3, color=tuple(np.random.randint(0, 255, (3,))), thickness=-1)
+
+
 if __name__ == "__main__":
     # ---------------------------------------------------------------
     # test images_assemble() usage
