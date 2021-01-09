@@ -998,7 +998,7 @@ class Tracker:
         self.target_bounding_box_mask = None
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
-        self.DES_MATCH_DISTANCE_THRESH = 265
+        self.DES_MATCH_DISTANCE_THRESH = 450
         self.DES_MATCH_DEV_THRESH = 0.50 # float('inf') to get every match
 
         self._FAILURE = False, None
