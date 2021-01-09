@@ -281,11 +281,14 @@ def put_text(img,
     return img
 
 
-def draw_point(img, pt_coords):
+def draw_point(img, pt_coords, color=None):
     """
     helper method to add a point (random color) in image
     """
-    img = cv.circle(img, pt_coords, radius=3, color=tuple(np.random.randint(0, 255, (3,))), thickness=-1)
+    rand_color = np.random.randint(0, 255, (3,))
+    circ_color = rand_color.tolist() if color is None else color
+    img = cv.circle(img, pt_coords, radius=3, color=circ_color, thickness=-1)
+    return img 
 
 
 if __name__ == "__main__":
