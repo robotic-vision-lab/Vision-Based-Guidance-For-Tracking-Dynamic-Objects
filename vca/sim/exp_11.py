@@ -38,6 +38,7 @@ from utils.optical_flow_utils \
                         draw_tracks)
 from utils.img_utils import (convert_to_grayscale,          #pylint: disable=unused-import
                              put_text,
+                             draw_point,
                              images_assemble,
                              add_salt_pepper)
 from utils.img_utils import scale_image as cv_scale_img
@@ -997,7 +998,7 @@ class Tracker:
         self.target_bounding_box_mask = None
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
-        self.DES_MATCH_DISTANCE_THRESH = 200
+        self.DES_MATCH_DISTANCE_THRESH = 265
         self.DES_MATCH_DEV_THRESH = 0.50 # float('inf') to get every match
 
         self._FAILURE = False, None
@@ -1236,7 +1237,7 @@ class Tracker:
         self.frame_new_color = new_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
         self.true_new_pt = self._get_target_image_location()
-        cv.imshow('nxt_frame', self.frame_new_color)
+        cv.imshow('nxt_frame', self.frame_new_gray)
         cv.waitKey(1)
         if self.is_first_time():
             # compute bb, initial feature keypoints and centroid
@@ -1295,6 +1296,7 @@ class Tracker:
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.keypoints_old = self.keypoints_new
+                self.centroid_adjustment = None
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
@@ -1364,8 +1366,8 @@ class Tracker:
 
             # update good old and new
             # good keypoints are used for kinematics computation as well as posterity
-            self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
-            self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
+            self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < 2*self.MAX_ERR)].reshape(-1, 1, 2)
+            self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < 2*self.MAX_ERR)].reshape(-1, 1, 2)
 
             # after flow computation we would have found either nothing or at least something 
             # handle the at least something case first
@@ -1433,7 +1435,7 @@ class Tracker:
             # ---------------------------------------------------------------------
             # |PARTIAL_OCC, NO_OCC>
             elif ((self.feature_found_statuses.all() and
-                    self.cross_feature_errors.max() < self.MAX_ERR) and 
+                    self.cross_feature_errors.max() < 2*self.MAX_ERR) and 
                     len(good_distances) == MAX_NUM_CORNERS):
                 self.target_occlusion_case_new = self._NO_OCC
 
@@ -1456,6 +1458,7 @@ class Tracker:
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.keypoints_old = self.keypoints_new
+                self.centroid_adjustment = None
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
@@ -1476,7 +1479,6 @@ class Tracker:
                 centroid_new_good = self.get_centroid(self.keypoints_new_good)
                 self.centroid_adjustment = self.centroid_old - centroid_old_good
                 self.centroid_new = centroid_new_good + self.centroid_adjustment
-                # self.centroid_new = self.get_centroid(self.keypoints_new_good)
                 self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
                 # update tracker display
@@ -1486,7 +1488,7 @@ class Tracker:
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.keypoints_old = self.keypoints_new
-                self.keypoints_old_good = self.keypoints_new_good.reshape(-1,1,2)
+                self.keypoints_old_good = self.keypoints_new_good.reshape(-1, 1, 2)
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
@@ -1531,6 +1533,7 @@ class Tracker:
             # |TOTAL_OCC, NO_OCC>
             if len(good_distances) == MAX_NUM_CORNERS:
                 self.target_occlusion_case_new = self._NO_OCC
+                self.keypoints_new = good_keypoints_new
                 self.centroid_new = self.get_centroid(self.keypoints_new)
                 self.rel_keypoints = self.keypoints_new - self.centroid_new
 
@@ -1540,9 +1543,11 @@ class Tracker:
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
+                self.keypoints_old = self.keypoints_new
                 self.initial_keypoints = self.keypoints_old = self.keypoints_new
                 self.initial_centroid = self.centroid_old = self.centroid_new
                 self.centroid_adjustment = None
+                self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 self.manager.set_target_centroid_offset()
                 return self._FAILURE
@@ -1615,7 +1620,7 @@ class Tracker:
 
             # show resultant img
             cv.imshow(self.win_name, self.frame_color_edited)
-            cv.imshow("cur_frame", self.frame_old_color)
+            cv.imshow("cur_frame", self.frame_old_gray)
 
         # dump frames for analysis
         assembled_img = images_assemble([self.frame_old_gray.copy(), self.frame_new_gray.copy(), self.frame_color_edited.copy()], (1,3))
