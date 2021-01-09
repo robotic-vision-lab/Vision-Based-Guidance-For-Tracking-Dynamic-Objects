@@ -464,7 +464,7 @@ class Bar(pygame.sprite.Sprite):
     def fill_image(self):
         """Helper function fills block image
         """
-        r, g, b = BLOCK_COLOR
+        r, g, b = BAR_COLOR
         d = BAR_COLOR_DELTA
         r += random.randint(-d[0], d[0])
         g += random.randint(-d[1], d[1])
@@ -1003,7 +1003,7 @@ class Tracker:
 
         self._FAILURE = False, None
         self._SUCCESS = True, self.kin
-        self.MAX_ERR = 11
+        self.MAX_ERR = 15
 
     def is_first_time(self):
         # this function is called in process_image in the beginning. 
@@ -1093,6 +1093,34 @@ class Tracker:
         mask = np.zeros_like(img)
         mask[y:y+patch_size[1], x:x+patch_size[0]] = 255
         return mask
+
+    def show_me_something(self):
+        # 1 for shi-tomasi, 2 for SIFT
+        self.nf1 = cv.cvtColor(self.frame_new_gray.copy(), cv.COLOR_GRAY2BGR)
+        self.nf2 = cv.cvtColor(self.frame_new_gray.copy(), cv.COLOR_GRAY2BGR)
+        colors = [(16,16,16), (16,16,255), (16,255,16), (255, 16, 16)]
+        good_keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, 
+                                                        mask=self.target_bounding_box_mask, 
+                                                        **FEATURE_PARAMS)
+        if good_keypoints_new is not None:
+            for i, pt in enumerate(good_keypoints_new): self.nf1 = draw_point(self.nf1, tuple(pt.flatten()), colors[i])
+            cv.imshow('nxt_frame', self.nf1); cv.waitKey(1)
+
+        gkn = self.detector.get_keypoints(self.frame_new_gray, mask=self.target_bounding_box_mask)
+        if gkn is not None:
+            self.gpn = np.array([list(gp.pt) for gp in gkn]).reshape(-1,1,2)
+            for i, pt in enumerate(self.gpn): self.nf2 = draw_point(self.nf2, tuple(map(int,pt.flatten())))
+            self.k,self.d = self.get_descriptors_at_keypoints(self.frame_new_gray, self.gpn)
+            self.mat = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
+                                                                    self.d, 
+                                                                    threshold=-1)
+            self.dist = np.array([m.distance for m in self.mat]).reshape(-1, 1)
+            for i,m in enumerate(self.mat):
+                pt = tuple(map(int,self.gpn[m.trainIdx].flatten()))
+                self.nf2 = cv.circle(self.nf2, pt, 5, colors[i], 2)
+
+
+
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         img = frame
@@ -1366,8 +1394,8 @@ class Tracker:
 
             # update good old and new
             # good keypoints are used for kinematics computation as well as posterity
-            self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < 2*self.MAX_ERR)].reshape(-1, 1, 2)
-            self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < 2*self.MAX_ERR)].reshape(-1, 1, 2)
+            self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
+            self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
 
             # after flow computation we would have found either nothing or at least something 
             # handle the at least something case first
@@ -1416,7 +1444,7 @@ class Tracker:
             # ---------------------------------------------------------------------
             # |PARTIAL_OCC, TOTAL_OCC>
             if ((not self.feature_found_statuses.all() or 
-                    self.cross_feature_errors.min() >= self.MAX_ERR) and 
+                    self.cross_feature_errors.min() >= 2*self.MAX_ERR) and 
                     len(good_distances) == 0):
                 self.target_occlusion_case_new = self._TOTAL_OCC
 
@@ -1441,7 +1469,7 @@ class Tracker:
 
                 # compute centroid and compute kinematics
                 self.centroid_new = self.get_centroid(self.keypoints_new_good)
-                self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
+                self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
                 # adjust centroid
                 centroid_new_good = self.get_centroid(good_keypoints_new)
@@ -1479,7 +1507,7 @@ class Tracker:
                 centroid_new_good = self.get_centroid(self.keypoints_new_good)
                 self.centroid_adjustment = self.centroid_old - centroid_old_good
                 self.centroid_new = centroid_new_good + self.centroid_adjustment
-                self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
+                self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
                 # update tracker display
                 self.display()
@@ -1570,7 +1598,7 @@ class Tracker:
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
-                self.keypoints_old = self.keypoints_new
+                self.keypoints_old = self.keypoints_new  = self.keypoints_new_good
                 self.keypoints_old_good = self.keypoints_new_good
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
