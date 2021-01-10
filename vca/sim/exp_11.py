@@ -1302,9 +1302,13 @@ class Tracker:
             # try to compute flow at keypoints and infer next occlusion case
             self.compute_flow()
 
+            # amplify bad errors
+            self.cross_feature_errors[(self.cross_feature_errors > 0.5 * self.MAX_ERR & self.cross_feature_errors > 100*self.cross_feature_errors.min())] *= 10
+
             # ---------------------------------------------------------------------
             # |NO_OCC, NO_OCC>
-            if self.feature_found_statuses.all() and self.cross_feature_errors.max() < self.MAX_ERR:
+            if (self.feature_found_statuses.all() and self.feature_found_statuses.shape[0] == 4 and 
+                    self.cross_feature_errors.max() < self.MAX_ERR):
                 self.target_occlusion_case_new = self._NO_OCC
 
                 # set good points (since no keypoints were occluded all are good, no need to compute)
@@ -1392,6 +1396,10 @@ class Tracker:
             # use good keypoints, to compute flow (good keypoints used as input, while outputs into keypoints)
             self.compute_flow(use_good=True)
 
+            # amplify bad errors 
+            if self.cross_feature_errors.shape[0] > 0.5 * MAX_NUM_CORNERS:
+                self.cross_feature_errors[(self.cross_feature_errors > 0.5 * self.MAX_ERR & self.cross_feature_errors > 100*self.cross_feature_errors.min())] *= 10
+            
             # update good old and new
             # good keypoints are used for kinematics computation as well as posterity
             self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
@@ -1444,7 +1452,7 @@ class Tracker:
             # ---------------------------------------------------------------------
             # |PARTIAL_OCC, TOTAL_OCC>
             if ((not self.feature_found_statuses.all() or 
-                    self.cross_feature_errors.min() >= 2*self.MAX_ERR) and 
+                    self.cross_feature_errors.min() >= self.MAX_ERR) and 
                     len(good_distances) == 0):
                 self.target_occlusion_case_new = self._TOTAL_OCC
 
@@ -1462,13 +1470,22 @@ class Tracker:
 
             # ---------------------------------------------------------------------
             # |PARTIAL_OCC, NO_OCC>
-            elif ((self.feature_found_statuses.all() and
-                    self.cross_feature_errors.max() < 2*self.MAX_ERR) and 
+            elif ((self.feature_found_statuses.all() and self.feature_found_statuses.shape[0] == MAX_NUM_CORNERS and
+                    self.cross_feature_errors.max() < 2*self.MAX_ERR) or 
                     len(good_distances) == MAX_NUM_CORNERS):
                 self.target_occlusion_case_new = self._NO_OCC
 
-                # compute centroid and compute kinematics
+                # compute centroid 
                 self.centroid_new = self.get_centroid(self.keypoints_new_good)
+
+                # update keypoints
+                if len(good_distances) == MAX_NUM_CORNERS:
+                    self.keypoints_new = good_keypoints_new
+                    self.centroid_new = self.get_centroid(self.keypoints_new)
+                    self.rel_keypoints = self.keypoints_new - self.centroid_new
+
+
+                # compute kinematics
                 self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
                 # adjust centroid
@@ -2075,9 +2092,6 @@ class ExperimentManager:
                     screen_capture = self.simulator.get_screen_capture()
                     status = self.tracker.process_image_complete(screen_capture)
                     self.tracker.print_to_console()
-                    # if self.tracker.second :
-                    #     self.tracker.display()
-                    # kin = self.tracker.kin if status[0] else 
 
                     # let controller generate acceleration, when tracker indicates ok
                     if self.tracker.can_begin_control() and (
