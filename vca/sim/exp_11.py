@@ -966,6 +966,7 @@ class Tracker:
         self.initial_target_template_gray = None
         self.initial_target_template_color = None
         self.target_bounding_box = None
+        self.patch_size = 15
 
         self.detector = Sift()
         self.descriptor_matcher = BruteL2()
@@ -1040,9 +1041,23 @@ class Tracker:
         self.initial_target_template_color = self.get_bb_patch_from_image(self.frame_new_color, self.target_bounding_box)
         self.initial_target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
 
+    
+
+    @staticmethod
+    def paste_patch_at_point(self, img, patch, point):
+        # assumption: patch size is fixed by tracker
+        x_1 = point[0] - self.patch_size//2
+        y_1 = point[1] - self.patch_size//2
+        x_2 = x_1 + self.patch_size
+        y_2 = y_1 + self.patch_size
+        img[y_1:y_2, x_1:x_2] = patch
+
+        return patch
+
+
     def save_initial_patches(self):
-        self.initial_patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), 15) for kp in self.initial_keypoints]
-        self.initial_patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), 15) for kp in self.initial_keypoints]
+        self.initial_patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.initial_keypoints]
+        self.initial_patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.initial_keypoints]
 
     def get_descriptors_at_keypoints(self, img, keypoints):
         kps = [cv.KeyPoint(*kp.ravel(), 15) for kp in keypoints]
@@ -1306,8 +1321,7 @@ class Tracker:
         self.frame_new_color = new_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
         self.true_new_pt = self._get_target_image_location()
-        cv.imshow('nxt_frame', self.frame_new_gray)
-        cv.waitKey(1)
+        cv.imshow('nxt_frame', self.frame_new_gray); cv.waitKey(1)
         if self.is_first_time():
             # compute bb, initial feature keypoints and centroid
             self.target_bounding_box = self.manager.get_target_bounding_box()
@@ -1333,6 +1347,7 @@ class Tracker:
             self.true_old_pt = self.true_new_pt
             return self._FAILURE
 
+        cv.imshow('cur_frame', self.frame_old_gray); cv.waitKey(1)
         self._can_begin_control_flag = True
         
         # ################################################################################
