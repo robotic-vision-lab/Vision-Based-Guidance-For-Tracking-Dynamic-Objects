@@ -117,6 +117,7 @@ def preprocess_image(img, blur=True):
 
 
 def add_salt_pepper(img, SNR):
+    """ add salt pepper noise to image"""
     img_ = img.copy()
     img_ = img_.transpose(2,1,0)
     c, h, w = img_.shape
