@@ -181,7 +181,7 @@ def draw_sparse_optical_flow_arrows(img,
         c_1, c_2 = cur_point.ravel()
         p_1, p_2 = prev_point.ravel()
         from_point = (int(c_1), int(c_2))
-        to_point = (int(arrow_scale*(c_1-p_1) + c1), int(arrow_scale*(c_2-p_2) + c_2))
+        to_point = (int(arrow_scale*(c_1-p_1) + c_1), int(arrow_scale*(c_2-p_2) + c_2))
         img = cv.arrowedLine(img=img,
                              pt1=from_point,
                              pt2=to_point,
