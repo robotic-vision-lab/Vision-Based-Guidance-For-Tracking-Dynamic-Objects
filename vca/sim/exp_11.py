@@ -1041,7 +1041,12 @@ class Tracker:
         self.initial_target_template_color = self.get_bb_patch_from_image(self.frame_new_color, self.target_bounding_box)
         self.initial_target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
 
-    
+    def augment_old_frame_(self):
+        # keypoints that were not found in new frame would get discounted by the next iteration
+        # these bad points from old frame can be reconstructed in new frame
+        # and then corresponding patches cna be drawn in new frame after the flow computation
+        # then save to old
+        pass
 
     @staticmethod
     def paste_patch_at_point(self, img, patch, point):
