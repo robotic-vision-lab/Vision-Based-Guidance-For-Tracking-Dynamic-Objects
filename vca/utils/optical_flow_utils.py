@@ -226,7 +226,7 @@ def draw_tracks(img, old_pts,
     # add tracks on mask, circles on img
     if new_pts is not None:
         for i, new in enumerate(new_pts):
-            a, b = new.ravel()
+            a, b = new.astype(np.int).ravel()
             if len(colors) == 1:
                 color = colors[0]
             else:
@@ -235,8 +235,8 @@ def draw_tracks(img, old_pts,
 
     if new_pts is not None and old_pts is not None:
         for i, (new, old) in enumerate(zip(new_pts, old_pts)):
-            a, b = new.ravel()
-            c, d = old.ravel()
+            a, b = new.astype(np.int).ravel()
+            c, d = old.astype(np.int).ravel()
             if len(colors) == 1:
                 color = colors[0]
             else:
