@@ -1041,7 +1041,7 @@ class Tracker:
         self.initial_target_template_color = self.get_bb_patch_from_image(self.frame_new_color, self.target_bounding_box)
         self.initial_target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
 
-    def augment_old_frame_(self):
+    def augment_old_frame(self):
         # keypoints that were not found in new frame would get discounted by the next iteration
         # these bad points from old frame can be reconstructed in new frame
         # and then corresponding patches cna be drawn in new frame after the flow computation
@@ -1122,7 +1122,7 @@ class Tracker:
     def get_feature_keypoints_from_mask(self, img, mask):
         shi_tomasi_kpts = cv.goodFeaturesToTrack(img, mask=mask, **FEATURE_PARAMS)
         detector_kpts = self.detector.get_keypoints(img, mask)
-        detector_kpts = np.array([pt.pt for pt in detector_kpts]).reshape(-1, 1, 2)
+        detector_kpts = np.array([pt.pt for pt in detector_kpts]).astype(np.float32).reshape(-1, 1, 2)
         if shi_tomasi_kpts is None and detector_kpts is None:
             return None
 
@@ -1365,7 +1365,7 @@ class Tracker:
             self.compute_flow()
 
             # amplify bad errors
-            self.cross_feature_errors[(self.cross_feature_errors > 0.75 * self.MAX_ERR) & (self.cross_feature_errors > 100*self.cross_feature_errors.min())] *= 10
+            self.cross_feature_errors[(self.cross_feature_errors > 0.5 * self.MAX_ERR) & (self.cross_feature_errors > 100*self.cross_feature_errors.min())] *= 10
 
             # ---------------------------------------------------------------------
             # |NO_OCC, NO_OCC>
@@ -1390,6 +1390,7 @@ class Tracker:
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.keypoints_old = self.keypoints_new
+                self.keypoints_old_good = self.keypoints_new_good
                 self.centroid_adjustment = None
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
@@ -1467,38 +1468,16 @@ class Tracker:
             self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
             self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
 
-            # after flow computation we would have found either nothing or at least something 
-            # handle the at least something case first
-            # something was found, implying we can find kinematics and update centroid
-            # # EVENT: FOUND SOMETHING
-            # if self.feature_found_statuses.any() and self.cross_feature_errors[self.feature_found_statuses==1].max() < self.MAX_ERR:
-            #     # compute adjusted centroid
-            #     centroid_old_good = self.get_centroid(self.keypoints_old_good)
-            #     centroid_new_good = self.get_centroid(self.keypoints_new_good)
-            #     self.centroid_adjustment = self.centroid_old - centroid_old_good
-            #     self.centroid_new = centroid_new_good + self.centroid_adjustment
-
-            #     # compute kinematics measurements
-            #     self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
-
-            # # EVENT: FOUND NOTHING
-            # if not self.feature_found_statuses.all() and self.cross_feature_errors.min() >= self.MAX_ERR:
-            #     # explore and see if we can find something to compute centroid and kinematics, else it's TOTAL_OCC
-            #     pass
-
-            # these good keypoints are not sufficient for perfect/precise partial occlusion detection
-            # for precision, we will need to check if any other keypoints can be recovered
-            # we should still have old centroid, from initial computations we must still have
+            # these good keypoints are not sufficient for precise partial occlusion detection
+            # for precision, we will need to check if any other keypoints can be recovered or reocnstructed
+            # we should still have old centroid
             self.target_bounding_box = self.get_true_bb_from_oracle()
             self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
 
-            # compute good feature keypoints in the new frame
-            # good_keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, 
-            #                                             mask=self.target_bounding_box_mask, 
-            #                                             **FEATURE_PARAMS)
+            # compute good feature keypoints in the new frame (shi-tomasi + SIFT)
             good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=self.target_bounding_box_mask)
 
-            if good_keypoints_new is None:
+            if good_keypoints_new is None or good_keypoints_new.shape[0] == 0:
                 good_distances = []
             else:
                 # compute descriptors at the new keypoints
@@ -1509,7 +1488,7 @@ class Tracker:
                                                                 descriptors, 
                                                                 threshold=-1)
 
-                distances = np.array([m.distance for m in matches]).reshape(-1, 1)  # redundant, TODO clean it
+                distances = np.array([m.distance for m in matches]).reshape(-1, 1)
                 good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
 
             # ---------------------------------------------------------------------
@@ -1533,8 +1512,7 @@ class Tracker:
 
             # ---------------------------------------------------------------------
             # |PARTIAL_OCC, NO_OCC>
-            elif ((self.feature_found_statuses.all() and self.feature_found_statuses.shape[0] == MAX_NUM_CORNERS and
-                    self.cross_feature_errors.max() < 2*self.MAX_ERR) or 
+            elif ((self.keypoints_new_good.shape[0] > 0) and
                     len(good_distances) == MAX_NUM_CORNERS):
                 self.target_occlusion_case_new = self._NO_OCC
 
@@ -1543,8 +1521,10 @@ class Tracker:
 
                 # update keypoints
                 if len(good_distances) == MAX_NUM_CORNERS:
-                    self.keypoints_new = good_keypoints_new
-                    self.centroid_new = self.get_centroid(self.keypoints_new)
+                    good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
+                    self.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
+                    self.keypoints_new = self.keypoints_new_good
+                    self.centroid_new = self.get_centroid(self.keypoints_new_good)
                     self.rel_keypoints = self.keypoints_new - self.centroid_new
 
 
@@ -1552,12 +1532,15 @@ class Tracker:
                 self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
                 # adjust centroid
-                centroid_new_good = self.get_centroid(good_keypoints_new)
-                self.centroid_adjustment = centroid_new_good - self.centroid_new
-                self.centroid_new = centroid_new_good
+                if len(good_distances) == MAX_NUM_CORNERS:
+                   self.centroid_adjustment = None
+                else: 
+                    centroid_new_good = self.get_centroid(good_keypoints_new)
+                    self.centroid_adjustment = centroid_new_good - self.centroid_new
+                    self.centroid_new = centroid_new_good
 
-                # update keypoints
-                self.keypoints_new_good = self.keypoints_new = self.centroid_new + self.rel_keypoints              
+                    # update keypoints
+                    self.keypoints_new_good = self.keypoints_new = self.centroid_new + self.rel_keypoints         
 
                 # update tracker display
                 self.display()
@@ -1565,7 +1548,8 @@ class Tracker:
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
-                self.keypoints_old = self.keypoints_new
+                self.keypoints_old = self.keypoints_new_good
+                self.keypoints_old_good = self.keypoints_new_good
                 self.centroid_adjustment = None
                 self.centroid_old = self.centroid_new
                 self.target_occlusion_case_old = self.target_occlusion_case_new
@@ -1574,20 +1558,33 @@ class Tracker:
             # ---------------------------------------------------------------------
             # |PARTIAL_OCC, PARTIAL_OCC>
             else:
+                # if we come to this, it means at least something can be salvaged
                 self.target_occlusion_case_new = self._PARTIAL_OCC
 
 
-                # here, we need to handle the non-pairing case
-                if self.keypoints_new_good.shape[0] == 0 and len(good_distances) > 0:
-                    # reconstruct 
-                    pass
+                # when flow fails but matching succeeds
+                if self.keypoints_new_good.shape[0] == 0 and len(good_distances) > 0: 
+                    good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
+                    self.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
+                    self.keypoints_new = self.keypoints_new_good
+                    self.centroid_new = self.manager.get_target_centroid()
                 
-                # compute adjusted centroid and compute kinematics
-                centroid_old_good = self.get_centroid(self.keypoints_old_good)
-                centroid_new_good = self.get_centroid(self.keypoints_new_good)
-                self.centroid_adjustment = self.centroid_old - centroid_old_good
-                self.centroid_new = centroid_new_good + self.centroid_adjustment
+                elif self.keypoints_new_good.shape[0] > 0:
+                    # compute adjusted centroid and compute kinematics
+                    centroid_old_good = self.get_centroid(self.keypoints_old_good)
+                    centroid_new_good = self.get_centroid(self.keypoints_new_good)
+                    self.centroid_adjustment = self.centroid_old - centroid_old_good
+                    self.centroid_new = centroid_new_good + self.centroid_adjustment
+                else:
+                    # flow failed completely
+                    # recover before adjusting, remember we assume we still have old centroidl
+                    pass
+
                 self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
+
+                # adjust missing old keypoints (need to check recovery)
+                keypoints_missing = self.keypoints_old[(self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)]
+                self.keypoints_new_bad = keypoints_missing - self.centroid_old + self.centroid_new
 
                 # update tracker display
                 self.display()
@@ -1619,7 +1616,7 @@ class Tracker:
             # good_keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
             good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=self.target_bounding_box_mask)
 
-            if good_keypoints_new is None:
+            if good_keypoints_new is None or good_keypoints_new.shape[0] == 0:
                 good_distances = []
             else:
                 # compute descriptors at the new keypoints
@@ -2682,10 +2679,10 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
-    RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
+    RUN_VIDEO_WRITER = 1  # pylint: disable=bad-whitespace
 
     if RUN_EXPERIMENT:
         EXPERIMENT_MANAGER = ExperimentManager(save_on=EXPERIMENT_SAVE_MODE_ON,
