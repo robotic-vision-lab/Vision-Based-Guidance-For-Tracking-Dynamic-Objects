@@ -33,12 +33,18 @@ class TemplateMatcher:
     def find_template_in_image_bb(self, img, bb):
         x,y,w,h = bb
         img_patch = img[y:y+h, x:x+w]
-        tf, br =  self.find_template_in_image(img_patch)
+        tl, br =  self.find_template_in_image(img_patch)
         
-        self.top_left = (tf[0]+x, tf[1]+y)
+        self.top_left = (tl[0]+x, tl[1]+y)
         self.bottom_right = (br[0]+x, br[1]+y)
         
         return self.top_left, self.bottom_right
+
+    def find_template_center_in_image_bb(self, img, bb):
+        tl, br = self.find_template_in_image_bb(img, bb)
+        cx = (tl[0] + br[0]) // 2
+        cy = (tl[1] + br[1]) // 2
+        return cx, cy
 
     
     
