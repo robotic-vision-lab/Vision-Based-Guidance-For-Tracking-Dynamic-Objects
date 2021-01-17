@@ -1068,6 +1068,22 @@ class Tracker:
         # initialize template matcher object for each patch
         self.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in self.initial_patches_gray]
 
+    def find_patches(self, img, bb):
+        self.template_points = np.array([
+            temp_matcher.find_template_center_in_image_bb(img, bb)
+            for temp_matcher in self.template_matchers
+            ]).reshape(-1, 1, 2)
+
+        self.template_scores = np.array([
+            temp_matcher.get_best_match_score()
+            for temp_matcher in self.template_matchers
+            ]).reshape(-1, 1)
+
+        return self.template_points, self.template_scores
+
+
+
+
     def get_descriptors_at_keypoints(self, img, keypoints):
         kps = [cv.KeyPoint(*kp.ravel(), 15) for kp in keypoints]
         kps, descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, kps)
