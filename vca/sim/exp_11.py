@@ -59,7 +59,8 @@ from algorithms.feature_match \
                 import (BruteL2,)
 
 from algorithms.template_match \
-                import CorrelationCoeffNormed
+                import (CorrelationCoeffNormed,
+                        TemplateMatcher)
 
 
 """ Summary:
@@ -1063,6 +1064,9 @@ class Tracker:
     def save_initial_patches(self):
         self.initial_patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.initial_keypoints]
         self.initial_patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.initial_keypoints]
+        
+        # initialize template matcher object for each patch
+        self.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in self.initial_patches_gray]
 
     def get_descriptors_at_keypoints(self, img, keypoints):
         kps = [cv.KeyPoint(*kp.ravel(), 15) for kp in keypoints]
