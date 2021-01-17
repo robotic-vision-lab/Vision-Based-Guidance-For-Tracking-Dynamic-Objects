@@ -212,7 +212,7 @@ def images_assemble(images,
 
     # add border
     if border:
-        images = [add_border(img, thickness=5) for img in images]
+        images = [add_border(img, border_color=bg_color, thickness=5) for img in images]
 
     # compute max heights and widths
     max_heights = np.zeros((height,))
