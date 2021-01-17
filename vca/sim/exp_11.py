@@ -583,7 +583,7 @@ class Simulator:
         self.time = 0.0
 
         # initiate screen shot generator
-        self.screen_shot = self.screen_saver(path=TEMP_FOLDER)
+        self.screen_shot = self.screen_saver(path=SIMULATOR_TEMP_FOLDER)
 
         # create default Group for all sprites, but drone
         self.all_sprites = pygame.sprite.Group()
@@ -1174,6 +1174,9 @@ class Tracker:
             for i,m in enumerate(self.matc):
                 pt = tuple(map(int,self.cmb_pts[m.trainIdx].flatten()))
                 self.nf3 = cv.circle(self.nf3, pt, 5, colors[i], 2)
+                if m.distance < self.DES_MATCH_DISTANCE_THRESH:
+                    self.nf3 = cv.circle(self.nf3, pt, 9, colors[i], 1)
+
 
 
 
@@ -1187,6 +1190,7 @@ class Tracker:
         _ARROW_COLOR = self.display_arrow_color[self.target_occlusion_case_new]
         # draw tracks on the mask, apply mask to frame, save mask for future use
         if kin is None:
+            # use true old and new points
             img, mask = draw_tracks(frame, old_pt, new_pt, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
             img = draw_sparse_optical_flow_arrows(img,
                                                   old_pt,
@@ -1207,10 +1211,13 @@ class Tracker:
 
             cent_old = None if np.isnan(np.sum(cent_old)) else cent_old.astype(np.int)
             cent_new = None if np.isnan(np.sum(cent_new)) else cent_new.astype(np.int)
-            img, mask = draw_tracks(frame, cent_old, cent_new, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
 
+            # img, mask = draw_tracks(frame, cent_old, cent_new, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
+            img, mask = draw_tracks(frame, self.centroid_old, self.centroid_new, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
             for cur, nxt in zip(good_cur, good_nxt):
                 img, mask = draw_tracks(frame, [cur], [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=1, radius=7, circle_thickness=1)
+            for nxt in good_nxt:
+                img, mask = draw_tracks(frame, None, [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=1, radius=7, circle_thickness=1)
                 
 
             # add optical flow arrows
@@ -1527,6 +1534,9 @@ class Tracker:
                     self.centroid_new = self.get_centroid(self.keypoints_new_good)
                     self.rel_keypoints = self.keypoints_new - self.centroid_new
 
+                    # also adjust old centroid, since 
+                    # no dont .. old centroid would have been adjusted
+
 
                 # compute kinematics
                 self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
@@ -1562,14 +1572,15 @@ class Tracker:
                 self.target_occlusion_case_new = self._PARTIAL_OCC
 
 
-                # when flow fails but matching succeeds
                 if self.keypoints_new_good.shape[0] == 0 and len(good_distances) > 0: 
+                    # flow failed, matching succeeded
                     good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
                     self.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
                     self.keypoints_new = self.keypoints_new_good
                     self.centroid_new = self.manager.get_target_centroid()
                 
                 elif self.keypoints_new_good.shape[0] > 0:
+                    # flow succeeded
                     # compute adjusted centroid and compute kinematics
                     centroid_old_good = self.get_centroid(self.keypoints_old_good)
                     centroid_new_good = self.get_centroid(self.keypoints_new_good)
@@ -2679,10 +2690,10 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
-    RUN_VIDEO_WRITER = 1  # pylint: disable=bad-whitespace
+    RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
     if RUN_EXPERIMENT:
         EXPERIMENT_MANAGER = ExperimentManager(save_on=EXPERIMENT_SAVE_MODE_ON,
@@ -3365,4 +3376,4 @@ if __name__ == '__main__':
         _prep_temp_folder(os.path.realpath(_PATH))
         VID_PATH = f'{_PATH}/sim_track_control.avi'
         print('Making video.')
-        EXPERIMENT_MANAGER.make_video(VID_PATH, TEMP_FOLDER)
+        EXPERIMENT_MANAGER.make_video(VID_PATH, SIMULATOR_TEMP_FOLDER)
