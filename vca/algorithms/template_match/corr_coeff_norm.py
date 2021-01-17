@@ -46,5 +46,9 @@ class TemplateMatcher:
         cy = (tl[1] + br[1]) // 2
         return cx, cy
 
+    def get_best_match_score(self):
+        return self.match_result.max() if self.match_result is not None else float('nan')
+
+
     
     
