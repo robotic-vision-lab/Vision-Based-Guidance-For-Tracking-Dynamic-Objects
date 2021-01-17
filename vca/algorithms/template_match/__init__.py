@@ -1,1 +1,1 @@
-from .corr_coeff_norm import CorrelationCoeffNormed
+from .corr_coeff_norm import CorrelationCoeffNormed, TemplateMatcher
