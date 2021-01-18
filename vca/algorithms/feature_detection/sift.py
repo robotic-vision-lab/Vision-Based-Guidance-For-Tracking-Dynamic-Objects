@@ -33,7 +33,7 @@ class Sift:
                                 None,
                                 flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
-    def get_keypoints(self, img, mask=None):
+    def get_keypoints(self, img, mask=None, bb=None):
         """Computes SIFT keypoints in image. Takes in the image and optional mask.
         Returns computed SIFT keypoints 
 
@@ -44,7 +44,41 @@ class Sift:
         Returns:
             np.ndarray: Computed keypoints
         """
-        return self.detector.detect(img, mask)
+        if bb is None:
+            keypoints = self.detector.detect(img, mask)
+        else:
+            x, y, w, h = bb
+            img_patch = img[y:y+h, x:x+w]
+            keypoints = self.detector.detect(img_patch)
+            for kp in keypoints:
+                kp.pt = (kp.pt[0] + x, kp.pt[1] + y)
+
+        return keypoints
+
+
+    def get_descriptors_at_keypoints(self, img, keypoints, bb=None):
+        if bb is None:
+            keypoints, descriptors = self.detector.compute(img, keypoints)
+        else:
+            x, y, w, h = bb
+            img_patch = img[y:y+h, x:x+w]
+            for kp in keypoints:
+                kp.pt = (kp.pt[0] - x, kp.pt[1] - y)
+            keypoints, descriptors = self.detector.compute(img_patch, keypoints)
+            for kp in keypoints:
+                kp.pt = (kp.pt[0] + x, kp.pt[1] + y)
+
+        return keypoints, descriptors
+
+    def get_descriptors(self, img, mask=None):
+        _, descriptors = self.detector.detectAndCompute(img, mask)
+
+        return descriptors
+
+    def get_keypoints_and_descriptors(self, img, mask=None):
+        keypoints, descriptors = self.detector.detectAndCompute(img, mask)
+
+        return keypoints, descriptors
 
     def detect_and_show(self, img, mask=None):
         """Takes in an image, detects SIFT features and displays original image and image with rich keypoints drawn over it.
@@ -59,18 +93,3 @@ class Sift:
         cv.imshow('SIFT Features Detected', img_SFD)
         cv.waitKey(0)
         cv.destroyAllWindows()
-    
-    def get_descriptors_at_keypoints(self, img, keypoints):
-        keypoints, descriptors = self.detector.compute(img, keypoints)
-
-        return keypoints, descriptors
-
-    def get_descriptors(self, img, mask=None):
-        _, descriptors = self.detector.detectAndCompute(img, mask)
-
-        return descriptors
-
-    def get_keypoints_and_descriptors(self, img, mask=None):
-        keypoints, descriptors = self.detector.detectAndCompute(img, mask)
-
-        return keypoints, descriptors
