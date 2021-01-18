@@ -1009,21 +1009,37 @@ class Tracker:
         self.MAX_ERR = 15
 
     def is_first_time(self):
+        """Indicates if tracker never received a frame for the first time
+
+        Returns:
+            bool: Boolean indicating first time
+        """
         # this function is called in process_image in the beginning. 
         # it indicates if this the first time process_image received a frame
         return self.frame_old_gray is None
 
     def can_begin_control(self):
+        """Returns boolean check indicating if controller can be used post tracking.
+
+        Returns:
+            bool: Indicator for controller begin doing it's thing
+        """
         return self._can_begin_control_flag  # and self.prev_car_pos is not None
 
     def save_initial_target_descriptors(self):
+        """Helper function used after feature keypoints and centroid computation. Saves initial target descriptors.
+        """
         # use keypoints from new frame, 
         # save descriptors of new keypoints(good)
         keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in self.initial_keypoints]
-        self.initial_kps, self.initial_target_descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, 
-                                                                             keyPoints)
+        self.initial_kps, self.initial_target_descriptors = self.detector.get_descriptors_at_keypoints(
+                                                                self.frame_new_gray, 
+                                                                keyPoints,
+                                                                self.target_bounding_box)
 
     def save_initial_target_template(self):
+        """Helper function used after feature keypoints and centroid computation. Saves initial target template.
+        """
         # use the bounding box location to save the target template
         # x, y, w, h = bb = self.manager.get_target_bounding_box()
         # center = tuple(map(int, (x+w/2, y+h/2)))
@@ -1032,6 +1048,9 @@ class Tracker:
         self.initial_target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
 
     def save_initial_patches(self):
+        """Helper function used after feature keypoints and centroid computation. Saves initial patches around keypoints.
+        Also, initializes dedicated template matchers
+        """
         self.initial_patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.initial_keypoints]
         self.initial_patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.initial_keypoints]
         
@@ -1045,7 +1064,16 @@ class Tracker:
         # then save to old
         pass
 
-    def find_patches(self, img, bb):
+    def find_saved_patches_in_img_bb(self, img, bb):
+        """Uses patch template matchers to locate patches in given image inside given bounding box.
+
+        Args:
+            img (numpy.ndarray): Image in which patches are to be found.
+            bb (tuple): Bounding box inside which template matching is to be performed.
+
+        Returns:
+            tuple: Best matched template locations, best match values
+        """
         self.template_points = np.array([
             temp_matcher.find_template_center_in_image_bb(img, bb)
             for temp_matcher in self.template_matchers
@@ -1060,6 +1088,16 @@ class Tracker:
 
     @staticmethod
     def put_patch_at_point(self, img, patch, point):
+        """Stick a given patch onto given image at given point
+
+        Args:
+            img (numpy.ndarray): Image onto which we want to put a patch
+            patch (numpy.ndarray): Patch that we want to stick on the image 
+            point (tuple): Point at which patch center would go
+
+        Returns:
+            numpy.ndarray: Image after patch is put with it's center aligned with the given point
+        """
         # assumption: patch size is fixed by tracker
         x_1 = point[0] - self.patch_size//2
         y_1 = point[1] - self.patch_size//2
@@ -1071,21 +1109,49 @@ class Tracker:
 
     @staticmethod
     def get_bb_patch_from_image(img, bounding_box):
+        """Returns a patch from image using bounding box
+
+        Args:
+            img (numpy.ndarray): Image from which patch is a to be drawn
+            bounding_box (tuple): Bounding box surrounding the image patch of interest
+
+        Returns:
+            numpy.ndarray: The image patch 
+        """
         x, y, w, h = bounding_box
         return img[y:y+h, x:x+w] # same for color or gray
 
     @staticmethod
     def get_neighborhood_patch(img, center, size):
+        """Returns a patch from image using a center point and size
+
+        Args:
+            img (numpy.ndarray): Image from which a patch is to be drawn
+            center (tuple): Point in image at which patch center would align
+            size (int): Size of patch 
+
+        Returns:
+            numpy.ndaray: Patch
+        """
         size = (size, size) if isinstance(size, int) else size
         x = center[0] - size[0]//2
         y = center[1] - size[1]//2
         w, h = size
 
         return img[y:y+h, x:x+w] # same for color or gray
-        # return self.get_bb_patch_from_image(img, (x, y, *size))
 
     @staticmethod
     def get_patch_mask(img, patch_center, patch_size):
+        """Returns a mask, given a patch center and size
+
+        Args:
+            img (numpy.ndarray): Image using which mask is to be created
+            patch_center (tuple): Center location of patch
+            patch_size (tuple): Size of patch
+
+        Returns:
+            numpy.ndarray: Mask
+        """
         x = patch_center[0] - patch_size //2
         y = patch_center[1] - patch_size //2
         mask = np.zeros_like(img)
@@ -1094,6 +1160,18 @@ class Tracker:
 
     @staticmethod
     def get_bounding_box_mask(img, x, y, width, height):
+        """Returns mask, using bounding box
+
+        Args:
+            img (numpy.ndarray): Image using which mask is to be created
+            x (int): x coord of top left of bounding box
+            y (int): y coord of top left of bounding box
+            width (int): width of bounding box
+            height (int): height of bounding box
+
+        Returns:
+            numpt.ndarray: mask
+        """
         # assume image is grayscale
         mask = np.zeros_like(img)
         mask[y:y+height, x:x+width] = 255
@@ -1109,9 +1187,18 @@ class Tracker:
         points_ = np.array(points).reshape(-1, 1, 2)
         return np.mean(points_, axis=0)
 
-    def get_feature_keypoints_from_mask(self, img, mask):
+    def get_feature_keypoints_from_mask(self, img, mask, bb=None):
+        """Returns feature keypoints compute in given image using given mask
+
+        Args:
+            img (numpy.ndarray): Image in which feature keypoints are to be computed
+            mask (numpy.ndarray): Mask indicating selected region
+
+        Returns:
+            numpy.ndarray: Feature keypoints
+        """
         shi_tomasi_kpts = cv.goodFeaturesToTrack(img, mask=mask, **FEATURE_PARAMS)
-        detector_kpts = self.detector.get_keypoints(img, mask)
+        detector_kpts = self.detector.get_keypoints(img, mask, bb)
         detector_kpts = np.array([pt.pt for pt in detector_kpts]).astype(np.float32).reshape(-1, 1, 2)
         if shi_tomasi_kpts is None and detector_kpts is None:
             return None
@@ -1125,19 +1212,43 @@ class Tracker:
         comb_kpts = np.concatenate((shi_tomasi_kpts, detector_kpts), axis=0)
         return comb_kpts
 
-    def get_descriptors_at_keypoints(self, img, keypoints):
+    def get_descriptors_at_keypoints(self, img, keypoints, bb=None):
+        """Returns computed descriptors at keypoints
+
+        Args:
+            img (numpy.ndarray): Image
+            keypoints (numpy.ndarray): Keypoints of interest
+
+        Returns:
+            list: List of descriptors corresponding to given keypoints.
+        """
         kps = [cv.KeyPoint(*kp.ravel(), 15) for kp in keypoints]
-        kps, descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, kps)
+        kps, descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, kps, bb)
         return kps, descriptors
 
     def get_true_bb_from_oracle(self):
+        """Helper function to get the true target bounding box.
+
+        Returns:
+            tuple: True target bounding box
+        """
         return self.manager.get_target_bounding_box_from_offset()
 
     def _get_kin_from_manager(self):
+        """Helper function to fetch appropriate kinematics from manager
+
+        Returns:
+            tuple: Kinematics tuple
+        """
         #TODO switch based true or est 
         return self.manager.get_true_kinematics()
 
     def _get_target_image_location(self):
+        """Helper function returns true target location measured in pixels
+
+        Returns:
+            [type]: [description]
+        """
         kin = self._get_kin_from_manager()
         x,y = kin[2].elementwise()* (1,-1) / self.manager.simulator.pxm_fac
         target_location = (int(x), int(y) + HEIGHT)
@@ -1145,16 +1256,29 @@ class Tracker:
         return target_location
 
     def process_image_complete(self, new_frame):
+        """Processes new frame and performs and delegated various tracking based tasks.
+            1. Extracts target attributes and stores them
+            2. Processes each next frame and tracks target
+            3. Delegates kinematics computation
+            4. Handles occlusions
+
+        Args:
+            new_frame (numpy.ndarray): Next frame to be processed
+
+        Returns:
+            tuple: Sentinel tuple consisting indicator of process success/failure and kinematics if computed successfully.
+        """
         # save new frame, compute grayscale
         self.frame_new_color = new_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
         self.true_new_pt = self._get_target_image_location()
         cv.imshow('nxt_frame', self.frame_new_gray); cv.waitKey(1)
         if self.is_first_time():
-            # compute bb, initial feature keypoints and centroid
+            # compute bb
             self.target_bounding_box = self.manager.get_target_bounding_box()
             self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
 
+            # compute initial feature keypoints and centroid
             self.initial_keypoints = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
             self.initial_centroid = self.get_centroid(self.initial_keypoints)
             self.rel_keypoints = self.initial_keypoints - self.initial_centroid
@@ -1188,7 +1312,7 @@ class Tracker:
             self.compute_flow()
 
             # amplify bad errors
-            self.cross_feature_errors[(self.cross_feature_errors > 0.5 * self.MAX_ERR) & (self.cross_feature_errors > 100*self.cross_feature_errors.min())] *= 10
+            self.cross_feature_errors[(self.cross_feature_errors > 0.75 * self.MAX_ERR) & (self.cross_feature_errors > 100*self.cross_feature_errors.min())] *= 10
 
             # ---------------------------------------------------------------------
             # |NO_OCC, NO_OCC>
@@ -1298,13 +1422,13 @@ class Tracker:
             self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
 
             # compute good feature keypoints in the new frame (shi-tomasi + SIFT)
-            good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=self.target_bounding_box_mask)
+            good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=self.target_bounding_box_mask, bb=self.target_bounding_box)
 
             if good_keypoints_new is None or good_keypoints_new.shape[0] == 0:
                 good_distances = []
             else:
                 # compute descriptors at the new keypoints
-                kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new)
+                kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new, bb=self.target_bounding_box)
 
                 # match descriptors 
                 matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
@@ -1390,6 +1514,7 @@ class Tracker:
 
                 if self.keypoints_new_good.shape[0] == 0 and len(good_distances) > 0: 
                     # flow failed, matching succeeded
+                    # compute new good keypoints using matching
                     good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
                     self.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
                     self.keypoints_new = self.keypoints_new_good
@@ -1441,13 +1566,13 @@ class Tracker:
 
             # compute good feature keypoints in the new frame
             # good_keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
-            good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=self.target_bounding_box_mask)
+            good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=self.target_bounding_box_mask, bb=self.target_bounding_box)
 
             if good_keypoints_new is None or good_keypoints_new.shape[0] == 0:
                 good_distances = []
             else:
                 # compute descriptors at the new keypoints
-                kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new)
+                kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new, bb=self.target_bounding_box)
 
                 # match descriptors 
                 # note, matching only finds best matching/pairing, 
@@ -1807,6 +1932,8 @@ class Tracker:
             print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
 
     def show_me_something(self):
+        """Worker function to aid debugging
+        """
         # 1 for shi-tomasi, 2 for SIFT
         self.nf1 = cv.cvtColor(self.frame_new_gray.copy(), cv.COLOR_GRAY2BGR)
         self.nf2 = cv.cvtColor(self.frame_new_gray.copy(), cv.COLOR_GRAY2BGR)
@@ -1826,7 +1953,7 @@ class Tracker:
         if gkn is not None:
             self.gpn = np.array([list(gp.pt) for gp in gkn]).reshape(-1,1,2)
             for i, pt in enumerate(self.gpn): self.nf2 = draw_point(self.nf2, tuple(map(int,pt.flatten())))
-            self.k,self.d = self.get_descriptors_at_keypoints(self.frame_new_gray, self.gpn)
+            self.k,self.d = self.get_descriptors_at_keypoints(self.frame_new_gray, self.gpn, bb=self.target_bounding_box)
             self.mat = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
                                                                     self.d, 
                                                                     threshold=-1)
@@ -1835,10 +1962,10 @@ class Tracker:
                 pt = tuple(map(int,self.gpn[m.trainIdx].flatten()))
                 self.nf2 = cv.circle(self.nf2, pt, 5, colors[i], 2)
 
-        self.cmb_pts = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=self.target_bounding_box_mask)
+        self.cmb_pts = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=self.target_bounding_box_mask, bb=self.target_bounding_box)
         if self.cmb_pts is not None:
             for i, pt in enumerate(self.cmb_pts): self.nf3 = draw_point(self.nf3, tuple(map(int,pt.flatten())))
-            self.kc,self.dc = self.get_descriptors_at_keypoints(self.frame_new_gray, self.cmb_pts)
+            self.kc,self.dc = self.get_descriptors_at_keypoints(self.frame_new_gray, self.cmb_pts, bb=self.target_bounding_box)
             self.matc = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
                                                                     self.dc, 
                                                                     threshold=-1)
@@ -1849,11 +1976,11 @@ class Tracker:
                 if m.distance < self.DES_MATCH_DISTANCE_THRESH:
                     self.nf3 = cv.circle(self.nf3, pt, 9, colors[i], 1)
         
-        self.find_patches(convert_to_grayscale(self.nf4), self.target_bounding_box)
+        self.find_saved_patches_in_img_bb(convert_to_grayscale(self.nf4), self.target_bounding_box)
         for i, t_pt in enumerate(self.template_points):
             pt = tuple(t_pt.flatten())
             self.nf4 = draw_point(self.nf4, pt)
-            if self.template_scores.flatten()[i] > 0.9:
+            if self.template_scores.flatten()[i] > 0.989:
                 self.nf4 = cv.circle(self.nf4, pt, 7, colors[i], 2)
 
 
