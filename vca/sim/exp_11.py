@@ -1328,7 +1328,7 @@ class Tracker:
 
             # ---------------------------------------------------------------------
             # |NO_OCC, NO_OCC>
-            if (self.feature_found_statuses.all() and self.feature_found_statuses.shape[0] == 4 and 
+            if (self.feature_found_statuses.all() and self.feature_found_statuses.shape[0] == MAX_NUM_CORNERS and 
                     self.cross_feature_errors.max() < self.MAX_ERR):
                 self.target_occlusion_case_new = self._NO_OCC
 
@@ -1406,7 +1406,7 @@ class Tracker:
                 # update tracker display
                 self.display()
 
-                # add bad points to good 
+                # add revived bad points to good points
                 self.keypoints_new_good = np.concatenate((self.keypoints_new_good, self.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
 
                 # posterity
@@ -1416,6 +1416,7 @@ class Tracker:
                 self.keypoints_old_good = self.keypoints_new_good.reshape(-1, 1, 2)
                 self.keypoints_old_bad = self.keypoints_new_bad.reshape(-1, 1, 2)
                 self.centroid_old = self.centroid_new
+                self.centroid_old_true = self.manager.get_target_centroid()
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
 
@@ -1425,7 +1426,7 @@ class Tracker:
             # (a priori) older could have been no_occ, partial_occ or total_occ
             # we should have some keypoints that are good, if old now has partial_occ
             
-            # use good keypoints, to compute flow (good keypoints used as input, while outputs into keypoints)
+            # use good keypoints, to compute flow (keypoints_old_good used as input, and outputs into keypoints_new)
             self.compute_flow(use_good=True)
 
             # amplify bad errors 
@@ -1539,40 +1540,44 @@ class Tracker:
 
 
                 if self.keypoints_new_good.shape[0] == 0 and len(good_distances) > 0: 
-                    # flow failed, matching succeeded
+                    # flow failed, matching succeeded (feature or template)
                     # compute new good keypoints using matching
                     good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
                     self.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
                     self.keypoints_new = self.keypoints_new_good
+                    self.centroid_old = self.centroid_old_true
                     self.centroid_new = self.manager.get_target_centroid()
                 
                 elif self.keypoints_new_good.shape[0] > 0:
-                    # flow succeeded
+                    # flow succeeded, (at least one new keypoint was found)
                     # compute adjusted centroid and compute kinematics
                     centroid_old_good = self.get_centroid(self.keypoints_old_good)
                     centroid_new_good = self.get_centroid(self.keypoints_new_good)
                     self.centroid_adjustment = self.centroid_old - centroid_old_good
                     self.centroid_new = centroid_new_good + self.centroid_adjustment
                 else:
-                    # flow failed completely
-                    # recover before adjusting, remember we assume we still have old centroidl
+                    # flow failed, matching also failed
+                    # recover before adjusting, remember we assume we still have old centroid
                     pass
 
                 self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
-                if not (self.keypoints_new_good.shape[0] == 0 and len(good_distances) > 0):
+                # treat keypoints that were lost during flow
+                if (self.keypoints_new_good.shape[0] > 0 and 
+                        ((self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)).sum() > 0):
                     # adjust missing old keypoints (need to check recovery)
                     keypoints_missing = self.keypoints_old[(self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)]
                     self.keypoints_new_bad = keypoints_missing - self.centroid_old + self.centroid_new
+
+                    # put patches over bad points in new frame
+                    for kp in self.keypoints_new_bad:
+                        # fetch appropriate patch
+                        patch = self.get_relative_associated_patch(kp, self.centroid_new)
+                        # paste patch at appropriate location
+                        self.put_patch_at_point(self.frame_new_gray, patch, tuple(map(int,kp.flatten())))
                 else:
                     self.keypoints_new_bad = None
 
-                # put patches over bad points in new frame
-                for kp in self.keypoints_new_bad:
-                    # fetch appropriate patch
-                    patch = self.get_relative_associated_patch(kp, self.centroid_new)
-                    # paste patch at appropriate location
-                    self.put_patch_at_point(self.frame_new_gray, patch, tuple(map(int,kp.flatten())))
 
                 # update tracker display
                 self.display()
@@ -1587,6 +1592,7 @@ class Tracker:
                 self.keypoints_old = self.keypoints_new
                 self.keypoints_old_good = self.keypoints_new_good.reshape(-1, 1, 2)
                 self.centroid_old = self.centroid_new
+                self.centroid_old_true = self.manager.get_target_centroid()
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._SUCCESS
 
@@ -1677,6 +1683,7 @@ class Tracker:
                 self.keypoints_old = self.keypoints_new  = self.keypoints_new_good
                 self.keypoints_old_good = self.keypoints_new_good
                 self.centroid_old = self.centroid_new
+                self.centroid_old_true = self.manager.get_target_centroid()
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 self.manager.set_target_centroid_offset()
                 return self._FAILURE
@@ -1831,7 +1838,7 @@ class Tracker:
         _ARROW_COLOR = self.display_arrow_color[self.target_occlusion_case_new]
         # draw tracks on the mask, apply mask to frame, save mask for future use
         if kin is None:
-            # use true old and new points
+            # its to and from TOTAL_OCC cases, use true old and new points
             img, mask = draw_tracks(frame, old_pt, new_pt, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
             img = draw_sparse_optical_flow_arrows(img,
                                                   old_pt,
@@ -1840,23 +1847,29 @@ class Tracker:
                                                   arrow_scale=ARROW_SCALE,
                                                   color=_ARROW_COLOR)
             if good_nxt is not None:
+                # from TOTAL_OCC
                 for nxt in good_nxt:
                     img = cv.circle(img, tuple(map(int,nxt.flatten())), 7, TURQUOISE_GREEN_BGR, 1)
         else:
-            if self.centroid_adjustment is not None:
-                cent_old = self.get_centroid(good_cur) + self.centroid_adjustment
-                cent_new = self.get_centroid(good_nxt) + self.centroid_adjustment
-            else:
-                cent_old = self.get_centroid(good_cur)
-                cent_new = self.get_centroid(good_nxt)
+            # if self.centroid_adjustment is not None:
+            #     cent_old = self.get_centroid(good_cur) + self.centroid_adjustment
+            #     cent_new = self.get_centroid(good_nxt) + self.centroid_adjustment
+            # else:
+            #     cent_old = self.get_centroid(good_cur)
+            #     cent_new = self.get_centroid(good_nxt)
 
-            cent_old = None if np.isnan(np.sum(cent_old)) else cent_old.astype(np.int)
-            cent_new = None if np.isnan(np.sum(cent_new)) else cent_new.astype(np.int)
+            # cent_old = None if np.isnan(np.sum(cent_old)) else cent_old.astype(np.int)
+            # cent_new = None if np.isnan(np.sum(cent_new)) else cent_new.astype(np.int)
 
             # img, mask = draw_tracks(frame, cent_old, cent_new, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
+            
+            # draw circle and tracks between old and new centroids
             img, mask = draw_tracks(frame, self.centroid_old, self.centroid_new, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
+            
+            # draw tracks between old and new keypoints
             for cur, nxt in zip(good_cur, good_nxt):
                 img, mask = draw_tracks(frame, [cur], [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=1, radius=7, circle_thickness=1)
+            # draw circle for new keypoints
             for nxt in good_nxt:
                 img, mask = draw_tracks(frame, None, [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=1, radius=7, circle_thickness=1)
                 
@@ -1870,14 +1883,14 @@ class Tracker:
                 arrow_scale=ARROW_SCALE,
                 color=_ARROW_COLOR)
 
-        # add a center
+        # add a drone center
         img = cv.circle(img, SCREEN_CENTER, radius=1, color=DOT_COLOR, thickness=2)
 
-        # draw axes
+        # add axes in the bottom corner
         img = cv.arrowedLine(img, (16, HEIGHT - 15), (41, HEIGHT - 15), (51, 51, 255), 2)
         img = cv.arrowedLine(img, (15, HEIGHT - 16), (15, HEIGHT - 41), (51, 255, 51), 2)
 
-        # put velocity text
+        # put metrics text
         img = self.put_metrics(img, kin)
 
         return img, mask
@@ -2041,10 +2054,14 @@ class Tracker:
                 self.nf4 = cv.circle(self.nf4, pt, 7, colors[i], 2)
 
         # draw new good flow points
+        if self.keypoints_new is not None:
+            for i, pt in enumerate(self.keypoints_new):
+                pt = tuple(map(int, pt.flatten()))
+                self.nf5 = draw_point(self.nf5, pt, colors[i])
         if self.keypoints_new_good is not None:
             for i, pt in enumerate(self.keypoints_new_good):
                 pt = tuple(map(int, pt.flatten()))
-                self.nf5 = draw_point(self.nf5, pt, colors[i])
+                self.nf5 = cv.circle(self.nf4, pt, 7, colors[i], 2)
 
 
 class Controller:
@@ -2892,7 +2909,7 @@ def compute_moving_average(sequence, window_size):
 
 if __name__ == '__main__':
 
-    EXPERIMENT_SAVE_MODE_ON = 1  # pylint: disable=bad-whitespace
+    EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
     WRITE_PLOT = 0  # pylint: disable=bad-whitespace
     CONTROL_ON = 0  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
@@ -2901,10 +2918,10 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
-    RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
+    RUN_VIDEO_WRITER = 1  # pylint: disable=bad-whitespace
 
     if RUN_EXPERIMENT:
         EXPERIMENT_MANAGER = ExperimentManager(save_on=EXPERIMENT_SAVE_MODE_ON,
