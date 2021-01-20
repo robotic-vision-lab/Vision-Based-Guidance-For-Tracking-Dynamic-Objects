@@ -1736,7 +1736,7 @@ class Tracker:
         # - centroids represent the target location in old and new frames
 
         # form pygame.Vector2 objects representing measured car_position and car_velocity 
-        # in corner image coord frame in spatial units of pixels 
+        # in corner image coord frame in spatial units of *pixels* 
         measured_car_pos = pygame.Vector2(list(new_centroid.flatten()))
         dt = self.manager.get_sim_dt()
         measured_car_vel = pygame.Vector2(list( ((new_centroid-old_centroid)/dt).flatten() ))
@@ -2086,6 +2086,7 @@ class Controller:
         car_speed, cvy = kin[3]
 
         if USE_WORLD_FRAME:
+            # add camera origin to positions
             orig = self.manager.get_cam_origin()
             X += orig[0]
             Y += orig[1]
@@ -2095,19 +2096,19 @@ class Controller:
         # speed of drone
         S = (Vx**2 + Vy**2) ** 0.5
 
-        # distance between the drone and car
-        r = ((car_x - X)**2 + (car_y - Y)**2)**0.5
-
         # heading angle of drone wrt x axis
         alpha = atan2(Vy, Vx)
-
-        # angle of LOS from drone to car
-        theta = atan2(car_y - Y, car_x - X)
 
         # heading angle of car
         beta = 0
 
-        # compute vr and vtheta
+        # distance between the drone and car
+        r = ((car_x - X)**2 + (car_y - Y)**2)**0.5
+
+        # angle of LOS from drone to car
+        theta = atan2(car_y - Y, car_x - X)
+
+        # compute Vr and Vθ
         Vr = car_speed * cos(beta - theta) - S * cos(alpha - theta)
         Vtheta = car_speed * sin(beta - theta) - S * sin(alpha - theta)
 
@@ -2918,10 +2919,10 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
-    RUN_VIDEO_WRITER = 1  # pylint: disable=bad-whitespace
+    RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
     if RUN_EXPERIMENT:
         EXPERIMENT_MANAGER = ExperimentManager(save_on=EXPERIMENT_SAVE_MODE_ON,
