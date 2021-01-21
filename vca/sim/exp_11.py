@@ -874,6 +874,9 @@ class Simulator:
         for block in self.blocks:
             block.load()
 
+        for bar in self.bars:
+            bar.load()
+
     def drone_down(self):
         """Helper function to implement drone altitude decrements.
         """
@@ -884,6 +887,8 @@ class Simulator:
         self.car.load()
         for block in self.blocks:
             block.load()
+        for bar in self.bars:
+            bar.load()
 
     def get_drone_position(self):
         """Returns drone(UAS) true position
@@ -1212,13 +1217,13 @@ class Tracker:
         shi_tomasi_kpts = cv.goodFeaturesToTrack(img, mask=mask, **FEATURE_PARAMS)
         detector_kpts = self.detector.get_keypoints(img, mask, bb)
         detector_kpts = np.array([pt.pt for pt in detector_kpts]).astype(np.float32).reshape(-1, 1, 2)
-        if shi_tomasi_kpts is None and detector_kpts is None:
+        if shi_tomasi_kpts is None and (detector_kpts is None or len(detector_kpts) == 0):
             return None
 
-        if shi_tomasi_kpts is None and detector_kpts is not None:
+        if shi_tomasi_kpts is None and not (detector_kpts is None or len(detector_kpts) == 0):
             return detector_kpts
         
-        if shi_tomasi_kpts is not None and detector_kpts is None:
+        if shi_tomasi_kpts is not None and (detector_kpts is None or len(detector_kpts) == 0):
             return shi_tomasi_kpts
         
         comb_kpts = np.concatenate((shi_tomasi_kpts, detector_kpts), axis=0)
@@ -1370,6 +1375,7 @@ class Tracker:
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
                 self.centroid_adjustment = None
+                self.centroid_old_true = self.manager.get_target_centroid()
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._FAILURE
 
@@ -1468,7 +1474,8 @@ class Tracker:
             # |PARTIAL_OCC, TOTAL_OCC>
             if ((not self.feature_found_statuses.all() or 
                     self.cross_feature_errors.min() >= self.MAX_ERR) and 
-                    len(good_distances) == 0):
+                    len(good_distances) == 0 and 
+                    (self.template_scores > self.TEMP_MATCH_THRESH).sum() == 0):
                 self.target_occlusion_case_new = self._TOTAL_OCC
 
                 # cannot compute kinematics
@@ -1480,6 +1487,7 @@ class Tracker:
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
+                self.centroid_old_true = self.manager.get_target_centroid()
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 return self._FAILURE
 
@@ -1487,7 +1495,7 @@ class Tracker:
             # |PARTIAL_OCC, NO_OCC>
             elif ((self.keypoints_new_good.shape[0] > 0) and
                     len(good_distances) == MAX_NUM_CORNERS and
-                    (self.template_scores > self.TEMP_MATCH_THRESH).sum()==MAX_NUM_CORNERS):
+                    (self.template_scores > self.TEMP_MATCH_THRESH).sum() == MAX_NUM_CORNERS):
                 self.target_occlusion_case_new = self._NO_OCC
 
                 # compute centroid 
@@ -1500,6 +1508,13 @@ class Tracker:
                     self.keypoints_new = self.keypoints_new_good
                     self.centroid_new = self.get_centroid(self.keypoints_new_good)
                     self.rel_keypoints = self.keypoints_new - self.centroid_new
+                    
+                if (self.template_scores > self.TEMP_MATCH_THRESH).sum()==MAX_NUM_CORNERS:
+                    self.keypoints_new_good = self.template_points
+                    self.keypoints_new = self.keypoints_new_good
+                    self.centroid_new = self.get_centroid(self.keypoints_new_good)
+                    self.rel_keypoints = self.keypoints_new - self.centroid_new
+
 
                     # also adjust old centroid, since 
                     # no dont .. old centroid would have been adjusted
@@ -1539,14 +1554,20 @@ class Tracker:
                 self.target_occlusion_case_new = self._PARTIAL_OCC
 
 
-                if self.keypoints_new_good.shape[0] == 0 and len(good_distances) > 0: 
+                if self.keypoints_new_good.shape[0] == 0:
                     # flow failed, matching succeeded (feature or template)
                     # compute new good keypoints using matching
-                    good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
-                    self.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
-                    self.keypoints_new = self.keypoints_new_good
-                    self.centroid_old = self.centroid_old_true
-                    self.centroid_new = self.manager.get_target_centroid()
+                    if len(good_distances) > 0: 
+                        good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
+                        self.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
+                        self.keypoints_new = self.keypoints_new_good
+                        self.centroid_old = self.centroid_old_true
+                        self.centroid_new = self.manager.get_target_centroid()
+                    if (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0:
+                        self.keypoints_new_good = self.template_points[self.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
+                        self.keypoints_new = self.keypoints_new_good
+                        self.centroid_old = self.centroid_old_true
+                        self.centroid_new = self.manager.get_target_centroid()
                 
                 elif self.keypoints_new_good.shape[0] > 0:
                     # flow succeeded, (at least one new keypoint was found)
@@ -1564,6 +1585,7 @@ class Tracker:
 
                 # treat keypoints that were lost during flow
                 if (self.keypoints_new_good.shape[0] > 0 and 
+                        not (len(good_distances) > 0 or (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0) and
                         ((self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)).sum() > 0):
                     # adjust missing old keypoints (need to check recovery)
                     keypoints_missing = self.keypoints_old[(self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)]
@@ -1585,6 +1607,12 @@ class Tracker:
                 # add bad points to good 
                 if self.keypoints_new_bad is not None:
                     self.keypoints_new_good = np.concatenate((self.keypoints_new_good, self.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
+
+                if (len(good_distances) > self.keypoints_new_good.shape[0] and
+                        self.template_scores > self.TEMP_MATCH_THRESH).sum() > self.keypoints_new_good.shape[0]):
+                    self.keypoints_new_good = self.template_points[self.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
+                    self.keypoints_new = self.keypoints_new_good
+                    self.centroid_new = self.manager.get_target_centroid()
 
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
@@ -1639,7 +1667,8 @@ class Tracker:
 
             # ---------------------------------------------------------------------
             # |TOTAL_OCC, NO_OCC>
-            if len(good_distances) == MAX_NUM_CORNERS:
+            if (len(good_distances) == MAX_NUM_CORNERS and 
+                    (self.template_scores > self.TEMP_MATCH_THRESH).sum()==MAX_NUM_CORNERS):
                 self.target_occlusion_case_new = self._NO_OCC
                 good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
                 self.keypoints_new = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
@@ -1658,22 +1687,51 @@ class Tracker:
                 self.initial_centroid = self.centroid_old = self.centroid_new
                 self.centroid_adjustment = None
                 self.centroid_old = self.centroid_new
+                self.centroid_old_true = self.manager.get_target_centroid()
                 self.target_occlusion_case_old = self.target_occlusion_case_new
                 self.manager.set_target_centroid_offset()
                 return self._FAILURE
 
             # ---------------------------------------------------------------------
+            # |TOTAL_OCC, TOTAL_OCC>
+            elif (len(good_distances) == 0 and 
+                    (self.template_scores > self.TEMP_MATCH_THRESH).sum()==0):
+                self.target_occlusion_case_new = self._TOTAL_OCC
+
+                self.centroid_old = self.centroid_old_true
+                self.centroid_new = self.manager.get_target_centroid()
+
+                # cannot compute kinematics
+                self.kin = None
+
+                # update tracker display
+                self.display()
+
+                # posterity
+                self.frame_old_gray = self.frame_new_gray
+                self.frame_old_color = self.frame_new_color
+                self.centroid_old_true = self.manager.get_target_centroid()
+                self.target_occlusion_case_old = self.target_occlusion_case_new
+                return self._FAILURE
+
+            # ---------------------------------------------------------------------
             # |TOTAL_OCC, PARTIAL_OCC>
-            if len(good_distances) < MAX_NUM_CORNERS and len(good_distances) > 0:
+            else: 
                 self.target_occlusion_case_new = self._PARTIAL_OCC
 
-                # compute good matches
-                good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
-                
-                # compute good points, centroid adjustments
-                self.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)    #NOTE changed queryIdx to trainIdx .. double check later
+                self.centroid_old = self.centroid_old_true
                 self.centroid_new = self.manager.get_target_centroid()
+
+                if len(good_distances) > 0:
+                    # compute good matches
+                    good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
+                    
+                    # compute good points, centroid adjustments
+                    self.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)    #NOTE changed queryIdx to trainIdx .. double check later
                 
+                if (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0:
+                    self.keypoints_new_good = self.template_points[self.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
+
                 # update tracker display
                 self.display()
 
@@ -1688,22 +1746,6 @@ class Tracker:
                 self.manager.set_target_centroid_offset()
                 return self._FAILURE
 
-            # ---------------------------------------------------------------------
-            # |TOTAL_OCC, TOTAL_OCC>
-            if len(good_distances) == 0:
-                self.target_occlusion_case_new = self._TOTAL_OCC
-
-                # cannot compute kinematics
-                self.kin = None
-
-                # update tracker display
-                self.display()
-
-                # posterity
-                self.frame_old_gray = self.frame_new_gray
-                self.frame_old_color = self.frame_new_color
-                self.target_occlusion_case_old = self.target_occlusion_case_new
-                return self._FAILURE
 
     def compute_flow(self, use_good=False):
         # it's main purpose is to compute new points
@@ -1714,13 +1756,13 @@ class Tracker:
         if use_good:
             flow_output = compute_optical_flow_LK(self.frame_old_gray,
                                                 self.frame_new_gray,
-                                                self.keypoints_old_good, # good from previous frame
+                                                self.keypoints_old_good.astype('float32'), # good from previous frame
                                                 LK_PARAMS)
             # self.keypoints_old_good = flow_output[0]
         else:
             flow_output = compute_optical_flow_LK(self.frame_old_gray,
                                                 self.frame_new_gray,
-                                                self.keypoints_old, # good from previous frame
+                                                self.keypoints_old.astype('float32'), # good from previous frame
                                                 LK_PARAMS)
 
         # note that new keypoints are going to be of cardinality at most that of old keypoints
@@ -1818,15 +1860,18 @@ class Tracker:
             # show resultant img
             cv.imshow(self.win_name, self.frame_color_edited)
             cv.imshow("cur_frame", self.frame_old_gray)
-
+        
+        if SHOW_EXTRA:
+            self.show_me_something()
+            assembled_img = images_assemble([self.frame_old_gray.copy(), self.nf6.copy(), self.frame_color_edited.copy()], (1,3))
+        else:
         # dump frames for analysis
-        assembled_img = images_assemble([self.frame_old_gray.copy(), self.frame_new_gray.copy(), self.frame_color_edited.copy()], (1,3))
+            assembled_img = images_assemble([self.frame_old_gray.copy(), self.frame_new_gray.copy(), self.frame_color_edited.copy()], (1,3))
         self.img_dumper.dump(assembled_img)
 
         # ready for next iteration. set cur frame and points to next frame and points
         # self.frame_cur_gray = self.frame_nxt_gray.copy()
         # self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)  # -1 indicates to infer that dim size
-
         cv.waitKey(1)
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
@@ -1837,7 +1882,7 @@ class Tracker:
 
         _ARROW_COLOR = self.display_arrow_color[self.target_occlusion_case_new]
         # draw tracks on the mask, apply mask to frame, save mask for future use
-        if kin is None:
+        if 0 and kin is None:
             # its to and from TOTAL_OCC cases, use true old and new points
             img, mask = draw_tracks(frame, old_pt, new_pt, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
             img = draw_sparse_optical_flow_arrows(img,
@@ -1976,9 +2021,13 @@ class Tracker:
         occ_str_dict = {self._NO_OCC:'NO OCCLUSION', self._PARTIAL_OCC:'PARTIAL OCCLUSION', self._TOTAL_OCC:'TOTAL OCCLUSION'}
         occ_color_dict = {self._NO_OCC:EMERALD_BGR, self._PARTIAL_OCC:MARIGOLD_BGR, self._TOTAL_OCC:VERMILION_BGR}
         occ_str = occ_str_dict[self.target_occlusion_case_new]
+        occ_str_old = occ_str_dict[self.target_occlusion_case_old]
         occ_color = occ_color_dict[self.target_occlusion_case_new]
+        occ_color_old = occ_color_dict[self.target_occlusion_case_old]
         img = put_text(img, occ_str, (WIDTH//2 - 50, HEIGHT - 40),
                            font_scale=0.55, color=occ_color, thickness=1)
+        img = put_text(img, occ_str_old, (WIDTH//2 - 30, HEIGHT - 15),
+                           font_scale=0.35, color=occ_color_old, thickness=1)
         return img
 
     def print_to_console(self):
@@ -2014,11 +2063,11 @@ class Tracker:
         # draw shi-tomasi good feature points
         if good_keypoints_new is not None:
             for i, pt in enumerate(good_keypoints_new): self.nf1 = draw_point(self.nf1, tuple(pt.flatten()), colors[i])
-            cv.imshow('nxt_frame', self.nf1); cv.waitKey(1)
+            
 
         # compute SIFT feature keypoints and draw points and matches
         gkn = self.detector.get_keypoints(self.frame_new_gray, mask=self.target_bounding_box_mask)
-        if gkn is not None:
+        if gkn is not None and len(gkn) > 0:
             self.gpn = np.array([list(gp.pt) for gp in gkn]).reshape(-1,1,2)
             for i, pt in enumerate(self.gpn): self.nf2 = draw_point(self.nf2, tuple(map(int,pt.flatten())))
             self.k,self.d = self.get_descriptors_at_keypoints(self.frame_new_gray, self.gpn, bb=self.target_bounding_box)
@@ -2032,7 +2081,7 @@ class Tracker:
 
         # use combination of both shi-tomasi and SIFT keypoints, and draw points and matches
         self.cmb_pts = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=self.target_bounding_box_mask, bb=self.target_bounding_box)
-        if self.cmb_pts is not None:
+        if self.cmb_pts is not None and len(self.cmb_pts) > 0:
             for i, pt in enumerate(self.cmb_pts): self.nf3 = draw_point(self.nf3, tuple(map(int,pt.flatten())))
             self.kc,self.dc = self.get_descriptors_at_keypoints(self.frame_new_gray, self.cmb_pts, bb=self.target_bounding_box)
             self.matc = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
@@ -2061,7 +2110,25 @@ class Tracker:
         if self.keypoints_new_good is not None:
             for i, pt in enumerate(self.keypoints_new_good):
                 pt = tuple(map(int, pt.flatten()))
-                self.nf5 = cv.circle(self.nf4, pt, 7, colors[i], 2)
+                self.nf5 = cv.circle(self.nf5, pt, 7, colors[i], 2)
+
+        p1 = self.get_bb_patch_from_image(self.nf1, self.target_bounding_box)
+        p2 = self.get_bb_patch_from_image(self.nf2, self.target_bounding_box)
+        p3 = self.get_bb_patch_from_image(self.nf3, self.target_bounding_box)
+        p4 = self.get_bb_patch_from_image(self.nf4, self.target_bounding_box)
+        p5 = self.get_bb_patch_from_image(self.nf5, self.target_bounding_box)
+        self.patches_assembled = images_assemble([p1, p2, p3, p4, p5], grid_shape=(5,1))
+        self.nf1[0:self.patches_assembled.shape[0], 0:self.patches_assembled.shape[1]] = self.patches_assembled
+        self.nf2[0:self.patches_assembled.shape[0], 0:self.patches_assembled.shape[1]] = self.patches_assembled
+        self.nf3[0:self.patches_assembled.shape[0], 0:self.patches_assembled.shape[1]] = self.patches_assembled
+        self.nf4[0:self.patches_assembled.shape[0], 0:self.patches_assembled.shape[1]] = self.patches_assembled
+        self.nf5[0:self.patches_assembled.shape[0], 0:self.patches_assembled.shape[1]] = self.patches_assembled
+        self.nf6 = cv.cvtColor(self.frame_new_gray.copy(), cv.COLOR_GRAY2BGR)
+        self.nf6[0:self.patches_assembled.shape[0], 0:self.patches_assembled.shape[1]] = self.patches_assembled
+
+        cv.imshow('nxt_frame', self.nf6); cv.waitKey(1)
+
+
 
 
 class Controller:
@@ -2072,7 +2139,7 @@ class Controller:
         self.f = None
         self.a_ln = 0.0
         self.a_lt = 0.0
-        self.est_def = False
+        # self.est_def = False
 
 
     @staticmethod
@@ -2910,9 +2977,9 @@ def compute_moving_average(sequence, window_size):
 
 if __name__ == '__main__':
 
-    EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
+    EXPERIMENT_SAVE_MODE_ON = 1  # pylint: disable=bad-whitespace
     WRITE_PLOT = 0  # pylint: disable=bad-whitespace
-    CONTROL_ON = 0  # pylint: disable=bad-whitespace
+    CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
