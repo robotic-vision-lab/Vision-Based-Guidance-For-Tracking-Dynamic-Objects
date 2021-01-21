@@ -1289,7 +1289,7 @@ class Tracker:
         self.frame_new_color = new_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
         self.true_new_pt = self._get_target_image_location()
-        cv.imshow('nxt_frame', self.frame_new_gray); cv.waitKey(1)
+        # cv.imshow('nxt_frame', self.frame_new_gray); cv.waitKey(1)
         if self.is_first_time():
             # compute bb
             self.target_bounding_box = self.manager.get_target_bounding_box()
@@ -1609,7 +1609,7 @@ class Tracker:
                     self.keypoints_new_good = np.concatenate((self.keypoints_new_good, self.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
 
                 if (len(good_distances) > self.keypoints_new_good.shape[0] and
-                        self.template_scores > self.TEMP_MATCH_THRESH).sum() > self.keypoints_new_good.shape[0]):
+                        (self.template_scores > self.TEMP_MATCH_THRESH).sum() > self.keypoints_new_good.shape[0]):
                     self.keypoints_new_good = self.template_points[self.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
                     self.keypoints_new = self.keypoints_new_good
                     self.centroid_new = self.manager.get_target_centroid()
@@ -2977,7 +2977,7 @@ def compute_moving_average(sequence, window_size):
 
 if __name__ == '__main__':
 
-    EXPERIMENT_SAVE_MODE_ON = 1  # pylint: disable=bad-whitespace
+    EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
     WRITE_PLOT = 0  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
@@ -2986,10 +2986,10 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
-    RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
+    RUN_VIDEO_WRITER = 1  # pylint: disable=bad-whitespace
 
     if RUN_EXPERIMENT:
         EXPERIMENT_MANAGER = ExperimentManager(save_on=EXPERIMENT_SAVE_MODE_ON,
