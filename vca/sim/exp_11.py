@@ -1859,9 +1859,9 @@ class Tracker:
 
             # show resultant img
             cv.imshow(self.win_name, self.frame_color_edited)
-            cv.imshow("cur_frame", self.frame_old_gray)
         
         if SHOW_EXTRA:
+            cv.imshow("cur_frame", self.frame_old_gray)
             self.show_me_something()
             assembled_img = images_assemble([self.frame_old_gray.copy(), self.nf6.copy(), self.frame_color_edited.copy()], (1,3))
         else:
@@ -1911,12 +1911,13 @@ class Tracker:
             # draw circle and tracks between old and new centroids
             img, mask = draw_tracks(frame, self.centroid_old, self.centroid_new, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
             
-            # draw tracks between old and new keypoints
-            for cur, nxt in zip(good_cur, good_nxt):
-                img, mask = draw_tracks(frame, [cur], [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=1, radius=7, circle_thickness=1)
-            # draw circle for new keypoints
-            for nxt in good_nxt:
-                img, mask = draw_tracks(frame, None, [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=1, radius=7, circle_thickness=1)
+            if DRAW_KEYPOINT_TRACKS:
+                # draw tracks between old and new keypoints
+                for cur, nxt in zip(good_cur, good_nxt):
+                    img, mask = draw_tracks(frame, [cur], [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=1, radius=7, circle_thickness=1)
+                # draw circle for new keypoints
+                for nxt in good_nxt:
+                    img, mask = draw_tracks(frame, None, [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=1, radius=7, circle_thickness=1)
                 
 
             # add optical flow arrows
@@ -1928,17 +1929,22 @@ class Tracker:
                 arrow_scale=ARROW_SCALE,
                 color=_ARROW_COLOR)
 
+        # add axes
+        img = self.add_axes_at_point(img, SCREEN_CENTER)
+
         # add a drone center
         img = cv.circle(img, SCREEN_CENTER, radius=1, color=DOT_COLOR, thickness=2)
-
-        # add axes in the bottom corner
-        img = cv.arrowedLine(img, (16, HEIGHT - 15), (41, HEIGHT - 15), (51, 51, 255), 2)
-        img = cv.arrowedLine(img, (15, HEIGHT - 16), (15, HEIGHT - 41), (51, 255, 51), 2)
 
         # put metrics text
         img = self.put_metrics(img, kin)
 
         return img, mask
+
+    def add_axes_at_point(self, img, point, size=25, thickness=2):
+        x, y = point
+        img = cv.arrowedLine(img, (x+1, y), (x+1+size, y), (51, 51, 255), thickness)
+        img = cv.arrowedLine(img, (x, y-1 ), (x, y-1-size), (51, 255, 51), thickness)
+        return img
 
     def put_metrics(self, img, k):
         """Helper function, put metrics and stuffs on opencv image.
@@ -2015,7 +2021,7 @@ class Tracker:
                            font_scale=0.45, color=METRICS_COLOR, thickness=1)
             img = put_text(img, kin_str_14, (WIDTH - (155 + 25), 175),
                            font_scale=0.45, color=METRICS_COLOR, thickness=1)
-            img = put_text(img, kin_str_15, (50, HEIGHT - 15),
+            img = put_text(img, kin_str_15, (15, HEIGHT - 15),
                            font_scale=0.45, color=METRICS_COLOR, thickness=1)
 
         occ_str_dict = {self._NO_OCC:'NO OCCLUSION', self._PARTIAL_OCC:'PARTIAL OCCLUSION', self._TOTAL_OCC:'TOTAL OCCLUSION'}
@@ -2250,49 +2256,49 @@ class Controller:
             print(
                 f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{X:0.2f}, {Y:0.2f}] | v:[{Vx:0.2f}, {Vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}] | COMMANDED a:[{ax:0.2f}, {ay:0.2f}] | TRACKED x:[{tra_kin[2][0]:0.2f},{tra_kin[2][1]:0.2f}] | v:[{tra_kin[3][0]:0.2f},{tra_kin[3][1]:0.2f}]')
         if self.manager.write_plot:
-            self.f.write(f'\
-                {self.manager.simulator.time},\
-                {r},\
-                {degrees(theta)},\
-                {degrees(Vtheta)},\
-                {Vr},\
-                {tru_kin[0][0]},\
-                {tru_kin[0][1]},\
-                {tru_kin[2][0]},\
-                {tru_kin[2][1]},\
-                {ax},\
-                {ay},\
-                {a_lat},\
-                {a_long},\
-                {tru_kin[3][0]},\
-                {tru_kin[3][1]},\
-                {tra_kin[2][0]},\
-                {tra_kin[2][1]},\
-                {tra_kin[3][0]},\
-                {tra_kin[3][1]},\
-                {self.manager.simulator.camera.origin[0]},\
-                {self.manager.simulator.camera.origin[1]},\
-                {S},\
-                {degrees(alpha)},\
-                {tru_kin[1][0]},\
-                {tru_kin[1][1]},\
-                {tra_kin[4][0]},\
-                {tra_kin[4][1]},\
-                {tra_kin[5][0]},\
-                {tra_kin[5][1]},\
-                {self.manager.simulator.camera.altitude},\
-                {abs(_D)},\
-                {r_},\
-                {degrees(theta_)},\
-                {Vr_},\
-                {degrees(Vtheta_)},\
-                {tr},\
-                {degrees(ttheta)},\
-                {tVr},\
-                {degrees(tVtheta)},\
-                {self.manager.simulator.dt},\
-                {y1},\
-                {y2}\n')\
+            self.f.write(
+                f'{self.manager.simulator.time},' +                 # _TIME
+                f'{r},' +                                           # _R
+                f'{degrees(theta)},' +                              # _THETA
+                f'{degrees(Vtheta)},' +                             # _V_THETA
+                f'{Vr},' +                                          # _V_R
+                f'{tru_kin[0][0]},' +                               # _DRONE_POS_X
+                f'{tru_kin[0][1]},' +                               # _DRONE_POS_Y
+                f'{tru_kin[2][0]},' +                               # _CAR_POS_X
+                f'{tru_kin[2][1]},' +                               # _CAR_POS_y
+                f'{ax},' +                                          # _DRONE_ACC_X
+                f'{ay},' +                                          # _DRONE_ACC_Y
+                f'{a_lat},' +                                       # _DRONE_ACC_LAT
+                f'{a_long},' +                                      # _DRONE_ACC_LNG
+                f'{tru_kin[3][0]},' +                               # _CAR_VEL_X
+                f'{tru_kin[3][1]},' +                               # _CAR_VEL_Y
+                f'{tra_kin[2][0]},' +                               # _TRACKED_CAR_POS_X
+                f'{tra_kin[2][1]},' +                               # _TRACKED_CAR_POS_Y
+                f'{tra_kin[3][0]},' +                               # _TRACKED_CAR_VEL_X
+                f'{tra_kin[3][1]},' +                               # _TRACKED_CAR_VEL_Y
+                f'{self.manager.simulator.camera.origin[0]},' +     # _CAM_ORIGIN_X
+                f'{self.manager.simulator.camera.origin[1]},' +     # _CAM_ORIGIN_Y
+                f'{S},' +                                           # _DRONE_SPEED
+                f'{degrees(alpha)},' +                              # _DRONE_ALPHA
+                f'{tru_kin[1][0]},' +                               # _DRONE_VEL_X
+                f'{tru_kin[1][1]},' +                               # _DRONE_VEL_Y
+                f'{tra_kin[4][0]},' +                               # _MEASURED_CAR_POS_X
+                f'{tra_kin[4][1]},' +                               # _MEASURED_CAR_POS_Y
+                f'{tra_kin[5][0]},' +                               # _MEASURED_CAR_VEL_X
+                f'{tra_kin[5][1]},' +                               # _MEASURED_CAR_VEL_Y
+                f'{self.manager.simulator.camera.altitude},' +      # _DRONE_ALTITUDE
+                f'{abs(_D)},' +                                     # _ABS_DEN
+                f'{r_},' +                                          # _MEASURED_R
+                f'{degrees(theta_)},' +                             # _MEASURED_THETA
+                f'{Vr_},' +                                         # _MEASURED_V_R
+                f'{degrees(Vtheta_)},' +                            # _MEASURED_V_THETA
+                f'{tr},' +                                          # _TRUE_R
+                f'{degrees(ttheta)},' +                             # _TRUE_THETA
+                f'{tVr},' +                                         # _TRUE_V_R
+                f'{degrees(tVtheta)},' +                            # _TRUE_V_THETA
+                f'{self.manager.simulator.dt},' +                   # _DELTA_TIME
+                f'{y1},' +                                          # _Y1
+                f'{y2}\n')                                          # _Y2
 
         if not self.manager.control_on:
             ax, ay = pygame.Vector2((0.0, 0.0))
@@ -2978,18 +2984,18 @@ def compute_moving_average(sequence, window_size):
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
-    USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
+    USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
-    RUN_VIDEO_WRITER = 1  # pylint: disable=bad-whitespace
+    RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
     if RUN_EXPERIMENT:
         EXPERIMENT_MANAGER = ExperimentManager(save_on=EXPERIMENT_SAVE_MODE_ON,
