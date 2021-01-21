@@ -2447,14 +2447,14 @@ class ExperimentManager:
 
     def get_tracked_kinematics(self):
         return (
-            self.tracker.kin[0],
-            self.tracker.kin[1],
-            self.tracker.kin[6],
-            self.tracker.kin[7],
-            self.tracker.kin[2],
-            self.tracker.kin[3],
-            self.tracker.kin[4],
-            self.tracker.kin[5]
+            self.tracker.kin[0],    # true drone position    
+            self.tracker.kin[1],    # true drone velocity
+            self.tracker.kin[6],    # measured car position in camera frame (meters)
+            self.tracker.kin[7],    # measured car velocity in camera frame (meters)
+            self.tracker.kin[2],    # kalman estimated car position
+            self.tracker.kin[3],    # kalman estimated car velocity
+            self.tracker.kin[4],    # moving averaged car position
+            self.tracker.kin[5],    # moving averaged car velocity
         ) if self.tracker.kin is not None else None
 
     def get_cam_origin(self):
