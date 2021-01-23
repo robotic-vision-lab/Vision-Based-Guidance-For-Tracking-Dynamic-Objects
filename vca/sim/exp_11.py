@@ -2282,10 +2282,10 @@ class Controller:
                 f'{degrees(alpha)},' +                              # _DRONE_ALPHA
                 f'{tru_kin[1][0]},' +                               # _DRONE_VEL_X
                 f'{tru_kin[1][1]},' +                               # _DRONE_VEL_Y
-                f'{tra_kin[4][0]},' +                               # _MEASURED_CAR_POS_X
-                f'{tra_kin[4][1]},' +                               # _MEASURED_CAR_POS_Y
-                f'{tra_kin[5][0]},' +                               # _MEASURED_CAR_VEL_X
-                f'{tra_kin[5][1]},' +                               # _MEASURED_CAR_VEL_Y
+                f'{tra_kin[2][0]},' +                               # _MEASURED_CAR_POS_X
+                f'{tra_kin[2][1]},' +                               # _MEASURED_CAR_POS_Y
+                f'{tra_kin[3][0]},' +                               # _MEASURED_CAR_VEL_X
+                f'{tra_kin[3][1]},' +                               # _MEASURED_CAR_VEL_Y
                 f'{self.manager.simulator.camera.altitude},' +      # _DRONE_ALTITUDE
                 f'{abs(_D)},' +                                     # _ABS_DEN
                 f'{r_},' +                                          # _MEASURED_R
@@ -2386,7 +2386,7 @@ class ExperimentManager:
     def transform_vel_img_pixels_to_cam_meters(self, vel):
         vel = vel.elementwise() * (1, -1)
         vel *= self.simulator.pxm_fac
-
+        vel += self.get_true_drone_velocity()
         return vel
 
     def set_target_centroid_offset(self):
@@ -2528,7 +2528,7 @@ class ExperimentManager:
             self.tracker.kin[3],    # kalman estimated car velocity
             self.tracker.kin[4],    # moving averaged car position
             self.tracker.kin[5],    # moving averaged car velocity
-        ) if self.tracker.kin is not None else None
+        ) if self.tracker.kin is not None else self.get_true_kinematics()
 
     def get_cam_origin(self):
         return self.simulator.camera.origin
@@ -2988,7 +2988,7 @@ if __name__ == '__main__':
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
-    USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
+    USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
@@ -3119,6 +3119,9 @@ if __name__ == '__main__':
         FILE.close()
 
         # plot
+        if len(_TIME) < 5:
+            print('Not enough data to plot.')
+            sys.exit()
         import matplotlib.pyplot as plt
         import scipy.stats as st
 
