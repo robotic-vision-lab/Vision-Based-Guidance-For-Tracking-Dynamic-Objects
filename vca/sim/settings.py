@@ -20,7 +20,7 @@ SIMULATOR_TEMP_FOLDER = os.path.join(os.path.abspath(TEMP_FOLDER), 'sim_tmp')
 FPS = 30
 
 # screen settings
-SCREEN_SIZE = WIDTH, HEIGHT = 640, 480 #800, 600
+SCREEN_SIZE = WIDTH, HEIGHT = 800, 600  # 640, 480 # 800, 600
 SCREEN_CENTER = (WIDTH//2, HEIGHT//2)
 SCREEN_DISPLAY_TITLE = "Car Simulation"
 SCREEN_BG_COLOR = DARK_GRAY
@@ -28,7 +28,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 100.0                                  # meters
+ALTITUDE = 250.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -43,6 +43,8 @@ CAR_SCALE = CAR_LENGTH / (CAR_LENGTH_PX * PIXEL_TO_METERS_FACTOR)
 # for exp4 world coords in SI units, x ->, y ^.
 # CAR_INITIAL_POSITION = (-70.0, -70.0)#(966.94, -150.00)#(-200.0, -150.0)#(-200.0, 200.0)#(-30.0, 30.0)#(50, HEIGHT//2)
 # CAR_INITIAL_VELOCITY = (22.22, 0.0)#(30.0, 0.0)#(30.0, 0.0)#
+CAR_INITIAL_POSITION_2 = (50.0, 20.0)#(966.94, -150.00)#(-200.0, -150.0)#(-200.0, 200.0)#(-30.0, 30.0)#(50, HEIGHT//2)
+CAR_INITIAL_VELOCITY_2 = (23.22, 0.0)#(30.0, 0.0)#(30.0, 0.0)#
 CAR_ACCELERATION = (0.0, 0.0)
 CAR_RADIUS = 10.0
 TRACK_COLOR = (102, 255, 102)
@@ -84,6 +86,7 @@ TRACKER_BLANK = 31
 ADD_METRICS = 1
 ADD_ALTITUDE_INFO = 1
 SHOW_EXTRA = 1
+DRAW_KEYPOINT_TRACKS = 0
 
 # theme
 DARK_ON = 0
@@ -194,16 +197,16 @@ CAR_RADIUS = 0.1
 # w_                      = -0.1              # DO NOT TOUCH
 
 # 5 open
-CAR_INITIAL_POSITION    = (30.0, -20.0)
-CAR_INITIAL_VELOCITY    = (24.22, 0.0)
+CAR_INITIAL_POSITION    = (100.0, -50.0)
+CAR_INITIAL_VELOCITY    = (22.22, 0.0)
 DRONE_POSITION          = (0.0, 0.0)
-DRONE_INITIAL_VELOCITY  = (25.25, 0.0)
+DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
 K_1                     = 0.1
 K_2                     = 0.05
 w_                      = -0.1
 
 # # 6 open
-# CAR_INITIAL_POSITION    = (-200.0, -150.0)
+# CAR_INITIAL_POSITION    = (-200.0, -100.0)
 # CAR_INITIAL_VELOCITY    = (31.11, 0.0)
 # DRONE_POSITION          = (0.0, 0.0)
 # DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
