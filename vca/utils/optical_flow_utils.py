@@ -253,6 +253,9 @@ def draw_tracks(img, old_pts,
 if __name__ == "__main__":
     import os
 
+    # ---------------------------------------------------------------
+    # show color scheme
+    # ---------------------------------------------------------------
     # prep the color_scheme_path i.e., uri for color scheme image
     _OUT_IMGS_PATH = os.path.realpath(os.path.join(os.path.dirname(__file__), '../out_imgs'))
     COLOR_SCHEME_PATH = os.path.join(_OUT_IMGS_PATH, 'color_scheme.jpg')
@@ -262,7 +265,7 @@ if __name__ == "__main__":
 
     # write the scheme image, show it
     cv.imwrite(COLOR_SCHEME_PATH, color_scheme)
-    cv.imshow('scheme', color_scheme)
+    cv.imshow('color scheme', color_scheme)
     cv.waitKey(0)
 
     cv.destroyAllWindows()
