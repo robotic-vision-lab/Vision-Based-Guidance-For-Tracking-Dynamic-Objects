@@ -1094,7 +1094,7 @@ class Tracker:
         cv *= self.manager.simulator.pxm_fac
 
         # filter car kin
-        if USE_FILTER:
+        if USE_TRACKER_FILTER:
             if not self.manager.filter.ready:
                 self.manager.filter.init_filter(car_position, car_velocity)
             else:
@@ -1734,7 +1734,7 @@ class ExperimentManager:
                     # let controller generate acceleration, when tracker says so
                     if self.tracker.can_begin_control() and (
                             self.use_true_kin or self.tracker.kin is not None) and (
-                            self.filter.done_waiting() or not USE_FILTER):
+                            self.filter.done_waiting() or not USE_TRACKER_FILTER):
                         # collect kinematics tuple
                         kin = self.get_true_kinematics() if self.use_true_kin else self.tracker.kin
                         # let controller process kinematics
@@ -2237,7 +2237,7 @@ def compute_moving_average(sequence, window_size):
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace

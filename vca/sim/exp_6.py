@@ -930,7 +930,7 @@ class Tracker:
         # cv = car_velocity
 
         # filter car kin 
-        if USE_FILTER:
+        if USE_TRACKER_FILTER:
             if not self.manager.filter.ready:
                 self.manager.filter.init_filter(car_position, car_velocity)
             else:            
@@ -1485,7 +1485,7 @@ class ExperimentManager:
                     screen_capture = self.simulator.get_screen_capture()
                     self.tracker.process_image(screen_capture)
                     # let controller generate acceleration, when tracker says so
-                    if self.tracker.can_begin_control() and (self.use_true_kin or self.tracker.kin is not None) and (self.filter.done_waiting() or not USE_FILTER):
+                    if self.tracker.can_begin_control() and (self.use_true_kin or self.tracker.kin is not None) and (self.filter.done_waiting() or not USE_TRACKER_FILTER):
                         # collect kinematics tuple
                         kin = self.get_true_kinematics() if self.use_true_kin else self.tracker.kin
                         # let controller process kinematics
@@ -1832,7 +1832,7 @@ if __name__ == "__main__":
     TRACKER_DISPLAY_ON      = 1
     USE_TRUE_KINEMATICS     = 0
     
-    RUN_EXPERIMENT          = 0
+    RUN_EXPERIMENT          = 1
     RUN_TRACK_PLOT          = 1
 
     RUN_VIDEO_WRITER        = 0

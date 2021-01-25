@@ -932,7 +932,7 @@ class Tracker:
         # cv = car_velocity
 
         # filter car kin
-        if USE_FILTER:
+        if USE_TRACKER_FILTER:
             if not self.manager.filter.ready:
                 self.manager.filter.init_filter(car_position, car_velocity)
             else:
@@ -1575,7 +1575,7 @@ class ExperimentManager:
                     # let controller generate acceleration, when tracker says so
                     if self.tracker.can_begin_control() and (
                             self.use_true_kin or self.tracker.kin is not None) and (
-                            self.filter.done_waiting() or not USE_FILTER):
+                            self.filter.done_waiting() or not USE_TRACKER_FILTER):
                         # collect kinematics tuple
                         kin = self.get_true_kinematics() if self.use_true_kin else self.tracker.kin
                         # let controller process kinematics
