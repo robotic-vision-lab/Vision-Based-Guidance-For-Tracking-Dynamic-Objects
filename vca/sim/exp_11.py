@@ -218,7 +218,6 @@ class Car(pygame.sprite.Sprite):
 
         # set initial rect location to position
         self.update_rect()
-        # self.rect.center = self.position + SCREEN_CENTER
 
     def update_kinematics(self):
         """helper function to update kinematics of object
@@ -2988,11 +2987,11 @@ if __name__ == '__main__':
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
-    USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
+    USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
@@ -3015,9 +3014,9 @@ if __name__ == '__main__':
         FILE = open('plot_info.txt', 'r')
         
         # plot switches
-        SHOW_ALL = 1    # set to 1 to show all plots 
+        SHOW_ALL = 0    # set to 1 to show all plots 
 
-        SHOW_CARTESIAN_PLOTS = 0
+        SHOW_CARTESIAN_PLOTS = 1
         SHOW_LOS_KIN_1 = 1
         SHOW_LOS_KIN_2 = 1
         SHOW_ACCELERATIONS = 1
@@ -3025,7 +3024,7 @@ if __name__ == '__main__':
         SHOW_SPEED_HEADING = 1
         SHOW_ALTITUDE_PROFILE = 0
         SHOW_3D_TRAJECTORIES = 0
-        SHOW_DELTA_TIME_PROFILE = 0
+        SHOW_DELTA_TIME_PROFILE = 1
 
         _TIME = []
         _R = []
