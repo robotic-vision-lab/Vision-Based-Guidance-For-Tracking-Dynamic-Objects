@@ -1,0 +1,244 @@
+import os
+import shutil
+from datetime import timedelta
+
+import cv2 as cv
+import numpy as np
+import pygame
+from pygame.locals import *
+
+from simulator import Simulator
+from tracker import Tracker
+from controller import Controller
+from maf import MA
+from kf import Kalman
+from ekf import ExtendedKalman
+
+
+class ExperimentManager:
+    """
+    Experiment:
+
+    - Run the game Simulator with a car and static blocks to aid motion perception for biological creatures with visual perception.
+    - Let user select a bounding box for the car to be tracked.
+        - Simulator needs to be paused and played back again after bounding box selection.
+    - Simulator keeps simulating and rendering images on screen.
+    - Also, dumps screen captures for Tracker or Controller to consume.
+    - Additionally, concatenate screen captures and tracker produced images with tracking information, into one image and save it.
+    - Tracker consumes these images and produces tracking information at each frame.
+    - Controller consumes tracking information and produces acceleration commands for Simulator
+    - Simulator consumes acceleration command and updates simulated components appropriately.
+    - All information relay across the Simulator, Tracker and Controller can be mediated through the ExperimentManager
+
+    The manager is responsible for running Simulator, Tracker and controller in separate threads and manage shared memory.
+    The manager can start and stop Simulator, Tracker and Controller.
+    """
+
+    def __init__(
+            self,
+            save_on=False,
+            write_plot=False,
+            control_on=False,
+            tracker_on=True,
+            tracker_display_on=False,
+            use_true_kin=True,
+            use_real_clock=True,
+            draw_occlusion_bars=False):
+
+        self.save_on = save_on
+        self.write_plot = write_plot
+        self.control_on = control_on
+        self.tracker_on = tracker_on
+        self.tracker_display_on = tracker_display_on
+        self.use_true_kin = use_true_kin
+        self.use_real_clock = use_real_clock
+        self.draw_occlusion_bars = draw_occlusion_bars
+
+        self.simulator = Simulator(self)
+        self.tracker = Tracker(self)
+        self.controller = Controller(self)
+
+        self.MAF = MA(window_size=10)
+        self.KF = Kalman(self)
+        self.EKF = ExtendedKalman(self)
+
+        # self.image_deque = deque(maxlen=2)
+        # self.command_deque = deque(maxlen=2)
+        # self.kinematics_deque = deque(maxlen=2)
+
+        self.sim_dt = 0
+        self.true_rel_vel = None
+        self.car_rect_center_centroid_offset = [0, 0]
+
+        if self.save_on:
+            self.simulator.save_screen = True
+
+    def get_drone_cam_field_of_view(self):
+        return self.simulator.get_camera_fov()
+
+    def get_true_drone_position(self):
+        return self.simulator.camera.position
+
+    def get_true_drone_velocity(self):
+        return self.simulator.camera.velocity
+
+    def get_target_bounding_box(self):
+        return self.simulator.bounding_box
+
+    def transform_pos_corner_img_pixels_to_center_cam_meters(self, pos):
+        pos = pos.elementwise() * (1, -1) + (0, HEIGHT)
+        pos *= self.simulator.pxm_fac
+        pos += -pygame.Vector2(self.get_drone_cam_field_of_view()) / 2
+
+        return pos
+
+    def transform_vel_img_pixels_to_cam_meters(self, vel):
+        vel = vel.elementwise() * (1, -1)
+        vel *= self.simulator.pxm_fac
+        vel += self.get_true_drone_velocity()
+        return vel
+
+    def set_target_centroid_offset(self):
+        # this will be called from tracker at the first run after first centroid calculation
+        # uses tracked new centroid to compute it's relative position from car center
+        self.car_rect_center_centroid_offset[0] = self.tracker.centroid_new.flatten()[0] - self.simulator.car.rect.centerx
+        self.car_rect_center_centroid_offset[1] = self.tracker.centroid_new.flatten()[1] - self.simulator.car.rect.centery
+
+    def get_target_centroid(self):
+        target_cent = self.car_rect_center_centroid_offset.copy()
+        target_cent[0] += self.simulator.car.rect.centerx
+        target_cent[1] += self.simulator.car.rect.centery
+        return np.array(target_cent).reshape(1, 2)
+
+    def get_target_centroid_offset(self):
+        return self.car_rect_center_centroid_offset
+
+    def get_bounding_box_offset(self):
+        return self.simulator.car_rect_center_bb_offset
+
+    def get_target_bounding_box_from_offset(self):
+        x, y, w, h = self.simulator.bounding_box
+        bb_offset = self.get_bounding_box_offset()
+        x = self.simulator.car.rect.center[0] + bb_offset[0]
+        y = self.simulator.car.rect.center[1] + bb_offset[1]
+        return x, y, w, h
+
+    def filters_ready(self):
+        ready = True
+        if USE_TRACKER_FILTER:
+            if USE_KALMAN:
+                ready = ready and self.KF.done_waiting()
+            if USE_MA:
+                ready = ready and self.MAF.done_waiting()
+        return ready
+
+
+    def run(self):
+        # initialize simulator
+        self.simulator.start_new()
+
+        # open plot file if write_plot is indicated
+        if self.write_plot:
+            self.controller.f = open(self.controller.plot_info_file, '+w')
+
+        # run experiment
+        while self.simulator.running:
+            # get delta time between ticks (0 when paused), update elapsed simulated time
+            self.simulator.dt = self.simulator.clock.tick(FPS) / 1000000.0
+            if not self.use_real_clock:
+                self.simulator.dt = DELTA_TIME
+            if self.simulator.pause:
+                self.simulator.dt = 0.0
+            self.simulator.time += self.simulator.dt
+
+            # handle events on simulator
+            self.simulator.handle_events()
+
+            # if quit event occurs, running will be updated; respond to it
+            if not self.simulator.running:
+                break
+            
+            # update rects and images for all sprites (not when paused)
+            if not self.simulator.pause:
+                self.simulator.update()
+                if not CLEAN_CONSOLE:
+                    print(f'SSSS >> {str(timedelta(seconds=self.simulator.time))} >> DRONE - x:{vec_str(self.simulator.camera.position)} | v:{vec_str(self.simulator.camera.velocity)} | CAR - x:{vec_str(self.simulator.car.position)}, v: {vec_str(self.simulator.car.velocity)} | COMMANDED a:{vec_str(self.simulator.camera.acceleration)} | a_comm:{vec_str(self.simulator.cam_accel_command)} | rel_car_pos: {vec_str(self.simulator.car.position - self.simulator.camera.position)}', end='\n')
+
+            # draw updated car, blocks and bars (drone will be drawn later)
+            self.simulator.draw()
+
+            # process screen capture *PARTY IS HERE*
+            if not self.simulator.pause:
+
+                # let tracker process image, when simulator indicates ok
+                if self.simulator.can_begin_tracking():
+                    screen_capture = self.simulator.get_screen_capture()
+                    status = self.tracker.process_image_complete(screen_capture)
+                    self.tracker.print_to_console()
+
+                    # let controller generate acceleration, when tracker indicates ok
+                    if self.tracker.can_begin_control() and (
+                            self.use_true_kin or self.tracker.kin is not None) and (
+                            # self.filter.done_waiting() or not USE_TRACKER_FILTER):
+                            self.filters_ready()):
+                        # collect kinematics tuple
+                        # kin = self.tracker.kin if status[0] else self.get_true_kinematics()
+                        kin = self.get_true_kinematics() if (self.use_true_kin or not status[0]) else self.get_tracked_kinematics()
+                        # let controller process kinematics
+                        ax, ay = self.controller.generate_acceleration(kin)
+                        # feed controller generated acceleration commands to simulator
+                        self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
+
+            self.simulator.draw_extra()
+            self.simulator.show_drawing()
+
+            if self.simulator.save_screen:
+                next(self.simulator.screen_shot)
+
+        cv.destroyAllWindows()
+        if self.write_plot:
+            self.controller.f.close()
+
+    @staticmethod
+    def make_video(video_name, folder_path):
+        """Helper function, looks for frames in given folder,
+        writes them into a video file, with the given name.
+        Also removes the folder after creating the video.
+        """
+        if os.path.isdir(folder_path):
+            create_video_from_images(folder_path, 'png', video_name, FPS)
+
+            # delete folder
+            shutil.rmtree(folder_path)
+
+    def get_sim_dt(self):
+        return self.simulator.dt
+
+    def get_true_kinematics(self):
+        """Helper function returns drone and car position and velocity
+
+        Returns:
+            tuple: drone_pos, drone_vel, car_pos, car_vel
+        """
+        kin = (self.simulator.camera.position,
+               self.simulator.camera.velocity,
+               self.simulator.car.position,
+               self.simulator.car.velocity)
+
+        return kin
+
+    def get_tracked_kinematics(self):
+        return (
+            self.tracker.kin[0],    # true drone position    
+            self.tracker.kin[1],    # true drone velocity
+            self.tracker.kin[6],    # measured car position in camera frame (meters)
+            self.tracker.kin[7],    # measured car velocity in camera frame (meters)
+            self.tracker.kin[2],    # kalman estimated car position
+            self.tracker.kin[3],    # kalman estimated car velocity
+            self.tracker.kin[4],    # moving averaged car position
+            self.tracker.kin[5],    # moving averaged car velocity
+        ) if self.tracker.kin is not None else self.get_true_kinematics()
+
+    def get_cam_origin(self):
+        return self.simulator.camera.origin
+
