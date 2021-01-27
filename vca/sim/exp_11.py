@@ -1,3 +1,8 @@
+"""Experiment 11 
+
+TODO Add docstring
+"""
+
 import os
 import sys
 import ctypes
@@ -65,7 +70,7 @@ from algorithms.template_match \
 
 
 """ Summary:
-    Experiment 9:
+    Experiment 11:
     In this module we try to complete implementation of the Occlusion Bars.
 
     Pygame runs a simulation.
