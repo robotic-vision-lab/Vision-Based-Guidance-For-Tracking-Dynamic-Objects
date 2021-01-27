@@ -769,6 +769,14 @@ class Simulator:
         # draw only car and blocks (not drone)
         self.car_block_sprites.draw(self.screen_surface)
 
+        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+        prev_center = self.car_img[0].get_rect(center = self.car_img[0].get_rect().center).center
+        rot_img = pygame.transform.rotate(self.car_img[0], 30)
+        rot_img = rot_img.convert_alpha()
+        rot_rect = rot_img.get_rect(center = prev_center)
+        self.car_img = (rot_img, rot_rect)
+        self.car.load()
+
         # draw bars
         if self.manager.draw_occlusion_bars:
             self.bar_sprites.draw(self.screen_surface)
@@ -2983,7 +2991,7 @@ def compute_moving_average(sequence, window_size):
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
@@ -2991,8 +2999,8 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 

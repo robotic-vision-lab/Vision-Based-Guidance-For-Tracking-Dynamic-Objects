@@ -28,7 +28,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 250.0                                  # meters
+ALTITUDE = 100.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -197,7 +197,7 @@ CAR_RADIUS = 0.1
 # w_                      = -0.1              # DO NOT TOUCH
 
 # 5 open
-CAR_INITIAL_POSITION    = (100.0, -50.0)
+CAR_INITIAL_POSITION    = (30.0, -20.0)
 CAR_INITIAL_VELOCITY    = (22.22, 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
