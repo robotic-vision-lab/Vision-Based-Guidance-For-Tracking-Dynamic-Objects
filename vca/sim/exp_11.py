@@ -14,7 +14,7 @@ from queue import deque
 from copy import deepcopy
 from random import randrange
 from datetime import timedelta
-from math import atan2, degrees, cos, sin, pi, isnan
+from math import atan2, degrees, radians, cos, sin, pi, tau, isnan
 
 import numpy as np
 import cv2 as cv
@@ -221,16 +221,29 @@ class Car(pygame.sprite.Sprite):
         # hold onto the game/simulator reference
         self.simulator = simulator
 
+        self.init_x = x
+        self.init_y = y
+        self.update_kinematics()
+
         # set initial rect location to position
         self.update_rect()
 
     def update_kinematics(self):
         """helper function to update kinematics of object
         """
-        # update velocity and position
-        self.velocity += self.acceleration * self.simulator.dt
-        self.position += self.velocity * self.simulator.dt #+ 0.5 * \
-            # self.acceleration * self.simulator.dt**2  # pylint: disable=line-too-long
+        if USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+            t = self.simulator.time
+            T = 30
+            size = 60
+            self.position[0] = self.init_x + size*cos(t * (tau/T))
+            self.position[1] = self.init_y + size*sin(2*(t * (tau/T))) /2
+        
+        else:   # DEFAULT_TRAJECTORY
+            # update velocity and position
+            self.velocity += self.acceleration * self.simulator.dt
+            self.position += self.velocity * self.simulator.dt #+ 0.5 * \
+                # self.acceleration * self.simulator.dt**2  # pylint: disable=line-too-long
+        
 
     def update_rect(self):
         """update car sprite's rect.
@@ -554,6 +567,7 @@ class Simulator:
         os.environ['SDL_VIDEO_WINDOW_POS'] = "2,30"
         pygame.init()
         self.screen_surface = pygame.display.set_mode(SCREEN_SIZE)
+        self.screen_surface.fill(SCREEN_BG_COLOR)
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
 
         # create clock
@@ -776,7 +790,11 @@ class Simulator:
 
         self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         prev_center = self.car_img[0].get_rect(center = self.car_img[0].get_rect().center).center
-        rot_img = pygame.transform.rotate(self.car_img[0], 30)
+        t = self.time
+        T = 30
+        angle = atan2(cos(2*tau*t / T), - sin(tau*t / T))
+        print(t, degrees(angle))
+        rot_img = pygame.transform.rotate(self.car_img[0], degrees(angle))
         rot_img = rot_img.convert_alpha()
         rot_rect = rot_img.get_rect(center = prev_center)
         self.car_img = (rot_img, rot_rect)
@@ -2475,22 +2493,30 @@ class ExperimentManager:
 
                 # let tracker process image, when simulator indicates ok
                 if self.simulator.can_begin_tracking():
-                    screen_capture = self.simulator.get_screen_capture()
-                    status = self.tracker.process_image_complete(screen_capture)
-                    self.tracker.print_to_console()
+                    if self.tracker_on:
+                        screen_capture = self.simulator.get_screen_capture()
+                        status = self.tracker.process_image_complete(screen_capture)
+                        self.tracker.print_to_console()
 
-                    # let controller generate acceleration, when tracker indicates ok
-                    if self.tracker.can_begin_control() and (
-                            self.use_true_kin or self.tracker.kin is not None) and (
-                            # self.filter.done_waiting() or not USE_TRACKER_FILTER):
-                            self.filters_ready()):
-                        # collect kinematics tuple
-                        # kin = self.tracker.kin if status[0] else self.get_true_kinematics()
-                        kin = self.get_true_kinematics() if (self.use_true_kin or not status[0]) else self.get_tracked_kinematics()
-                        # let controller process kinematics
-                        ax, ay = self.controller.generate_acceleration(kin)
-                        # feed controller generated acceleration commands to simulator
-                        self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
+                        # let controller generate acceleration, when tracker indicates ok
+                        if self.tracker.can_begin_control() and (
+                                self.use_true_kin or self.tracker.kin is not None) and (
+                                # self.filter.done_waiting() or not USE_TRACKER_FILTER):
+                                self.filters_ready()):
+                            # collect kinematics tuple
+                            # kin = self.tracker.kin if status[0] else self.get_true_kinematics()
+                            kin = self.get_true_kinematics() if (self.use_true_kin or not status[0]) else self.get_tracked_kinematics()
+                            # let controller process kinematics
+                            ax, ay = self.controller.generate_acceleration(kin)
+                            # feed controller generated acceleration commands to simulator
+                            self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
+                    else:
+                        if self.control_on:
+                            kin = self.get_true_kinematics()
+                            # let controller process kinematics
+                            ax, ay = self.controller.generate_acceleration(kin)
+                            # feed controller generated acceleration commands to simulator
+                            self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
 
             self.simulator.draw_extra()
             self.simulator.show_drawing()
@@ -2997,11 +3023,11 @@ if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
     WRITE_PLOT = 0  # pylint: disable=bad-whitespace
-    CONTROL_ON = 1  # pylint: disable=bad-whitespace
-    TRACKER_ON = 1  # pylint: disable=bad-whitespace
-    TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
+    CONTROL_ON = 0  # pylint: disable=bad-whitespace
+    TRACKER_ON = 0  # pylint: disable=bad-whitespace
+    TRACKER_DISPLAY_ON = 0  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
-    USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
+    USE_REAL_CLOCK = 1  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
