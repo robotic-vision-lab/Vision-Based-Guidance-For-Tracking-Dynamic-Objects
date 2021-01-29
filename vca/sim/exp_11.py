@@ -212,18 +212,20 @@ class Car(pygame.sprite.Sprite):
         self.image, self.rect = simulator.car_img
 
         # set kinematics
-        # note the velocity and acceleration we assign below
-        # will be interpreted as pixels/sec
         self.position = pygame.Vector2(x, y)
         self.velocity = pygame.Vector2(vx, vy)
         self.acceleration = pygame.Vector2(ax, ay)
+        self.angle = pi/2
 
         # hold onto the game/simulator reference
         self.simulator = simulator
 
-        self.init_x = x
-        self.init_y = y
-        self.update_kinematics()
+        if USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+            self.init_x = 0
+            self.init_y = 0
+            self.velocity = pygame.Vector2(0, 0)
+            self.acceleration = pygame.Vector2(0, 0)
+            # self.update_kinematics()
 
         # set initial rect location to position
         self.update_rect()
@@ -233,10 +235,14 @@ class Car(pygame.sprite.Sprite):
         """
         if USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
             t = self.simulator.time
-            T = 30
-            size = 60
-            self.position[0] = self.init_x + size*cos(t * (tau/T))
-            self.position[1] = self.init_y + size*sin(2*(t * (tau/T))) /2
+            T = TWO_HOLE_PERIOD
+            size = TWO_HOLE_SIZE
+            # self.position[0] = self.init_x + size*cos(t * (tau/T))
+            # self.position[1] = self.init_y + size*sin(2*(t * (tau/T))) /2
+            self.velocity[0] = -((size*tau)/T) * sin(t * (tau/T))
+            self.velocity[1] = ((size*tau)/T) * cos(2*(t * (tau/T))) 
+            self.position += self.velocity * self.simulator.dt
+            self.angle = atan2(cos(2*tau*t / T), - sin(tau*t / T))
         
         else:   # DEFAULT_TRAJECTORY
             # update velocity and position
@@ -788,17 +794,14 @@ class Simulator:
         # draw only car and blocks (not drone)
         self.car_block_sprites.draw(self.screen_surface)
 
-        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
-        prev_center = self.car_img[0].get_rect(center = self.car_img[0].get_rect().center).center
-        t = self.time
-        T = 30
-        angle = atan2(cos(2*tau*t / T), - sin(tau*t / T))
-        print(t, degrees(angle))
-        rot_img = pygame.transform.rotate(self.car_img[0], degrees(angle))
-        rot_img = rot_img.convert_alpha()
-        rot_rect = rot_img.get_rect(center = prev_center)
-        self.car_img = (rot_img, rot_rect)
-        self.car.load()
+        if USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+            self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+            prev_center = self.car_img[0].get_rect(center = self.car_img[0].get_rect().center).center
+            rot_img = pygame.transform.rotate(self.car_img[0], degrees(self.car.angle))
+            rot_img = rot_img.convert_alpha()
+            rot_rect = rot_img.get_rect(center = prev_center)
+            self.car_img = (rot_img, rot_rect)
+            self.car.load()
 
         # draw bars
         if self.manager.draw_occlusion_bars:
