@@ -865,6 +865,7 @@ class Simulator:
 
             # assemble simulator and tracker images in a grid
             img = images_assemble([img_sim, img_track], (1, 2))
+            # img = img_sim
 
             # write image
             cv.imwrite(file_path, img)
@@ -1349,7 +1350,7 @@ class Tracker:
             self.true_old_pt = self.true_new_pt
             return self._FAILURE
 
-        cv.imshow('cur_frame', self.frame_old_gray); cv.waitKey(1)
+        # cv.imshow('cur_frame', self.frame_old_gray); cv.waitKey(1)
         self._can_begin_control_flag = True
         
         # ################################################################################
@@ -3025,13 +3026,13 @@ def compute_moving_average(sequence, window_size):
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
-    CONTROL_ON = 0  # pylint: disable=bad-whitespace
-    TRACKER_ON = 0  # pylint: disable=bad-whitespace
-    TRACKER_DISPLAY_ON = 0  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
+    CONTROL_ON = 1  # pylint: disable=bad-whitespace
+    TRACKER_ON = 1  # pylint: disable=bad-whitespace
+    TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
-    USE_REAL_CLOCK = 1  # pylint: disable=bad-whitespace
-    DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
+    USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
+    DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
