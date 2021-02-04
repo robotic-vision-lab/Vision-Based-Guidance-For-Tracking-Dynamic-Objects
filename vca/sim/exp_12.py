@@ -1,3 +1,8 @@
+"""Experiment 11 
+
+TODO Add docstring
+"""
+
 import os
 import sys
 import ctypes
@@ -9,7 +14,7 @@ from queue import deque
 from copy import deepcopy
 from random import randrange
 from datetime import timedelta
-from math import atan2, degrees, cos, sin, pi, isnan
+from math import atan2, degrees, radians, cos, sin, pi, tau, isnan
 
 import numpy as np
 import cv2 as cv
@@ -65,7 +70,7 @@ from algorithms.template_match \
 
 
 """ Summary:
-    Experiment 9:
+    Experiment 11:
     In this module we try to complete implementation of the Occlusion Bars.
 
     Pygame runs a simulation.
@@ -207,26 +212,44 @@ class Car(pygame.sprite.Sprite):
         self.image, self.rect = simulator.car_img
 
         # set kinematics
-        # note the velocity and acceleration we assign below
-        # will be interpreted as pixels/sec
         self.position = pygame.Vector2(x, y)
         self.velocity = pygame.Vector2(vx, vy)
         self.acceleration = pygame.Vector2(ax, ay)
+        self.angle = pi/2
 
         # hold onto the game/simulator reference
         self.simulator = simulator
 
+        if USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+            self.init_x = 0
+            self.init_y = 0
+            self.velocity = pygame.Vector2(0, 0)
+            self.acceleration = pygame.Vector2(0, 0)
+            # self.update_kinematics()
+
         # set initial rect location to position
         self.update_rect()
-        # self.rect.center = self.position + SCREEN_CENTER
 
     def update_kinematics(self):
         """helper function to update kinematics of object
         """
-        # update velocity and position
-        self.velocity += self.acceleration * self.simulator.dt
-        self.position += self.velocity * self.simulator.dt #+ 0.5 * \
-            # self.acceleration * self.simulator.dt**2  # pylint: disable=line-too-long
+        if USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+            t = self.simulator.time
+            T = TWO_HOLE_PERIOD
+            size = TWO_HOLE_SIZE
+            # self.position[0] = self.init_x + size*cos(t * (tau/T))
+            # self.position[1] = self.init_y + size*sin(2*(t * (tau/T))) /2
+            self.velocity[0] = -((size*tau)/T) * sin(t * (tau/T))
+            self.velocity[1] = ((size*tau)/T) * cos(2*(t * (tau/T))) 
+            self.position += self.velocity * self.simulator.dt
+            self.angle = atan2(cos(2*tau*t / T), - sin(tau*t / T))
+        
+        else:   # DEFAULT_TRAJECTORY
+            # update velocity and position
+            self.velocity += self.acceleration * self.simulator.dt
+            self.position += self.velocity * self.simulator.dt #+ 0.5 * \
+                # self.acceleration * self.simulator.dt**2  # pylint: disable=line-too-long
+        
 
     def update_rect(self):
         """update car sprite's rect.
@@ -550,6 +573,7 @@ class Simulator:
         os.environ['SDL_VIDEO_WINDOW_POS'] = "2,30"
         pygame.init()
         self.screen_surface = pygame.display.set_mode(SCREEN_SIZE)
+        self.screen_surface.fill(SCREEN_BG_COLOR)
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
 
         # create clock
@@ -599,9 +623,7 @@ class Simulator:
             self.blocks.append(Block(self))
 
         # spawn car
-        self.cars = []
-        self.cars.append(Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION))
-        self.cars.append(Car(self, *CAR_INITIAL_POSITION_2, *CAR_INITIAL_VELOCITY_2, *CAR_ACCELERATION))
+        self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION)
 
         #spawn bar
         self.bars = []
@@ -638,7 +660,7 @@ class Simulator:
                 # print stuffs
                 # print(f'SSSS >> {str(timedelta(seconds=self.time))} >> DRONE - x:{vec_str(self.camera.rect.center)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | CAR - x:{vec_str(self.car.rect.center)}, v: {vec_str(self.car.velocity)},  v_c-v_d: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='\n')
                 if not CLEAN_CONSOLE:
-                    print(f'SSSS >> {str(timedelta(seconds=self.time))} >> DRONE - x:{vec_str(self.camera.position)} | v:{vec_str(self.camera.velocity)} | CAR - x:{vec_str(self.cars[0].position)}, v: {vec_str(self.cars[0].velocity)} | COMMANDED a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | rel_car_pos: {vec_str(self.cars[0].position - self.camera.position)}', end='\n')
+                    print(f'SSSS >> {str(timedelta(seconds=self.time))} >> DRONE - x:{vec_str(self.camera.position)} | v:{vec_str(self.camera.velocity)} | CAR - x:{vec_str(self.car.position)}, v: {vec_str(self.car.velocity)} | COMMANDED a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | rel_car_pos: {vec_str(self.car.position - self.camera.position)}', end='\n')
                 # self.manager.true_rel_vel = self.car.velocity - self.camera.velocity
 
             # draw stuffs
@@ -734,8 +756,8 @@ class Simulator:
                 # assume appropriate bounding box was inputted and indicate green flag for tracker
                 self.tracker_ready = True
                 # set car rect center offset from bounding box topleft
-                self.car_rect_center_bb_offset[0] = self.bb_start[0] - self.cars[0].rect.centerx 
-                self.car_rect_center_bb_offset[1] = self.bb_start[1] - self.cars[0].rect.centery
+                self.car_rect_center_bb_offset[0] = self.bb_start[0] - self.car.rect.centerx 
+                self.car_rect_center_bb_offset[1] = self.bb_start[1] - self.car.rect.centery
 
             pygame.event.pump()
 
@@ -767,10 +789,19 @@ class Simulator:
         # make title
         sim_fps = 'NA' if self.dt == 0 else f'{1/self.dt:.2f}'
         pygame.display.set_caption(
-            f'  FPS {sim_fps} | car: x-{vec_str(self.cars[0].position)} v-{vec_str(self.cars[0].velocity)} a-{vec_str(self.cars[0].acceleration)} | cam x-{vec_str(self.camera.position)} v-{vec_str(self.camera.velocity)} a-{vec_str(self.camera.acceleration)} ')
+            f'  FPS {sim_fps} | car: x-{vec_str(self.car.position)} v-{vec_str(self.car.velocity)} a-{vec_str(self.car.acceleration)} | cam x-{vec_str(self.camera.position)} v-{vec_str(self.camera.velocity)} a-{vec_str(self.camera.acceleration)} ')
 
         # draw only car and blocks (not drone)
         self.car_block_sprites.draw(self.screen_surface)
+
+        if USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+            self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+            prev_center = self.car_img[0].get_rect(center = self.car_img[0].get_rect().center).center
+            rot_img = pygame.transform.rotate(self.car_img[0], degrees(self.car.angle))
+            rot_img = rot_img.convert_alpha()
+            rot_rect = rot_img.get_rect(center = prev_center)
+            self.car_img = (rot_img, rot_rect)
+            self.car.load()
 
         # draw bars
         if self.manager.draw_occlusion_bars:
@@ -799,7 +830,7 @@ class Simulator:
 
         if not CLEAR_TOP:
             # draw drone altitude info
-            alt_str = f'car loc - {self.cars[0].rect.center}, Alt - {self.camera.altitude:0.2f}m, fac - {self.alt_change_fac:0.4f}, pxm - {self.pxm_fac:0.4f}'
+            alt_str = f'car loc - {self.car.rect.center}, Alt - {self.camera.altitude:0.2f}m, fac - {self.alt_change_fac:0.4f}, pxm - {self.pxm_fac:0.4f}'
             alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
             alt_rect = alt_surf.get_rect()
             self.screen_surface.blit(alt_surf, (15, 15))
@@ -834,6 +865,7 @@ class Simulator:
 
             # assemble simulator and tracker images in a grid
             img = images_assemble([img_sim, img_track], (1, 2))
+            # img = img_sim
 
             # write image
             cv.imwrite(file_path, img)
@@ -872,7 +904,7 @@ class Simulator:
         self.pxm_fac = ((self.camera.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
         car_scale = (CAR_LENGTH / (CAR_LENGTH_PX * self.pxm_fac)) / self.alt_change_fac
         self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=car_scale)
-        self.cars[0].load()
+        self.car.load()
         for block in self.blocks:
             block.load()
 
@@ -886,7 +918,7 @@ class Simulator:
         self.pxm_fac = ((self.camera.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
         car_scale = (CAR_LENGTH / (CAR_LENGTH_PX * self.pxm_fac)) / self.alt_change_fac
         self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=car_scale)
-        self.cars[0].load()
+        self.car.load()
         for block in self.blocks:
             block.load()
         for bar in self.bars:
@@ -1318,7 +1350,7 @@ class Tracker:
             self.true_old_pt = self.true_new_pt
             return self._FAILURE
 
-        cv.imshow('cur_frame', self.frame_old_gray); cv.waitKey(1)
+        # cv.imshow('cur_frame', self.frame_old_gray); cv.waitKey(1)
         self._can_begin_control_flag = True
         
         # ################################################################################
@@ -1990,9 +2022,9 @@ class Tracker:
             kin_str_9 = f'drone_acc (m/s^2) : '.rjust(20)
             kin_str_0 = f'<{self.manager.simulator.camera.acceleration[0]:6.2f}, {self.manager.simulator.camera.acceleration[1]:6.2f}>'
             kin_str_11 = f'r (m) : '       .rjust(20)
-            kin_str_12 = f'{self.manager.simulator.camera.position.distance_to(self.manager.simulator.cars[0].position):0.4f}'
+            kin_str_12 = f'{self.manager.simulator.camera.position.distance_to(self.manager.simulator.car.position):0.4f}'
             kin_str_13 = f'theta (degrees) : '  .rjust(20)
-            kin_str_14 = f'{(self.manager.simulator.cars[0].position - self.manager.simulator.camera.position).as_polar()[1]:0.4f}'
+            kin_str_14 = f'{(self.manager.simulator.car.position - self.manager.simulator.camera.position).as_polar()[1]:0.4f}'
             kin_str_15 = f'cam origin : <{self.manager.simulator.camera.origin[0]:6.2f}, {self.manager.simulator.camera.origin[1]:6.2f}>'
 
             img = put_text(img, kin_str_1, (WIDTH - (330 + 25), 25),
@@ -2394,13 +2426,13 @@ class ExperimentManager:
     def set_target_centroid_offset(self):
         # this will be called from tracker at the first run after first centroid calculation
         # uses tracked new centroid to compute it's relative position from car center
-        self.car_rect_center_centroid_offset[0] = self.tracker.centroid_new.flatten()[0] - self.simulator.cars[0].rect.centerx
-        self.car_rect_center_centroid_offset[1] = self.tracker.centroid_new.flatten()[1] - self.simulator.cars[0].rect.centery
+        self.car_rect_center_centroid_offset[0] = self.tracker.centroid_new.flatten()[0] - self.simulator.car.rect.centerx
+        self.car_rect_center_centroid_offset[1] = self.tracker.centroid_new.flatten()[1] - self.simulator.car.rect.centery
 
     def get_target_centroid(self):
         target_cent = self.car_rect_center_centroid_offset.copy()
-        target_cent[0] += self.simulator.cars[0].rect.centerx
-        target_cent[1] += self.simulator.cars[0].rect.centery
+        target_cent[0] += self.simulator.car.rect.centerx
+        target_cent[1] += self.simulator.car.rect.centery
         return np.array(target_cent).reshape(1, 2)
 
     def get_target_centroid_offset(self):
@@ -2412,8 +2444,8 @@ class ExperimentManager:
     def get_target_bounding_box_from_offset(self):
         x, y, w, h = self.simulator.bounding_box
         bb_offset = self.get_bounding_box_offset()
-        x = self.simulator.cars[0].rect.center[0] + bb_offset[0]
-        y = self.simulator.cars[0].rect.center[1] + bb_offset[1]
+        x = self.simulator.car.rect.center[0] + bb_offset[0]
+        y = self.simulator.car.rect.center[1] + bb_offset[1]
         return x, y, w, h
 
     def filters_ready(self):
@@ -2465,22 +2497,30 @@ class ExperimentManager:
 
                 # let tracker process image, when simulator indicates ok
                 if self.simulator.can_begin_tracking():
-                    screen_capture = self.simulator.get_screen_capture()
-                    status = self.tracker.process_image_complete(screen_capture)
-                    self.tracker.print_to_console()
+                    if self.tracker_on:
+                        screen_capture = self.simulator.get_screen_capture()
+                        status = self.tracker.process_image_complete(screen_capture)
+                        self.tracker.print_to_console()
 
-                    # let controller generate acceleration, when tracker indicates ok
-                    if self.tracker.can_begin_control() and (
-                            self.use_true_kin or self.tracker.kin is not None) and (
-                            # self.filter.done_waiting() or not USE_TRACKER_FILTER):
-                            self.filters_ready()):
-                        # collect kinematics tuple
-                        # kin = self.tracker.kin if status[0] else self.get_true_kinematics()
-                        kin = self.get_true_kinematics() if (self.use_true_kin or not status[0]) else self.get_tracked_kinematics()
-                        # let controller process kinematics
-                        ax, ay = self.controller.generate_acceleration(kin)
-                        # feed controller generated acceleration commands to simulator
-                        self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
+                        # let controller generate acceleration, when tracker indicates ok
+                        if self.tracker.can_begin_control() and (
+                                self.use_true_kin or self.tracker.kin is not None) and (
+                                # self.filter.done_waiting() or not USE_TRACKER_FILTER):
+                                self.filters_ready()):
+                            # collect kinematics tuple
+                            # kin = self.tracker.kin if status[0] else self.get_true_kinematics()
+                            kin = self.get_true_kinematics() if (self.use_true_kin or not status[0]) else self.get_tracked_kinematics()
+                            # let controller process kinematics
+                            ax, ay = self.controller.generate_acceleration(kin)
+                            # feed controller generated acceleration commands to simulator
+                            self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
+                    else:
+                        if self.control_on:
+                            kin = self.get_true_kinematics()
+                            # let controller process kinematics
+                            ax, ay = self.controller.generate_acceleration(kin)
+                            # feed controller generated acceleration commands to simulator
+                            self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
 
             self.simulator.draw_extra()
             self.simulator.show_drawing()
@@ -2515,8 +2555,8 @@ class ExperimentManager:
         """
         kin = (self.simulator.camera.position,
                self.simulator.camera.velocity,
-               self.simulator.cars[0].position,
-               self.simulator.cars[0].velocity)
+               self.simulator.car.position,
+               self.simulator.car.velocity)
 
         return kin
 
@@ -3017,9 +3057,9 @@ if __name__ == '__main__':
         FILE = open('plot_info.txt', 'r')
         
         # plot switches
-        SHOW_ALL = 1    # set to 1 to show all plots 
+        SHOW_ALL = 0    # set to 1 to show all plots 
 
-        SHOW_CARTESIAN_PLOTS = 0
+        SHOW_CARTESIAN_PLOTS = 1
         SHOW_LOS_KIN_1 = 1
         SHOW_LOS_KIN_2 = 1
         SHOW_ACCELERATIONS = 1
@@ -3027,7 +3067,7 @@ if __name__ == '__main__':
         SHOW_SPEED_HEADING = 1
         SHOW_ALTITUDE_PROFILE = 0
         SHOW_3D_TRAJECTORIES = 0
-        SHOW_DELTA_TIME_PROFILE = 0
+        SHOW_DELTA_TIME_PROFILE = 1
 
         _TIME = []
         _R = []
