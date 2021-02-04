@@ -93,7 +93,7 @@ ARROW_SCALE = 15.0
 TRACKER_BLANK = 31
 ADD_METRICS = 1
 ADD_ALTITUDE_INFO = 1
-SHOW_EXTRA = 1
+SHOW_EXTRA = 0
 DRAW_KEYPOINT_TRACKS = 0
 
 # theme
@@ -126,7 +126,7 @@ else:
 USE_WORLD_FRAME = 0
 
 # simulator settings
-CLEAR_TOP = 0
+CLEAR_TOP = 1
 
 # console settings
 CLEAN_CONSOLE = 1
@@ -205,7 +205,7 @@ CAR_RADIUS = 0.1
 # w_                      = -0.1              # DO NOT TOUCH
 
 # 5 open
-CAR_INITIAL_POSITION    = (60.0, 0.0)
+CAR_INITIAL_POSITION    = (100.0, -50.0)
 CAR_INITIAL_VELOCITY    = (22.22, 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (31.31, 0.0)
