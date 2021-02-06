@@ -220,7 +220,7 @@ class Car(pygame.sprite.Sprite):
         # hold onto the game/simulator reference
         self.simulator = simulator
 
-        if USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+        if not USE_TRAJECTORY == DEFAULT_TRAJECTORY:
             self.init_x = 0
             self.init_y = 0
             self.velocity = pygame.Vector2(0, 0)
@@ -233,16 +233,25 @@ class Car(pygame.sprite.Sprite):
     def update_kinematics(self):
         """helper function to update kinematics of object
         """
-        if USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+        if USE_TRAJECTORY == ONE_HOLE_TRAJECTORY:
+            t = self.simulator.time
+            T = ONE_HOLE_PERIOD
+            size = ONE_HOLE_SIZE
+            omega = tau/T
+            self.velocity[0] = -(omega*size) * sin(omega*t)
+            self.velocity[1] = (omega*size) * cos(omega*t)
+            self.position += self.velocity * self.simulator.dt
+            self.angle = atan2(cos(omega*t), - sin(omega*t))
+
+        elif USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
             t = self.simulator.time
             T = TWO_HOLE_PERIOD
             size = TWO_HOLE_SIZE
-            # self.position[0] = self.init_x + size*cos(t * (tau/T))
-            # self.position[1] = self.init_y + size*sin(2*(t * (tau/T))) /2
-            self.velocity[0] = -((size*tau)/T) * sin(t * (tau/T))
-            self.velocity[1] = ((size*tau)/T) * cos(2*(t * (tau/T))) 
+            omega = tau/T
+            self.velocity[0] = -(omega*size) * sin(omega*t)
+            self.velocity[1] = (omega*size) * cos(2*omega*t) 
             self.position += self.velocity * self.simulator.dt
-            self.angle = atan2(cos(2*tau*t / T), - sin(tau*t / T))
+            self.angle = atan2(cos(2*omega*t), - sin(omega*t))
         
         else:   # DEFAULT_TRAJECTORY
             # update velocity and position
@@ -794,7 +803,7 @@ class Simulator:
         # draw only car and blocks (not drone)
         self.car_block_sprites.draw(self.screen_surface)
 
-        if USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+        if not USE_TRAJECTORY == DEFAULT_TRAJECTORY:
             self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
             prev_center = self.car_img[0].get_rect(center = self.car_img[0].get_rect().center).center
             rot_img = pygame.transform.rotate(self.car_img[0], degrees(self.car.angle))
@@ -1007,7 +1016,7 @@ class Tracker:
         self.initial_target_template_gray = None
         self.initial_target_template_color = None
         self.target_bounding_box = None
-        self.patch_size = 15
+        self.patch_size = round(1.5/PIXEL_TO_METERS_FACTOR)   # meters
 
         self.detector = Sift()
         self.descriptor_matcher = BruteL2()
@@ -1097,10 +1106,19 @@ class Tracker:
         # initialize template matcher object for each patch
         self.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in self.initial_patches_gray]
 
+    def update_patches(self):
+        self.patch_size = round(1.5 / self.manager.simulator.pxm_fac)
+        self.patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.keypoints_new_good]
+        self.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in self.patches_gray]
+
+    def update_template(self):
+        self.target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
+
+
     def augment_old_frame(self):
         # keypoints that were not found in new frame would get discounted by the next iteration
         # these bad points from old frame can be reconstructed in new frame
-        # and then corresponding patches cna be drawn in new frame after the flow computation
+        # and then corresponding patches can be drawn in new frame after the flow computation
         # then save to old
         pass
 
@@ -1322,6 +1340,7 @@ class Tracker:
         # save new frame, compute grayscale
         self.frame_new_color = new_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
+        # self.frame_new_gray = cv.GaussianBlur(self.frame_new_gray, (3,3), 0)
         self.true_new_pt = self._get_target_image_location()
         # cv.imshow('nxt_frame', self.frame_new_gray); cv.waitKey(1)
         if self.is_first_time():
@@ -1374,6 +1393,7 @@ class Tracker:
                 # set good points (since no keypoints were occluded all are good, no need to compute)
                 self.keypoints_new_good = self.keypoints_new
                 self.keypoints_old_good = self.keypoints_old
+                self.update_patches()
 
                 # compute centroid
                 self.centroid_new = self.get_centroid(self.keypoints_new_good)
@@ -1448,6 +1468,8 @@ class Tracker:
 
                 # add revived bad points to good points
                 self.keypoints_new_good = np.concatenate((self.keypoints_new_good, self.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
+
+                self.update_patches()
 
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
@@ -1567,7 +1589,8 @@ class Tracker:
 
                     # update keypoints
                     self.keypoints_new_good = self.keypoints_new = self.centroid_new + self.rel_keypoints         
-
+                
+                self.update_patches()
                 # update tracker display
                 self.display()
 
@@ -1648,6 +1671,7 @@ class Tracker:
                     self.keypoints_new = self.keypoints_new_good
                     self.centroid_new = self.manager.get_target_centroid()
 
+                self.update_patches()
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
@@ -1710,6 +1734,7 @@ class Tracker:
                 self.centroid_new = self.get_centroid(self.keypoints_new)
                 self.rel_keypoints = self.keypoints_new - self.centroid_new
 
+                self.update_patches()
                 # update tracker display
                 self.display()
 
@@ -1766,6 +1791,7 @@ class Tracker:
                 if (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0:
                     self.keypoints_new_good = self.template_points[self.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
 
+                self.update_patches()
                 # update tracker display
                 self.display()
 
@@ -1895,7 +1921,11 @@ class Tracker:
             cv.imshow(self.win_name, self.frame_color_edited)
         
         if SHOW_EXTRA:
-            cv.imshow("cur_frame", self.frame_old_gray)
+            patches = self.initial_patches_gray if self.patches_gray is None else self.patches_gray
+            p = images_assemble(patches, grid_shape=(1,len(patches)))
+            of = self.frame_old_gray.copy()
+            of[0:p.shape[0],0:p.shape[1]] = convert_to_grayscale(p)
+            cv.imshow("cur_frame", of)
             self.show_me_something()
             assembled_img = images_assemble([self.frame_old_gray.copy(), self.nf6.copy(), self.frame_color_edited.copy()], (1,3))
         else:
@@ -2927,6 +2957,9 @@ class ExtendedKalman:
 
         if (np.sign(self.prev_theta) != np.sign(theta)):
             self.prev_theta = theta
+        # # new changes
+        # if (np.sign(self.prev_theta) != np.sign(theta)):
+        #     self.prev_theta = (self.prev_theta + tau) % (tau) if self.prev_theta>0 else (self.prev_theta + tau)
 
         # store measurement
         self.r = r
@@ -3000,6 +3033,164 @@ class ExtendedKalman:
             return (self.prev_r, self.prev_theta, self.prev_Vr, self.prev_Vtheta)
 
 
+class ExtendedKalman2:
+    """Implement continuous-continuous EKF for the UAS and Vehicle system in stateful fashion
+    """
+
+    def __init__(self, manager):
+        self.manager = manager
+
+        self.prev_r = None
+        self.prev_theta = None
+        self.prev_Vr = None
+        self.prev_Vtheta = None
+        self.alpha = None
+        self.a_lat = None
+        self.a_long = None
+        self.filter_initialized_flag = False
+
+        self.H = np.array([[1.0, 0.0, 0.0, 0.0],
+                           [0.0, 1.0, 0.0, 0.0]])
+
+        self.P = np.diag([0.1, 0.1, 0.1, 0.1])
+        self.R = np.diag([0.1, 0.1])
+        self.Q = np.diag([0.1, 0.1, 1, 0.1])
+
+        self.ready = False
+
+    def is_initialized(self):
+        """Indicates if EKF is initialized
+
+        Returns:
+            bool: EKF initalized or not
+        """
+        return self.filter_initialized_flag
+
+    def initialize_filter(self, r, theta, Vr, Vtheta, alpha, a_lat, a_long):
+        """Initializes EKF. Meant to run only once at first.
+
+        Args:
+            r (float32): Euclidean distance between vehicle and UAS (m)
+            theta (float32): Angle (atan2) of LOS from UAS to vehicle (rad)
+            Vr (float32): Relative LOS velocity of vehicle w.r.t UAS (m/s)
+            Vtheta (float32): Relative LOS angular velocity of vehicle w.r.t UAS (rad/s)
+            alpha (float32): Angle of UAS velocity vector w.r.t to inertial frame
+            a_lat (float32): Lateral acceleration control command for UAS
+            a_long (float32): Longitudinal acceleration control command for UAS
+        """
+        self.prev_r = r
+        self.prev_theta = theta
+        self.prev_Vr = -5
+        self.prev_Vtheta = 5
+        self.alpha = alpha
+        self.a_lat = a_lat
+        self.a_long = a_long
+        self.filter_initialized_flag = True
+
+    def add(self, r, theta, Vr, Vtheta, alpha, a_lat, a_long):
+        """Add measurements and auxiliary data for filtering
+
+        Args:
+            r (float32): Euclidean distance between vehicle and UAS (m)
+            theta (float32): Angle (atan2) of LOS from UAS to vehicle (rad)
+            Vr (float32): Relative LOS velocity of vehicle w.r.t UAS (m/s)
+            Vtheta (float32): Relative LOS angular velocity of vehicle w.r.t UAS (rad/s)
+            alpha (float32): Angle of UAS velocity vector w.r.t to inertial frame
+            a_lat (float32): Lateral acceleration control command for UAS
+            a_long (float32): Longitudinal acceleration control command for UAS
+        """
+        # make sure filter is initialized
+        if not self.is_initialized():
+            self.initialize_filter(r, theta, Vr, Vtheta, alpha, a_lat, a_long)
+            return
+
+        # filter is initialized; set ready to true
+        self.ready = True
+
+        if (np.sign(self.prev_theta) != np.sign(theta)):
+            self.prev_theta = theta
+        # # new changes
+        # if (np.sign(self.prev_theta) != np.sign(theta)):
+        #     self.prev_theta = (self.prev_theta + tau) % (tau) if self.prev_theta>0 else (self.prev_theta + tau)
+
+        # store measurement
+        self.r = r
+        self.theta = theta
+        self.Vr = Vr
+        self.Vtheta = Vtheta
+        self.alpha = alpha
+        self.a_lat = a_lat
+        self.a_long = a_long
+
+        # perform predictor and filter step
+        self.predict()
+        self.correct()
+
+        # remember previous state
+        self.prev_r = self.r
+        self.prev_theta = self.theta
+        self.prev_Vr = self.Vr
+        self.prev_Vtheta = self.Vtheta
+
+    def predict(self):
+        """Implement continuous-continuous EKF prediction (implicit) step.
+        """
+        dt = self.manager.get_sim_dt()
+
+        # perform predictor step
+        self.A = np.array([[0.0, 0.0, 0.0, 1.0],
+                           [-self.prev_Vtheta / self.prev_r**2, 0.0, 1 / self.prev_r, 0.0],
+                           [self.prev_Vtheta * self.prev_Vr / self.prev_r**2, 0.0, -self.prev_Vr / self.prev_r, -self.prev_Vtheta / self.prev_r],
+                           [-self.prev_Vtheta**2 / self.prev_r**2, 0.0, 2 * self.prev_Vtheta / self.prev_r, 0.0]])
+
+        self.A_k = np.array([[1.0, 0.0, 0.0, dt],
+                             [-(self.prev_Vtheta/self.prev_r**2)*dt, 1.0, (1/self.prev_r)*dt, 0.0],
+                             [(self.prev_Vtheta*self.prev_Vr/self.r**2)*dt, 0.0, 1 - (self.prev_Vr/self.prev_r)*dt, (-self.prev_Vr/self.prev_r)*dt],
+                             [(-self.prev_Vtheta**2/self.prev_r**2)*dt, 0.0, (2*self.prev_Vtheta/self.prev_r)*dt, 1.0]])
+
+        self.B = np.array([[0.0, 0.0],
+                           [0.0, 0.0],
+                           [-sin(self.alpha + pi / 2 - self.prev_theta), -sin(self.alpha - self.prev_theta)],
+                           [-cos(self.alpha + pi / 2 - self.prev_theta), -cos(self.alpha - self.prev_theta)]])
+
+    def correct(self):
+        """Implement continuous-continuous EKF correction (implicit) step.
+        """
+        self.Z = np.array([[self.r], [self.theta]])
+        self.K = np.matmul(np.matmul(self.P, np.transpose(self.H)), np.linalg.pinv(self.R))
+
+        U = np.array([[self.a_lat], [self.a_long]])
+        state = np.array([[self.prev_r], [self.prev_theta], [self.prev_Vtheta], [self.prev_Vr]])
+        dyn = np.array([[self.prev_Vr],
+                        [self.prev_Vtheta / self.prev_r],
+                        [-self.prev_Vtheta * self.prev_Vr / self.prev_r],
+                        [self.prev_Vtheta**2 / self.prev_r]])
+
+        state_dot = dyn + np.matmul(self.B, U) + np.matmul(self.K,
+                                                           (self.Z - np.matmul(self.H, state)))
+        P_dot = np.matmul(self.A, self.P) + np.matmul(self.P, np.transpose(self.A)
+                                                      ) - np.matmul(np.matmul(self.K, self.H), self.P) + self.Q
+
+        dt = self.manager.get_sim_dt()
+        state = state + state_dot * dt
+        self.P = self.P + P_dot * dt
+
+        self.r = state.flatten()[0]
+        self.theta = state.flatten()[1]
+        self.Vtheta = state.flatten()[2]
+        self.Vr = state.flatten()[3]
+
+    def get_estimated_state(self):
+        """Get estimated state information.
+
+        Returns:
+            tuple(float32, float32, float, float32): (r, theta, V_r, V_theta)
+        """
+        if self.ready:
+            return (self.r, self.theta, self.Vr, self.Vtheta)
+        else:
+            return (self.prev_r, self.prev_theta, self.prev_Vr, self.prev_Vtheta)
+
 # dummy moving average for testing (not used)
 def compute_moving_average(sequence, window_size):
     """Generate moving average sequence of given sequence using given window size.
@@ -3027,15 +3218,15 @@ if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
     WRITE_PLOT = 1  # pylint: disable=bad-whitespace
-    CONTROL_ON = 1  # pylint: disable=bad-whitespace
+    CONTROL_ON = 0  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
-    DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
+    DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
