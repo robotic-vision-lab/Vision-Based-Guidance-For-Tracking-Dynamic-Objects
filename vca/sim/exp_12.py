@@ -2237,7 +2237,7 @@ class Controller:
         alpha = atan2(Vy, Vx)
 
         # heading angle of car
-        beta = 0
+        beta = atan2(cvy, car_speed)
 
         # distance between the drone and car
         r = ((car_x - X)**2 + (car_y - Y)**2)**0.5
@@ -3148,10 +3148,12 @@ class ExtendedKalman2:
                              [(self.prev_Vtheta*self.prev_Vr/self.r**2)*dt, 0.0, 1 - (self.prev_Vr/self.prev_r)*dt, (-self.prev_Vr/self.prev_r)*dt],
                              [(-self.prev_Vtheta**2/self.prev_r**2)*dt, 0.0, (2*self.prev_Vtheta/self.prev_r)*dt, 1.0]])
 
-        self.B = np.array([[0.0, 0.0],
+        self.B1 = np.array([[0.0, 0.0],
                            [0.0, 0.0],
                            [-sin(self.alpha + pi / 2 - self.prev_theta), -sin(self.alpha - self.prev_theta)],
                            [-cos(self.alpha + pi / 2 - self.prev_theta), -cos(self.alpha - self.prev_theta)]])
+
+        self.B1_k = B1*dt
 
     def correct(self):
         """Implement continuous-continuous EKF correction (implicit) step.
