@@ -106,11 +106,11 @@ def get_average_kernel():
                      [1/12, 1/6, 1/12]]).astype('float32')
 
 
-def preprocess_image(img, blur=True):
+def preprocess_image(img, blur=True, gaussian_kernel_size=3):
     """ returns grayscaled, gaussian blurred and normalised image """
     img = convert_to_grayscale(img)
     if blur:
-        img = cv.GaussianBlur(img, (3,3), 0)
+        img = cv.GaussianBlur(img, (gaussian_kernel_size,gaussian_kernel_size), 0)
     img = normalize_to_unit_range(img)
 
     return img
