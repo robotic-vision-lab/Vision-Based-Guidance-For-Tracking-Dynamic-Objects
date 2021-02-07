@@ -159,6 +159,7 @@ USE_KALMAN = 0
 USE_MA = 0
 # EKF used by controller
 USE_EXTENDED_KALMAN = 1
+USE_NEW_EKF = 1
 
 # plot settings
 LINE_WIDTH_1 = 1.0

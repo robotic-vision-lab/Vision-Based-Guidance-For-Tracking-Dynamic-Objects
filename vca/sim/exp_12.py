@@ -14,7 +14,7 @@ from queue import deque
 from copy import deepcopy
 from random import randrange
 from datetime import timedelta
-from math import atan2, degrees, radians, cos, sin, pi, tau, isnan
+from math import atan2, degrees, radians, cos, sin, pi, tau, isnan, e
 
 import numpy as np
 import cv2 as cv
@@ -1066,6 +1066,9 @@ class Tracker:
         # this function is called in process_image in the beginning. 
         # it indicates if this the first time process_image received a frame
         return self.frame_old_gray is None
+
+    def is_total_occlusion(self):
+        return self.target_occlusion_case_new == self._TOTAL_OCC
 
     def can_begin_control(self):
         """Returns boolean check indicating if controller can be used post tracking.
@@ -2257,9 +2260,13 @@ class Controller:
 
         # at this point r, theta, Vr, Vtheta are computed
         # we can consider EKF filtering [r, theta, Vr, Vtheta]
-        if not USE_TRUE_KINEMATICS and USE_EXTENDED_KALMAN:
-            self.manager.EKF.add(r, theta, Vr, Vtheta, alpha, self.a_lt, self.a_ln)
-            r, theta, Vr, Vtheta = self.manager.EKF.get_estimated_state()
+        if not USE_TRUE_KINEMATICS and (USE_EXTENDED_KALMAN or USE_NEW_EKF):
+            if USE_NEW_EKF:
+                self.manager.EKF.add(r, theta, Vr, Vtheta, alpha, self.a_lt, self.a_ln, car_x, car_y, car_speed, car_cvy)
+                r, theta, Vr, Vtheta, deltaB_est, estimated_acceleration = self.manager.EKF.get_estimated_state()
+            else:
+                self.manager.EKF.add(r, theta, Vr, Vtheta, alpha, self.a_lt, self.a_ln)
+                r, theta, Vr, Vtheta = self.manager.EKF.get_estimated_state()
 
         # calculate y from drone to car
         y2 = Vtheta**2 + Vr**2
@@ -2281,10 +2288,14 @@ class Controller:
             a_lat = 0.0
             a_long = 0.0
         else:
-            a_lat = (K1 * Vr * y1 * cos(alpha - theta) - K1 * Vr * w * cos(alpha - theta) - K1 * Vtheta * w * sin(alpha - theta) + K1 * Vtheta * y1 * sin(alpha - theta) +
-                     K2 * self.R**2 * Vr * y2 * cos(alpha - theta) + K2 * self.R**2 * Vtheta * y2 * sin(alpha - theta) - K2 * Vtheta * r**2 * y2 * sin(alpha - theta)) / _D
-            a_long = (K1 * Vtheta * w * cos(alpha - theta) - K1 * Vtheta * y1 * cos(alpha - theta) - K1 * Vr * w * sin(alpha - theta) + K1 * Vr * y1 * sin(alpha - theta) -
-                      K2 * self.R**2 * Vtheta * y2 * cos(alpha - theta) + K2 * self.R**2 * Vr * y2 * sin(alpha - theta) + K2 * Vtheta * r**2 * y2 * cos(alpha - theta)) / _D
+            a_lat = (K1 * Vr * y1 * cos(alpha - theta) - K1 * Vr * w * cos(alpha - theta) - K1 * Vtheta * w * sin(alpha - theta) + K1 * Vtheta * y1 * sin(alpha - theta) -
+                        2*Vr*Vtheta*estimated_acceleration*r**2*sin(alpha - deltaB_est) +
+                        K2 * self.R**2 * Vr * y2 * cos(alpha - theta) + K2 * self.R**2 * Vtheta * y2 * sin(alpha - theta) - K2 * Vtheta * r**2 * y2 * sin(alpha - theta)) / _D
+            a_long = (K1 * Vtheta * w * cos(alpha - theta) - K1 * Vtheta * y1 * cos(alpha - theta) - K1 * Vr * w * sin(alpha - theta) + K1 * Vr * y1 * sin(alpha - theta) +
+                        2*Vr*Vtheta*estimated_acceleration*r**2*cos(alpha - deltaB_est) -
+                        K2 * self.R**2 * Vtheta * y2 * cos(alpha - theta) + K2 * self.R**2 * Vr * y2 * sin(alpha - theta) + K2 * Vtheta * r**2 * y2 * cos(alpha - theta)) / _D
+
+            
 
         a_long_bound = 5
         a_lat_bound = 5
@@ -2415,7 +2426,7 @@ class ExperimentManager:
 
         self.MAF = MA(window_size=10)
         self.KF = Kalman(self)
-        self.EKF = ExtendedKalman(self)
+        self.EKF = ExtendedKalman(self) if not USE_NEW_EKF else ExtendedKalman2(self)
 
         # self.image_deque = deque(maxlen=2)
         # self.command_deque = deque(maxlen=2)
@@ -3053,8 +3064,16 @@ class ExtendedKalman2:
                            [0.0, 1.0, 0.0, 0.0]])
 
         self.P = np.diag([0.1, 0.1, 0.1, 0.1])
-        self.R = np.diag([0.1, 0.1])
+        self.R_ = np.diag([0.1, 0.1])
         self.Q = np.diag([0.1, 0.1, 1, 0.1])
+
+        self.P_acc = np.diag([0.0, 0.0, 0.0])
+        self.P_acc_y = np.diag([0.0, 0.0, 0.0])
+        self.cov_acc = np.array([[self.P_acc[0,0]], [self.P_acc[1,1]], [self.P_acc[2,2]]])
+        self.cov_acc_y = np.array([[self.P_acc_y[0,0]], [self.P_acc_y[1,1]], [self.P_acc_y[2,2]]])
+        self.alpha_acc = 0.1    # reciprocal of maneuver(acceleration) time constant. 1/60-lazy turn, 1/20-evasive,  1-atmospheric turbulence
+        self.sigma_square_x = 1.0 
+        self.sigma_square_y = 1.0
 
         self.ready = False
 
@@ -3066,7 +3085,7 @@ class ExtendedKalman2:
         """
         return self.filter_initialized_flag
 
-    def initialize_filter(self, r, theta, Vr, Vtheta, alpha, a_lat, a_long):
+    def initialize_filter(self, r, theta, Vr, Vtheta, alpha, a_lat, a_long, x, y, vx, vy):
         """Initializes EKF. Meant to run only once at first.
 
         Args:
@@ -3085,9 +3104,17 @@ class ExtendedKalman2:
         self.alpha = alpha
         self.a_lat = a_lat
         self.a_long = a_long
+        self.prev_x = x
+        self.prev_y = y
+        self.prev_vx = self.vx
+        self.prev_vy = self.vy
+        self.prev_ax = 0.0
+        self.prev_ay = 0.0
+        
+
         self.filter_initialized_flag = True
 
-    def add(self, r, theta, Vr, Vtheta, alpha, a_lat, a_long):
+    def add(self, r, theta, Vr, Vtheta, alpha, a_lat, a_long, x, y, vx, vy):
         """Add measurements and auxiliary data for filtering
 
         Args:
@@ -3101,7 +3128,7 @@ class ExtendedKalman2:
         """
         # make sure filter is initialized
         if not self.is_initialized():
-            self.initialize_filter(r, theta, Vr, Vtheta, alpha, a_lat, a_long)
+            self.initialize_filter(r, theta, Vr, Vtheta, alpha, a_lat, a_long, x, y, vx, vy)
             return
 
         # filter is initialized; set ready to true
@@ -3121,8 +3148,14 @@ class ExtendedKalman2:
         self.alpha = alpha
         self.a_lat = a_lat
         self.a_long = a_long
+        self.x = x
+        self.y = y
+        self.vx = vx
+        self.vy = vy
 
         # perform predictor and filter step
+        self.estimate_acc_x()
+        self.estimate_acc_y()
         self.predict()
         self.correct()
 
@@ -3131,6 +3164,81 @@ class ExtendedKalman2:
         self.prev_theta = self.theta
         self.prev_Vr = self.Vr
         self.prev_Vtheta = self.Vtheta
+
+    def estimate_acc_x(self):
+        # set R and x appropriate to occlusion state
+        if self.manager.tracker.is_target_occlusion():
+            self.R_acc = 100
+            self.x_measured = self.prev_x
+        else:
+            self.R_acc = 10
+            self.x_measured = self.x
+
+        dt = self.manager.get_sim_dt()
+        adt = self.alpha_acc * dt   # αΔt
+        eadt = e**(-adt)
+        e2adt = e**(-2*adt)
+        self.A_acc = np.array([[1.0, dt, (eadt + adt -1)/(self.alpha_acc**2)],
+                               [0.0, 1.0, (1 - eadt)/(self.alpha_acc)],
+                               [0.0, 0.0, eadt]])
+
+        q11 = (1 - e2adt + 2*adt + (2/3)*adt**3 - 2*adt**2 - 4*adt*eadt) / (self.alpha_acc**4)
+        q12 = (e2adt + 1 - 2*eadt + 2*adt*eadt - 2*adt + adt**2) / (self.alpha_acc**3)
+        q13 = (1 - e2adt - 2*adt*eadt) / (self.alpha_acc**2)
+        q22 = (4*eadt - 3 - e2adt + 2*adt) / (self.alpha_acc**2)
+        q23 = (e2adt + 1 -2*eadt) / (self.alpha_acc)
+        q33 = (1 - e2adt)
+
+        self.Q_acc = self.sigma_square_x * np.array([[q11, q12, q13],
+                                         [q12, q22, q23],
+                                         [q13, q23, q33]])
+
+        H_acc = np.array([[1.0, 0.0, 0.0]])
+        state_est_acc = np.array([[self.prev_x], [self.prev_vx], [self.prev_ax]])
+        state_est_pre_acc = np.matmul(self.A_acc, self.state_est_acc)
+        P_pre_acc = np.matmul(np.matmul(self.A_acc, self.P_acc), np.transpose(self.A_acc)) + self.Q_acc
+        S_acc = np.matmul(np.matmul(H_acc, P_pre_acc), np.transpose(H_acc)) + self.R_acc
+        K_acc = np.matmul(np.matmul(P_pre_acc, np.transpose(H_acc)), np.linalg.pinv(S_acc))
+
+        state_est_acc = state_est_pre_acc + np.matmul(K_acc, (self.x_measured - np.matmul(H_acc,state_est_pre_acc)))
+        self.P_acc = np.matmul((np.eye(3) - np.matmul(K_acc,H_acc)), P_pre_acc)
+        self.cov_acc = np.array([[self.P_acc[0,0]], [self.P_acc[1,1]], [self.P_acc[1,1]]])
+
+        self.x = state_est_acc.flatten()[0]
+        self.vx = state_est_acc.flatten()[1]
+        self.ax = state_est_acc.flatten()[2]
+
+
+
+    def estimate_acc_y(self):
+        # set R and x appropriate to occlusion state
+        if self.manager.tracker.is_target_occlusion():
+            self.R_acc_y = 1000
+            self.y_measured = self.prev_y
+        else:
+            self.R_acc_y = 10
+            self.y_measured = self.y
+
+        self.Q_acc_y = self.sigma_square_y * np.array([[q11, q12, q13],
+                                         [q12, q22, q23],
+                                         [q13, q23, q33]])
+
+        H_acc = np.array([[1.0, 0.0, 0.0]])
+        state_est_acc_y = np.array([[self.prev_y], [self.prev_vy], [self.prev_ay]])
+        state_est_pre_acc_y = np.matmul(self.A_acc, self.state_est_acc_y)
+        P_pre_acc_y = np.matmul(np.matmul(self.A_acc, self.P_acc_y), np.transpose(self.A_acc)) + self.Q_acc_y
+        S_acc_y = np.matmul(np.matmul(H_acc, P_pre_acc_y), np.transpose(H_acc)) + self.R_acc_y
+        K_acc_y = np.matmul(np.matmul(P_pre_acc_y, np.transpose(H_acc)), np.linalg.pinv(S_acc_y))
+
+        state_est_acc_y = state_est_pre_acc_y + np.matmul(K_acc_y, (self.y_measured - np.matmul(H_acc,state_est_pre_acc_y)))
+        self.P_acc_y = np.matmul((np.eye(3) - np.matmul(K_acc_y,H_acc)), P_pre_acc_y)
+        self.cov_acc = np.array([[self.P_acc_y[0,0]], [self.P_acc_y[1,1]], [self.P_acc_y[1,1]]])
+
+        self.y = state_est_acc_y.flatten()[0]
+        self.vy = state_est_acc_y.flatten()[1]
+        self.ay = state_est_acc_y.flatten()[2]
+
+        
 
     def predict(self):
         """Implement continuous-continuous EKF prediction (implicit) step.
@@ -3142,22 +3250,31 @@ class ExtendedKalman2:
                            [-self.prev_Vtheta / self.prev_r**2, 0.0, 1 / self.prev_r, 0.0],
                            [self.prev_Vtheta * self.prev_Vr / self.prev_r**2, 0.0, -self.prev_Vr / self.prev_r, -self.prev_Vtheta / self.prev_r],
                            [-self.prev_Vtheta**2 / self.prev_r**2, 0.0, 2 * self.prev_Vtheta / self.prev_r, 0.0]])
-
-        self.A_k = np.array([[1.0, 0.0, 0.0, dt],
-                             [-(self.prev_Vtheta/self.prev_r**2)*dt, 1.0, (1/self.prev_r)*dt, 0.0],
-                             [(self.prev_Vtheta*self.prev_Vr/self.r**2)*dt, 0.0, 1 - (self.prev_Vr/self.prev_r)*dt, (-self.prev_Vr/self.prev_r)*dt],
-                             [(-self.prev_Vtheta**2/self.prev_r**2)*dt, 0.0, (2*self.prev_Vtheta/self.prev_r)*dt, 1.0]])
-
+  
         self.B1 = np.array([[0.0, 0.0],
                            [0.0, 0.0],
                            [-sin(self.alpha + pi / 2 - self.prev_theta), -sin(self.alpha - self.prev_theta)],
                            [-cos(self.alpha + pi / 2 - self.prev_theta), -cos(self.alpha - self.prev_theta)]])
+     
+        self.deltaB_est = atan2(self.ay, self.ax)
+        self.estimated_acceleration = (self.ax**2 + self.ay**2)**0.5
 
-        self.B1_k = B1*dt
+        self.B2 = np.array([[0.0],
+                           [0.0],
+                           [sin(self.deltaB_est - self.prev_theta)],
+                           [cos(self.deltaB_est - self.prev_theta)]])
+
+
 
     def correct(self):
         """Implement continuous-continuous EKF correction (implicit) step.
         """
+        if self.manager.tracker.is_target_occlusion():
+            self.R = np.diag([100, 100])
+        else:
+            self.R = self.R_
+
+
         self.Z = np.array([[self.r], [self.theta]])
         self.K = np.matmul(np.matmul(self.P, np.transpose(self.H)), np.linalg.pinv(self.R))
 
@@ -3168,10 +3285,8 @@ class ExtendedKalman2:
                         [-self.prev_Vtheta * self.prev_Vr / self.prev_r],
                         [self.prev_Vtheta**2 / self.prev_r]])
 
-        state_dot = dyn + np.matmul(self.B, U) + np.matmul(self.K,
-                                                           (self.Z - np.matmul(self.H, state)))
-        P_dot = np.matmul(self.A, self.P) + np.matmul(self.P, np.transpose(self.A)
-                                                      ) - np.matmul(np.matmul(self.K, self.H), self.P) + self.Q
+        state_dot = dyn + np.matmul(self.B1, U) + np.matmul(self.B2, self.estimated_acceleration) + np.matmul(self.K, (self.Z - np.matmul(self.H, state)))
+        P_dot = np.matmul(self.A, self.P) + np.matmul(self.P, np.transpose(self.A)) - np.matmul(np.matmul(self.K, self.H), self.P) + self.Q
 
         dt = self.manager.get_sim_dt()
         state = state + state_dot * dt
