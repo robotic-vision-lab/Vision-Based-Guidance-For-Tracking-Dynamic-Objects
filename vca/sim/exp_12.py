@@ -213,6 +213,7 @@ class Car(pygame.sprite.Sprite):
 
         # set kinematics
         self.position = pygame.Vector2(x, y)
+        self.initial_velocity = pygame.Vector2(vx, vy)
         self.velocity = pygame.Vector2(vx, vy)
         self.acceleration = pygame.Vector2(ax, ay)
         self.angle = pi/2
@@ -220,12 +221,12 @@ class Car(pygame.sprite.Sprite):
         # hold onto the game/simulator reference
         self.simulator = simulator
 
-        if not USE_TRAJECTORY == DEFAULT_TRAJECTORY:
+        if USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
             self.init_x = 0
             self.init_y = 0
             self.velocity = pygame.Vector2(0, 0)
             self.acceleration = pygame.Vector2(0, 0)
-            # self.update_kinematics()
+            self.update_kinematics()
 
         # set initial rect location to position
         self.update_rect()
@@ -233,26 +234,94 @@ class Car(pygame.sprite.Sprite):
     def update_kinematics(self):
         """helper function to update kinematics of object
         """
+        CW = -1
+        ACW = 1
+        DIRECTION = CW
+        OFFSET = -pi/2
         if USE_TRAJECTORY == ONE_HOLE_TRAJECTORY:
             t = self.simulator.time
             T = ONE_HOLE_PERIOD
             size = ONE_HOLE_SIZE
-            omega = tau/T
-            self.velocity[0] = -(omega*size) * sin(omega*t)
-            self.velocity[1] = (omega*size) * cos(omega*t)
+            OMEGA = tau/T
+            self.velocity[0] = -(OMEGA*size) * sin(OMEGA*t*DIRECTION+OFFSET)
+            self.velocity[1] = (OMEGA*size) * cos(OMEGA*t*DIRECTION+OFFSET)
+            self.acceleration[0] = -(OMEGA**2*size) * cos(OMEGA*t*DIRECTION+OFFSET)
+            self.acceleration[1] = -(OMEGA**2*size) * sin(OMEGA*t*DIRECTION+OFFSET)
             self.position += self.velocity * self.simulator.dt
-            self.angle = atan2(cos(omega*t), - sin(omega*t))
+            self.angle = atan2(cos(OMEGA*t*DIRECTION+OFFSET), - sin(OMEGA*t*DIRECTION+OFFSET))
 
         elif USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
             t = self.simulator.time
             T = TWO_HOLE_PERIOD
             size = TWO_HOLE_SIZE
-            omega = tau/T
-            self.velocity[0] = -(omega*size) * sin(omega*t)
-            self.velocity[1] = (omega*size) * cos(2*omega*t) 
+            OMEGA = tau/T
+            self.velocity[0] = -(OMEGA*size) * sin(OMEGA*t*DIRECTION+OFFSET)
+            self.velocity[1] = (OMEGA*size) * cos(2*OMEGA*t*DIRECTION+OFFSET)
+            self.acceleration[0] = -(OMEGA**2*size) * cos(OMEGA*t*DIRECTION+OFFSET)
+            self.acceleration[1] = -(OMEGA**2*size) * sin(2*OMEGA*t*DIRECTION+OFFSET)
             self.position += self.velocity * self.simulator.dt
-            self.angle = atan2(cos(2*omega*t), - sin(omega*t))
+            self.angle = atan2(cos(2*OMEGA*t*DIRECTION+OFFSET), - sin(OMEGA*t*DIRECTION+OFFSET))
         
+        elif USE_TRAJECTORY == LANE_CHANGE_TRAJECTORY:
+            t = self.simulator.time
+            if t >= 5 and t < 7:
+                self.acceleration = pygame.Vector2(0, -1)
+                self.velocity += self.acceleration * self.simulator.dt
+            elif t >= 7 and t < 9:
+                self.acceleration = pygame.Vector2(0, +1)
+                self.velocity += self.acceleration * self.simulator.dt
+
+            elif t >= 15 and t < 17:
+                self.acceleration = pygame.Vector2(0, +1)
+                self.velocity += self.acceleration * self.simulator.dt
+            elif t >= 17 and t < 19:
+                self.acceleration = pygame.Vector2(0, -1)
+                self.velocity += self.acceleration * self.simulator.dt
+
+            elif t >= 25 and t < 27:
+                self.acceleration = pygame.Vector2(0, -1)
+                self.velocity += self.acceleration * self.simulator.dt
+            elif t >= 27 and t < 29:
+                self.acceleration = pygame.Vector2(0, +1)
+                self.velocity += self.acceleration * self.simulator.dt
+
+            elif t >= 35 and t < 37:
+                self.acceleration = pygame.Vector2(0, -1)
+                self.velocity += self.acceleration * self.simulator.dt
+            elif t >= 37 and t < 39:
+                self.acceleration = pygame.Vector2(0, +1)
+                self.velocity += self.acceleration * self.simulator.dt
+
+            # elif t >= 55 and t < 57:
+            #     self.acceleration = pygame.Vector2(0, +1)
+            #     self.velocity += self.acceleration * self.simulator.dt
+            # elif t >= 57 and t < 59:
+            #     self.acceleration = pygame.Vector2(0, -1)
+            #     self.velocity += self.acceleration * self.simulator.dt
+
+            # elif t >= 75 and t < 77:
+            #     self.acceleration = pygame.Vector2(0, -1)
+            #     self.velocity += self.acceleration * self.simulator.dt
+            # elif t >= 77 and t < 79:
+            #     self.acceleration = pygame.Vector2(0, +1)
+            #     self.velocity += self.acceleration * self.simulator.dt
+
+            # elif t >= 105 and t < 107:
+            #     self.acceleration = pygame.Vector2(0, +1)
+            #     self.velocity += self.acceleration * self.simulator.dt
+            # elif t >= 107 and t < 109:
+            #     self.acceleration = pygame.Vector2(0, -1)
+            #     self.velocity += self.acceleration * self.simulator.dt
+
+            elif t >= 39:
+                self.acceleration = pygame.Vector2(0, 0)
+                self.velocity = deepcopy(self.initial_velocity)
+            else:
+                self.acceleration = pygame.Vector2(0,0)
+                self.velocity = deepcopy(self.initial_velocity)
+
+            self.position += self.velocity * self.simulator.dt
+
         else:   # DEFAULT_TRAJECTORY
             # update velocity and position
             self.velocity += self.acceleration * self.simulator.dt
@@ -612,6 +681,9 @@ class Simulator:
 
         self.car_rect_center_bb_offset = [0,0]
 
+        self.time = 0.0
+        self.dt = 0.0
+
     def start_new(self):
         """Initializes simulation components.
         """
@@ -803,7 +875,7 @@ class Simulator:
         # draw only car and blocks (not drone)
         self.car_block_sprites.draw(self.screen_surface)
 
-        if not USE_TRAJECTORY == DEFAULT_TRAJECTORY:
+        if USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
             self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
             prev_center = self.car_img[0].get_rect(center = self.car_img[0].get_rect().center).center
             rot_img = pygame.transform.rotate(self.car_img[0], degrees(self.car.angle))
@@ -1017,6 +1089,7 @@ class Tracker:
         self.initial_target_template_color = None
         self.target_bounding_box = None
         self.patch_size = round(1.5/PIXEL_TO_METERS_FACTOR)   # meters
+        self.patches_gray = None
 
         self.detector = Sift()
         self.descriptor_matcher = BruteL2()
@@ -1030,10 +1103,6 @@ class Tracker:
         self._can_begin_control_flag = False    # will be modified in process_image
         self.kin = None
         self.window_size = 5
-        # self.prev_car_pos = None
-        # self.count = 0
-        # self._target_old_occluded_flag = False
-        # self._target_new_occluded_flag = False
 
         self._NO_OCC = 0
         self._PARTIAL_OCC = 1
@@ -1110,9 +1179,10 @@ class Tracker:
         self.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in self.initial_patches_gray]
 
     def update_patches(self):
-        self.patch_size = round(1.5 / self.manager.simulator.pxm_fac)
-        self.patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.keypoints_new_good]
-        self.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in self.patches_gray]
+        pass
+        # self.patch_size = round(1.5 / self.manager.simulator.pxm_fac)
+        # self.patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.keypoints_new_good]
+        # self.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in self.patches_gray]
 
     def update_template(self):
         self.target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
@@ -2109,8 +2179,10 @@ class Tracker:
             # drone kinematics are assumed to be known (IMU and/or FPGA optical flow)
             # here, the drone position and velocity is known from Simulator
             # only the car kinematics are tracked/measured by tracker
-            drone_position, drone_velocity, car_position, car_velocity, cp_, cv_ = self.kin
-            print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
+            # drone_position, drone_velocity, car_position, car_velocity, cp_, cv_ = self.kin
+            if self.kin is not None:
+                drone_position, drone_velocity, _, _, _, _, car_position, car_velocity= self.kin
+                print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
 
     def show_me_something(self):
         """Worker function to aid debugging
@@ -2207,7 +2279,7 @@ class Tracker:
 class Controller:
     def __init__(self, manager):
         self.manager = manager
-        self.plot_info_file = 'plot_info.txt'
+        self.plot_info_file = 'plot_info.csv'
         self.R = CAR_RADIUS
         self.f = None
         self.a_ln = 0.0
@@ -2240,7 +2312,10 @@ class Controller:
         alpha = atan2(Vy, Vx)
 
         # heading angle of car
-        beta = atan2(cvy, car_speed)
+        if USE_TRAJECTORY==DEFAULT_TRAJECTORY:
+            beta = 0.0
+        else:
+            beta = atan2(cvy, car_speed)
 
         # distance between the drone and car
         r = ((car_x - X)**2 + (car_y - Y)**2)**0.5
@@ -2252,17 +2327,21 @@ class Controller:
         Vr = car_speed * cos(beta - theta) - S * cos(alpha - theta)
         Vtheta = car_speed * sin(beta - theta) - S * sin(alpha - theta)
 
-        # save measured r, θ, Vr, Vθ
+        # save measured as r_, θ_, Vr_, Vθ_
         r_ = r
         theta_ = theta
         Vr_ = Vr
         Vtheta_ = Vtheta
 
-        # at this point r, theta, Vr, Vtheta are computed
+        if not CLEAN_CONSOLE:
+            print(f'CCC0 >> r_:{r:0.2f} | theta_:{theta:0.2f} | alpha_:{alpha:0.2f} | beta_:{beta:0.2f} | car_speed_:{car_speed:0.2f} | S_:{S:0.2f} | Vr_:{Vr:0.2f} | Vtheta_:{Vtheta:0.2f} ')
+
+        # this point on r, θ, Vr, Vθ are estimated
+
         # we can consider EKF filtering [r, theta, Vr, Vtheta]
         if not USE_TRUE_KINEMATICS and (USE_EXTENDED_KALMAN or USE_NEW_EKF):
             if USE_NEW_EKF:
-                self.manager.EKF.add(r, theta, Vr, Vtheta, alpha, self.a_lt, self.a_ln, car_x, car_y, car_speed, car_cvy)
+                self.manager.EKF.add(r, theta, Vr, Vtheta, alpha, self.a_lt, self.a_ln, car_x, car_y, car_speed, cvy)
                 r, theta, Vr, Vtheta, deltaB_est, estimated_acceleration = self.manager.EKF.get_estimated_state()
             else:
                 self.manager.EKF.add(r, theta, Vr, Vtheta, alpha, self.a_lt, self.a_ln)
@@ -2288,11 +2367,18 @@ class Controller:
             a_lat = 0.0
             a_long = 0.0
         else:
-            a_lat = (K1 * Vr * y1 * cos(alpha - theta) - K1 * Vr * w * cos(alpha - theta) - K1 * Vtheta * w * sin(alpha - theta) + K1 * Vtheta * y1 * sin(alpha - theta) -
-                        2*Vr*Vtheta*estimated_acceleration*r**2*sin(alpha - deltaB_est) +
+            if USE_TRUE_KINEMATICS:
+                car_ax, car_ay = self.manager.simulator.car.acceleration
+                estimated_acceleration = (car_ax**2 + car_ay**2)**0.5
+                deltaB_est = atan2(car_ay, car_ax)
+                # estimated_acceleration = 0.0
+                # deltaB_est = 0.0
+
+            a_lat = (K1 * Vr * y1 * cos(alpha - theta) - K1 * Vr * w * cos(alpha - theta) - K1 * Vtheta * w * sin(alpha - theta) + K1 * Vtheta * y1 * sin(alpha - theta)
+                        - 2*Vr*Vtheta*estimated_acceleration*r**2*sin(alpha - deltaB_est) +
                         K2 * self.R**2 * Vr * y2 * cos(alpha - theta) + K2 * self.R**2 * Vtheta * y2 * sin(alpha - theta) - K2 * Vtheta * r**2 * y2 * sin(alpha - theta)) / _D
-            a_long = (K1 * Vtheta * w * cos(alpha - theta) - K1 * Vtheta * y1 * cos(alpha - theta) - K1 * Vr * w * sin(alpha - theta) + K1 * Vr * y1 * sin(alpha - theta) +
-                        2*Vr*Vtheta*estimated_acceleration*r**2*cos(alpha - deltaB_est) -
+            a_long = (K1 * Vtheta * w * cos(alpha - theta) - K1 * Vtheta * y1 * cos(alpha - theta) - K1 * Vr * w * sin(alpha - theta) + K1 * Vr * y1 * sin(alpha - theta)
+                        + 2*Vr*Vtheta*estimated_acceleration*r**2*cos(alpha - deltaB_est) -
                         K2 * self.R**2 * Vtheta * y2 * cos(alpha - theta) + K2 * self.R**2 * Vr * y2 * sin(alpha - theta) + K2 * Vtheta * r**2 * y2 * cos(alpha - theta)) / _D
 
             
@@ -2322,11 +2408,16 @@ class Controller:
         tS = (tVx**2 + tVy**2) ** 0.5
         tr = ((tcar_x - tX)**2 + (tcar_y - tY)**2)**0.5
         ttheta = atan2(tcar_y - tY, tcar_x - tX)
-        tVr = tcar_speed * cos(beta - ttheta) - tS * cos(alpha - ttheta)
-        tVtheta = tcar_speed * sin(beta - ttheta) - tS * sin(alpha - ttheta)
+        tbeta = atan2(tcvy, tcar_speed)
+        tVr = tcar_speed * cos(tbeta - ttheta) - tS * cos(alpha - ttheta)
+        tVtheta = tcar_speed * sin(tbeta - ttheta) - tS * sin(alpha - ttheta)
+        car_vel = self.manager.simulator.car.velocity
+        car_S = (car_vel[0]**2 + car_vel[1]**2)**0.5
+        car_head = atan2(car_vel[1],car_vel[0])
+         
 
         tra_kin = self.manager.get_tracked_kinematics()
-        vel = self.manager.simulator.camera.velocity
+        # vel = self.manager.simulator.camera.velocity
         if not CLEAN_CONSOLE:
             print(
                 f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{X:0.2f}, {Y:0.2f}] | v:[{Vx:0.2f}, {Vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}] | COMMANDED a:[{ax:0.2f}, {ay:0.2f}] | TRACKED x:[{tra_kin[2][0]:0.2f},{tra_kin[2][1]:0.2f}] | v:[{tra_kin[3][0]:0.2f},{tra_kin[3][1]:0.2f}]')
@@ -2373,7 +2464,9 @@ class Controller:
                 f'{degrees(tVtheta)},' +                            # _TRUE_V_THETA
                 f'{self.manager.simulator.dt},' +                   # _DELTA_TIME
                 f'{y1},' +                                          # _Y1
-                f'{y2}\n')                                          # _Y2
+                f'{y2},' +                                          # _Y2
+                f'{car_S},' +                                       # _CAR_SPEED
+                f'{degrees(car_head)}\n')                           # _CAR_HEADING
 
         if not self.manager.control_on:
             ax, ay = pygame.Vector2((0.0, 0.0))
@@ -2506,6 +2599,52 @@ class ExperimentManager:
         # open plot file if write_plot is indicated
         if self.write_plot:
             self.controller.f = open(self.controller.plot_info_file, '+w')
+            self.controller.f.write(
+                f'TIME,'+
+                f'R,'+
+                f'THETA,'+
+                f'V_THETA,'+
+                f'V_R,'+
+                f'DRONE_POS_X,'+
+                f'DRONE_POS_Y,'+
+                f'CAR_POS_X,'+
+                f'CAR_POS_Y,'+
+                f'DRONE_ACC_X,'+
+                f'DRONE_ACC_Y,'+
+                f'DRONE_ACC_LAT,'+
+                f'DRONE_ACC_LNG,'+
+                f'CAR_VEL_X,'+
+                f'CAR_VEL_Y,'+
+                f'TRACKED_CAR_POS_X,'+
+                f'TRACKED_CAR_POS_Y,'+
+                f'TRACKED_CAR_VEL_X,'+
+                f'TRACKED_CAR_VEL_Y,'+
+                f'CAM_ORIGIN_X,'+
+                f'CAM_ORIGIN_Y,'+
+                f'DRONE_SPEED,'+
+                f'DRONE_ALPHA,'+
+                f'DRONE_VEL_X,'+
+                f'DRONE_VEL_Y,'+
+                f'MEASURED_CAR_POS_X,'+
+                f'MEASURED_CAR_POS_Y,'+
+                f'MEASURED_CAR_VEL_X,'+
+                f'MEASURED_CAR_VEL_Y,'+
+                f'DRONE_ALTITUDE,'+
+                f'ABS_DEN,'+
+                f'MEASURED_R,'+
+                f'MEASURED_THETA,'+
+                f'MEASURED_V_R,'+
+                f'MEASURED_V_THETA,'+
+                f'TRUE_R,'+
+                f'TRUE_THETA,'+
+                f'TRUE_V_R,'+
+                f'TRUE_V_THETA,'+
+                f'DELTA_TIME,'+
+                f'Y1,'+
+                f'Y2,' +
+                f'CAR_SPEED,' +
+                f'CAR_HEADING\n'
+            )
 
         # run experiment
         while self.simulator.running:
@@ -2555,7 +2694,7 @@ class ExperimentManager:
                             ax, ay = self.controller.generate_acceleration(kin)
                             # feed controller generated acceleration commands to simulator
                             self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
-                    else:
+                    else: # tracker is off
                         if self.control_on:
                             kin = self.get_true_kinematics()
                             # let controller process kinematics
@@ -3063,17 +3202,17 @@ class ExtendedKalman2:
         self.H = np.array([[1.0, 0.0, 0.0, 0.0],
                            [0.0, 1.0, 0.0, 0.0]])
 
-        self.P = np.diag([0.1, 0.1, 0.1, 0.1])
-        self.R_ = np.diag([0.1, 0.1])
-        self.Q = np.diag([0.1, 0.1, 1, 0.1])
+        self.P = np.diag([0.0, 0.0, 0.0, 0.0])
+        self.R_ = np.diag([1, 0.1])
+        self.Q = np.diag([0.001, 0.001, 1, 1])
 
         self.P_acc = np.diag([0.0, 0.0, 0.0])
         self.P_acc_y = np.diag([0.0, 0.0, 0.0])
         self.cov_acc = np.array([[self.P_acc[0,0]], [self.P_acc[1,1]], [self.P_acc[2,2]]])
         self.cov_acc_y = np.array([[self.P_acc_y[0,0]], [self.P_acc_y[1,1]], [self.P_acc_y[2,2]]])
         self.alpha_acc = 0.1    # reciprocal of maneuver(acceleration) time constant. 1/60-lazy turn, 1/20-evasive,  1-atmospheric turbulence
-        self.sigma_square_x = 1.0 
-        self.sigma_square_y = 1.0
+        self.sigma_square_x = 0.1 
+        self.sigma_square_y = 0.05
 
         self.ready = False
 
@@ -3099,19 +3238,18 @@ class ExtendedKalman2:
         """
         self.prev_r = r
         self.prev_theta = theta
-        self.prev_Vr = -5
-        self.prev_Vtheta = 5
+        self.prev_Vr = -5.0
+        self.prev_Vtheta = -5.0
         self.alpha = alpha
         self.a_lat = a_lat
         self.a_long = a_long
         self.prev_x = x
         self.prev_y = y
-        self.prev_vx = self.vx
-        self.prev_vy = self.vy
+        self.prev_vx = vx
+        self.prev_vy = vy
         self.prev_ax = 0.0
         self.prev_ay = 0.0
         
-
         self.filter_initialized_flag = True
 
     def add(self, r, theta, Vr, Vtheta, alpha, a_lat, a_long, x, y, vx, vy):
@@ -3134,11 +3272,14 @@ class ExtendedKalman2:
         # filter is initialized; set ready to true
         self.ready = True
 
+        # handle theta discontinuity
         if (np.sign(self.prev_theta) != np.sign(theta)):
-            self.prev_theta = theta
-        # # new changes
-        # if (np.sign(self.prev_theta) != np.sign(theta)):
-        #     self.prev_theta = (self.prev_theta + tau) % (tau) if self.prev_theta>0 else (self.prev_theta + tau)
+            print(f'\n---------prev_theta: {self.prev_theta}, theta: {theta}')
+            if self.prev_theta > pi/2:
+                self.prev_theta -= tau
+            if self.prev_theta < -pi/2:
+                self.prev_theta += tau
+            print(f'\n---------prev_theta: {self.prev_theta}, theta: {theta}\n')
 
         # store measurement
         self.r = r
@@ -3152,6 +3293,8 @@ class ExtendedKalman2:
         self.y = y
         self.vx = vx
         self.vy = vy
+        self.ax = 0.0
+        self.ay = 0.0
 
         # perform predictor and filter step
         self.estimate_acc_x()
@@ -3164,10 +3307,16 @@ class ExtendedKalman2:
         self.prev_theta = self.theta
         self.prev_Vr = self.Vr
         self.prev_Vtheta = self.Vtheta
+        self.prev_x = self.x
+        self.prev_y = self.y
+        self.prev_vx = self.vx
+        self.prev_vy = self.vy
+        # self.prev_ax = self.ax
+        # self.prev_ay = self.ay
 
     def estimate_acc_x(self):
         # set R and x appropriate to occlusion state
-        if self.manager.tracker.is_target_occlusion():
+        if self.manager.tracker.is_total_occlusion():
             self.R_acc = 100
             self.x_measured = self.prev_x
         else:
@@ -3182,20 +3331,20 @@ class ExtendedKalman2:
                                [0.0, 1.0, (1 - eadt)/(self.alpha_acc)],
                                [0.0, 0.0, eadt]])
 
-        q11 = (1 - e2adt + 2*adt + (2/3)*adt**3 - 2*adt**2 - 4*adt*eadt) / (self.alpha_acc**4)
-        q12 = (e2adt + 1 - 2*eadt + 2*adt*eadt - 2*adt + adt**2) / (self.alpha_acc**3)
-        q13 = (1 - e2adt - 2*adt*eadt) / (self.alpha_acc**2)
-        q22 = (4*eadt - 3 - e2adt + 2*adt) / (self.alpha_acc**2)
-        q23 = (e2adt + 1 -2*eadt) / (self.alpha_acc)
-        q33 = (1 - e2adt)
+        self.q11 = (1 - e2adt + 2*adt + (2/3)*adt**3 - 2*adt**2 - 4*adt*eadt) / (self.alpha_acc**4)
+        self.q12 = (e2adt + 1 - 2*eadt + 2*adt*eadt - 2*adt + adt**2) / (self.alpha_acc**3)
+        self.q13 = (1 - e2adt - 2*adt*eadt) / (self.alpha_acc**2)
+        self.q22 = (4*eadt - 3 - e2adt + 2*adt) / (self.alpha_acc**2)
+        self.q23 = (e2adt + 1 -2*eadt) / (self.alpha_acc)
+        self.q33 = (1 - e2adt)
 
-        self.Q_acc = self.sigma_square_x * np.array([[q11, q12, q13],
-                                         [q12, q22, q23],
-                                         [q13, q23, q33]])
+        self.Q_acc = self.sigma_square_x * np.array([[self.q11, self.q12, self.q13],
+                                         [self.q12, self.q22, self.q23],
+                                         [self.q13, self.q23, self.q33]])
 
         H_acc = np.array([[1.0, 0.0, 0.0]])
         state_est_acc = np.array([[self.prev_x], [self.prev_vx], [self.prev_ax]])
-        state_est_pre_acc = np.matmul(self.A_acc, self.state_est_acc)
+        state_est_pre_acc = np.matmul(self.A_acc, state_est_acc)
         P_pre_acc = np.matmul(np.matmul(self.A_acc, self.P_acc), np.transpose(self.A_acc)) + self.Q_acc
         S_acc = np.matmul(np.matmul(H_acc, P_pre_acc), np.transpose(H_acc)) + self.R_acc
         K_acc = np.matmul(np.matmul(P_pre_acc, np.transpose(H_acc)), np.linalg.pinv(S_acc))
@@ -3208,24 +3357,22 @@ class ExtendedKalman2:
         self.vx = state_est_acc.flatten()[1]
         self.ax = state_est_acc.flatten()[2]
 
-
-
     def estimate_acc_y(self):
         # set R and x appropriate to occlusion state
-        if self.manager.tracker.is_target_occlusion():
+        if self.manager.tracker.is_total_occlusion():
             self.R_acc_y = 1000
             self.y_measured = self.prev_y
         else:
             self.R_acc_y = 10
             self.y_measured = self.y
 
-        self.Q_acc_y = self.sigma_square_y * np.array([[q11, q12, q13],
-                                         [q12, q22, q23],
-                                         [q13, q23, q33]])
+        self.Q_acc_y = self.sigma_square_y * np.array([[self.q11, self.q12, self.q13],
+                                         [self.q12, self.q22, self.q23],
+                                         [self.q13, self.q23, self.q33]])
 
         H_acc = np.array([[1.0, 0.0, 0.0]])
         state_est_acc_y = np.array([[self.prev_y], [self.prev_vy], [self.prev_ay]])
-        state_est_pre_acc_y = np.matmul(self.A_acc, self.state_est_acc_y)
+        state_est_pre_acc_y = np.matmul(self.A_acc, state_est_acc_y)
         P_pre_acc_y = np.matmul(np.matmul(self.A_acc, self.P_acc_y), np.transpose(self.A_acc)) + self.Q_acc_y
         S_acc_y = np.matmul(np.matmul(H_acc, P_pre_acc_y), np.transpose(H_acc)) + self.R_acc_y
         K_acc_y = np.matmul(np.matmul(P_pre_acc_y, np.transpose(H_acc)), np.linalg.pinv(S_acc_y))
@@ -3238,7 +3385,6 @@ class ExtendedKalman2:
         self.vy = state_est_acc_y.flatten()[1]
         self.ay = state_est_acc_y.flatten()[2]
 
-        
 
     def predict(self):
         """Implement continuous-continuous EKF prediction (implicit) step.
@@ -3249,7 +3395,7 @@ class ExtendedKalman2:
         self.A = np.array([[0.0, 0.0, 0.0, 1.0],
                            [-self.prev_Vtheta / self.prev_r**2, 0.0, 1 / self.prev_r, 0.0],
                            [self.prev_Vtheta * self.prev_Vr / self.prev_r**2, 0.0, -self.prev_Vr / self.prev_r, -self.prev_Vtheta / self.prev_r],
-                           [-self.prev_Vtheta**2 / self.prev_r**2, 0.0, 2 * self.prev_Vtheta / self.prev_r, 0.0]])
+                           [-(self.prev_Vtheta / self.prev_r)**2, 0.0, 2 * self.prev_Vtheta / self.prev_r, 0.0]])
   
         self.B1 = np.array([[0.0, 0.0],
                            [0.0, 0.0],
@@ -3258,6 +3404,7 @@ class ExtendedKalman2:
      
         self.deltaB_est = atan2(self.ay, self.ax)
         self.estimated_acceleration = (self.ax**2 + self.ay**2)**0.5
+        print(f'\ndeltaB_est: {self.deltaB_est}, est_acc: {self.estimated_acceleration}\n')
 
         self.B2 = np.array([[0.0],
                            [0.0],
@@ -3269,7 +3416,7 @@ class ExtendedKalman2:
     def correct(self):
         """Implement continuous-continuous EKF correction (implicit) step.
         """
-        if self.manager.tracker.is_target_occlusion():
+        if self.manager.tracker.is_total_occlusion():
             self.R = np.diag([100, 100])
         else:
             self.R = self.R_
@@ -3285,7 +3432,7 @@ class ExtendedKalman2:
                         [-self.prev_Vtheta * self.prev_Vr / self.prev_r],
                         [self.prev_Vtheta**2 / self.prev_r]])
 
-        state_dot = dyn + np.matmul(self.B1, U) + np.matmul(self.B2, self.estimated_acceleration) + np.matmul(self.K, (self.Z - np.matmul(self.H, state)))
+        state_dot = dyn + np.matmul(self.B1, U) + self.B2 * self.estimated_acceleration + np.matmul(self.K, (self.Z - np.matmul(self.H, state)))
         P_dot = np.matmul(self.A, self.P) + np.matmul(self.P, np.transpose(self.A)) - np.matmul(np.matmul(self.K, self.H), self.P) + self.Q
 
         dt = self.manager.get_sim_dt()
@@ -3304,9 +3451,9 @@ class ExtendedKalman2:
             tuple(float32, float32, float, float32): (r, theta, V_r, V_theta)
         """
         if self.ready:
-            return (self.r, self.theta, self.Vr, self.Vtheta)
+            return (self.r, self.theta, self.Vr, self.Vtheta, self.deltaB_est, self.estimated_acceleration)
         else:
-            return (self.prev_r, self.prev_theta, self.prev_Vr, self.prev_Vtheta)
+            return (self.prev_r, self.prev_theta, self.prev_Vr, self.prev_Vtheta, 0.0, 0.0)
 
 # dummy moving average for testing (not used)
 def compute_moving_average(sequence, window_size):
@@ -3333,19 +3480,19 @@ def compute_moving_average(sequence, window_size):
 
 if __name__ == '__main__':
 
-    EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
+    EXPERIMENT_SAVE_MODE_ON = 1  # pylint: disable=bad-whitespace
     WRITE_PLOT = 1  # pylint: disable=bad-whitespace
-    CONTROL_ON = 0  # pylint: disable=bad-whitespace
+    CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
-    USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
+    USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
-    DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
+    DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
-    RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
+    RUN_VIDEO_WRITER = 1  # pylint: disable=bad-whitespace
 
     if RUN_EXPERIMENT:
         EXPERIMENT_MANAGER = ExperimentManager(save_on=EXPERIMENT_SAVE_MODE_ON,
@@ -3362,20 +3509,20 @@ if __name__ == '__main__':
         print(f'\n\nExperiment finished. [{time.strftime("%H:%M:%S")}]\n')
 
     if RUN_TRACK_PLOT:
-        FILE = open('plot_info.txt', 'r')
+        FILE = open('plot_info.csv', 'r')
         
         # plot switches
-        SHOW_ALL = 0    # set to 1 to show all plots 
+        SHOW_ALL = 1    # set to 1 to show all plots 
 
         SHOW_CARTESIAN_PLOTS = 1
         SHOW_LOS_KIN_1 = 1
         SHOW_LOS_KIN_2 = 1
         SHOW_ACCELERATIONS = 1
         SHOW_TRAJECTORIES = 1
-        SHOW_SPEED_HEADING = 1
+        SHOW_SPEED_HEADING = 0
         SHOW_ALTITUDE_PROFILE = 0
         SHOW_3D_TRAJECTORIES = 0
-        SHOW_DELTA_TIME_PROFILE = 1
+        SHOW_DELTA_TIME_PROFILE = 0
 
         _TIME = []
         _R = []
@@ -3419,9 +3566,13 @@ if __name__ == '__main__':
         _DELTA_TIME = []
         _Y1 = []
         _Y2 = []
+        _CAR_SPEED = []
+        _CAR_HEADING = []
 
         # get all the data in memory
         for line in FILE.readlines():
+            if line.split(',')[0].strip().lower()=='time':
+                continue
             data = tuple(map(float, list(map(str.strip, line.strip().split(',')))))
             _TIME.append(data[0])
             _R.append(data[1])
@@ -3465,6 +3616,8 @@ if __name__ == '__main__':
             _DELTA_TIME.append(data[39])
             _Y1.append(data[40])
             _Y2.append(data[41])
+            _CAR_SPEED.append(data[42])
+            _CAR_HEADING.append(data[43])
 
         FILE.close()
 
@@ -3479,7 +3632,7 @@ if __name__ == '__main__':
         _prep_temp_folder(os.path.realpath(_PATH))
 
         # copy the plot_info file to the where plots figured will be saved
-        shutil.copyfile('plot_info.txt', f'{_PATH}/plot_info.txt')
+        shutil.copyfile('plot_info.csv', f'{_PATH}/plot_info.csv')
         plt.style.use('seaborn-whitegrid')
 
         # -------------------------------------------------------------------------------- figure 1
@@ -3493,7 +3646,7 @@ if __name__ == '__main__':
             axs[0].plot(
                 _TIME,
                 _MEASURED_R,
-                color='goldenrod',
+                color='forestgreen',
                 linestyle='-',
                 linewidth=LINE_WIDTH_1,
                 label=r'$measured\ r$',
@@ -3523,7 +3676,7 @@ if __name__ == '__main__':
             axs[1].plot(
                 _TIME,
                 _MEASURED_THETA,
-                color='goldenrod',
+                color='forestgreen',
                 linestyle='-',
                 linewidth=LINE_WIDTH_1,
                 label=r'$measured\ \theta$',
@@ -3563,7 +3716,7 @@ if __name__ == '__main__':
             axs[0].plot(
                 _TIME,
                 _MEASURED_V_R,
-                color='palegoldenrod',
+                color='forestgreen',
                 linestyle='-',
                 linewidth=LINE_WIDTH_1,
                 label=r'$measured\ V_{r}$',
@@ -3593,7 +3746,7 @@ if __name__ == '__main__':
             axs[1].plot(
                 _TIME,
                 _MEASURED_V_THETA,
-                color='palegoldenrod',
+                color='forestgreen',
                 linestyle='-',
                 linewidth=LINE_WIDTH_1,
                 label=r'$measured\ V_{\theta}$',
@@ -3880,7 +4033,7 @@ if __name__ == '__main__':
             c_heading = degrees(atan2(CAR_INITIAL_VELOCITY[1], CAR_INITIAL_VELOCITY[0]))
 
             axs[0].plot(_TIME,
-                        [c_speed for i in _DRONE_SPEED],
+                        _CAR_SPEED,
                         color='lightblue',
                         linestyle='-',
                         linewidth=LINE_WIDTH_1,
@@ -3898,7 +4051,7 @@ if __name__ == '__main__':
             axs[0].set_title(r'$\mathbf{speed}$', fontsize=SUB_TITLE_FONT_SIZE)
             axs[0].legend()
 
-            axs[1].plot(_TIME, [c_heading for i in _DRONE_ALPHA], color='lightgreen',
+            axs[1].plot(_TIME, _CAR_HEADING, color='lightgreen',
                         linestyle='-', linewidth=LINE_WIDTH_2, label=r'$\angle V_{vehicle}$', alpha=0.9)
             axs[1].plot(
                 _TIME,
