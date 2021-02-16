@@ -1,4 +1,4 @@
-"""Experiment 11 
+"""Experiment 12
 
 TODO Add docstring
 """
@@ -2324,8 +2324,9 @@ class Controller:
         theta = atan2(car_y - Y, car_x - X)
 
         # compute Vr and Vθ
-        Vr = car_speed * cos(beta - theta) - S * cos(alpha - theta)
-        Vtheta = car_speed * sin(beta - theta) - S * sin(alpha - theta)
+        car_speed_xy = (car_speed**2 + cvy**2)**0.5
+        Vr = car_speed_xy * cos(beta - theta) - S * cos(alpha - theta)
+        Vtheta = car_speed_xy * sin(beta - theta) - S * sin(alpha - theta)
 
         # save measured as r_, θ_, Vr_, Vθ_
         r_ = r
@@ -2426,7 +2427,7 @@ class Controller:
                 f'{self.manager.simulator.time},' +                 # _TIME
                 f'{r},' +                                           # _R
                 f'{degrees(theta)},' +                              # _THETA
-                f'{degrees(Vtheta)},' +                             # _V_THETA
+                f'{Vtheta},' +                                      # _V_THETA
                 f'{Vr},' +                                          # _V_R
                 f'{tru_kin[0][0]},' +                               # _DRONE_POS_X
                 f'{tru_kin[0][1]},' +                               # _DRONE_POS_Y
@@ -2457,11 +2458,11 @@ class Controller:
                 f'{r_},' +                                          # _MEASURED_R
                 f'{degrees(theta_)},' +                             # _MEASURED_THETA
                 f'{Vr_},' +                                         # _MEASURED_V_R
-                f'{degrees(Vtheta_)},' +                            # _MEASURED_V_THETA
+                f'{Vtheta_},' +                                     # _MEASURED_V_THETA
                 f'{tr},' +                                          # _TRUE_R
                 f'{degrees(ttheta)},' +                             # _TRUE_THETA
                 f'{tVr},' +                                         # _TRUE_V_R
-                f'{degrees(tVtheta)},' +                            # _TRUE_V_THETA
+                f'{tVtheta},' +                                     # _TRUE_V_THETA
                 f'{self.manager.simulator.dt},' +                   # _DELTA_TIME
                 f'{y1},' +                                          # _Y1
                 f'{y2},' +                                          # _Y2
@@ -3480,7 +3481,7 @@ def compute_moving_average(sequence, window_size):
 
 if __name__ == '__main__':
 
-    EXPERIMENT_SAVE_MODE_ON = 1  # pylint: disable=bad-whitespace
+    EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
     WRITE_PLOT = 1  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
@@ -3490,9 +3491,9 @@ if __name__ == '__main__':
     DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
-    RUN_VIDEO_WRITER = 1  # pylint: disable=bad-whitespace
+    RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
     if RUN_EXPERIMENT:
         EXPERIMENT_MANAGER = ExperimentManager(save_on=EXPERIMENT_SAVE_MODE_ON,
@@ -3577,7 +3578,7 @@ if __name__ == '__main__':
             _TIME.append(data[0])
             _R.append(data[1])
             _THETA.append(data[2])      # degrees
-            _V_THETA.append(data[3])    # degrees
+            _V_THETA.append(data[3])
             _V_R.append(data[4])
             _DRONE_POS_X.append(data[5])    # true
             _DRONE_POS_Y.append(data[6])    # true
