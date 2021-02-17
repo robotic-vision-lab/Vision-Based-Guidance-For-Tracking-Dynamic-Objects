@@ -326,9 +326,28 @@ class Car(pygame.sprite.Sprite):
             s = SQUIRCLE_PARAM_S
             r = SQUIRCLE_PARAM_R
             t = self.simulator.time
-            sqrt_term = (1 - (1 - s**2 * (sin(2*t))**2)**0.5)**0.5
-            self.position[0] = (r*np.sign(cos(t)) / s*2**0.5*abs(sin(t))) * sqrt_term
-            self.position[1] = (r*np.sign(sin(t)) / s*2**0.5*abs(cos(t))) * sqrt_term
+            T = SQUIRCLE_PERIOD
+            OMEGA = tau/T
+            p = OMEGA*t
+            n = 1
+            srt2 = s* 2**1.5
+            # r *= 1 + 1/8 * (sin(2*n*p))**2
+            # self.position[0] = r * cos(p)
+            # self.position[1] = r * sin(p)
+
+            # x = (r / 2*s) * (2 + srt2* cos(p)  + s**2 * cos(2*p))**.5 - (r / 2*s) * (2 - srt2*cos(p)  + s**2 * cos(2*p))**.5
+            # y = (r / 2*s) * (2 + srt2* sin(p)  - s**2 * cos(2*p))**.5 - (r / 2*s) * (2 - srt2*sin(p)  - s**2 * cos(2*p))**.5
+            ax = r * OMEGA**2 * cos(2*p) * ((s**2 * cos(2*p) - srt2 + 2)**-0.5 - (s**2 * cos(2*p) + srt2 + 2)**-0.5) + 0.5*r * s**2 * (sin(2*p))**2 * ((s**2 * cos(2*p) - srt2 + 2)**-1.5 - (s**2 * cos(2*p) + srt2 + 2)**-1.5)
+            ay = r * OMEGA**2 * cos(2*p) * ((-s**2 * cos(2*p) + srt2 + 2)**-0.5 - (-s**2 * cos(2*p) - srt2 + 2)**-0.5) + 0.5*r * s**2 * (sin(2*p))**2 * ((-s**2 * cos(2*p) - srt2 + 2)**-1.5 - (-s**2 * cos(2*p) + srt2 + 2)**-1.5)
+            self.acceleration[0] = ax
+            self.acceleration[1] = ay
+            self.velocity += self.acceleration * self.simulator.dt
+            self.position += self.velocity * self.simulator.dt
+            # self.position[0] = x
+            # self.position[1] = y
+            # sqrt_term = (1 - (1 - s**2 * (sin(2*OMEGA*t))**2)**0.5)**0.5
+            # self.position[0] = ((r*np.sign(cos(OMEGA*t))) / (s*2**0.5*abs(sin(OMEGA*t)))) * sqrt_term
+            # self.position[1] = ((r*np.sign(sin(OMEGA*t))) / (s*2**0.5*abs(cos(OMEGA*t)))) * sqrt_term
 
 
         else:   # DEFAULT_TRAJECTORY

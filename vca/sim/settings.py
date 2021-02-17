@@ -61,7 +61,8 @@ TWO_HOLE_SIZE = 30
 ONE_HOLE_PERIOD = 60
 ONE_HOLE_SIZE = 30
 SQUIRCLE_PARAM_S = 0.95
-SQUIRCLE_PARAM_R = 100
+SQUIRCLE_PARAM_R = 80
+SQUIRCLE_PERIOD = 30
 
 
 # block settings
@@ -216,7 +217,7 @@ CAR_RADIUS = 0.1
 CAR_INITIAL_POSITION    = (100.0, -50.0)
 CAR_INITIAL_VELOCITY    = (22.22, 0.0)
 DRONE_POSITION          = (0.0, 0.0)
-DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
+DRONE_INITIAL_VELOCITY  = (0.0, 0.0)
 K_1                     = 0.1
 K_2                     = 0.05
 w_                      = -0.1
