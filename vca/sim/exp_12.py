@@ -2357,7 +2357,7 @@ class Controller:
         # tm = -vr * r / (vtheta**2 + vr**2)
 
         # compute desired acceleration
-        w = w_
+        w = K_W
         K1 = K_1 * np.sign(-Vr)    # lat
         K2 = K_2                   # long
 
