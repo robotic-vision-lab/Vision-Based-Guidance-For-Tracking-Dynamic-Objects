@@ -2367,12 +2367,12 @@ class Controller:
         theta = atan2(car_pos_y - drone_pos_y, car_pos_x - drone_pos_x)
 
         # compute Vr and Vθ
-        Vr = car_speed * cos(car_beta - theta) - drone_speed * cos(drone_alpha - theta)
-        Vtheta = car_speed * sin(car_beta - theta) - drone_speed * sin(drone_alpha - theta)
+        Vr = car_speed*cos(car_beta - theta) - drone_speed*cos(drone_alpha - theta)
+        Vtheta = car_speed*sin(car_beta - theta) - drone_speed*sin(drone_alpha - theta)
 
         # save measured as r_m, θ_m, Vr_m, Vθ_m
         r_m = r
-        theta_m = theta
+        theta_m = thetas
         Vr_m = Vr
         Vtheta_m = Vtheta
 
@@ -2386,7 +2386,7 @@ class Controller:
             if USE_NEW_EKF:
                 self.manager.EKF.add(r, theta, Vr, Vtheta, drone_alpha, self.a_lt, self.a_ln, car_pos_x, car_pos_y, car_vel_x, car_vel_y)
                 r, theta, Vr, Vtheta, deltaB_est, estimated_acceleration = self.manager.EKF.get_estimated_state()
-            else:
+            else: # the old EKF may not be used anymore, here only for backward compat
                 self.manager.EKF.add(r, theta, Vr, Vtheta, drone_alpha, self.a_lt, self.a_ln)
                 r, theta, Vr, Vtheta = self.manager.EKF.get_estimated_state()
 
@@ -2451,8 +2451,8 @@ class Controller:
         tr = ((tcar_x - tX)**2 + (tcar_y - tY)**2)**0.5
         ttheta = atan2(tcar_y - tY, tcar_x - tX)
         tbeta = atan2(tcvy, tcar_speed)
-        tVr = tcar_speed * cos(tbeta - ttheta) - tS * cos(alpha - ttheta)
-        tVtheta = tcar_speed * sin(tbeta - ttheta) - tS * sin(alpha - ttheta)
+        tVr = tcar_speed * cos(tbeta - ttheta) - tS * cos(drone_alpha - ttheta)
+        tVtheta = tcar_speed * sin(tbeta - ttheta) - tS * sin(drone_alpha - ttheta)
         car_vel = self.manager.simulator.car.velocity
         car_S = (car_vel[0]**2 + car_vel[1]**2)**0.5
         car_head = atan2(car_vel[1],car_vel[0])
@@ -3342,8 +3342,9 @@ class ExtendedKalman2:
         # perform predictor and filter step
         self.estimate_acc_x()
         self.estimate_acc_y()
-        self.predict()
-        self.correct()
+        self.update_state()
+        # self.predict()
+        # self.correct()
 
         # remember previous state
         self.prev_r = self.r
@@ -3363,7 +3364,7 @@ class ExtendedKalman2:
             self.R_acc = 100
             self.x_measured = self.prev_x
         else:
-            self.R_acc = 10
+            self.R_acc = 1
             self.x_measured = self.x
 
         dt = self.manager.get_sim_dt()
@@ -3429,6 +3430,25 @@ class ExtendedKalman2:
         self.ay = state_est_acc_y.flatten()[2]
 
 
+    def update_state(self):
+        beta_est = atan2(self.vy, self.vx)
+        car_speed_est = (self.vx**2 + self.vy**2)**0.5
+
+        true_kin = self.manager.get_true_kinematics()
+        drone_pos_x, drone_pos_y = true_kin[0]
+        drone_vel_x, drone_vel_y = true_kin[1]
+        drone_speed = (drone_vel_x**2 + drone_vel_y**2)**0.5
+
+        self.r = ((drone_pos_x - self.x)**2 + (drone_pos_y - self.y)**2)**0.5
+        self.theta = atan2((self.y - drone_pos_y), (self.x - drone_pos_y))
+        self.Vr = car_speed_est*cos(beta_est - self.theta) - drone_speed*cos(self.alpha - self.theta)
+        self.Vtheta = car_speed_est*sin(beta_est - self.theta) - drone_speed*sin(self.alpha - self.theta)
+
+        self.deltaB_est = atan2(self.ay, self.ax)
+        self.estimated_acceleration = (self.ax**2 + self.ay**2)**0.5
+        print(f'\ndeltaB_est: {self.deltaB_est}, est_acc: {self.estimated_acceleration}\n')
+        
+
     def predict(self):
         """Implement continuous-continuous EKF prediction (implicit) step.
         """
@@ -3444,10 +3464,6 @@ class ExtendedKalman2:
                            [0.0, 0.0],
                            [-sin(self.alpha + pi / 2 - self.prev_theta), -sin(self.alpha - self.prev_theta)],
                            [-cos(self.alpha + pi / 2 - self.prev_theta), -cos(self.alpha - self.prev_theta)]])
-     
-        self.deltaB_est = atan2(self.ay, self.ax)
-        self.estimated_acceleration = (self.ax**2 + self.ay**2)**0.5
-        print(f'\ndeltaB_est: {self.deltaB_est}, est_acc: {self.estimated_acceleration}\n')
 
         self.B2 = np.array([[0.0],
                            [0.0],
