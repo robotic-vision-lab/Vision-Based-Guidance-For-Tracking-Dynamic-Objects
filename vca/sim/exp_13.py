@@ -2346,27 +2346,29 @@ class Controller:
         #     car_x += orig[0]
         #     car_y += orig[1]
 
-        # compute speed of drone
-        drone_speed = (drone_vel_x**2 + drone_vel_y**2)** 0.5
+        # compute speeds of drone and car
+        drone_speed = (drone_vel_x**2 + drone_vel_y**2)**0.5
+        car_speed = (car_vel_x**2 + car_vel_y**2)**0.5
 
-        # heading angle of drone wrt x axis
+        # heading angle of drone
         drone_alpha = atan2(drone_vel_y, drone_vel_x)
 
-        # heading angle of car
-        if USE_TRAJECTORY==DEFAULT_TRAJECTORY:
-            car_beta = 0.0
-        else:
-            car_beta = atan2(car_vel_y, car_vel_x)
+        # heading angle of car  #TODO do we need the check still ?
+        # if USE_TRAJECTORY==DEFAULT_TRAJECTORY:
+        #     car_beta = 0.0
+        # else:
+        #     car_beta = atan2(car_vel_y, car_vel_x)
+        car_beta = atan2(car_vel_y, car_vel_x)
 
         # distance between the drone and car
         r = ((car_pos_x - drone_pos_x)**2 + (car_pos_y - drone_pos_y)**2)**0.5
 
         # angle of LOS from drone to car
-        theta = atan2(car_y - Y, car_x - X)
+        theta = atan2(car_pos_y - drone_pos_y, car_pos_x - drone_pos_x)
 
         # compute Vr and Vθ
-        Vr = car_speed * cos(beta - theta) - S * cos(alpha - theta)
-        Vtheta = car_speed * sin(beta - theta) - S * sin(alpha - theta)
+        Vr = car_speed * cos(car_beta - theta) - S * cos(drone_alpha - theta)
+        Vtheta = car_speed * sin(car_beta - theta) - S * sin(drone_alpha - theta)
 
         # save measured as r_, θ_, Vr_, Vθ_
         r_ = r
