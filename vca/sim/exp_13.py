@@ -2367,17 +2367,17 @@ class Controller:
         theta = atan2(car_pos_y - drone_pos_y, car_pos_x - drone_pos_x)
 
         # compute Vr and Vθ
-        Vr = car_speed * cos(car_beta - theta) - S * cos(drone_alpha - theta)
-        Vtheta = car_speed * sin(car_beta - theta) - S * sin(drone_alpha - theta)
+        Vr = car_speed * cos(car_beta - theta) - drone_speed * cos(drone_alpha - theta)
+        Vtheta = car_speed * sin(car_beta - theta) - drone_speed * sin(drone_alpha - theta)
 
-        # save measured as r_, θ_, Vr_, Vθ_
-        r_ = r
-        theta_ = theta
-        Vr_ = Vr
-        Vtheta_ = Vtheta
+        # save measured as r_m, θ_m, Vr_m, Vθ_m
+        r_m = r
+        theta_m = theta
+        Vr_m = Vr
+        Vtheta_m = Vtheta
 
         if not CLEAN_CONSOLE:
-            print(f'CCC0 >> r_:{r:0.2f} | theta_:{theta:0.2f} | alpha_:{alpha:0.2f} | beta_:{beta:0.2f} | car_speed_:{car_speed:0.2f} | S_:{S:0.2f} | Vr_:{Vr:0.2f} | Vtheta_:{Vtheta:0.2f} ')
+            print(f'CCCm >> r_m:{r_m:0.2f} | theta_m:{theta_m:0.2f} | alpha_m:{alpha:0.2f} | beta_m:{car_beta:0.2f} | car_vel_x:{car_vel_x:0.2f} | car_vel_y:{car_vel_y:0.2f} | drone_speed:{drone_speed:0.2f} | Vr_m:{Vr_m:0.2f} | Vtheta_m:{Vtheta_m:0.2f} ')
 
         # this point on r, θ, Vr, Vθ are estimated
 
