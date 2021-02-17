@@ -2301,8 +2301,6 @@ class Tracker:
         cv.imshow('nxt_frame', self.nf6); cv.waitKey(1)
 
 
-
-
 class Controller:
     def __init__(self, manager):
         self.manager = manager
@@ -2319,33 +2317,49 @@ class Controller:
         return min(max(x, -bound), bound)
 
     def generate_acceleration(self, kin):
-        X, Y = kin[0]
-        Vx, Vy = kin[1]
-        car_x, car_y = kin[2]
-        car_speed, cvy = kin[3]
+        # unpack kinematics of UAS and vehicle
+        # X, Y = kin[0]
+        # Vx, Vy = kin[1]
+        # car_x, car_y = kin[2]
+        # car_speed, cvy = kin[3]
+        drone_pos_x, drone_pos_y = kin[0]
+        drone_vel_x, drone_vel_y = kin[1]
+        car_pos_x, car_pos_y = kin[2]
+        car_vel_x, car_vel_y = kin[3]
 
-        if USE_WORLD_FRAME:
-            # add camera origin to positions
-            orig = self.manager.get_cam_origin()
-            X += orig[0]
-            Y += orig[1]
-            car_x += orig[0]
-            car_y += orig[1]
+        # convert kinematics to inertial frame
+        cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
+        # positions translated by camera origin
+        drone_pos_x += cam_origin_x
+        car_pos_x += cam_origin_x
+        drone_pos_y += cam_origin_y
+        car_pos_y += cam_origin_y
+        # adjust perceived velocity of car
+        car_vel_x += drone_vel_x
+        car_vel_y += drone_vel_y
 
-        # speed of drone
-        S = (Vx**2 + Vy**2) ** 0.5
+        # if USE_WORLD_FRAME:
+        #     # add camera origin to positions
+        #     orig = self.manager.get_cam_origin()
+        #     X += orig[0]
+        #     Y += orig[1]
+        #     car_x += orig[0]
+        #     car_y += orig[1]
+
+        # compute speed of drone
+        drone_speed = (drone_vel_x**2 + drone_vel_y**2)** 0.5
 
         # heading angle of drone wrt x axis
-        alpha = atan2(Vy, Vx)
+        drone_alpha = atan2(drone_vel_y, drone_vel_x)
 
         # heading angle of car
         if USE_TRAJECTORY==DEFAULT_TRAJECTORY:
-            beta = 0.0
+            car_beta = 0.0
         else:
-            beta = atan2(cvy, car_speed)
+            car_beta = atan2(car_vel_y, car_vel_x)
 
         # distance between the drone and car
-        r = ((car_x - X)**2 + (car_y - Y)**2)**0.5
+        r = ((car_pos_x - drone_pos_x)**2 + (car_pos_y - drone_pos_y)**2)**0.5
 
         # angle of LOS from drone to car
         theta = atan2(car_y - Y, car_x - X)
@@ -2389,6 +2403,7 @@ class Controller:
 
         # compute lat and long accelerations
         _D = 2 * Vr * Vtheta * r**2
+
 
         if abs(_D) < 0.01:
             a_lat = 0.0
@@ -2706,21 +2721,21 @@ class ExperimentManager:
                 if self.simulator.can_begin_tracking():
                     if self.tracker_on:
                         screen_capture = self.simulator.get_screen_capture()
+                        # process image and record status
                         status = self.tracker.process_image_complete(screen_capture)
                         self.tracker.print_to_console()
 
                         # let controller generate acceleration, when tracker indicates ok
-                        if self.tracker.can_begin_control() and (
-                                self.use_true_kin or self.tracker.kin is not None) and (
-                                # self.filter.done_waiting() or not USE_TRACKER_FILTER):
-                                self.filters_ready()):
+                        if (self.tracker.can_begin_control() and 
+                                (self.use_true_kin or self.tracker.kin is not None) and
+                                self.filters_ready() ):
                             # collect kinematics tuple
-                            # kin = self.tracker.kin if status[0] else self.get_true_kinematics()
                             kin = self.get_true_kinematics() if (self.use_true_kin or not status[0]) else self.get_tracked_kinematics()
                             # let controller process kinematics
                             ax, ay = self.controller.generate_acceleration(kin)
                             # feed controller generated acceleration commands to simulator
                             self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
+
                     else: # tracker is off
                         if self.control_on:
                             kin = self.get_true_kinematics()
@@ -2768,6 +2783,7 @@ class ExperimentManager:
         return kin
 
     def get_tracked_kinematics(self):
+        # use kinematics from the tracker, but rearrange items before returning
         return (
             self.tracker.kin[0],    # true drone position    
             self.tracker.kin[1],    # true drone velocity
