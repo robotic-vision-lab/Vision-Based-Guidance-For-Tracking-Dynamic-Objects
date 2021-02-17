@@ -184,7 +184,7 @@ CAR_RADIUS = 0.1
 # DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
 # K_1                     = 0.15
 # K_2                     = 0.02
-# w_                      = -0.1
+# K_W                      = -0.1
 
 # # 2 CLOSED [cam frame, truekin, c1 with den .05, bound=3]
 # CAR_INITIAL_POSITION    = (-70.0, -10.0)    # DO NOT TOUCH
@@ -193,7 +193,7 @@ CAR_RADIUS = 0.1
 # DRONE_INITIAL_VELOCITY  = (11.11, 0.0)      # DO NOT TOUCH
 # K_1                     = 0.3               # DO NOT TOUCH
 # K_2                     = 0.05              # DO NOT TOUCH
-# w_                      = -0.1              # DO NOT TOUCH
+# K_W                      = -0.1              # DO NOT TOUCH
 
 # # 3 CLOSED [world frame, truekin, c2 with den .01, bound=10]
 # CAR_INITIAL_POSITION    = (0.0, 0.0)        #DO NOT TOUCH
@@ -202,7 +202,7 @@ CAR_RADIUS = 0.1
 # DRONE_INITIAL_VELOCITY  = (31.1111, 0.0)    #DO NOT TOUCH
 # K_1                     = 0.1               #DO NOT TOUCH
 # K_2                     = 0.05              #DO NOT TOUCH
-# w_                      = -0.1              #DO NOT TOUCH
+# K_W                      = -0.1              #DO NOT TOUCH
 
 # #4 CLOSED [world frame, truekin, c2 with den .01, bound=10, R=10]
 # CAR_INITIAL_POSITION    = (200.0, 100.0)    # DO NOT TOUCH
@@ -211,7 +211,7 @@ CAR_RADIUS = 0.1
 # DRONE_INITIAL_VELOCITY  = (31.11, 0.0)      # DO NOT TOUCH
 # K_1                     = 0.1               # DO NOT TOUCH
 # K_2                     = 0.05              # DO NOT TOUCH
-# w_                      = -0.1              # DO NOT TOUCH
+# K_W                      = -0.1              # DO NOT TOUCH
 
 # 5 open
 CAR_INITIAL_POSITION    = (100.0, -50.0)
@@ -220,7 +220,7 @@ DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (0.0, 0.0)
 K_1                     = 0.1
 K_2                     = 0.05
-w_                      = -0.1
+K_W                      = -0.1
 
 # # 6 open
 # CAR_INITIAL_POSITION    = (-200.0, -100.0)
@@ -229,7 +229,7 @@ w_                      = -0.1
 # DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
 # K_1                     = 0.1
 # K_2                     = 0.05
-# w_                      = -0.1
+# K_W                      = -0.1
 
 # 7 open
 # CAR_INITIAL_POSITION    = (-50.0, 10.0)
@@ -238,4 +238,4 @@ w_                      = -0.1
 # DRONE_INITIAL_VELOCITY  = (0.11, 0.0)
 # K_1                     = 0.1
 # K_2                     = 0.05
-# w_                      = -0.1
+# K_W                      = -0.1
