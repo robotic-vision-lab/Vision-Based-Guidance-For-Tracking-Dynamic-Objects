@@ -2377,17 +2377,17 @@ class Controller:
         Vtheta_m = Vtheta
 
         if not CLEAN_CONSOLE:
-            print(f'CCCm >> r_m:{r_m:0.2f} | theta_m:{theta_m:0.2f} | alpha_m:{alpha:0.2f} | beta_m:{car_beta:0.2f} | car_vel_x:{car_vel_x:0.2f} | car_vel_y:{car_vel_y:0.2f} | drone_speed:{drone_speed:0.2f} | Vr_m:{Vr_m:0.2f} | Vtheta_m:{Vtheta_m:0.2f} ')
+            print(f'CCCm >> r_m:{r_m:0.2f} | theta_m:{theta_m:0.2f} | alpha_m:{drone_alpha:0.2f} | beta_m:{car_beta:0.2f} | car_vel_x:{car_vel_x:0.2f} | car_vel_y:{car_vel_y:0.2f} | drone_speed:{drone_speed:0.2f} | Vr_m:{Vr_m:0.2f} | Vtheta_m:{Vtheta_m:0.2f} ')
 
-        # this point on r, θ, Vr, Vθ are estimated
+        # this point on r, θ, Vr, Vθ etc are estimated ones
 
-        # we can consider EKF filtering [r, theta, Vr, Vtheta]
+        # EKF filtering [r, theta, Vr, Vtheta] 
         if not USE_TRUE_KINEMATICS and (USE_EXTENDED_KALMAN or USE_NEW_EKF):
             if USE_NEW_EKF:
-                self.manager.EKF.add(r, theta, Vr, Vtheta, alpha, self.a_lt, self.a_ln, car_x, car_y, car_speed, cvy)
+                self.manager.EKF.add(r, theta, Vr, Vtheta, drone_alpha, self.a_lt, self.a_ln, car_pos_x, car_pos_y, car_vel_x, car_vel_y)
                 r, theta, Vr, Vtheta, deltaB_est, estimated_acceleration = self.manager.EKF.get_estimated_state()
             else:
-                self.manager.EKF.add(r, theta, Vr, Vtheta, alpha, self.a_lt, self.a_ln)
+                self.manager.EKF.add(r, theta, Vr, Vtheta, drone_alpha, self.a_lt, self.a_ln)
                 r, theta, Vr, Vtheta = self.manager.EKF.get_estimated_state()
 
         # calculate y from drone to car
@@ -2395,11 +2395,9 @@ class Controller:
         y1 = r**2 * Vtheta**2 - y2 * self.R**2
         # y1 = Vtheta**2 * (r**2 - self.R**2) - self.R**2 * Vr**2
 
-        # time to collision from drone to car
-        # tm = -vr * r / (vtheta**2 + vr**2)
 
         # compute desired acceleration
-        w = w_
+        w = K_W
         K1 = K_1 * np.sign(-Vr)    # lat
         K2 = K_2                   # long
 
@@ -2412,18 +2410,18 @@ class Controller:
             a_long = 0.0
         else:
             if USE_TRUE_KINEMATICS:
-                car_ax, car_ay = self.manager.simulator.car.acceleration
-                estimated_acceleration = (car_ax**2 + car_ay**2)**0.5
-                deltaB_est = atan2(car_ay, car_ax)
+                car_acc_x, car_acc_y = self.manager.simulator.car.acceleration
+                estimated_acceleration = (car_acc_x**2 + car_acc_y**2)**0.5
+                deltaB_est = atan2(car_acc_y, car_acc_x)
                 # estimated_acceleration = 0.0
                 # deltaB_est = 0.0
 
-            a_lat = (K1 * Vr * y1 * cos(alpha - theta) - K1 * Vr * w * cos(alpha - theta) - K1 * Vtheta * w * sin(alpha - theta) + K1 * Vtheta * y1 * sin(alpha - theta)
-                        - 2*Vr*Vtheta*estimated_acceleration*r**2*sin(alpha - deltaB_est) +
-                        K2 * self.R**2 * Vr * y2 * cos(alpha - theta) + K2 * self.R**2 * Vtheta * y2 * sin(alpha - theta) - K2 * Vtheta * r**2 * y2 * sin(alpha - theta)) / _D
-            a_long = (K1 * Vtheta * w * cos(alpha - theta) - K1 * Vtheta * y1 * cos(alpha - theta) - K1 * Vr * w * sin(alpha - theta) + K1 * Vr * y1 * sin(alpha - theta)
-                        + 2*Vr*Vtheta*estimated_acceleration*r**2*cos(alpha - deltaB_est) -
-                        K2 * self.R**2 * Vtheta * y2 * cos(alpha - theta) + K2 * self.R**2 * Vr * y2 * sin(alpha - theta) + K2 * Vtheta * r**2 * y2 * cos(alpha - theta)) / _D
+            a_lat = (K1 * Vr * y1 * cos(drone_alpha - theta) - K1 * Vr * w * cos(drone_alpha - theta) - K1 * Vtheta * w * sin(drone_alpha - theta) + K1 * Vtheta * y1 * sin(drone_alpha - theta)
+                        - 2*Vr*Vtheta*estimated_acceleration*r**2*sin(drone_alpha - deltaB_est) +
+                        K2 * self.R**2 * Vr * y2 * cos(drone_alpha - theta) + K2 * self.R**2 * Vtheta * y2 * sin(drone_alpha - theta) - K2 * Vtheta * r**2 * y2 * sin(drone_alpha - theta)) / _D
+            a_long = (K1 * Vtheta * w * cos(drone_alpha - theta) - K1 * Vtheta * y1 * cos(drone_alpha - theta) - K1 * Vr * w * sin(drone_alpha - theta) + K1 * Vr * y1 * sin(drone_alpha - theta)
+                        + 2*Vr*Vtheta*estimated_acceleration*r**2*cos(drone_alpha - deltaB_est) -
+                        K2 * self.R**2 * Vtheta * y2 * cos(drone_alpha - theta) + K2 * self.R**2 * Vr * y2 * sin(drone_alpha - theta) + K2 * Vtheta * r**2 * y2 * cos(drone_alpha - theta)) / _D
 
             
 
@@ -2437,12 +2435,12 @@ class Controller:
         self.a_lt = a_lat
 
         # compute acceleration command
-        delta = alpha + pi / 2
-        ax = a_lat * cos(delta) + a_long * cos(alpha)
-        ay = a_lat * sin(delta) + a_long * sin(alpha)
+        delta = drone_alpha + pi / 2
+        ax = a_lat * cos(delta) + a_long * cos(drone_alpha)
+        ay = a_lat * sin(delta) + a_long * sin(drone_alpha)
 
         if not CLEAN_CONSOLE:
-            print(f'CCC0 >> r:{r:0.2f} | theta:{theta:0.2f} | alpha:{alpha:0.2f} | car_speed:{car_speed:0.2f} | S:{S:0.2f} | Vr:{Vr:0.2f} | Vtheta:{Vtheta:0.2f} | y1:{y1:0.2f} | y2:{y2:0.2f} | a_lat:{a_lat:0.2f} | a_long:{a_long:0.2f} | _D:{_D:0.2f}')
+            print(f'CCC0 >> r:{r:0.2f} | theta:{theta:0.2f} | alpha:{drone_alpha:0.2f} | car_vel_x:{car_vel_x:0.2f} | car_vel_y:{car_vel_y:0.2f} | drone_speed:{drone_speed:0.2f} | Vr:{Vr:0.2f} | Vtheta:{Vtheta:0.2f} | y1:{y1:0.2f} | y2:{y2:0.2f} | a_lat:{a_lat:0.2f} | a_long:{a_long:0.2f} | _D:{_D:0.2f}')
 
         tru_kin = self.manager.get_true_kinematics()
         tX, tY = tru_kin[0]
