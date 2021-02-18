@@ -221,9 +221,35 @@ class Car(pygame.sprite.Sprite):
         # hold onto the game/simulator reference
         self.simulator = simulator
 
-        if USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+        if (USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or
+                USE_TRAJECTORY == TWO_HOLE_TRAJECTORY or
+                USE_TRAJECTORY == SQUIRCLE_TRAJECTORY):
             self.init_x = 0
             self.init_y = 0
+            # if USE_TRAJECTORY== ONE_HOLE_TRAJECTORY:
+            #     CW = -1
+            #     ACW = 1
+            #     DIRECTION = CW
+            #     OFFSET = -pi/2
+            #     t = -DELTA_TIME
+            #     T = ONE_HOLE_PERIOD
+            #     size = ONE_HOLE_SIZE
+            #     OMEGA = tau/T
+            #     self.velocity[0] = -(OMEGA*size) * sin(OMEGA*t*DIRECTION+OFFSET)
+            #     self.velocity[1] = (OMEGA*size) * cos(OMEGA*t*DIRECTION+OFFSET)
+
+            # if USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+            #     CW = -1
+            #     ACW = 1
+            #     DIRECTION = CW
+            #     OFFSET = -pi/2
+            #     t = -DELTA_TIME
+            #     T = TWO_HOLE_PERIOD
+            #     size = TWO_HOLE_SIZE
+            #     OMEGA = tau/T
+            #     self.velocity[0] = -(OMEGA*size) * sin(OMEGA*t*DIRECTION+OFFSET)
+            #     self.velocity[1] = (OMEGA*size) * cos(2*OMEGA*t*DIRECTION+OFFSET)
+            
             self.velocity = pygame.Vector2(0, 0)
             self.acceleration = pygame.Vector2(0, 0)
             self.update_kinematics()
@@ -236,7 +262,7 @@ class Car(pygame.sprite.Sprite):
         """
         CW = -1
         ACW = 1
-        DIRECTION = CW
+        DIRECTION = ACW
         OFFSET = -pi/2
         if USE_TRAJECTORY == ONE_HOLE_TRAJECTORY:
             t = self.simulator.time
@@ -247,6 +273,7 @@ class Car(pygame.sprite.Sprite):
             self.velocity[1] = (OMEGA*size) * cos(OMEGA*t*DIRECTION+OFFSET)
             self.acceleration[0] = -(OMEGA**2*size) * cos(OMEGA*t*DIRECTION+OFFSET)
             self.acceleration[1] = -(OMEGA**2*size) * sin(OMEGA*t*DIRECTION+OFFSET)
+            # self.velocity += self.acceleration * self.simulator.dt
             self.position += self.velocity * self.simulator.dt
             self.angle = atan2(cos(OMEGA*t*DIRECTION+OFFSET), - sin(OMEGA*t*DIRECTION+OFFSET))
 
@@ -259,6 +286,7 @@ class Car(pygame.sprite.Sprite):
             self.velocity[1] = (OMEGA*size) * cos(2*OMEGA*t*DIRECTION+OFFSET)
             self.acceleration[0] = -(OMEGA**2*size) * cos(OMEGA*t*DIRECTION+OFFSET)
             self.acceleration[1] = -(OMEGA**2*size) * sin(2*OMEGA*t*DIRECTION+OFFSET)
+            # self.velocity += self.acceleration * self.simulator.dt
             self.position += self.velocity * self.simulator.dt
             self.angle = atan2(cos(2*OMEGA*t*DIRECTION+OFFSET), - sin(OMEGA*t*DIRECTION+OFFSET))
         
@@ -337,24 +365,14 @@ class Car(pygame.sprite.Sprite):
 
             # x = (r / 2*s) * (2 + srt2* cos(p)  + s**2 * cos(2*p))**.5 - (r / 2*s) * (2 - srt2*cos(p)  + s**2 * cos(2*p))**.5
             # y = (r / 2*s) * (2 + srt2* sin(p)  - s**2 * cos(2*p))**.5 - (r / 2*s) * (2 - srt2*sin(p)  - s**2 * cos(2*p))**.5
-            # ax = r * OMEGA**2 * cos(2*p) * ((s**2 * cos(2*p) - srt2 + 2)**-0.5 - (s**2 * cos(2*p) + srt2 + 2)**-0.5) + 0.5*r * s**2 * (sin(2*p))**2 * ((s**2 * cos(2*p) - srt2 + 2)**-1.5 - (s**2 * cos(2*p) + srt2 + 2)**-1.5)
-            # ay = r * OMEGA**2 * cos(2*p) * ((-s**2 * cos(2*p) + srt2 + 2)**-0.5 - (-s**2 * cos(2*p) - srt2 + 2)**-0.5) + 0.5*r * s**2 * (sin(2*p))**2 * ((-s**2 * cos(2*p) - srt2 + 2)**-1.5 - (-s**2 * cos(2*p) + srt2 + 2)**-1.5)
-            # self.acceleration[0] = ax.imag
-            # self.acceleration[1] = ay.imag
-            # print(self.acceleration)
-            # self.velocity += self.acceleration * self.simulator.dt
-            # self.position += self.velocity * self.simulator.dt
+            
 
             vx = ((r*OMEGA)/(4*s)) * (((2+srt2*cos(p)+s**2*cos(2*p))**-0.5*(-srt2*sin(p)-2*s**2*sin(2*p))) - ((2-srt2*cos(p)+s**2*cos(2*p))**-0.5*(srt2*sin(p)-2*s**2*sin(2*p))))
             vy = ((r*OMEGA)/(4*s)) * (((2+srt2*sin(p)-s**2*cos(2*p))**-0.5*(srt2*cos(p)+2*s**2*sin(2*p))) - ((2-srt2*sin(p)-s**2*cos(2*p))**-0.5*(-srt2*cos(p)+2*s**2*sin(2*p))))
             self.velocity[0]=vx
             self.velocity[1]=vy
+            self.angle=atan2(vy,vx)
             self.position += self.velocity * self.simulator.dt
-            # self.position[0] = x
-            # self.position[1] = y
-            # sqrt_term = (1 - (1 - s**2 * (sin(2*OMEGA*t))**2)**0.5)**0.5
-            # self.position[0] = ((r*np.sign(cos(OMEGA*t))) / (s*2**0.5*abs(sin(OMEGA*t)))) * sqrt_term
-            # self.position[1] = ((r*np.sign(sin(OMEGA*t))) / (s*2**0.5*abs(cos(OMEGA*t)))) * sqrt_term
 
 
         else:   # DEFAULT_TRAJECTORY
@@ -909,7 +927,9 @@ class Simulator:
         # draw only car and blocks (not drone)
         self.car_block_sprites.draw(self.screen_surface)
 
-        if USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+        if (USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or
+                USE_TRAJECTORY == TWO_HOLE_TRAJECTORY or 
+                USE_TRAJECTORY == SQUIRCLE_TRAJECTORY):
             self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
             prev_center = self.car_img[0].get_rect(center = self.car_img[0].get_rect().center).center
             rot_img = pygame.transform.rotate(self.car_img[0], degrees(self.car.angle))
