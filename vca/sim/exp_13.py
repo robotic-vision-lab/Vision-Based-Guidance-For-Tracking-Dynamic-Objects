@@ -328,7 +328,7 @@ class Car(pygame.sprite.Sprite):
             t = self.simulator.time
             T = SQUIRCLE_PERIOD
             OMEGA = tau/T
-            p = OMEGA*t
+            p = OMEGA*t - pi/2
             n = 1
             srt2 = s* 2**1.5
             # r *= 1 + 1/8 * (sin(2*n*p))**2
@@ -337,11 +337,18 @@ class Car(pygame.sprite.Sprite):
 
             # x = (r / 2*s) * (2 + srt2* cos(p)  + s**2 * cos(2*p))**.5 - (r / 2*s) * (2 - srt2*cos(p)  + s**2 * cos(2*p))**.5
             # y = (r / 2*s) * (2 + srt2* sin(p)  - s**2 * cos(2*p))**.5 - (r / 2*s) * (2 - srt2*sin(p)  - s**2 * cos(2*p))**.5
-            ax = r * OMEGA**2 * cos(2*p) * ((s**2 * cos(2*p) - srt2 + 2)**-0.5 - (s**2 * cos(2*p) + srt2 + 2)**-0.5) + 0.5*r * s**2 * (sin(2*p))**2 * ((s**2 * cos(2*p) - srt2 + 2)**-1.5 - (s**2 * cos(2*p) + srt2 + 2)**-1.5)
-            ay = r * OMEGA**2 * cos(2*p) * ((-s**2 * cos(2*p) + srt2 + 2)**-0.5 - (-s**2 * cos(2*p) - srt2 + 2)**-0.5) + 0.5*r * s**2 * (sin(2*p))**2 * ((-s**2 * cos(2*p) - srt2 + 2)**-1.5 - (-s**2 * cos(2*p) + srt2 + 2)**-1.5)
-            self.acceleration[0] = ax
-            self.acceleration[1] = ay
-            self.velocity += self.acceleration * self.simulator.dt
+            # ax = r * OMEGA**2 * cos(2*p) * ((s**2 * cos(2*p) - srt2 + 2)**-0.5 - (s**2 * cos(2*p) + srt2 + 2)**-0.5) + 0.5*r * s**2 * (sin(2*p))**2 * ((s**2 * cos(2*p) - srt2 + 2)**-1.5 - (s**2 * cos(2*p) + srt2 + 2)**-1.5)
+            # ay = r * OMEGA**2 * cos(2*p) * ((-s**2 * cos(2*p) + srt2 + 2)**-0.5 - (-s**2 * cos(2*p) - srt2 + 2)**-0.5) + 0.5*r * s**2 * (sin(2*p))**2 * ((-s**2 * cos(2*p) - srt2 + 2)**-1.5 - (-s**2 * cos(2*p) + srt2 + 2)**-1.5)
+            # self.acceleration[0] = ax.imag
+            # self.acceleration[1] = ay.imag
+            # print(self.acceleration)
+            # self.velocity += self.acceleration * self.simulator.dt
+            # self.position += self.velocity * self.simulator.dt
+
+            vx = ((r*OMEGA)/(4*s)) * (((2+srt2*cos(p)+s**2*cos(2*p))**-0.5*(-srt2*sin(p)-2*s**2*sin(2*p))) - ((2-srt2*cos(p)+s**2*cos(2*p))**-0.5*(srt2*sin(p)-2*s**2*sin(2*p))))
+            vy = ((r*OMEGA)/(4*s)) * (((2+srt2*sin(p)-s**2*cos(2*p))**-0.5*(srt2*cos(p)+2*s**2*sin(2*p))) - ((2-srt2*sin(p)-s**2*cos(2*p))**-0.5*(-srt2*cos(p)+2*s**2*sin(2*p))))
+            self.velocity[0]=vx
+            self.velocity[1]=vy
             self.position += self.velocity * self.simulator.dt
             # self.position[0] = x
             # self.position[1] = y
@@ -3522,8 +3529,8 @@ def compute_moving_average(sequence, window_size):
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
-    CONTROL_ON = 1  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
+    CONTROL_ON = 0  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
@@ -3531,7 +3538,7 @@ if __name__ == '__main__':
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
