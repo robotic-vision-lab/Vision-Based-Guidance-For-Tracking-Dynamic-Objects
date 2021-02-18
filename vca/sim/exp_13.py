@@ -3549,16 +3549,16 @@ def compute_moving_average(sequence, window_size):
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
-    CONTROL_ON = 0  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
+    CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -3580,16 +3580,16 @@ if __name__ == '__main__':
         FILE = open('plot_info.csv', 'r')
         
         # plot switches
-        SHOW_ALL = 0    # set to 1 to show all plots 
+        SHOW_ALL = 1    # set to 1 to show all plots 
 
         SHOW_CARTESIAN_PLOTS = 1
         SHOW_LOS_KIN_1 = 1
         SHOW_LOS_KIN_2 = 1
         SHOW_ACCELERATIONS = 1
         SHOW_TRAJECTORIES = 1
-        SHOW_SPEED_HEADING = 0
+        SHOW_SPEED_HEADING = 1
         SHOW_ALTITUDE_PROFILE = 0
-        SHOW_3D_TRAJECTORIES = 0
+        SHOW_3D_TRAJECTORIES = 1
         SHOW_DELTA_TIME_PROFILE = 0
 
         _TIME = []
@@ -3837,7 +3837,7 @@ if __name__ == '__main__':
                 alpha=0.9)
 
             axs[1].legend(loc='upper right')
-            axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_{\theta}\ (\frac{^{\circ}}{s})$')
+            axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_{\theta}\ (\frac{m}{s})$')
             axs[1].set_title(r'$\mathbf{V_{\theta}}$', fontsize=SUB_TITLE_FONT_SIZE)
 
             f1.savefig(f'{_PATH}/1_los2.png', dpi=300)
