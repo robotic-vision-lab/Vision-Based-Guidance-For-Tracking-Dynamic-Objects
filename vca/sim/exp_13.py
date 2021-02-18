@@ -292,26 +292,26 @@ class Car(pygame.sprite.Sprite):
                 self.acceleration = pygame.Vector2(0, +1)
                 self.velocity += self.acceleration * self.simulator.dt
 
-            # elif t >= 55 and t < 57:
-            #     self.acceleration = pygame.Vector2(0, +1)
-            #     self.velocity += self.acceleration * self.simulator.dt
-            # elif t >= 57 and t < 59:
-            #     self.acceleration = pygame.Vector2(0, -1)
-            #     self.velocity += self.acceleration * self.simulator.dt
+            elif t >= 55 and t < 57:
+                self.acceleration = pygame.Vector2(0, +1)
+                self.velocity += self.acceleration * self.simulator.dt
+            elif t >= 57 and t < 59:
+                self.acceleration = pygame.Vector2(0, -1)
+                self.velocity += self.acceleration * self.simulator.dt
 
-            # elif t >= 75 and t < 77:
-            #     self.acceleration = pygame.Vector2(0, -1)
-            #     self.velocity += self.acceleration * self.simulator.dt
-            # elif t >= 77 and t < 79:
-            #     self.acceleration = pygame.Vector2(0, +1)
-            #     self.velocity += self.acceleration * self.simulator.dt
+            elif t >= 75 and t < 77:
+                self.acceleration = pygame.Vector2(0, -1)
+                self.velocity += self.acceleration * self.simulator.dt
+            elif t >= 77 and t < 79:
+                self.acceleration = pygame.Vector2(0, +1)
+                self.velocity += self.acceleration * self.simulator.dt
 
-            # elif t >= 105 and t < 107:
-            #     self.acceleration = pygame.Vector2(0, +1)
-            #     self.velocity += self.acceleration * self.simulator.dt
-            # elif t >= 107 and t < 109:
-            #     self.acceleration = pygame.Vector2(0, -1)
-            #     self.velocity += self.acceleration * self.simulator.dt
+            elif t >= 105 and t < 107:
+                self.acceleration = pygame.Vector2(0, +1)
+                self.velocity += self.acceleration * self.simulator.dt
+            elif t >= 107 and t < 109:
+                self.acceleration = pygame.Vector2(0, -1)
+                self.velocity += self.acceleration * self.simulator.dt
 
             elif t >= 39:
                 self.acceleration = pygame.Vector2(0, 0)
@@ -2318,10 +2318,6 @@ class Controller:
 
     def generate_acceleration(self, kin):
         # unpack kinematics of UAS and vehicle
-        # X, Y = kin[0]
-        # Vx, Vy = kin[1]
-        # car_x, car_y = kin[2]
-        # car_speed, cvy = kin[3]
         drone_pos_x, drone_pos_y = kin[0]
         drone_vel_x, drone_vel_y = kin[1]
         car_pos_x, car_pos_y = kin[2]
@@ -2330,21 +2326,10 @@ class Controller:
         # convert kinematics to inertial frame
         cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
         # positions translated by camera origin
-        drone_pos_x += cam_origin_x
+        drone_pos_x = cam_origin_x
+        drone_pos_y = cam_origin_y
         car_pos_x += cam_origin_x
-        drone_pos_y += cam_origin_y
         car_pos_y += cam_origin_y
-        # adjust perceived velocity of car
-        car_vel_x += drone_vel_x
-        car_vel_y += drone_vel_y
-
-        # if USE_WORLD_FRAME:
-        #     # add camera origin to positions
-        #     orig = self.manager.get_cam_origin()
-        #     X += orig[0]
-        #     Y += orig[1]
-        #     car_x += orig[0]
-        #     car_y += orig[1]
 
         # compute speeds of drone and car
         drone_speed = (drone_vel_x**2 + drone_vel_y**2)**0.5
@@ -2353,11 +2338,7 @@ class Controller:
         # heading angle of drone
         drone_alpha = atan2(drone_vel_y, drone_vel_x)
 
-        # heading angle of car  #TODO do we need the check still ?
-        # if USE_TRAJECTORY==DEFAULT_TRAJECTORY:
-        #     car_beta = 0.0
-        # else:
-        #     car_beta = atan2(car_vel_y, car_vel_x)
+        # heading angle of car
         car_beta = atan2(car_vel_y, car_vel_x)
 
         # distance between the drone and car
@@ -2372,7 +2353,7 @@ class Controller:
 
         # save measured as r_m, θ_m, Vr_m, Vθ_m
         r_m = r
-        theta_m = thetas
+        theta_m = theta
         Vr_m = Vr
         Vtheta_m = Vtheta
 
@@ -2393,7 +2374,6 @@ class Controller:
         # calculate y from drone to car
         y2 = Vtheta**2 + Vr**2
         y1 = r**2 * Vtheta**2 - y2 * self.R**2
-        # y1 = Vtheta**2 * (r**2 - self.R**2) - self.R**2 * Vr**2
 
 
         # compute desired acceleration
@@ -2425,8 +2405,8 @@ class Controller:
 
             
 
-        a_long_bound = 5
-        a_lat_bound = 5
+        a_long_bound = 10
+        a_lat_bound = 10
 
         a_long = self.sat(a_long, a_long_bound)
         a_lat = self.sat(a_lat, a_lat_bound)
@@ -2446,34 +2426,33 @@ class Controller:
         tX, tY = tru_kin[0]
         tVx, tVy = tru_kin[1]
         tcar_x, tcar_y = tru_kin[2]
-        tcar_speed, tcvy = tru_kin[3]
+        tcar_vel_x, tcar_vel_y = tru_kin[3]
+        car_S = (tcar_vel_x**2 + tcar_vel_y**2)**0.5
         tS = (tVx**2 + tVy**2) ** 0.5
         tr = ((tcar_x - tX)**2 + (tcar_y - tY)**2)**0.5
         ttheta = atan2(tcar_y - tY, tcar_x - tX)
-        tbeta = atan2(tcvy, tcar_speed)
-        tVr = tcar_speed * cos(tbeta - ttheta) - tS * cos(drone_alpha - ttheta)
-        tVtheta = tcar_speed * sin(tbeta - ttheta) - tS * sin(drone_alpha - ttheta)
-        car_vel = self.manager.simulator.car.velocity
-        car_S = (car_vel[0]**2 + car_vel[1]**2)**0.5
-        car_head = atan2(car_vel[1],car_vel[0])
+        tbeta = atan2(tcar_vel_y, tcar_vel_x)
+        tVr = car_S * cos(tbeta - ttheta) - tS * cos(drone_alpha - ttheta)
+        tVtheta = car_S * sin(tbeta - ttheta) - tS * sin(drone_alpha - ttheta)
+        car_head = atan2(tcar_vel_y, tcar_vel_x)
          
 
         tra_kin = self.manager.get_tracked_kinematics()
         # vel = self.manager.simulator.camera.velocity
         if not CLEAN_CONSOLE:
             print(
-                f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{X:0.2f}, {Y:0.2f}] | v:[{Vx:0.2f}, {Vy:0.2f}] | CAR - x:[{car_x:0.2f}, {car_y:0.2f}] | v:[{car_speed:0.2f}, {cvy:0.2f}] | COMMANDED a:[{ax:0.2f}, {ay:0.2f}] | TRACKED x:[{tra_kin[2][0]:0.2f},{tra_kin[2][1]:0.2f}] | v:[{tra_kin[3][0]:0.2f},{tra_kin[3][1]:0.2f}]')
+                f'CCCC >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:[{drone_pos_x:0.2f}, {drone_pos_y:0.2f}] | v:[{drone_vel_x:0.2f}, {drone_vel_y:0.2f}] | CAR - x:[{car_pos_x:0.2f}, {car_pos_y:0.2f}] | v:[{car_vel_x:0.2f}, {car_vel_y:0.2f}] | COMMANDED a:[{ax:0.2f}, {ay:0.2f}] | TRACKED x:[{tra_kin[2][0]:0.2f},{tra_kin[2][1]:0.2f}] | v:[{tra_kin[3][0]:0.2f},{tra_kin[3][1]:0.2f}]')
         if self.manager.write_plot:
             self.f.write(
                 f'{self.manager.simulator.time},' +                 # _TIME
-                f'{r},' +                                           # _R
-                f'{degrees(theta)},' +                              # _THETA
-                f'{Vtheta},' +                                      # _V_THETA
-                f'{Vr},' +                                          # _V_R
+                f'{r},' +                                           # _R (est)
+                f'{degrees(theta)},' +                              # _THETA (est)
+                f'{Vtheta},' +                                      # _V_THETA (est)
+                f'{Vr},' +                                          # _V_R (est)
                 f'{tru_kin[0][0]},' +                               # _DRONE_POS_X
                 f'{tru_kin[0][1]},' +                               # _DRONE_POS_Y
                 f'{tru_kin[2][0]},' +                               # _CAR_POS_X
-                f'{tru_kin[2][1]},' +                               # _CAR_POS_y
+                f'{tru_kin[2][1]},' +                               # _CAR_POS_Y
                 f'{ax},' +                                          # _DRONE_ACC_X
                 f'{ay},' +                                          # _DRONE_ACC_Y
                 f'{a_lat},' +                                       # _DRONE_ACC_LAT
@@ -2486,8 +2465,8 @@ class Controller:
                 f'{tra_kin[3][1]},' +                               # _TRACKED_CAR_VEL_Y
                 f'{self.manager.simulator.camera.origin[0]},' +     # _CAM_ORIGIN_X
                 f'{self.manager.simulator.camera.origin[1]},' +     # _CAM_ORIGIN_Y
-                f'{S},' +                                           # _DRONE_SPEED
-                f'{degrees(alpha)},' +                              # _DRONE_ALPHA
+                f'{drone_speed},' +                                 # _DRONE_SPEED
+                f'{degrees(drone_alpha)},' +                        # _DRONE_ALPHA
                 f'{tru_kin[1][0]},' +                               # _DRONE_VEL_X
                 f'{tru_kin[1][1]},' +                               # _DRONE_VEL_Y
                 f'{tra_kin[2][0]},' +                               # _MEASURED_CAR_POS_X
@@ -2496,10 +2475,10 @@ class Controller:
                 f'{tra_kin[3][1]},' +                               # _MEASURED_CAR_VEL_Y
                 f'{self.manager.simulator.camera.altitude},' +      # _DRONE_ALTITUDE
                 f'{abs(_D)},' +                                     # _ABS_DEN
-                f'{r_},' +                                          # _MEASURED_R
-                f'{degrees(theta_)},' +                             # _MEASURED_THETA
-                f'{Vr_},' +                                         # _MEASURED_V_R
-                f'{Vtheta_},' +                                     # _MEASURED_V_THETA
+                f'{r_m},' +                                         # _MEASURED_R
+                f'{degrees(theta_m)},' +                            # _MEASURED_THETA
+                f'{Vr_m},' +                                        # _MEASURED_V_R
+                f'{Vtheta_m},' +                                    # _MEASURED_V_THETA
                 f'{tr},' +                                          # _TRUE_R
                 f'{degrees(ttheta)},' +                             # _TRUE_THETA
                 f'{tVr},' +                                         # _TRUE_V_R
@@ -3435,12 +3414,15 @@ class ExtendedKalman2:
         car_speed_est = (self.vx**2 + self.vy**2)**0.5
 
         true_kin = self.manager.get_true_kinematics()
+        cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
         drone_pos_x, drone_pos_y = true_kin[0]
         drone_vel_x, drone_vel_y = true_kin[1]
+        drone_pos_x += cam_origin_x
+        drone_pos_y += cam_origin_y
         drone_speed = (drone_vel_x**2 + drone_vel_y**2)**0.5
 
         self.r = ((drone_pos_x - self.x)**2 + (drone_pos_y - self.y)**2)**0.5
-        self.theta = atan2((self.y - drone_pos_y), (self.x - drone_pos_y))
+        self.theta = atan2((self.y - drone_pos_y), (self.x - drone_pos_x))
         self.Vr = car_speed_est*cos(beta_est - self.theta) - drone_speed*cos(self.alpha - self.theta)
         self.Vtheta = car_speed_est*sin(beta_est - self.theta) - drone_speed*sin(self.alpha - self.theta)
 
@@ -3540,8 +3522,8 @@ def compute_moving_average(sequence, window_size):
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
-    CONTROL_ON = 0  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
+    CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
@@ -3549,7 +3531,7 @@ if __name__ == '__main__':
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -3571,7 +3553,7 @@ if __name__ == '__main__':
         FILE = open('plot_info.csv', 'r')
         
         # plot switches
-        SHOW_ALL = 1    # set to 1 to show all plots 
+        SHOW_ALL = 0    # set to 1 to show all plots 
 
         SHOW_CARTESIAN_PLOTS = 1
         SHOW_LOS_KIN_1 = 1
