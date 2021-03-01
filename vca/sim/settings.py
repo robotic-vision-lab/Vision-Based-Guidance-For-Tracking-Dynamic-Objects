@@ -28,7 +28,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 250.0                                  # meters
+ALTITUDE = 150.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -55,13 +55,13 @@ TWO_HOLE_TRAJECTORY = 2
 LANE_CHANGE_TRAJECTORY = 3
 SQUIRCLE_TRAJECTORY = 4
 
-USE_TRAJECTORY = SQUIRCLE_TRAJECTORY
+USE_TRAJECTORY = LANE_CHANGE_TRAJECTORY
 TWO_HOLE_PERIOD = 120
 TWO_HOLE_SIZE = 30
 ONE_HOLE_PERIOD = 60
 ONE_HOLE_SIZE = 30
-SQUIRCLE_PARAM_S = 0.95
-SQUIRCLE_PARAM_R = 180
+SQUIRCLE_PARAM_S = 0.9
+SQUIRCLE_PARAM_R = 1000
 SQUIRCLE_PERIOD = 360
 
 
@@ -73,8 +73,8 @@ NUM_BLOCKS = 10
 # bar settings
 BAR_COLOR = DARK_GRAY_3
 BAR_COLOR_DELTA = (8, 8, 8)
-BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 4.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
-NUM_BARS = 4
+BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 60.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
+NUM_BARS = 2
 
 # drone camera settings
 DRONE_IMG = 'cross_hair2.png'
@@ -137,7 +137,7 @@ USE_WORLD_FRAME = 0
 CLEAR_TOP = 1
 
 # console settings
-CLEAN_CONSOLE = 0
+CLEAN_CONSOLE = 1
 
 # resolution settings
 SCALE_1 = 1.0
@@ -213,23 +213,23 @@ CAR_RADIUS = 0.1
 # K_2                     = 0.05              # DO NOT TOUCH
 # K_W                      = -0.1              # DO NOT TOUCH
 
-# 5 open
-CAR_INITIAL_POSITION    = (0.0, -20.0)
+# # 5 open
+# CAR_INITIAL_POSITION    = (140.0, -40.0)
+# CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+# DRONE_POSITION          = (0.0, 0.0)
+# DRONE_INITIAL_VELOCITY  = (31.31, 0.0)
+# K_1                     = 0.2 # 0.1
+# K_2                     = 0.1
+# K_W                     = -0.1
+
+# 6 open
+CAR_INITIAL_POSITION    = (50.0, -30.0)
 CAR_INITIAL_VELOCITY    = (22.22, 0.0)
 DRONE_POSITION          = (0.0, 0.0)
-DRONE_INITIAL_VELOCITY  = (0.0, 0.0)
-K_1                     = 0.1
-K_2                     = 0.05
-K_W                     = -0.1
-
-# # 6 open
-# CAR_INITIAL_POSITION    = (-200.0, -100.0)
-# CAR_INITIAL_VELOCITY    = (31.11, 0.0)
-# DRONE_POSITION          = (0.0, 0.0)
-# DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
-# K_1                     = 0.1
-# K_2                     = 0.05
-# K_W                      = -0.1
+DRONE_INITIAL_VELOCITY  = (31.31, 0.0)
+K_1                     = 0.5
+K_2                     = 0.2
+K_W                      = -0.1
 
 # 7 open
 # CAR_INITIAL_POSITION    = (-50.0, 10.0)

@@ -19,9 +19,10 @@ from math import atan2, degrees, radians, cos, sin, pi, tau, isnan, e
 import numpy as np
 import cv2 as cv
 import pygame
+import pygame.locals as GAME_GLOBALS
+import pygame.event as GAME_EVENTS
 
 
-from pygame.locals import *                                 #pylint: disable=unused-wildcard-import
 from settings import *                                      #pylint: disable=unused-wildcard-import
 from optical_flow_config import (FARNEBACK_PARAMS,          #pylint: disable=unused-import
                                  FARN_TEMP_FOLDER,
@@ -67,28 +68,6 @@ from algorithms.feature_match \
 from algorithms.template_match \
                 import (CorrelationCoeffNormed,
                         TemplateMatcher)
-
-
-""" Summary:
-    Experiment 11:
-    In this module we try to complete implementation of the Occlusion Bars.
-
-    Pygame runs a simulation.
-    In the simulation, we have 3 kinds of sprites:
-        - Blocks
-        - Car
-        - DroneCamera
-    There are multiple Blocks, 1 Car and 1 DroneCamera.
-    All sprites have a position, velocity and acceleration.
-    The Simulator object can call the update() method on all sprites at a specified FPS clock rate.
-    Simulator runs in the main thread, and it's clock runs in parallel to all other processes.
-
-    The Manager object instantiates Simulator, Tracker and Controller.
-    Manager can call Simulator's update().
-
-    In this module, Manager runs experiment, calls methods from Simulator, Tracker and Controller.
-
-"""
 
 
 class Block(pygame.sprite.Sprite):
@@ -823,9 +802,9 @@ class Simulator:
         """Handles captured events.
         """
         # respond to all events posted in the event queue
-        for event in pygame.event.get():
+        for event in GAME_EVENTS.get():
             # QUIT event
-            if event.type == pygame.QUIT or     \
+            if event.type == GAME_GLOBALS.QUIT or     \
                     event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.quit()
                 break
@@ -892,7 +871,7 @@ class Simulator:
                 self.car_rect_center_bb_offset[0] = self.bb_start[0] - self.car.rect.centerx 
                 self.car_rect_center_bb_offset[1] = self.bb_start[1] - self.car.rect.centery
 
-            pygame.event.pump()
+            GAME_EVENTS.pump()
 
         # respond to the command posted by controller
         # if len(self.manager.command_deque) > 0:
@@ -2225,6 +2204,8 @@ class Tracker:
                            font_scale=0.55, color=occ_color, thickness=1)
         img = put_text(img, occ_str_old, (WIDTH//2 - 30, HEIGHT - 15),
                            font_scale=0.35, color=occ_color_old, thickness=1)
+        if self.target_occlusion_case_new==self._TOTAL_OCC:
+            print(f"Total at {self.manager.simulator.time}")
         return img
 
     def print_to_console(self):
@@ -2423,13 +2404,25 @@ class Controller:
                 # estimated_acceleration = 0.0
                 # deltaB_est = 0.0
 
-            a_lat = (K1 * Vr * y1 * cos(drone_alpha - theta) - K1 * Vr * w * cos(drone_alpha - theta) - K1 * Vtheta * w * sin(drone_alpha - theta) + K1 * Vtheta * y1 * sin(drone_alpha - theta)
-                        - 2*Vr*Vtheta*estimated_acceleration*r**2*sin(drone_alpha - deltaB_est) +
-                        K2 * self.R**2 * Vr * y2 * cos(drone_alpha - theta) + K2 * self.R**2 * Vtheta * y2 * sin(drone_alpha - theta) - K2 * Vtheta * r**2 * y2 * sin(drone_alpha - theta)) / _D
-            a_long = (K1 * Vtheta * w * cos(drone_alpha - theta) - K1 * Vtheta * y1 * cos(drone_alpha - theta) - K1 * Vr * w * sin(drone_alpha - theta) + K1 * Vr * y1 * sin(drone_alpha - theta)
-                        + 2*Vr*Vtheta*estimated_acceleration*r**2*cos(drone_alpha - deltaB_est) -
-                        K2 * self.R**2 * Vtheta * y2 * cos(drone_alpha - theta) + K2 * self.R**2 * Vr * y2 * sin(drone_alpha - theta) + K2 * Vtheta * r**2 * y2 * cos(drone_alpha - theta)) / _D
+            # a_lat = (K1 * Vr * y1 * cos(drone_alpha - theta) - K1 * Vr * w * cos(drone_alpha - theta) - K1 * Vtheta * w * sin(drone_alpha - theta) + K1 * Vtheta * y1 * sin(drone_alpha - theta)
+            #             - 2*Vr*Vtheta*estimated_acceleration*r**2*sin(drone_alpha - deltaB_est) +
+            #             K2 * self.R**2 * Vr * y2 * cos(drone_alpha - theta) + K2 * self.R**2 * Vtheta * y2 * sin(drone_alpha - theta) - K2 * Vtheta * r**2 * y2 * sin(drone_alpha - theta)) / _D
+            # a_long = (K1 * Vtheta * w * cos(drone_alpha - theta) - K1 * Vtheta * y1 * cos(drone_alpha - theta) - K1 * Vr * w * sin(drone_alpha - theta) + K1 * Vr * y1 * sin(drone_alpha - theta)
+            #             + 2*Vr*Vtheta*estimated_acceleration*r**2*cos(drone_alpha - deltaB_est) -
+            #             K2 * self.R**2 * Vtheta * y2 * cos(drone_alpha - theta) + K2 * self.R**2 * Vr * y2 * sin(drone_alpha - theta) + K2 * Vtheta * r**2 * y2 * cos(drone_alpha - theta)) / _D
+            K_a = 1
+            dax = 0 #self.manager.simulator.camera.acceleration[0]
+            day = 0 #self.manager.simulator.camera.acceleration[1]
+            a_lat = ((K1 * (y1-w) * (Vr * cos(drone_alpha - theta) + Vtheta * sin(drone_alpha - theta))
+                        + K2 * y2 *	( self.R**2 * Vr * cos(drone_alpha - theta) - (r**2 - self.R**2) * Vtheta * sin(drone_alpha - theta) )
+                        ) / _D 
+                        - K_a*(-dax+estimated_acceleration)*sin(drone_alpha - deltaB_est))
 
+            print(f'est_acc: {estimated_acceleration}, drone_alpha: {degrees(drone_alpha)}, deltaB_est: {degrees(deltaB_est)}, sin: {sin(drone_alpha - theta)}, cos: {cos(drone_alpha - theta)}')
+            a_long = ((K1 * (y1-w) * ( Vr * sin(drone_alpha - theta) - Vtheta * cos(drone_alpha - theta) )
+                        + K2 * y2 *	( self.R**2 * Vr * sin(drone_alpha - theta) + (r**2 - self.R**2) * Vtheta * cos(drone_alpha - theta) )
+                        ) / _D
+                        + K_a*(-day+estimated_acceleration)*cos(drone_alpha - deltaB_est))
             
 
         a_long_bound = 10
@@ -2462,7 +2455,10 @@ class Controller:
         tVr = car_S * cos(tbeta - ttheta) - tS * cos(drone_alpha - ttheta)
         tVtheta = car_S * sin(tbeta - ttheta) - tS * sin(drone_alpha - ttheta)
         car_head = atan2(tcar_vel_y, tcar_vel_x)
-         
+        ty2 = tVtheta**2 + tVr**2
+        ty1 = tr**2 * tVtheta**2 - ty2 * self.R**2
+        
+        occ_case = self.manager.tracker.target_occlusion_case_new
 
         tra_kin = self.manager.get_tracked_kinematics()
         # vel = self.manager.simulator.camera.velocity
@@ -2511,10 +2507,13 @@ class Controller:
                 f'{tVr},' +                                         # _TRUE_V_R
                 f'{tVtheta},' +                                     # _TRUE_V_THETA
                 f'{self.manager.simulator.dt},' +                   # _DELTA_TIME
-                f'{y1},' +                                          # _Y1
-                f'{y2},' +                                          # _Y2
+                f'{y1},' +                                          # _Y1 (est)
+                f'{y2},' +                                          # _Y2 (est)
                 f'{car_S},' +                                       # _CAR_SPEED
-                f'{degrees(car_head)}\n')                           # _CAR_HEADING
+                f'{degrees(car_head)},' +                           # _CAR_HEADING
+                f'{ty1},' +                                         # _TRUE_Y1
+                f'{ty2},' +                                          # _TRUE_Y2
+                f'{occ_case}\n')                                    # _OCC_CASE
 
         if not self.manager.control_on:
             ax, ay = pygame.Vector2((0.0, 0.0))
@@ -2691,7 +2690,10 @@ class ExperimentManager:
                 f'Y1,'+
                 f'Y2,' +
                 f'CAR_SPEED,' +
-                f'CAR_HEADING\n'
+                f'CAR_HEADING,' +
+                f'TRUE_Y1,' + 
+                f'TRUE_Y2,' +
+                f'OCC_CASE\n'
             )
 
         # run experiment
@@ -2733,7 +2735,7 @@ class ExperimentManager:
 
                         # let controller generate acceleration, when tracker indicates ok
                         if (self.tracker.can_begin_control() and 
-                                (self.use_true_kin or self.tracker.kin is not None) and
+                                # (self.use_true_kin or self.tracker.kin is not None) and
                                 self.filters_ready() ):
                             # collect kinematics tuple
                             kin = self.get_true_kinematics() if (self.use_true_kin or not status[0]) else self.get_tracked_kinematics()
@@ -3323,12 +3325,12 @@ class ExtendedKalman2:
 
         # handle theta discontinuity
         if (np.sign(self.prev_theta) != np.sign(theta)):
-            print(f'\n---------prev_theta: {self.prev_theta}, theta: {theta}')
+            # print(f'\n---------prev_theta: {self.prev_theta}, theta: {theta}')
             if self.prev_theta > pi/2:
                 self.prev_theta -= tau
             if self.prev_theta < -pi/2:
                 self.prev_theta += tau
-            print(f'\n---------prev_theta: {self.prev_theta}, theta: {theta}\n')
+            # print(f'\n---------prev_theta: {self.prev_theta}, theta: {theta}\n')
 
         # store measurement
         self.r = r
@@ -3455,7 +3457,7 @@ class ExtendedKalman2:
 
         self.deltaB_est = atan2(self.ay, self.ax)
         self.estimated_acceleration = (self.ax**2 + self.ay**2)**0.5
-        print(f'\ndeltaB_est: {self.deltaB_est}, est_acc: {self.estimated_acceleration}\n')
+        # print(f'\ndeltaB_est: {self.deltaB_est}, est_acc: {self.estimated_acceleration}\n')
         
 
     def predict(self):
@@ -3555,7 +3557,7 @@ if __name__ == '__main__':
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
-    DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
+    DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
@@ -3591,6 +3593,7 @@ if __name__ == '__main__':
         SHOW_ALTITUDE_PROFILE = 0
         SHOW_3D_TRAJECTORIES = 1
         SHOW_DELTA_TIME_PROFILE = 0
+        SHOW_Y1_Y2 = 0
 
         _TIME = []
         _R = []
@@ -3636,6 +3639,9 @@ if __name__ == '__main__':
         _Y2 = []
         _CAR_SPEED = []
         _CAR_HEADING = []
+        _TRUE_Y1 = []
+        _TRUE_Y2 = []
+        _OCC_CASE = []
 
         # get all the data in memory
         for line in FILE.readlines():
@@ -3686,6 +3692,9 @@ if __name__ == '__main__':
             _Y2.append(data[41])
             _CAR_SPEED.append(data[42])
             _CAR_HEADING.append(data[43])
+            _TRUE_Y1.append(data[44])
+            _TRUE_Y2.append(data[45])
+            _OCC_CASE.append(data[46])
 
         FILE.close()
 
@@ -3734,6 +3743,14 @@ if __name__ == '__main__':
                 linestyle='-',
                 linewidth=LINE_WIDTH_1,
                 label=r'$true\ r$',
+                alpha=0.9)
+            axs[0].plot(
+                _TIME,
+                [i*10 for i in _OCC_CASE],
+                color='orange',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$case\ r$',
                 alpha=0.9)
 
             axs[0].legend(loc='upper right')
@@ -3784,7 +3801,7 @@ if __name__ == '__main__':
             axs[0].plot(
                 _TIME,
                 _MEASURED_V_R,
-                color='forestgreen',
+                color='palegreen',
                 linestyle='-',
                 linewidth=LINE_WIDTH_1,
                 label=r'$measured\ V_{r}$',
@@ -3814,7 +3831,7 @@ if __name__ == '__main__':
             axs[1].plot(
                 _TIME,
                 _MEASURED_V_THETA,
-                color='forestgreen',
+                color='palegreen',
                 linestyle='-',
                 linewidth=LINE_WIDTH_1,
                 label=r'$measured\ V_{\theta}$',
@@ -4243,6 +4260,74 @@ if __name__ == '__main__':
             f9.savefig(f'{_PATH}/9_delta_time.png', dpi=300)
 
             f9.show()
+
+        # -------------------------------------------------------------------------------- figure 7
+        # y1, y2
+        if SHOW_ALL or SHOW_Y1_Y2:
+            f10, axs = plt.subplots(2, 1, gridspec_kw={'hspace': 0.4})
+            if SUPTITLE_ON:
+                f10.suptitle(r'$\mathbf{Objectives}$', fontsize=TITLE_FONT_SIZE)
+            axs[0].plot(
+                _TIME,
+                _TRUE_Y1,
+                color='red',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$true\ y_1$',
+                alpha=0.9)
+            axs[0].plot(
+                _TIME,
+                _Y1,
+                color='royalblue',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$estimated\ y_1$',
+                alpha=0.9)
+            axs[0].plot(
+                _TIME,
+                [K_W for _ in _TIME],
+                color='orange',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$w_1$',
+                alpha=0.9)
+            axs[0].legend(loc='upper right')
+            axs[0].set(ylabel=r'$y_1$')
+            axs[0].set_title(r'$\mathbf{y_1}$', fontsize=SUB_TITLE_FONT_SIZE)
+
+            axs[1].plot(
+                _TIME,
+                _TRUE_Y2,
+                color='red',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$true\ y_2$',
+                alpha=0.9)
+            axs[1].plot(
+                _TIME,
+                _Y2,
+                color='royalblue',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$estimated\ y_2$',
+                alpha=0.9)
+            axs[1].plot(
+                _TIME,
+                [0.0 for _ in _TIME],
+                color='orange',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$w_2$',
+                alpha=0.9)
+
+            axs[1].legend(loc='upper right')
+            axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$y_2$')
+            axs[1].set_title(r'$\mathbf{y_2}$', fontsize=SUB_TITLE_FONT_SIZE)
+
+
+            f10.savefig(f'{_PATH}/10_objectives.png', dpi=300)
+
+            f10.show()
         plt.show()
 
     if RUN_VIDEO_WRITER:
