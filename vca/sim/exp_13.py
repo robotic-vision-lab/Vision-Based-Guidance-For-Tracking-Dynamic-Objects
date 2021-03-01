@@ -2418,7 +2418,7 @@ class Controller:
                         ) / _D 
                         - K_a*(-dax+estimated_acceleration)*sin(drone_alpha - deltaB_est))
 
-            print(f'est_acc: {estimated_acceleration}, drone_alpha: {degrees(drone_alpha)}, deltaB_est: {degrees(deltaB_est)}, sin: {sin(drone_alpha - theta)}, cos: {cos(drone_alpha - theta)}')
+            # print(f'est_acc: {estimated_acceleration}, drone_alpha: {degrees(drone_alpha)}, deltaB_est: {degrees(deltaB_est)}, sin: {sin(drone_alpha - theta)}, cos: {cos(drone_alpha - theta)}')
             a_long = ((K1 * (y1-w) * ( Vr * sin(drone_alpha - theta) - Vtheta * cos(drone_alpha - theta) )
                         + K2 * y2 *	( self.R**2 * Vr * sin(drone_alpha - theta) + (r**2 - self.R**2) * Vtheta * cos(drone_alpha - theta) )
                         ) / _D

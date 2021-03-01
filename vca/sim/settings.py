@@ -218,8 +218,8 @@ CAR_INITIAL_POSITION    = (140.0, -40.0)
 CAR_INITIAL_VELOCITY    = (22.22, 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (31.31, 0.0)
-K_1                     = 0.5 # 0.1
-K_2                     = 0.2
+K_1                     = 1.4 # 0.1
+K_2                     = 0.09
 K_W                     = -0.1
 
 # # 6 open
