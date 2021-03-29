@@ -1,5 +1,7 @@
-from random import randrange
+from random import randrange, randint, uniform
 import pygame
+
+from settings import *
 
 class Bar(pygame.sprite.Sprite):
     """Defines an Occlusion Bar sprite.
@@ -24,7 +26,7 @@ class Bar(pygame.sprite.Sprite):
 
         # self.reset_kinematics()
         _x = WIDTH + self.rect.centerx
-        _x = randrange(-(WIDTH - self.rect.width), (WIDTH - self.rect.width))
+        # _x = randrange(-(WIDTH - self.rect.width), (WIDTH - self.rect.width))
         _y = randrange(-(HEIGHT - self.rect.height), (HEIGHT - self.rect.height))
         self.position = pygame.Vector2(_x, _y) * self.simulator.pxm_fac
         self.velocity = pygame.Vector2(0.0, 0.0)
@@ -41,8 +43,8 @@ class Bar(pygame.sprite.Sprite):
         fov = self.simulator.get_camera_fov()
         drone_pos = self.simulator.get_drone_position()
 
-        _x = drone_pos[0] + fov[0] * random.uniform(0.5, 1.0)
-        _y = random.uniform(drone_pos[1] - fov[1] / 2, drone_pos[1] + fov[1])
+        _x = drone_pos[0] + fov[0] * uniform(0.5, 1.0)
+        _y = uniform(drone_pos[1] - fov[1] / 2, drone_pos[1] + fov[1])
         self.position = pygame.Vector2(_x, _y)
         self.velocity = pygame.Vector2(0.0, 0.0)
         self.acceleration = pygame.Vector2(0.0, 0.0)
@@ -56,10 +58,10 @@ class Bar(pygame.sprite.Sprite):
             #self.acceleration * self.simulator.dt**2  # pylint: disable=line-too-long
 
         # re-spawn in view
-        if self.rect.centerx > WIDTH or \
-                self.rect.centerx < 0 - self.rect.width or \
-                self.rect.centery > HEIGHT or \
-                self.rect.centery < 0 - self.rect.height:
+        if self.rect.centerx > WIDTH + self.rect.width/2 or \
+                self.rect.centerx < 0 - self.rect.width/2 or \
+                self.rect.centery > HEIGHT + - self.rect.height/2 or \
+                self.rect.centery < 0 - self.rect.height/2:
             self.reset_kinematics()
 
     def update_rect(self):
@@ -88,9 +90,9 @@ class Bar(pygame.sprite.Sprite):
         """
         r, g, b = BAR_COLOR
         d = BAR_COLOR_DELTA
-        r += random.randint(-d[0], d[0])
-        g += random.randint(-d[1], d[1])
-        b += random.randint(-d[2], d[2])
+        r += randint(-d[0], d[0])
+        g += randint(-d[1], d[1])
+        b += randint(-d[2], d[2])
         self.image.fill((r, g, b))
 
     def load(self):

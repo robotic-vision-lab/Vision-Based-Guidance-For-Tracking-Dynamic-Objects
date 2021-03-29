@@ -2,7 +2,24 @@ from datetime import timedelta
 from math import isnan
 
 import cv2 as cv
+import numpy as np
+from settings import *
 
+
+from my_imports import (Sift,
+                        BruteL2,
+                        CorrelationCoeffNormed,
+                        ImageDumper,
+                        convert_to_grayscale,
+                        FEATURE_PARAMS,
+                        LK_PARAMS,
+                        MAX_NUM_CORNERS,
+                        TemplateMatcher,
+                        compute_optical_flow_LK,
+                        draw_tracks,
+                        draw_sparse_optical_flow_arrows,
+                        put_text,
+                        images_assemble,)
 
 class Tracker:
     """Tracker object is designed to work with and ExperimentManager object.
@@ -46,7 +63,8 @@ class Tracker:
         self.initial_target_template_gray = None
         self.initial_target_template_color = None
         self.target_bounding_box = None
-        self.patch_size = 15
+        self.patch_size = round(1.5/PIXEL_TO_METERS_FACTOR)   # meters
+        self.patches_gray = None
 
         self.detector = Sift()
         self.descriptor_matcher = BruteL2()
@@ -60,10 +78,6 @@ class Tracker:
         self._can_begin_control_flag = False    # will be modified in process_image
         self.kin = None
         self.window_size = 5
-        # self.prev_car_pos = None
-        # self.count = 0
-        # self._target_old_occluded_flag = False
-        # self._target_new_occluded_flag = False
 
         self._NO_OCC = 0
         self._PARTIAL_OCC = 1
@@ -96,6 +110,9 @@ class Tracker:
         # this function is called in process_image in the beginning. 
         # it indicates if this the first time process_image received a frame
         return self.frame_old_gray is None
+
+    def is_total_occlusion(self):
+        return self.target_occlusion_case_new == self._TOTAL_OCC
 
     def can_begin_control(self):
         """Returns boolean check indicating if controller can be used post tracking.
@@ -136,10 +153,20 @@ class Tracker:
         # initialize template matcher object for each patch
         self.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in self.initial_patches_gray]
 
+    def update_patches(self):
+        pass
+        # self.patch_size = round(1.5 / self.manager.simulator.pxm_fac)
+        # self.patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.keypoints_new_good]
+        # self.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in self.patches_gray]
+
+    def update_template(self):
+        self.target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
+
+
     def augment_old_frame(self):
         # keypoints that were not found in new frame would get discounted by the next iteration
         # these bad points from old frame can be reconstructed in new frame
-        # and then corresponding patches cna be drawn in new frame after the flow computation
+        # and then corresponding patches can be drawn in new frame after the flow computation
         # then save to old
         pass
 
@@ -361,6 +388,7 @@ class Tracker:
         # save new frame, compute grayscale
         self.frame_new_color = new_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
+        # self.frame_new_gray = cv.GaussianBlur(self.frame_new_gray, (3,3), 0)
         self.true_new_pt = self._get_target_image_location()
         # cv.imshow('nxt_frame', self.frame_new_gray); cv.waitKey(1)
         if self.is_first_time():
@@ -389,7 +417,7 @@ class Tracker:
             self.true_old_pt = self.true_new_pt
             return self._FAILURE
 
-        cv.imshow('cur_frame', self.frame_old_gray); cv.waitKey(1)
+        # cv.imshow('cur_frame', self.frame_old_gray); cv.waitKey(1)
         self._can_begin_control_flag = True
         
         # ################################################################################
@@ -413,6 +441,7 @@ class Tracker:
                 # set good points (since no keypoints were occluded all are good, no need to compute)
                 self.keypoints_new_good = self.keypoints_new
                 self.keypoints_old_good = self.keypoints_old
+                self.update_patches()
 
                 # compute centroid
                 self.centroid_new = self.get_centroid(self.keypoints_new_good)
@@ -487,6 +516,8 @@ class Tracker:
 
                 # add revived bad points to good points
                 self.keypoints_new_good = np.concatenate((self.keypoints_new_good, self.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
+
+                self.update_patches()
 
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
@@ -606,7 +637,8 @@ class Tracker:
 
                     # update keypoints
                     self.keypoints_new_good = self.keypoints_new = self.centroid_new + self.rel_keypoints         
-
+                
+                self.update_patches()
                 # update tracker display
                 self.display()
 
@@ -687,6 +719,7 @@ class Tracker:
                     self.keypoints_new = self.keypoints_new_good
                     self.centroid_new = self.manager.get_target_centroid()
 
+                self.update_patches()
                 # posterity
                 self.frame_old_gray = self.frame_new_gray
                 self.frame_old_color = self.frame_new_color
@@ -749,6 +782,7 @@ class Tracker:
                 self.centroid_new = self.get_centroid(self.keypoints_new)
                 self.rel_keypoints = self.keypoints_new - self.centroid_new
 
+                self.update_patches()
                 # update tracker display
                 self.display()
 
@@ -805,6 +839,7 @@ class Tracker:
                 if (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0:
                     self.keypoints_new_good = self.template_points[self.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
 
+                self.update_patches()
                 # update tracker display
                 self.display()
 
@@ -934,7 +969,11 @@ class Tracker:
             cv.imshow(self.win_name, self.frame_color_edited)
         
         if SHOW_EXTRA:
-            cv.imshow("cur_frame", self.frame_old_gray)
+            patches = self.initial_patches_gray if self.patches_gray is None else self.patches_gray
+            p = images_assemble(patches, grid_shape=(1,len(patches)))
+            of = self.frame_old_gray.copy()
+            of[0:p.shape[0],0:p.shape[1]] = convert_to_grayscale(p)
+            cv.imshow("cur_frame", of)
             self.show_me_something()
             assembled_img = images_assemble([self.frame_old_gray.copy(), self.nf6.copy(), self.frame_color_edited.copy()], (1,3))
         else:
@@ -952,22 +991,24 @@ class Tracker:
         old_pt = np.array(self.true_old_pt).astype(np.int).reshape(-1,1,2)
         new_pt = np.array(self.true_new_pt).astype(np.int).reshape(-1,1,2)
         self.true_old_pt = self.true_new_pt
-
+        est_cents = self.manager.get_estimated_centroids()
+        old_pt = (est_cents[0],est_cents[1])
+        new_pt = (est_cents[2],est_cents[3])
         _ARROW_COLOR = self.display_arrow_color[self.target_occlusion_case_new]
         # draw tracks on the mask, apply mask to frame, save mask for future use
         if 0 and kin is None:
             # its to and from TOTAL_OCC cases, use true old and new points
-            img, mask = draw_tracks(frame, old_pt, new_pt, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
+            img, mask = draw_tracks(frame, old_pt, new_pt, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(2*TRACK_SCALE))
             img = draw_sparse_optical_flow_arrows(img,
                                                   old_pt,
                                                   new_pt,
-                                                  thickness=2,
-                                                  arrow_scale=ARROW_SCALE,
+                                                  thickness=int(2*TRACK_SCALE),
+                                                  arrow_scale=int(ARROW_SCALE*TRACK_SCALE),
                                                   color=_ARROW_COLOR)
             if good_nxt is not None:
                 # from TOTAL_OCC
                 for nxt in good_nxt:
-                    img = cv.circle(img, tuple(map(int,nxt.flatten())), 7, TURQUOISE_GREEN_BGR, 1)
+                    img = cv.circle(img, tuple(map(int,nxt.flatten())), int(7*TRACK_SCALE), TURQUOISE_GREEN_BGR, int(1*TRACK_SCALE))
         else:
             # if self.centroid_adjustment is not None:
             #     cent_old = self.get_centroid(good_cur) + self.centroid_adjustment
@@ -982,15 +1023,16 @@ class Tracker:
             # img, mask = draw_tracks(frame, cent_old, cent_new, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
             
             # draw circle and tracks between old and new centroids
-            img, mask = draw_tracks(frame, self.centroid_old, self.centroid_new, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
+            img, mask = draw_tracks(frame, self.centroid_old, self.centroid_new, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(2*TRACK_SCALE))
             
             if DRAW_KEYPOINT_TRACKS:
-                # draw tracks between old and new keypoints
-                for cur, nxt in zip(good_cur, good_nxt):
-                    img, mask = draw_tracks(frame, [cur], [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=1, radius=7, circle_thickness=1)
+                if not DRAW_KEYPOINTS_ONLY_WITHOUT_TRACKS:
+                    # draw tracks between old and new keypoints
+                    for cur, nxt in zip(good_cur, good_nxt):
+                        img, mask = draw_tracks(frame, [cur], [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(1*TRACK_SCALE))
                 # draw circle for new keypoints
                 for nxt in good_nxt:
-                    img, mask = draw_tracks(frame, None, [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=1, radius=7, circle_thickness=1)
+                    img, mask = draw_tracks(frame, None, [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(1*TRACK_SCALE))
                 
 
             # add optical flow arrows
@@ -998,8 +1040,8 @@ class Tracker:
                 img,
                 self.centroid_old, # self.get_centroid(good_cur),
                 self.centroid_new, # self.get_centroid(good_nxt),
-                thickness=2,
-                arrow_scale=ARROW_SCALE,
+                thickness=int(2*TRACK_SCALE),
+                arrow_scale=int(ARROW_SCALE*TRACK_SCALE),
                 color=_ARROW_COLOR)
 
         # add axes
@@ -1107,6 +1149,8 @@ class Tracker:
                            font_scale=0.55, color=occ_color, thickness=1)
         img = put_text(img, occ_str_old, (WIDTH//2 - 30, HEIGHT - 15),
                            font_scale=0.35, color=occ_color_old, thickness=1)
+        # if self.target_occlusion_case_new==self._TOTAL_OCC:
+            # print(f"Total at {self.manager.simulator.time}")
         return img
 
     def print_to_console(self):
@@ -1115,8 +1159,10 @@ class Tracker:
             # drone kinematics are assumed to be known (IMU and/or FPGA optical flow)
             # here, the drone position and velocity is known from Simulator
             # only the car kinematics are tracked/measured by tracker
-            drone_position, drone_velocity, car_position, car_velocity, cp_, cv_ = self.kin
-            print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
+            # drone_position, drone_velocity, car_position, car_velocity, cp_, cv_ = self.kin
+            if self.kin is not None:
+                drone_position, drone_velocity, _, _, _, _, car_position, car_velocity= self.kin
+                print(f'TTTT >> {str(timedelta(seconds=self.manager.simulator.time))} >> DRONE - x:{vec_str(drone_position)} | v:{vec_str(drone_velocity)} | CAR - x:{vec_str(car_position)} | v:{vec_str(car_velocity)}')
 
     def show_me_something(self):
         """Worker function to aid debugging

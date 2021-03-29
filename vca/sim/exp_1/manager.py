@@ -12,7 +12,10 @@ from tracker import Tracker
 from controller import Controller
 from maf import MA
 from kf import Kalman
-from ekf import ExtendedKalman
+from ekf import ExtendedKalman2
+
+from settings import *
+from my_imports import (create_video_from_images,)
 
 
 class ExperimentManager:
@@ -60,7 +63,7 @@ class ExperimentManager:
 
         self.MAF = MA(window_size=10)
         self.KF = Kalman(self)
-        self.EKF = ExtendedKalman(self)
+        self.EKF = ExtendedKalman(self) if not USE_NEW_EKF else ExtendedKalman2(self)
 
         # self.image_deque = deque(maxlen=2)
         # self.command_deque = deque(maxlen=2)
@@ -123,6 +126,26 @@ class ExperimentManager:
         y = self.simulator.car.rect.center[1] + bb_offset[1]
         return x, y, w, h
 
+    def get_estimated_centroids(self):
+        old_x = self.EKF.old_x if self.EKF.old_x is not None else 0.0
+        old_y = self.EKF.old_y if self.EKF.old_y is not None else 0.0
+        x = self.EKF.x if self.EKF.x is not None else 0.0
+        y = self.EKF.y if self.EKF.y is not None else 0.0
+        old_centroid_x = old_x-self.simulator.camera.prev_origin[0]
+        old_centroid_y = old_y-self.simulator.camera.prev_origin[1]
+        new_centroid_x = x-self.simulator.camera.origin[0]
+        new_centroid_y = y-self.simulator.camera.origin[1]
+
+        old_centroid_x = int(old_centroid_x/self.simulator.pxm_fac) + SCREEN_CENTER[0]
+        new_centroid_x = int(new_centroid_x/self.simulator.pxm_fac) + SCREEN_CENTER[0]
+        old_centroid_y = int(-old_centroid_y/self.simulator.pxm_fac) + HEIGHT - SCREEN_CENTER[1]
+        new_centroid_y = int(-new_centroid_y/self.simulator.pxm_fac) + HEIGHT - SCREEN_CENTER[1]
+        
+        return (old_centroid_x,
+                old_centroid_y,
+                new_centroid_x,
+                new_centroid_y)
+
     def filters_ready(self):
         ready = True
         if USE_TRACKER_FILTER:
@@ -140,6 +163,55 @@ class ExperimentManager:
         # open plot file if write_plot is indicated
         if self.write_plot:
             self.controller.f = open(self.controller.plot_info_file, '+w')
+            self.controller.f.write(
+                f'TIME,'+
+                f'R,'+
+                f'THETA,'+
+                f'V_THETA,'+
+                f'V_R,'+
+                f'DRONE_POS_X,'+
+                f'DRONE_POS_Y,'+
+                f'CAR_POS_X,'+
+                f'CAR_POS_Y,'+
+                f'DRONE_ACC_X,'+
+                f'DRONE_ACC_Y,'+
+                f'DRONE_ACC_LAT,'+
+                f'DRONE_ACC_LNG,'+
+                f'CAR_VEL_X,'+
+                f'CAR_VEL_Y,'+
+                f'TRACKED_CAR_POS_X,'+
+                f'TRACKED_CAR_POS_Y,'+
+                f'TRACKED_CAR_VEL_X,'+
+                f'TRACKED_CAR_VEL_Y,'+
+                f'CAM_ORIGIN_X,'+
+                f'CAM_ORIGIN_Y,'+
+                f'DRONE_SPEED,'+
+                f'DRONE_ALPHA,'+
+                f'DRONE_VEL_X,'+
+                f'DRONE_VEL_Y,'+
+                f'MEASURED_CAR_POS_X,'+
+                f'MEASURED_CAR_POS_Y,'+
+                f'MEASURED_CAR_VEL_X,'+
+                f'MEASURED_CAR_VEL_Y,'+
+                f'DRONE_ALTITUDE,'+
+                f'ABS_DEN,'+
+                f'MEASURED_R,'+
+                f'MEASURED_THETA,'+
+                f'MEASURED_V_R,'+
+                f'MEASURED_V_THETA,'+
+                f'TRUE_R,'+
+                f'TRUE_THETA,'+
+                f'TRUE_V_R,'+
+                f'TRUE_V_THETA,'+
+                f'DELTA_TIME,'+
+                f'Y1,'+
+                f'Y2,' +
+                f'CAR_SPEED,' +
+                f'CAR_HEADING,' +
+                f'TRUE_Y1,' + 
+                f'TRUE_Y2,' +
+                f'OCC_CASE\n'
+            )
 
         # run experiment
         while self.simulator.running:
@@ -172,22 +244,30 @@ class ExperimentManager:
 
                 # let tracker process image, when simulator indicates ok
                 if self.simulator.can_begin_tracking():
-                    screen_capture = self.simulator.get_screen_capture()
-                    status = self.tracker.process_image_complete(screen_capture)
-                    self.tracker.print_to_console()
+                    if self.tracker_on:
+                        screen_capture = self.simulator.get_screen_capture()
+                        # process image and record status
+                        status = self.tracker.process_image_complete(screen_capture)
+                        self.tracker.print_to_console()
 
-                    # let controller generate acceleration, when tracker indicates ok
-                    if self.tracker.can_begin_control() and (
-                            self.use_true_kin or self.tracker.kin is not None) and (
-                            # self.filter.done_waiting() or not USE_TRACKER_FILTER):
-                            self.filters_ready()):
-                        # collect kinematics tuple
-                        # kin = self.tracker.kin if status[0] else self.get_true_kinematics()
-                        kin = self.get_true_kinematics() if (self.use_true_kin or not status[0]) else self.get_tracked_kinematics()
-                        # let controller process kinematics
-                        ax, ay = self.controller.generate_acceleration(kin)
-                        # feed controller generated acceleration commands to simulator
-                        self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
+                        # let controller generate acceleration, when tracker indicates ok
+                        if (self.tracker.can_begin_control() and 
+                                # (self.use_true_kin or self.tracker.kin is not None) and
+                                self.filters_ready() ):
+                            # collect kinematics tuple
+                            kin = self.get_true_kinematics() if (self.use_true_kin or not status[0]) else self.get_tracked_kinematics()
+                            # let controller process kinematics
+                            ax, ay = self.controller.generate_acceleration(kin)
+                            # feed controller generated acceleration commands to simulator
+                            self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
+
+                    else: # tracker is off
+                        if self.control_on:
+                            kin = self.get_true_kinematics()
+                            # let controller process kinematics
+                            ax, ay = self.controller.generate_acceleration(kin)
+                            # feed controller generated acceleration commands to simulator
+                            self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
 
             self.simulator.draw_extra()
             self.simulator.show_drawing()
@@ -228,6 +308,7 @@ class ExperimentManager:
         return kin
 
     def get_tracked_kinematics(self):
+        # use kinematics from the tracker, but rearrange items before returning
         return (
             self.tracker.kin[0],    # true drone position    
             self.tracker.kin[1],    # true drone velocity
@@ -241,4 +322,3 @@ class ExperimentManager:
 
     def get_cam_origin(self):
         return self.simulator.camera.origin
-

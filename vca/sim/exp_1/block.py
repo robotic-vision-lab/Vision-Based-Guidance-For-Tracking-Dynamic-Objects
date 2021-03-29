@@ -1,5 +1,7 @@
-from random import randrange
+from random import randint, randrange, uniform
 import pygame
+
+from settings import *
 
 class Block(pygame.sprite.Sprite):
     """Defines a Block sprite.
@@ -40,8 +42,8 @@ class Block(pygame.sprite.Sprite):
         fov = self.simulator.get_camera_fov()
         drone_pos = self.simulator.get_drone_position()
 
-        _x = random.uniform(drone_pos[0] - fov[0] / 2, drone_pos[0] + fov[0])
-        _y = random.uniform(drone_pos[1] - fov[1] / 2, drone_pos[1] + fov[1])
+        _x = uniform(drone_pos[0] - fov[0] / 2, drone_pos[0] + fov[0])
+        _y = uniform(drone_pos[1] - fov[1] / 2, drone_pos[1] + fov[1])
         self.position = pygame.Vector2(_x, _y)
         self.velocity = pygame.Vector2(0.0, 0.0)
         self.acceleration = pygame.Vector2(0.0, 0.0)
@@ -87,9 +89,9 @@ class Block(pygame.sprite.Sprite):
         """
         r, g, b = BLOCK_COLOR
         d = BLOCK_COLOR_DELTA
-        r += random.randint(-d, d)
-        g += random.randint(-d, d)
-        b += random.randint(-d, d)
+        r += randint(-d, d)
+        g += randint(-d, d)
+        b += randint(-d, d)
         self.image.fill((r, g, b))
 
     def load(self):

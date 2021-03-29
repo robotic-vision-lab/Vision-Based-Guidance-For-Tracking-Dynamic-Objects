@@ -5,10 +5,25 @@ from datetime import timedelta
 
 import cv2 as cv
 import pygame
-from pygame.locals import *
+import pygame.locals as GAME_GLOBALS
+import pygame.event as GAME_EVENTS
+import numpy as np
 
 from high_precision_clock import HighPrecisionClock
+print(HighPrecisionClock)
+from block import Block
+from bar import Bar
+from car import Car
+from drone_camera import DroneCamera
+from settings import *
 
+
+from my_imports import (load_image,
+                        _prep_temp_folder,
+                        vec_str,
+                        images_assemble,)
+print(f's -- {_prep_temp_folder}')
+print(f'inside simulator.py. {os.listdir()}')
 
 class Simulator:
     """Simulator object creates the simulation game.
@@ -26,6 +41,7 @@ class Simulator:
         os.environ['SDL_VIDEO_WINDOW_POS'] = "2,30"
         pygame.init()
         self.screen_surface = pygame.display.set_mode(SCREEN_SIZE)
+        self.screen_surface.fill(SCREEN_BG_COLOR)
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
 
         # create clock
@@ -54,6 +70,9 @@ class Simulator:
         self.pxm_fac = PIXEL_TO_METERS_FACTOR
 
         self.car_rect_center_bb_offset = [0,0]
+
+        self.time = 0.0
+        self.dt = 0.0
 
     def start_new(self):
         """Initializes simulation components.
@@ -142,9 +161,9 @@ class Simulator:
         """Handles captured events.
         """
         # respond to all events posted in the event queue
-        for event in pygame.event.get():
+        for event in GAME_EVENTS.get():
             # QUIT event
-            if event.type == pygame.QUIT or     \
+            if event.type == GAME_GLOBALS.QUIT or     \
                     event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.quit()
                 break
@@ -211,7 +230,7 @@ class Simulator:
                 self.car_rect_center_bb_offset[0] = self.bb_start[0] - self.car.rect.centerx 
                 self.car_rect_center_bb_offset[1] = self.bb_start[1] - self.car.rect.centery
 
-            pygame.event.pump()
+            GAME_EVENTS.pump()
 
         # respond to the command posted by controller
         # if len(self.manager.command_deque) > 0:
@@ -246,13 +265,16 @@ class Simulator:
         # draw only car and blocks (not drone)
         self.car_block_sprites.draw(self.screen_surface)
 
-        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
-        prev_center = self.car_img[0].get_rect(center = self.car_img[0].get_rect().center).center
-        rot_img = pygame.transform.rotate(self.car_img[0], 30)
-        rot_img = rot_img.convert_alpha()
-        rot_rect = rot_img.get_rect(center = prev_center)
-        self.car_img = (rot_img, rot_rect)
-        self.car.load()
+        if (USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or
+                USE_TRAJECTORY == TWO_HOLE_TRAJECTORY or 
+                USE_TRAJECTORY == SQUIRCLE_TRAJECTORY):
+            self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+            prev_center = self.car_img[0].get_rect(center = self.car_img[0].get_rect().center).center
+            rot_img = pygame.transform.rotate(self.car_img[0], degrees(self.car.angle))
+            rot_img = rot_img.convert_alpha()
+            rot_rect = rot_img.get_rect(center = prev_center)
+            self.car_img = (rot_img, rot_rect)
+            self.car.load()
 
         # draw bars
         if self.manager.draw_occlusion_bars:
@@ -316,6 +338,7 @@ class Simulator:
 
             # assemble simulator and tracker images in a grid
             img = images_assemble([img_sim, img_track], (1, 2))
+            # img = img_sim
 
             # write image
             cv.imwrite(file_path, img)
@@ -413,4 +436,3 @@ class Simulator:
         """
         self.running = False
         pygame.quit()
-

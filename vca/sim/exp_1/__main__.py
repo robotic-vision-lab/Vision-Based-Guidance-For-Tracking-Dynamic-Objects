@@ -1,17 +1,29 @@
+import os
+import sys
+import time
+import shutil
+from math import degrees, atan2
+import numpy as np
+
+
 from manager import ExperimentManager
+from settings import *
+
+from my_imports import _prep_temp_folder
 
 if __name__ == '__main__':
+
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
-    USE_TRUE_KINEMATICS = 1  # pylint: disable=bad-whitespace
+    USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
-    DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
+    DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -30,10 +42,10 @@ if __name__ == '__main__':
         print(f'\n\nExperiment finished. [{time.strftime("%H:%M:%S")}]\n')
 
     if RUN_TRACK_PLOT:
-        FILE = open('plot_info.txt', 'r')
+        FILE = open('plot_info.csv', 'r')
         
         # plot switches
-        SHOW_ALL = 0    # set to 1 to show all plots 
+        SHOW_ALL = 1    # set to 1 to show all plots 
 
         SHOW_CARTESIAN_PLOTS = 1
         SHOW_LOS_KIN_1 = 1
@@ -42,8 +54,9 @@ if __name__ == '__main__':
         SHOW_TRAJECTORIES = 1
         SHOW_SPEED_HEADING = 1
         SHOW_ALTITUDE_PROFILE = 0
-        SHOW_3D_TRAJECTORIES = 0
-        SHOW_DELTA_TIME_PROFILE = 1
+        SHOW_3D_TRAJECTORIES = 1
+        SHOW_DELTA_TIME_PROFILE = 0
+        SHOW_Y1_Y2 = 0
 
         _TIME = []
         _R = []
@@ -87,14 +100,21 @@ if __name__ == '__main__':
         _DELTA_TIME = []
         _Y1 = []
         _Y2 = []
+        _CAR_SPEED = []
+        _CAR_HEADING = []
+        _TRUE_Y1 = []
+        _TRUE_Y2 = []
+        _OCC_CASE = []
 
         # get all the data in memory
         for line in FILE.readlines():
+            if line.split(',')[0].strip().lower()=='time':
+                continue
             data = tuple(map(float, list(map(str.strip, line.strip().split(',')))))
             _TIME.append(data[0])
             _R.append(data[1])
             _THETA.append(data[2])      # degrees
-            _V_THETA.append(data[3])    # degrees
+            _V_THETA.append(data[3])
             _V_R.append(data[4])
             _DRONE_POS_X.append(data[5])    # true
             _DRONE_POS_Y.append(data[6])    # true
@@ -133,6 +153,11 @@ if __name__ == '__main__':
             _DELTA_TIME.append(data[39])
             _Y1.append(data[40])
             _Y2.append(data[41])
+            _CAR_SPEED.append(data[42])
+            _CAR_HEADING.append(data[43])
+            _TRUE_Y1.append(data[44])
+            _TRUE_Y2.append(data[45])
+            _OCC_CASE.append(data[46])
 
         FILE.close()
 
@@ -147,7 +172,7 @@ if __name__ == '__main__':
         _prep_temp_folder(os.path.realpath(_PATH))
 
         # copy the plot_info file to the where plots figured will be saved
-        shutil.copyfile('plot_info.txt', f'{_PATH}/plot_info.txt')
+        shutil.copyfile('plot_info.csv', f'{_PATH}/plot_info.csv')
         plt.style.use('seaborn-whitegrid')
 
         # -------------------------------------------------------------------------------- figure 1
@@ -161,7 +186,7 @@ if __name__ == '__main__':
             axs[0].plot(
                 _TIME,
                 _MEASURED_R,
-                color='goldenrod',
+                color='forestgreen',
                 linestyle='-',
                 linewidth=LINE_WIDTH_1,
                 label=r'$measured\ r$',
@@ -182,6 +207,14 @@ if __name__ == '__main__':
                 linewidth=LINE_WIDTH_1,
                 label=r'$true\ r$',
                 alpha=0.9)
+            axs[0].plot(
+                _TIME,
+                [i*10 for i in _OCC_CASE],
+                color='orange',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$case\ r$',
+                alpha=0.9)
 
             axs[0].legend(loc='upper right')
             axs[0].set(ylabel=r'$r\ (m)$')
@@ -191,7 +224,7 @@ if __name__ == '__main__':
             axs[1].plot(
                 _TIME,
                 _MEASURED_THETA,
-                color='goldenrod',
+                color='forestgreen',
                 linestyle='-',
                 linewidth=LINE_WIDTH_1,
                 label=r'$measured\ \theta$',
@@ -231,7 +264,7 @@ if __name__ == '__main__':
             axs[0].plot(
                 _TIME,
                 _MEASURED_V_R,
-                color='palegoldenrod',
+                color='palegreen',
                 linestyle='-',
                 linewidth=LINE_WIDTH_1,
                 label=r'$measured\ V_{r}$',
@@ -261,7 +294,7 @@ if __name__ == '__main__':
             axs[1].plot(
                 _TIME,
                 _MEASURED_V_THETA,
-                color='palegoldenrod',
+                color='palegreen',
                 linestyle='-',
                 linewidth=LINE_WIDTH_1,
                 label=r'$measured\ V_{\theta}$',
@@ -284,7 +317,7 @@ if __name__ == '__main__':
                 alpha=0.9)
 
             axs[1].legend(loc='upper right')
-            axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_{\theta}\ (\frac{^{\circ}}{s})$')
+            axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_{\theta}\ (\frac{m}{s})$')
             axs[1].set_title(r'$\mathbf{V_{\theta}}$', fontsize=SUB_TITLE_FONT_SIZE)
 
             f1.savefig(f'{_PATH}/1_los2.png', dpi=300)
@@ -548,7 +581,7 @@ if __name__ == '__main__':
             c_heading = degrees(atan2(CAR_INITIAL_VELOCITY[1], CAR_INITIAL_VELOCITY[0]))
 
             axs[0].plot(_TIME,
-                        [c_speed for i in _DRONE_SPEED],
+                        _CAR_SPEED,
                         color='lightblue',
                         linestyle='-',
                         linewidth=LINE_WIDTH_1,
@@ -566,7 +599,7 @@ if __name__ == '__main__':
             axs[0].set_title(r'$\mathbf{speed}$', fontsize=SUB_TITLE_FONT_SIZE)
             axs[0].legend()
 
-            axs[1].plot(_TIME, [c_heading for i in _DRONE_ALPHA], color='lightgreen',
+            axs[1].plot(_TIME, _CAR_HEADING, color='lightgreen',
                         linestyle='-', linewidth=LINE_WIDTH_2, label=r'$\angle V_{vehicle}$', alpha=0.9)
             axs[1].plot(
                 _TIME,
@@ -690,6 +723,74 @@ if __name__ == '__main__':
             f9.savefig(f'{_PATH}/9_delta_time.png', dpi=300)
 
             f9.show()
+
+        # -------------------------------------------------------------------------------- figure 7
+        # y1, y2
+        if SHOW_ALL or SHOW_Y1_Y2:
+            f10, axs = plt.subplots(2, 1, gridspec_kw={'hspace': 0.4})
+            if SUPTITLE_ON:
+                f10.suptitle(r'$\mathbf{Objectives}$', fontsize=TITLE_FONT_SIZE)
+            axs[0].plot(
+                _TIME,
+                _TRUE_Y1,
+                color='red',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$true\ y_1$',
+                alpha=0.9)
+            axs[0].plot(
+                _TIME,
+                _Y1,
+                color='royalblue',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$estimated\ y_1$',
+                alpha=0.9)
+            axs[0].plot(
+                _TIME,
+                [K_W for _ in _TIME],
+                color='orange',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$w_1$',
+                alpha=0.9)
+            axs[0].legend(loc='upper right')
+            axs[0].set(ylabel=r'$y_1$')
+            axs[0].set_title(r'$\mathbf{y_1}$', fontsize=SUB_TITLE_FONT_SIZE)
+
+            axs[1].plot(
+                _TIME,
+                _TRUE_Y2,
+                color='red',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$true\ y_2$',
+                alpha=0.9)
+            axs[1].plot(
+                _TIME,
+                _Y2,
+                color='royalblue',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$estimated\ y_2$',
+                alpha=0.9)
+            axs[1].plot(
+                _TIME,
+                [0.0 for _ in _TIME],
+                color='orange',
+                linestyle='-',
+                linewidth=LINE_WIDTH_1,
+                label=r'$w_2$',
+                alpha=0.9)
+
+            axs[1].legend(loc='upper right')
+            axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$y_2$')
+            axs[1].set_title(r'$\mathbf{y_2}$', fontsize=SUB_TITLE_FONT_SIZE)
+
+
+            f10.savefig(f'{_PATH}/10_objectives.png', dpi=300)
+
+            f10.show()
         plt.show()
 
     if RUN_VIDEO_WRITER:

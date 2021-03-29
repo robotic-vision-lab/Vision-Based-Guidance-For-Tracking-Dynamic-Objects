@@ -1,6 +1,6 @@
-"""Experiment 13
+"""Experiment 14
 
-TODO Add docstring
+Experimenting with multi-target tracking
 """
 
 import os
@@ -3592,8 +3592,8 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -3615,16 +3615,16 @@ if __name__ == '__main__':
         FILE = open('plot_info.csv', 'r')
         
         # plot switches
-        SHOW_ALL = 1    # set to 1 to show all plots 
+        SHOW_ALL = 0    # set to 1 to show all plots 
 
-        SHOW_CARTESIAN_PLOTS = 1
+        SHOW_CARTESIAN_PLOTS = 0
         SHOW_LOS_KIN_1 = 1
-        SHOW_LOS_KIN_2 = 1
-        SHOW_ACCELERATIONS = 1
-        SHOW_TRAJECTORIES = 1
-        SHOW_SPEED_HEADING = 1
+        SHOW_LOS_KIN_2 = 0
+        SHOW_ACCELERATIONS = 0
+        SHOW_TRAJECTORIES = 0
+        SHOW_SPEED_HEADING = 0
         SHOW_ALTITUDE_PROFILE = 0
-        SHOW_3D_TRAJECTORIES = 1
+        SHOW_3D_TRAJECTORIES = 0
         SHOW_DELTA_TIME_PROFILE = 0
         SHOW_Y1_Y2 = 0
 
@@ -3820,6 +3820,10 @@ if __name__ == '__main__':
             axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$\theta\ (^{\circ})$')
             axs[1].set_title(r'$\mathbf{\theta}$', fontsize=SUB_TITLE_FONT_SIZE)
 
+            # f0.savefig(f'{_PATH}/1_los1.pdf')  
+            # f0.savefig(f'{_PATH}/1_los1.svg')
+            # f0.savefig(f'{_PATH}/1_los1.jpg',dpi=300, quality=80, optimize=True, progressive=True)
+            # f0.savefig(f'{_PATH}/1_los1_trans.png',dpi=300,transparent=True)
             f0.savefig(f'{_PATH}/1_los1.png', dpi=300)
             f0.show()
 

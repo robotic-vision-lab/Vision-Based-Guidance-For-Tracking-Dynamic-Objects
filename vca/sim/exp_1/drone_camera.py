@@ -1,4 +1,7 @@
+from copy import deepcopy
 import pygame
+
+from settings import *
 
 class DroneCamera(pygame.sprite.Sprite):
     def __init__(self, simulator):
@@ -11,6 +14,8 @@ class DroneCamera(pygame.sprite.Sprite):
         self.image.fill((255, 255, 255, DRONE_IMG_ALPHA), None, pygame.BLEND_RGBA_MULT)
         self.reset_kinematics()
         self.origin = self.position
+        self.prev_origin = self.position
+        self.delta_pos = pygame.Vector2(0.0,0.0)
         self.altitude = ALTITUDE
         self.alt_change = 1.0
 
@@ -57,11 +62,13 @@ class DroneCamera(pygame.sprite.Sprite):
         if abs(self.velocity.length()) > self.vel_limit:
             self.velocity -= self.acceleration * self.simulator.dt
 
-        delta_pos = self.velocity * self.simulator.dt #+ 0.5 * self.acceleration * \
+        self.prev_delta_pos = deepcopy(self.delta_pos)
+        self.delta_pos = self.velocity * self.simulator.dt #+ 0.5 * self.acceleration * \
             # self.simulator.dt**2      # i know how this looks like but,   pylint: disable=line-too-long
         self.position = self.velocity * self.simulator.dt #+ 0.5 * self.acceleration * \
             # self.simulator.dt**2  # donot touch ☠                    pylint: disable=line-too-long
-        self.origin += delta_pos
+        self.prev_origin = deepcopy(self.origin)
+        self.origin += self.delta_pos
 
     def compensate_camera_motion(self, sprite_obj):
         """Compensates camera motion by updating position of sprite object.

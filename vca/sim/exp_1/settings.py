@@ -11,7 +11,7 @@ NAN = float('nan')
 #   S E T T I N G S  #
 
 # resources settings
-ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets')
+ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../assets')
 TEMP_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'tmp')
 TRACKER_TEMP_FOLDER = os.path.join(os.path.abspath(TEMP_FOLDER), 'track_tmp')
 SIMULATOR_TEMP_FOLDER = os.path.join(os.path.abspath(TEMP_FOLDER), 'sim_tmp')
@@ -28,7 +28,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 250.0                                  # meters
+ALTITUDE = 60.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -49,16 +49,32 @@ CAR_ACCELERATION = (0.0, 0.0)
 CAR_RADIUS = 10.0
 TRACK_COLOR = (102, 255, 102)
 
+DEFAULT_TRAJECTORY = 0
+ONE_HOLE_TRAJECTORY = 1
+TWO_HOLE_TRAJECTORY = 2
+LANE_CHANGE_TRAJECTORY = 3
+SQUIRCLE_TRAJECTORY = 4
+
+USE_TRAJECTORY = LANE_CHANGE_TRAJECTORY
+TWO_HOLE_PERIOD = 120
+TWO_HOLE_SIZE = 30
+ONE_HOLE_PERIOD = 60
+ONE_HOLE_SIZE = 30
+SQUIRCLE_PARAM_S = 0.9
+SQUIRCLE_PARAM_R = 1000
+SQUIRCLE_PERIOD = 360
+
+
 # block settings
 BLOCK_COLOR = DARK_GRAY_2
 BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 15.0, 0.5 #18.0, 1.0
-NUM_BLOCKS = 50
+NUM_BLOCKS = 10
 
 # bar settings
 BAR_COLOR = DARK_GRAY_3
 BAR_COLOR_DELTA = (8, 8, 8)
-BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 4.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
-NUM_BARS = 4
+BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 15.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
+NUM_BARS = 2
 
 # drone camera settings
 DRONE_IMG = 'cross_hair2.png'
@@ -85,8 +101,10 @@ ARROW_SCALE = 15.0
 TRACKER_BLANK = 31
 ADD_METRICS = 1
 ADD_ALTITUDE_INFO = 1
-SHOW_EXTRA = 1
-DRAW_KEYPOINT_TRACKS = 0
+SHOW_EXTRA = 0
+DRAW_KEYPOINT_TRACKS = 1
+DRAW_KEYPOINTS_ONLY_WITHOUT_TRACKS = 1
+TRACK_SCALE = 2.5
 
 # theme
 DARK_ON = 0
@@ -118,7 +136,7 @@ else:
 USE_WORLD_FRAME = 0
 
 # simulator settings
-CLEAR_TOP = 0
+CLEAR_TOP = 1
 
 # console settings
 CLEAN_CONSOLE = 1
@@ -148,6 +166,7 @@ USE_KALMAN = 0
 USE_MA = 0
 # EKF used by controller
 USE_EXTENDED_KALMAN = 1
+USE_NEW_EKF = 1
 
 # plot settings
 LINE_WIDTH_1 = 1.0
@@ -167,7 +186,7 @@ CAR_RADIUS = 0.1
 # DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
 # K_1                     = 0.15
 # K_2                     = 0.02
-# w_                      = -0.1
+# K_W                      = -0.1
 
 # # 2 CLOSED [cam frame, truekin, c1 with den .05, bound=3]
 # CAR_INITIAL_POSITION    = (-70.0, -10.0)    # DO NOT TOUCH
@@ -176,7 +195,7 @@ CAR_RADIUS = 0.1
 # DRONE_INITIAL_VELOCITY  = (11.11, 0.0)      # DO NOT TOUCH
 # K_1                     = 0.3               # DO NOT TOUCH
 # K_2                     = 0.05              # DO NOT TOUCH
-# w_                      = -0.1              # DO NOT TOUCH
+# K_W                      = -0.1              # DO NOT TOUCH
 
 # # 3 CLOSED [world frame, truekin, c2 with den .01, bound=10]
 # CAR_INITIAL_POSITION    = (0.0, 0.0)        #DO NOT TOUCH
@@ -185,7 +204,7 @@ CAR_RADIUS = 0.1
 # DRONE_INITIAL_VELOCITY  = (31.1111, 0.0)    #DO NOT TOUCH
 # K_1                     = 0.1               #DO NOT TOUCH
 # K_2                     = 0.05              #DO NOT TOUCH
-# w_                      = -0.1              #DO NOT TOUCH
+# K_W                      = -0.1              #DO NOT TOUCH
 
 # #4 CLOSED [world frame, truekin, c2 with den .01, bound=10, R=10]
 # CAR_INITIAL_POSITION    = (200.0, 100.0)    # DO NOT TOUCH
@@ -194,31 +213,31 @@ CAR_RADIUS = 0.1
 # DRONE_INITIAL_VELOCITY  = (31.11, 0.0)      # DO NOT TOUCH
 # K_1                     = 0.1               # DO NOT TOUCH
 # K_2                     = 0.05              # DO NOT TOUCH
-# w_                      = -0.1              # DO NOT TOUCH
+# K_W                      = -0.1              # DO NOT TOUCH
 
-# 5 open
-CAR_INITIAL_POSITION    = (100.0, -50.0)
-CAR_INITIAL_VELOCITY    = (22.22, 0.0)
-DRONE_POSITION          = (0.0, 0.0)
-DRONE_INITIAL_VELOCITY  = (31.11, 0.0)
-K_1                     = 0.1
-K_2                     = 0.05
-w_                      = -0.1
-
-# # 6 open
-# CAR_INITIAL_POSITION    = (-200.0, -100.0)
-# CAR_INITIAL_VELOCITY    = (31.11, 0.0)
-# DRONE_POSITION          = (0.0, 0.0)
-# DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
-# K_1                     = 0.1
-# K_2                     = 0.05
-# w_                      = -0.1
-
-# 7 open
-# CAR_INITIAL_POSITION    = (-50.0, 10.0)
+# # 5 open
+# CAR_INITIAL_POSITION    = (140.0, -40.0)
 # CAR_INITIAL_VELOCITY    = (22.22, 0.0)
 # DRONE_POSITION          = (0.0, 0.0)
-# DRONE_INITIAL_VELOCITY  = (0.11, 0.0)
-# K_1                     = 0.1
-# K_2                     = 0.05
-# w_                      = -0.1
+# DRONE_INITIAL_VELOCITY  = (31.31, 0.0)
+# K_1                     = 1.4 # 0.1
+# K_2                     = 0.09
+# K_W                     = -0.1
+
+# # 6 open
+# CAR_INITIAL_POSITION    = (50.0, -30.0)
+# CAR_INITIAL_VELOCITY    = (22.22, 0.0)
+# DRONE_POSITION          = (0.0, 0.0)
+# DRONE_INITIAL_VELOCITY  = (31.31, 0.0)
+# K_1                     = 0.5
+# K_2                     = 0.2
+# K_W                      = -0.1
+
+# 7 open
+CAR_INITIAL_POSITION    = (10.0, -10.0)
+CAR_INITIAL_VELOCITY    = (5.22, 0.0)
+DRONE_POSITION          = (0.0, 0.0)
+DRONE_INITIAL_VELOCITY  = (5.31, 0.0)
+K_1                     = 0.5
+K_2                     = 0.2
+K_W                      = -0.1
