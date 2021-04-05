@@ -28,23 +28,21 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 60.0                                  # meters
+ALTITUDE = 100.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
 PIXEL_TO_METERS_FACTOR = HORIZONTAL_SPAN / WIDTH
 
 # car settings
-CAR_IMG = 'car3.png'
+CAR_IMG = 'cars_1.png'
+CAR_IMG_2 = 'cars_2.png'
+CAR_IMG_3 = 'cars_3.png'
 CAR_LENGTH = 6          # meters
 CAR_LENGTH_PX = 128
 CAR_SCALE = CAR_LENGTH / (CAR_LENGTH_PX * PIXEL_TO_METERS_FACTOR)
-# note for exp 3 (0,0) at image center, axes: x points right [>], y points down [v]
-# for exp4 world coords in SI units, x ->, y ^.
-# CAR_INITIAL_POSITION = (-70.0, -70.0)#(966.94, -150.00)#(-200.0, -150.0)#(-200.0, 200.0)#(-30.0, 30.0)#(50, HEIGHT//2)
-# CAR_INITIAL_VELOCITY = (22.22, 0.0)#(30.0, 0.0)#(30.0, 0.0)#
-CAR_INITIAL_POSITION_2 = (50.0, 20.0)#(966.94, -150.00)#(-200.0, -150.0)#(-200.0, 200.0)#(-30.0, 30.0)#(50, HEIGHT//2)
-CAR_INITIAL_VELOCITY_2 = (23.22, 0.0)#(30.0, 0.0)#(30.0, 0.0)#
+# CAR_INITIAL_POSITION_2 = (10.0, 10.0)
+# CAR_INITIAL_VELOCITY_2 = (5.22, 0.0)
 CAR_ACCELERATION = (0.0, 0.0)
 CAR_RADIUS = 10.0
 TRACK_COLOR = (102, 255, 102)
@@ -236,6 +234,10 @@ CAR_RADIUS = 0.1
 # 7 open
 CAR_INITIAL_POSITION    = (10.0, -10.0)
 CAR_INITIAL_VELOCITY    = (5.22, 0.0)
+CAR_INITIAL_POSITION_2  = (10.0, 10.0)
+CAR_INITIAL_VELOCITY_2  = (5.4, 0.0)
+CAR_INITIAL_POSITION_3  = (-10.0, 0.0)
+CAR_INITIAL_VELOCITY_3  = (5.7, 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (5.31, 0.0)
 K_1                     = 0.5
