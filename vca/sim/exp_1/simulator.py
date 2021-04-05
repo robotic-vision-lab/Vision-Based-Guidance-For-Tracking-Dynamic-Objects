@@ -10,7 +10,6 @@ import pygame.event as GAME_EVENTS
 import numpy as np
 
 from high_precision_clock import HighPrecisionClock
-print(HighPrecisionClock)
 from block import Block
 from bar import Bar
 from car import Car
@@ -43,7 +42,6 @@ class Simulator:
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
 
         # create clock
-        # self.clock = pygame.time.Clock()
         self.clock = HighPrecisionClock()
 
         # load sprite images
