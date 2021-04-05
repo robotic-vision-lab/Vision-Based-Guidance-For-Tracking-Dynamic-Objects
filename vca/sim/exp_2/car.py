@@ -9,7 +9,7 @@ class Car(pygame.sprite.Sprite):
     """Defines a car sprite.
     """
 
-    def __init__(self, simulator, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0):
+    def __init__(self, simulator, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0, car_load=None):
         # assign itself to the all_sprites group
         self.groups = [simulator.all_sprites, simulator.car_block_sprites]
 
@@ -17,7 +17,7 @@ class Car(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self, self.groups)
 
         # assign Sprite.image and Sprite.rect attributes for this Sprite
-        self.image, self.rect = simulator.car_img
+        self.image, self.rect = simulator.car_img if car_load is None else car_load
 
         # set kinematics
         self.position = pygame.Vector2(x, y)
@@ -188,7 +188,6 @@ class Car(pygame.sprite.Sprite):
             self.velocity += self.acceleration * self.simulator.dt
             self.position += self.velocity * self.simulator.dt
         
-
     def update_rect(self):
         """update car sprite's rect.
         """
