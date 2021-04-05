@@ -22,8 +22,6 @@ from my_imports import (load_image,
                         _prep_temp_folder,
                         vec_str,
                         images_assemble,)
-print(f's -- {_prep_temp_folder}')
-print(f'inside simulator.py. {os.listdir()}')
 
 class Simulator:
     """Simulator object creates the simulation game.
