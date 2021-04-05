@@ -46,6 +46,8 @@ class Simulator:
 
         # load sprite images
         self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+        self.car_img_2 = load_image(CAR_IMG_2, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+        self.car_img_3 = load_image(CAR_IMG_3, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         self.drone_img = load_image(DRONE_IMG, colorkey=BLACK, alpha=True, scale=DRONE_SCALE)
 
         # set screen saving to False
@@ -91,6 +93,8 @@ class Simulator:
 
         # spawn car
         self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION)
+        self.car2 = Car(self, *CAR_INITIAL_POSITION_2, *CAR_INITIAL_VELOCITY_2, *CAR_ACCELERATION, car_load=self.car_img_2)
+        self.car3 = Car(self, *CAR_INITIAL_POSITION_3, *CAR_INITIAL_VELOCITY_3, *CAR_ACCELERATION, car_load=self.car_img_3)
 
         #spawn bar
         self.bars = []
