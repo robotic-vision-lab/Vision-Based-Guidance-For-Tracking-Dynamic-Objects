@@ -11,7 +11,7 @@ NAN = float('nan')
 #   S E T T I N G S  #
 
 # resources settings
-ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets')
+ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../assets')
 TEMP_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'tmp')
 TRACKER_TEMP_FOLDER = os.path.join(os.path.abspath(TEMP_FOLDER), 'track_tmp')
 SIMULATOR_TEMP_FOLDER = os.path.join(os.path.abspath(TEMP_FOLDER), 'sim_tmp')

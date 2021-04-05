@@ -5,13 +5,10 @@ import cv2 as cv
 from pygame.locals import *
 from settings import *
 
-
-# ASSET_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../assets')
-
 class ImageDumper:
     def __init__(self, path):
         self.path = os.path.realpath(path)
-
+        
         self._folder_prep_success = _prep_temp_folder(self.path)
         self._frame_num = 0
 
@@ -20,7 +17,7 @@ class ImageDumper:
         img_name = f'frame_{str(self._frame_num).zfill(6)}.png'
         file_path = os.path.join(self.path, img_name)
 
-        return file_path
+        return file_path 
 
     def dump(self, img):
         file_name = self._get_next_path()
@@ -38,7 +35,6 @@ def load_image(img_name, colorkey=None, alpha=True, scale=1.0):
     """
     # construct full path for the image
     full_name = os.path.join(ASSET_FOLDER, img_name)
-    print(full_name)
 
     # try to load the image
     try:
@@ -79,9 +75,9 @@ def scale_img(img, scale):
 
 def screen_saver(screen, path):
     """ generator function saves current frame on given screen as .jpg image file """
-    # prep folder path
+    # prep folder path 
     _prep_temp_folder(path)
-
+    
     frame_num = 0
     while True:
         frame_num += 1

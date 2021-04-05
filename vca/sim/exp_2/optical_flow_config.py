@@ -25,7 +25,7 @@ FARNEBACK_PARAMS = dict( pyr_scale=PYRAMID_SCALE,
 # set params for ShiTomasi corner detection
 MAX_NUM_CORNERS = 4
 WORST_TO_BEST_CORNER_QUALITY_RATIO = 0.3
-MIN_DISTANCE_BETWEEN_CORNERS = 1
+MIN_DISTANCE_BETWEEN_CORNERS = 10
 DERIVATIVE_COVARIATION_BLOCK_SIZE = 5
 
 # create a dictionary for goodFeaturesToTrack parameters
