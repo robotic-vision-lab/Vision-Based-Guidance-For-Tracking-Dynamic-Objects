@@ -1,7 +1,7 @@
 from random import randint, randrange, uniform
 import pygame
 
-from settings import *
+from .settings import *
 
 class Block(pygame.sprite.Sprite):
     """Defines a Block sprite.

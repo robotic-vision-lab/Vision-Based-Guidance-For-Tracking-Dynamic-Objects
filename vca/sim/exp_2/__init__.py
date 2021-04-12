@@ -1,3 +1,5 @@
+import os
+import sys
 
 # add vca\ to sys.path
 vca_path = os.path.abspath(os.path.join('..'))
@@ -16,7 +18,7 @@ from utils.img_utils import (convert_to_grayscale,          #pylint: disable=unu
                              images_assemble,
                              add_salt_pepper)
 from utils.img_utils import scale_image as cv_scale_img
-from game_utils import (load_image,                         #pylint: disable=unused-import
+from .game_utils import (load_image,                         #pylint: disable=unused-import
                         _prep_temp_folder,
                         vec_str,
                         scale_img,
@@ -37,6 +39,6 @@ from algorithms.template_match \
                         TemplateMatcher)
 
 
-from simulator import Simulator
-from tracker import Tracker
-from controller import Controller
+from .simulator import Simulator
+from .tracker import Tracker
+from .controller import Controller

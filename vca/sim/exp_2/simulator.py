@@ -9,15 +9,15 @@ import pygame.locals as GAME_GLOBALS
 import pygame.event as GAME_EVENTS
 import numpy as np
 
-from high_precision_clock import HighPrecisionClock
-from block import Block
-from bar import Bar
-from car import Car
-from drone_camera import DroneCamera
-from settings import *
+from .high_precision_clock import HighPrecisionClock
+from .block import Block
+from .bar import Bar
+from .car import Car
+from .drone_camera import DroneCamera
+from .settings import *
 
 
-from my_imports import (load_image,
+from .my_imports import (load_image,
                         _prep_temp_folder,
                         vec_str,
                         images_assemble,)
@@ -44,7 +44,7 @@ class Simulator:
         # create clock
         self.clock = HighPrecisionClock()
 
-        # load sprite images
+        # load sprite images, rect
         self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         self.car_img_2 = load_image(CAR_IMG_2, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         self.car_img_3 = load_image(CAR_IMG_3, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
@@ -68,6 +68,7 @@ class Simulator:
         self.pxm_fac = PIXEL_TO_METERS_FACTOR
 
         self.car_rect_center_bb_offset = [0,0]
+        self.select_mode = True # select or simulator mode
 
         self.time = 0.0
         self.dt = 0.0
@@ -112,10 +113,10 @@ class Simulator:
         """
         self.running = True
         while self.running:
-            # make clock tick and measure time elapsed
+            # make clock tick; measures total time elapsed in microseconds
             self.dt = self.clock.tick(FPS) / 1000.0
             if not self.manager.use_real_clock:
-                self.dt = DELTA_TIME
+                self.dt = DELTA_TIME    # fixed delta time for fake clock
             if self.pause:          # DO NOT TOUCH! CLOCK MUST TICK REGARDLESS!
                 self.dt = 0.0
             self.time += self.dt

@@ -1,7 +1,7 @@
 import os
 import pygame
 from math import tan, radians
-from colors import *
+from .colors import *
 
 # special constants
 POS_INF = float('inf')
@@ -177,67 +177,13 @@ SUPTITLE_ON = 1
 CAR_RADIUS = 0.1
 # initial conditions
 
-# # 1 OPEN
-# CAR_INITIAL_POSITION    = (-70.0, -70.0)
-# CAR_INITIAL_VELOCITY    = (31.11, 0.0)
-# DRONE_POSITION          = (0.0, 0.0)
-# DRONE_INITIAL_VELOCITY  = (22.22, 0.0)
-# K_1                     = 0.15
-# K_2                     = 0.02
-# K_W                      = -0.1
-
-# # 2 CLOSED [cam frame, truekin, c1 with den .05, bound=3]
-# CAR_INITIAL_POSITION    = (-70.0, -10.0)    # DO NOT TOUCH
-# CAR_INITIAL_VELOCITY    = (22.22, 0.0)      # DO NOT TOUCH
-# DRONE_POSITION          = (0.0, 0.0)        # DO NOT TOUCH
-# DRONE_INITIAL_VELOCITY  = (11.11, 0.0)      # DO NOT TOUCH
-# K_1                     = 0.3               # DO NOT TOUCH
-# K_2                     = 0.05              # DO NOT TOUCH
-# K_W                      = -0.1              # DO NOT TOUCH
-
-# # 3 CLOSED [world frame, truekin, c2 with den .01, bound=10]
-# CAR_INITIAL_POSITION    = (0.0, 0.0)        #DO NOT TOUCH
-# CAR_INITIAL_VELOCITY    = (22.2222, 0.0)    #DO NOT TOUCH
-# DRONE_POSITION          = (0.0, 50.0)       #DO NOT TOUCH
-# DRONE_INITIAL_VELOCITY  = (31.1111, 0.0)    #DO NOT TOUCH
-# K_1                     = 0.1               #DO NOT TOUCH
-# K_2                     = 0.05              #DO NOT TOUCH
-# K_W                      = -0.1              #DO NOT TOUCH
-
-# #4 CLOSED [world frame, truekin, c2 with den .01, bound=10, R=10]
-# CAR_INITIAL_POSITION    = (200.0, 100.0)    # DO NOT TOUCH
-# CAR_INITIAL_VELOCITY    = (22.22, 0.0)      # DO NOT TOUCH
-# DRONE_POSITION          = (0.0, 0.0)        # DO NOT TOUCH
-# DRONE_INITIAL_VELOCITY  = (31.11, 0.0)      # DO NOT TOUCH
-# K_1                     = 0.1               # DO NOT TOUCH
-# K_2                     = 0.05              # DO NOT TOUCH
-# K_W                      = -0.1              # DO NOT TOUCH
-
-# # 5 open
-# CAR_INITIAL_POSITION    = (140.0, -40.0)
-# CAR_INITIAL_VELOCITY    = (22.22, 0.0)
-# DRONE_POSITION          = (0.0, 0.0)
-# DRONE_INITIAL_VELOCITY  = (31.31, 0.0)
-# K_1                     = 1.4 # 0.1
-# K_2                     = 0.09
-# K_W                     = -0.1
-
-# # 6 open
-# CAR_INITIAL_POSITION    = (50.0, -30.0)
-# CAR_INITIAL_VELOCITY    = (22.22, 0.0)
-# DRONE_POSITION          = (0.0, 0.0)
-# DRONE_INITIAL_VELOCITY  = (31.31, 0.0)
-# K_1                     = 0.5
-# K_2                     = 0.2
-# K_W                      = -0.1
-
-# 7 open
+# open
 CAR_INITIAL_POSITION    = (10.0, -10.0)
 CAR_INITIAL_VELOCITY    = (5.22, 0.0)
 CAR_INITIAL_POSITION_2  = (10.0, 10.0)
 CAR_INITIAL_VELOCITY_2  = (5.4, 0.0)
 CAR_INITIAL_POSITION_3  = (-10.0, 0.0)
-CAR_INITIAL_VELOCITY_3  = (5.7, 0.0)
+CAR_INITIAL_VELOCITY_3  = (6, 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (5.31, 0.0)
 K_1                     = 0.5

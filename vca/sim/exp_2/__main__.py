@@ -6,10 +6,10 @@ from math import degrees, atan2
 import numpy as np
 
 
-from manager import ExperimentManager
-from settings import *
+from .manager import ExperimentManager
+from .settings import *
 
-from my_imports import _prep_temp_folder
+from .my_imports import _prep_temp_folder
 
 if __name__ == '__main__':
 

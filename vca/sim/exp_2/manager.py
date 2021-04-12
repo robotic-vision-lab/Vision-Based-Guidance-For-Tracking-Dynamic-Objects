@@ -7,15 +7,15 @@ import numpy as np
 import pygame
 from pygame.locals import *
 
-from simulator import Simulator
-from tracker import Tracker
-from controller import Controller
-from maf import MA
-from kf import Kalman
-from ekf import ExtendedKalman2
+from .simulator import Simulator
+from .tracker import Tracker
+from .controller import Controller
+from .maf import MA
+from .kf import Kalman
+from .ekf import ExtendedKalman2
 
-from settings import *
-from my_imports import (create_video_from_images,)
+from .settings import *
+from .my_imports import (create_video_from_images,)
 
 
 class ExperimentManager:

@@ -19,14 +19,14 @@ import sys
 
 
 # from settings import *                                      #pylint: disable=unused-wildcard-import
-from optical_flow_config import (FARNEBACK_PARAMS,          #pylint: disable=unused-import
+from .optical_flow_config import (FARNEBACK_PARAMS,          #pylint: disable=unused-import
                                  FARN_TEMP_FOLDER,
                                  FEATURE_PARAMS,
                                  LK_PARAMS,
                                  LK_TEMP_FOLDER,
                                  MAX_NUM_CORNERS)
 
-from game_utils import (load_image,                         #pylint: disable=unused-import
+from .game_utils import (load_image,                         #pylint: disable=unused-import
                         _prep_temp_folder,
                         vec_str,
                         scale_img,

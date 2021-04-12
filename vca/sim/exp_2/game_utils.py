@@ -3,7 +3,7 @@ import shutil
 import pygame
 import cv2 as cv
 from pygame.locals import *
-from settings import *
+from .settings import *
 
 class ImageDumper:
     def __init__(self, path):

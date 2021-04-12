@@ -2,7 +2,7 @@ import os
 import numpy as np
 from datetime import timedelta
 from math import atan2, degrees, cos, sin, pi
-from settings import *
+from .settings import *
 
 class Controller:
     def __init__(self, manager):
