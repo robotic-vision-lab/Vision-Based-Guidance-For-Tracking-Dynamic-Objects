@@ -53,8 +53,6 @@ class Simulator:
         # set screen saving to False
         self.save_screen = False
 
-        self.cam_accel_command = pygame.Vector2(0, 0)
-        self.euc_factor = 1.0
         self.pause = True
         self.time_font = pygame.font.SysFont(TIME_FONT, 16, False, False)
         self.bb_start = None
@@ -108,50 +106,6 @@ class Simulator:
         for sprite in self.all_sprites:
             self.camera.compensate_camera_motion(sprite)
 
-    def run(self):
-        """Keeps simulation game running until quit.
-        """
-        self.running = True
-        while self.running:
-            # make clock tick; measures total time elapsed in microseconds
-            self.dt = self.clock.tick(FPS) / 1000.0
-            if not self.manager.use_real_clock:
-                self.dt = DELTA_TIME    # fixed delta time for fake clock
-            if self.pause:          # DO NOT TOUCH! CLOCK MUST TICK REGARDLESS!
-                self.dt = 0.0
-            self.time += self.dt
-
-            # handle events
-            self.handle_events()
-            if not self.running:
-                break
-
-            if not self.pause:
-                # update game objects
-                self.update()
-                # print stuffs
-                # print(f'SSSS >> {str(timedelta(seconds=self.time))} >> DRONE - x:{vec_str(self.camera.rect.center)} | v:{vec_str(self.camera.velocity)} | a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | CAR - x:{vec_str(self.car.rect.center)}, v: {vec_str(self.car.velocity)},  v_c-v_d: {vec_str(self.car.velocity - self.camera.velocity)}              ', end='\n')
-                if not CLEAN_CONSOLE:
-                    print(f'SSSS >> {str(timedelta(seconds=self.time))} >> DRONE - x:{vec_str(self.camera.position)} | v:{vec_str(self.camera.velocity)} | CAR - x:{vec_str(self.car.position)}, v: {vec_str(self.car.velocity)} | COMMANDED a:{vec_str(self.camera.acceleration)} | a_comm:{vec_str(self.cam_accel_command)} | rel_car_pos: {vec_str(self.car.position - self.camera.position)}', end='\n')
-                # self.manager.true_rel_vel = self.car.velocity - self.camera.velocity
-
-            # draw stuffs
-            self.draw()
-
-            if not self.pause and self.manager.tracker_on:
-                # put the screen capture into image_deque
-                self.put_image()
-
-            # draw extra parts like drone cross hair, simulation time, bounding box etc
-            self.draw_extra()
-
-            # show drawing board
-            self.show_drawing()
-            # pygame.display.flip()
-
-            # save screen
-            if self.save_screen:
-                next(self.screen_shot)
 
     def show_drawing(self):
         """Flip the drawing board to show drawings.
@@ -193,19 +147,6 @@ class Simulator:
                 if event.key == pygame.K_k:
                     self.drone_down()
             
-            # mutliple keypresses for manual acceleration control
-            key_state = pygame.key.get_pressed()
-            if key_state[pygame.K_LEFT]:
-                self.cam_accel_command.x = -1
-            if key_state[pygame.K_RIGHT]:
-                self.cam_accel_command.x = 1
-            if key_state[pygame.K_UP]:
-                self.cam_accel_command.y = -1
-            if key_state[pygame.K_DOWN]:
-                self.cam_accel_command.y = 1
-
-            self.euc_factor = 0.7071 if abs(self.cam_accel_command.elementwise()) == (1, 1) else 1.0
-
             # capture bounding box input 
             # Bounding box will be input in the following manner
             #   1. Simulator will be paused
@@ -233,18 +174,10 @@ class Simulator:
 
             GAME_EVENTS.pump()
 
-        # respond to the command posted by controller
-        # if len(self.manager.command_deque) > 0:
-        #     self.camera.acceleration = self.manager.get_from_command_deque()
 
     def update(self):
         """Update positions of components.
         """
-        # update drone acceleration using acceleration command (force)
-        if not self.manager.control_on:
-            self.camera.change_acceleration(deepcopy(self.euc_factor * self.cam_accel_command))
-            self.cam_accel_command = pygame.Vector2(0, 0)
-
         # update Group. (All sprites in it will get updated)
         self.all_sprites.update()
 
@@ -347,7 +280,8 @@ class Simulator:
 
     def get_screen_capture(self, save_mode=False):
         """Get screen capture from pygame and convert it to return opencv compatible images.
-
+        Args:
+            save_mode (bool): Indicates if it's save_mode. In save mode scaling up/down or snr noise won't be done.
         Returns:
             [np.ndarray]: Captured and converted opencv compatible image.
         """
@@ -364,12 +298,6 @@ class Simulator:
                 img = cv.GaussianBlur(img, (5, 5), 0)
 
         return img
-
-    def put_image(self):
-        """Helper function, captures screen and adds to manager's image deque.
-        """
-        img = self.get_screen_capture()
-        self.manager.add_to_image_deque(img)
 
     def drone_up(self):
         """Helper function to implement drone altitude increments.
