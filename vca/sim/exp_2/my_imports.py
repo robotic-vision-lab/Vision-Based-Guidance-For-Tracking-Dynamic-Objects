@@ -1,21 +1,6 @@
 import os
 import sys
-# import ctypes
-# import random
-# import shutil
-# import time
-# import threading as th
-# from queue import deque
-# from copy import deepcopy
-# from random import randrange
-# from datetime import timedelta
-# from math import atan2, degrees, radians, cos, sin, pi, tau, isnan, e
 
-# import numpy as np
-# import cv2 as cv
-# import pygame
-# import pygame.locals as GAME_GLOBALS
-# import pygame.event as GAME_EVENTS
 
 
 # from settings import *                                      #pylint: disable=unused-wildcard-import
