@@ -1,7 +1,7 @@
 import numpy as np
 from math import atan2, sin, cos, e, pi, tau
 
-class ExtendedKalman2:
+class ExtendedKalman:
     """Implement continuous-continuous EKF for the UAS and Vehicle system in stateful fashion
     """
 
