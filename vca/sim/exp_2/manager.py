@@ -10,9 +10,7 @@ from pygame.locals import *
 from .simulator import Simulator
 from .tracker import Tracker
 from .controller import Controller
-from .maf import MA
-from .kf import Kalman
-from .ekf import ExtendedKalman2
+from .ekf import ExtendedKalman
 
 from .settings import *
 from .my_imports import (create_video_from_images,)
@@ -48,6 +46,7 @@ class ExperimentManager:
             use_real_clock=True,
             draw_occlusion_bars=False):
 
+        # save experiment options
         self.save_on = save_on
         self.write_plot = write_plot
         self.control_on = control_on
@@ -57,17 +56,12 @@ class ExperimentManager:
         self.use_real_clock = use_real_clock
         self.draw_occlusion_bars = draw_occlusion_bars
 
+        # instantiate simulator, tracker, controller
         self.simulator = Simulator(self)
         self.tracker = Tracker(self)
         self.controller = Controller(self)
 
-        self.MAF = MA(window_size=10)
-        self.KF = Kalman(self)
-        self.EKF = ExtendedKalman(self) if not USE_NEW_EKF else ExtendedKalman2(self)
-
-        # self.image_deque = deque(maxlen=2)
-        # self.command_deque = deque(maxlen=2)
-        # self.kinematics_deque = deque(maxlen=2)
+        self.EKF = ExtendedKalman(self)
 
         self.sim_dt = 0
         self.true_rel_vel = None
@@ -157,6 +151,8 @@ class ExperimentManager:
 
 
     def run(self):
+        """Main run function. Running experiment equates to calling this function.
+        """
         # initialize simulator
         self.simulator.start_new()
 
@@ -233,6 +229,7 @@ class ExperimentManager:
             # update rects and images for all sprites (not when paused)
             if not self.simulator.pause:
                 self.simulator.update()
+                # print stuffs to console
                 if not CLEAN_CONSOLE:
                     print(f'SSSS >> {str(timedelta(seconds=self.simulator.time))} >> DRONE - x:{vec_str(self.simulator.camera.position)} | v:{vec_str(self.simulator.camera.velocity)} | CAR - x:{vec_str(self.simulator.car.position)}, v: {vec_str(self.simulator.car.velocity)} | COMMANDED a:{vec_str(self.simulator.camera.acceleration)} | a_comm:{vec_str(self.simulator.cam_accel_command)} | rel_car_pos: {vec_str(self.simulator.car.position - self.simulator.camera.position)}', end='\n')
 
