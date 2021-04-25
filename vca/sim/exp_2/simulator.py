@@ -37,8 +37,8 @@ class Simulator:
         # initialize screen
         os.environ['SDL_VIDEO_WINDOW_POS'] = "2,30"
         pygame.init()
-        self.screen_surface = pygame.display.set_mode(SCREEN_SIZE)
-        self.screen_surface.fill(SCREEN_BG_COLOR)
+        self.SCREEN_SURFACE = pygame.display.set_mode(SCREEN_SIZE)
+        self.SCREEN_SURFACE.fill(SCREEN_BG_COLOR)
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
 
         # create clock
@@ -189,15 +189,15 @@ class Simulator:
         """Draws components on screen. Note: drone_img is drawn after screen capture for tracking is performed.
         """
         # fill background
-        self.screen_surface.fill(SCREEN_BG_COLOR)
+        self.SCREEN_SURFACE.fill(SCREEN_BG_COLOR)
 
-        # make title
+        # make and set the window title
         sim_fps = 'NA' if self.dt == 0 else f'{1/self.dt:.2f}'
         pygame.display.set_caption(
             f'  FPS {sim_fps} | car: x-{vec_str(self.car.position)} v-{vec_str(self.car.velocity)} a-{vec_str(self.car.acceleration)} | cam x-{vec_str(self.camera.position)} v-{vec_str(self.camera.velocity)} a-{vec_str(self.camera.acceleration)} ')
 
         # draw only car and blocks (not drone)
-        self.car_block_sprites.draw(self.screen_surface)
+        self.car_block_sprites.draw(self.SCREEN_SURFACE)
 
         if (USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or
                 USE_TRAJECTORY == TWO_HOLE_TRAJECTORY or 
@@ -212,19 +212,19 @@ class Simulator:
 
         # draw bars
         if self.manager.draw_occlusion_bars:
-            self.bar_sprites.draw(self.screen_surface)
+            self.bar_sprites.draw(self.SCREEN_SURFACE)
 
     def draw_extra(self):
         """Components to be drawn after screen capture for tracking/controllers is performed.
         """
         # draw drone cross hair
-        self.drone_sprite.draw(self.screen_surface)
+        self.drone_sprite.draw(self.SCREEN_SURFACE)
 
         # draw simulation time
         time_str = f'Simulation Time - {str(timedelta(seconds=self.time))}'
         time_surf = self.time_font.render(time_str, True, TIME_COLOR)
         time_rect = time_surf.get_rect()
-        self.screen_surface.blit(time_surf, (WIDTH - 12 - time_rect.width, HEIGHT - 25))
+        self.SCREEN_SURFACE.blit(time_surf, (WIDTH - 12 - time_rect.width, HEIGHT - 25))
 
         # draw bounding box
         if self.bb_start and self.bb_end and self.pause:
@@ -233,18 +233,18 @@ class Simulator:
             w = abs(self.bb_start[0] - self.bb_end[0])
             h = abs(self.bb_start[1] - self.bb_end[1])
             self.bounding_box = (x, y, w, h)
-            pygame.draw.rect(self.screen_surface, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
+            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
 
         if not CLEAR_TOP:
             # draw drone altitude info
             alt_str = f'car loc - {self.car.rect.center}, Alt - {self.camera.altitude:0.2f}m, fac - {self.alt_change_fac:0.4f}, pxm - {self.pxm_fac:0.4f}'
             alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
             alt_rect = alt_surf.get_rect()
-            self.screen_surface.blit(alt_surf, (15, 15))
+            self.SCREEN_SURFACE.blit(alt_surf, (15, 15))
             alt_str = f'drone loc - {self.camera.rect.center}, FOV - {WIDTH * self.pxm_fac:0.2f}m x {HEIGHT * self.pxm_fac:0.2f}m'
             alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
             alt_rect = alt_surf.get_rect()
-            self.screen_surface.blit(alt_surf, (15, 35))
+            self.SCREEN_SURFACE.blit(alt_surf, (15, 35))
 
     def screen_saver(self, path):
         """Creates a generator to perform screen saving.
@@ -285,7 +285,7 @@ class Simulator:
         Returns:
             [np.ndarray]: Captured and converted opencv compatible image.
         """
-        data = pygame.image.tostring(self.screen_surface, 'RGB')
+        data = pygame.image.tostring(self.SCREEN_SURFACE, 'RGB')
         img = np.frombuffer(data, np.uint8).reshape(HEIGHT, WIDTH, 3)
         img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
 
@@ -335,7 +335,7 @@ class Simulator:
         return self.camera.position
 
     def get_camera_fov(self):
-        """Helper function, returns drone camera field of view.
+        """Helper function, returns drone camera field of view in meters.
 
         Returns:
             tuple(float32, float32): Drone camera field of view
