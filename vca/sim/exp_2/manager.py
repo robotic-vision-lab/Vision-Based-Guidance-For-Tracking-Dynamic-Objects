@@ -56,33 +56,63 @@ class ExperimentManager:
         self.use_real_clock = use_real_clock
         self.draw_occlusion_bars = draw_occlusion_bars
 
-        # instantiate simulator, tracker, controller
+        # instantiate simulator, tracker, controller and EKF
         self.simulator = Simulator(self)
         self.tracker = Tracker(self)
         self.controller = Controller(self)
-
         self.EKF = ExtendedKalman(self)
 
+        # initialize simulation delta time
         self.sim_dt = 0
-        self.true_rel_vel = None
+
+        # initialize offset of centroid from car rect center
         self.car_rect_center_centroid_offset = [0, 0]
 
         if self.save_on:
             self.simulator.save_screen = True
 
     def get_drone_cam_field_of_view(self):
+        """helper function returns field of view (width, height) in meters
+
+        Returns:
+            tuple(float32, float32): Drone camera field of view
+        """
         return self.simulator.get_camera_fov()
 
     def get_true_drone_position(self):
+        """helper function returns true drone position fetched from simulator
+
+        Returns:
+            pygame.Vector2: True drone position
+        """
         return self.simulator.camera.position
 
     def get_true_drone_velocity(self):
+        """helper function returns true drone velocity fetched from simulator
+
+        Returns:
+            pygame.Vector2: True drone velocity
+        """
         return self.simulator.camera.velocity
 
     def get_target_bounding_box(self):
+        """helper function returns bounding box of the target fetched from simulator
+
+        Returns:
+            tuple(int, int, int, int): x, y, w, h defining target bounding box
+        """
         return self.simulator.bounding_box
 
     def transform_pos_corner_img_pixels_to_center_cam_meters(self, pos):
+        """helper function transforms frame of reference for position.
+        Transformation from cam attached topleft inverted image frame to center upright cam attached frame
+
+        Args:
+            pos (pygame.Vector2): Measured position
+
+        Returns:
+            pygame.Vector2: Tranformed position
+        """
         pos = pos.elementwise() * (1, -1) + (0, HEIGHT)
         pos *= self.simulator.pxm_fac
         pos += -pygame.Vector2(self.get_drone_cam_field_of_view()) / 2
@@ -90,27 +120,52 @@ class ExperimentManager:
         return pos
 
     def transform_vel_img_pixels_to_cam_meters(self, vel):
+        """helper function transforms frame of reference for velocity.
+        Transformation from cam attached topleft inverted image frame to center upright cam attached frame
+
+        Args:
+            vel (pygame.Vector2): Measured velocity
+
+        Returns:
+            pygame.Vector2: Tranformed velocity
+        """
         vel = vel.elementwise() * (1, -1)
         vel *= self.simulator.pxm_fac
         vel += self.get_true_drone_velocity()
         return vel
 
     def set_target_centroid_offset(self):
-        # this will be called from tracker at the first run after first centroid calculation
-        # uses tracked new centroid to compute it's relative position from car center
+        """Worker function, to be called from tracker at the first run after first centroid calculation
+        uses tracked new centroid to compute it's relative position from car rect center
+        """
         self.car_rect_center_centroid_offset[0] = self.tracker.centroid_new.flatten()[0] - self.simulator.car.rect.centerx
         self.car_rect_center_centroid_offset[1] = self.tracker.centroid_new.flatten()[1] - self.simulator.car.rect.centery
 
     def get_target_centroid(self):
+        """helper function adds centroid offset to car rect center and returns the target centroid 
+
+        Returns:
+            [np.ndarray]: Target centroid
+        """
         target_cent = self.car_rect_center_centroid_offset.copy()
         target_cent[0] += self.simulator.car.rect.centerx
         target_cent[1] += self.simulator.car.rect.centery
         return np.array(target_cent).reshape(1, 2)
 
     def get_target_centroid_offset(self):
+        """helper function returns target centroid offset
+
+        Returns:
+            list: Target centroid offset from target rect center
+        """
         return self.car_rect_center_centroid_offset
 
     def get_bounding_box_offset(self):
+        """helper function, returns bounding box toplet corner offset w.r.t car rect center
+
+        Returns:
+            [type]: [description]
+        """
         return self.simulator.car_rect_center_bb_offset
 
     def get_target_bounding_box_from_offset(self):
