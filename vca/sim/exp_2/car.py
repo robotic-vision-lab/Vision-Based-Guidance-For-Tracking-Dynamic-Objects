@@ -5,19 +5,21 @@ import pygame
 
 from .settings import *
 
+from .my_imports import load_image_rect
+
 class Car(pygame.sprite.Sprite):
     """Defines a car sprite.
     """
 
-    def __init__(self, simulator, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0, car_load=None):
+    def __init__(self, simulator, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0, loaded_image_rect=None):
         # assign itself to the all_sprites group
-        self.groups = [simulator.all_sprites, simulator.car_block_sprites]
+        self.groups = [simulator.all_sprites, simulator.car_sprites]
 
         # call Sprite initializer with group info
         pygame.sprite.Sprite.__init__(self, self.groups)
 
         # assign Sprite.image and Sprite.rect attributes for this Sprite
-        self.image, self.rect = simulator.car_img if car_load is None else car_load
+        self.image, self.rect = loaded_image_rect
 
         # set kinematics
         self.position = pygame.Vector2(x, y)
@@ -189,12 +191,29 @@ class Car(pygame.sprite.Sprite):
             self.position += self.velocity * self.simulator.dt
         
     def update_rect(self):
-        """update car sprite's rect.
+        """Update car sprite's rect position.
         """
         x, y = self.position.elementwise() * (1, -1) / self.simulator.pxm_fac
         self.rect.centerx = int(x)
         self.rect.centery = int(y) + HEIGHT
         self.rect.center += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1)
+
+    def update_image_rect(self):
+        """Update car image and rect for changes in orientations
+        """
+        if (USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or
+                USE_TRAJECTORY == TWO_HOLE_TRAJECTORY or 
+                USE_TRAJECTORY == SQUIRCLE_TRAJECTORY):
+            # load the unrotated image and rect
+            self.car_img_rect = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+            prev_center = self.car_img_rect[0].get_rect(center = self.car_img_rect[0].get_rect().center).center
+            rot_img = pygame.transform.rotate(self.car_img_rect[0], degrees(self.angle))
+            rot_img = rot_img.convert_alpha()
+            rot_rect = rot_img.get_rect(center = prev_center)
+            self.car_img_rect = (rot_img, rot_rect)
+            self.image, self.rect = self.car_img_rect
+            self.update_rect()
+            # self.car.load()
 
     def update(self):
         """ update sprite attributes.
@@ -207,6 +226,6 @@ class Car(pygame.sprite.Sprite):
     def load(self):
         """Helper function called when altitude is changed. Updates image and rect.
         """
-        self.image, self.rect = self.simulator.car_img
+        self.image, self.rect = self.simulator.car_img_rect
         self.update_rect()
         # self.rect.center = self.position + SCREEN_CENTER
