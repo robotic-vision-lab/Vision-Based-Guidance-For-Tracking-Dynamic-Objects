@@ -17,7 +17,7 @@ from .drone_camera import DroneCamera
 from .settings import *
 
 
-from .my_imports import (load_image,
+from .my_imports import (load_image_rect,
                         _prep_temp_folder,
                         vec_str,
                         images_assemble,)
@@ -44,21 +44,23 @@ class Simulator:
         # create clock
         self.clock = HighPrecisionClock()
 
-        # load sprite images, rect
-        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
-        self.car_img_2 = load_image(CAR_IMG_2, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
-        self.car_img_3 = load_image(CAR_IMG_3, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
-        self.drone_img = load_image(DRONE_IMG, colorkey=BLACK, alpha=True, scale=DRONE_SCALE)
+        # load car and drone sprite images, rect
+        self.car_img_rect_1 = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+        self.car_img_rect_2 = load_image_rect(CAR_IMG_2, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+        self.car_img_rect_3 = load_image_rect(CAR_IMG_3, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+        self.drone_img_rect = load_image_rect(DRONE_IMG, colorkey=BLACK, alpha=True, scale=DRONE_SCALE)
 
         # set screen saving to False
         self.save_screen = False
 
         self.pause = True
         self.time_font = pygame.font.SysFont(TIME_FONT, 16, False, False)
+
         self.bb_start = None
         self.bb_end = None
         self.bb_drag = False
         self.bounding_box_drawn = False
+
         self.running = True
         self.tracker_ready = False
 
@@ -82,7 +84,8 @@ class Simulator:
         # create default Group for all sprites, but drone
         self.all_sprites = pygame.sprite.Group()
         self.drone_sprite = pygame.sprite.Group()
-        self.car_block_sprites = pygame.sprite.Group()
+        self.car_sprites = pygame.sprite.Group()
+        self.block_sprites = pygame.sprite.Group()
         self.bar_sprites = pygame.sprite.Group()
 
         # spawn blocks
@@ -91,9 +94,9 @@ class Simulator:
             self.blocks.append(Block(self))
 
         # spawn car
-        self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION)
-        self.car2 = Car(self, *CAR_INITIAL_POSITION_2, *CAR_INITIAL_VELOCITY_2, *CAR_ACCELERATION, car_load=self.car_img_2)
-        self.car3 = Car(self, *CAR_INITIAL_POSITION_3, *CAR_INITIAL_VELOCITY_3, *CAR_ACCELERATION, car_load=self.car_img_3)
+        self.car_1 = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_1)
+        self.car_2 = Car(self, *CAR_INITIAL_POSITION_2, *CAR_INITIAL_VELOCITY_2, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_2)
+        self.car_3 = Car(self, *CAR_INITIAL_POSITION_3, *CAR_INITIAL_VELOCITY_3, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_3)
 
         #spawn bar
         self.bars = []
@@ -197,18 +200,21 @@ class Simulator:
             f'  FPS {sim_fps} | car: x-{vec_str(self.car.position)} v-{vec_str(self.car.velocity)} a-{vec_str(self.car.acceleration)} | cam x-{vec_str(self.camera.position)} v-{vec_str(self.camera.velocity)} a-{vec_str(self.camera.acceleration)} ')
 
         # draw only car and blocks (not drone)
-        self.car_block_sprites.draw(self.SCREEN_SURFACE)
+        self.block_sprites.draw(self.SCREEN_SURFACE)
+        self.car_sprites.draw(self.SCREEN_SURFACE)
 
-        if (USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or
-                USE_TRAJECTORY == TWO_HOLE_TRAJECTORY or 
-                USE_TRAJECTORY == SQUIRCLE_TRAJECTORY):
-            self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
-            prev_center = self.car_img[0].get_rect(center = self.car_img[0].get_rect().center).center
-            rot_img = pygame.transform.rotate(self.car_img[0], degrees(self.car.angle))
-            rot_img = rot_img.convert_alpha()
-            rot_rect = rot_img.get_rect(center = prev_center)
-            self.car_img = (rot_img, rot_rect)
-            self.car.load()
+        for car_sprite in self.car_sprites:
+            car_sprite.update_image_rect()
+        # if (USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or
+        #         USE_TRAJECTORY == TWO_HOLE_TRAJECTORY or 
+        #         USE_TRAJECTORY == SQUIRCLE_TRAJECTORY):
+        #     self.car_img_rect = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+        #     prev_center = self.car_img_rect[0].get_rect(center = self.car_img_rect[0].get_rect().center).center
+        #     rot_img = pygame.transform.rotate(self.car_img_rect[0], degrees(self.car.angle))
+        #     rot_img = rot_img.convert_alpha()
+        #     rot_rect = rot_img.get_rect(center = prev_center)
+        #     self.car_img_rect = (rot_img, rot_rect)
+        #     self.car.load()
 
         # draw bars
         if self.manager.draw_occlusion_bars:
