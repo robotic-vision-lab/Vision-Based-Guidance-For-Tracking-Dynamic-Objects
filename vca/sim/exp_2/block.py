@@ -8,7 +8,7 @@ class Block(pygame.sprite.Sprite):
     """
 
     def __init__(self, simulator):
-        self.groups = [simulator.all_sprites, simulator.car_block_sprites]
+        self.groups = [simulator.all_sprites, simulator.block_sprites]
 
         # Call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self, self.groups)
