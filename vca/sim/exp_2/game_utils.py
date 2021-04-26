@@ -26,8 +26,8 @@ class ImageDumper:
 
 # helper function to load images
 def load_image(img_name, colorkey=None, alpha=True, scale=1.0):
-    """loads pygame image and its rect and returns them as a tuple.
-        It will look into the ASSET_FOLDER for the img_name.
+    """Returns loaded pygame 'image' and its 'rect' as a tuple.
+        It will look into the ASSET_FOLDER for the <img_name>.
 
     Args:
         img_name (str): name of the image file
