@@ -10,7 +10,7 @@ class DroneCamera(pygame.sprite.Sprite):
         # call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self, self.groups)
 
-        self.image, self.rect = simulator.drone_img
+        self.image, self.rect = simulator.drone_img_rect
         self.image.fill((255, 255, 255, DRONE_IMG_ALPHA), None, pygame.BLEND_RGBA_MULT)
         self.reset_kinematics()
         self.origin = self.position
@@ -124,13 +124,13 @@ class DroneCamera(pygame.sprite.Sprite):
         return x / ((self.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
 
     def fly_higher(self):
-        """Helper function to implement drone raise altitude
+        """Helper function to implement drone raise altitude. Updates altitude and its change factor.
         """
         self.simulator.alt_change_fac = 1.0 + self.alt_change / self.altitude
         self.altitude += self.alt_change
 
     def fly_lower(self):
-        """Helper function to implement drone lower altitude
+        """Helper function to implement drone lower altitude. Updates altitude and its change factor.
         """
         self.simulator.alt_change_fac = 1.0 - self.alt_change / self.altitude
         self.altitude -= self.alt_change
