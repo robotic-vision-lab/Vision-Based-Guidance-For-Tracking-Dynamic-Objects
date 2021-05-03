@@ -22,12 +22,14 @@ from .my_imports import (load_image_rect,
                         vec_str,
                         images_assemble,)
 
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
 class Simulator:
-    """Simulator object creates the simulation game.
-    Responds to keypresses 'SPACE' to toggle play/pause, 's' to save screen mode, ESC to quit.
-    While running simulation, it also dumps the screens to a shared memory location.
-    Designed to work with an ExperimentManager object.
-    Computer Graphics techniques are employed here.
+    """Enables image data capture through simulation using Pygame.
+    Simulates orthogonally projected image data capture of a simulated scene, from 
+    a (dynamic) camera mounted on a drone. 
+    Additionally, simulates kinematics of scene along with appropriate response 
+    to control acceleration commands for drone.
     """
 
     def __init__(self, manager):
@@ -41,13 +43,14 @@ class Simulator:
         self.SCREEN_SURFACE.fill(SCREEN_BG_COLOR)
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
 
-        # create clock
+        # initialize clock
         self.clock = HighPrecisionClock()
 
-        # load car and drone sprite images, rect
+        # load image and rect for each car and drone sprite
         self.car_img_rect_1 = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         self.car_img_rect_2 = load_image_rect(CAR_IMG_2, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         self.car_img_rect_3 = load_image_rect(CAR_IMG_3, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+        
         self.drone_img_rect = load_image_rect(DRONE_IMG, colorkey=BLACK, alpha=True, scale=DRONE_SCALE)
 
         # set screen saving to False
@@ -177,7 +180,6 @@ class Simulator:
 
             GAME_EVENTS.pump()
 
-
     def update(self):
         """Update positions of components.
         """
@@ -203,18 +205,9 @@ class Simulator:
         self.block_sprites.draw(self.SCREEN_SURFACE)
         self.car_sprites.draw(self.SCREEN_SURFACE)
 
+        # update car image and rect in response to orientation change
         for car_sprite in self.car_sprites:
             car_sprite.update_image_rect()
-        # if (USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or
-        #         USE_TRAJECTORY == TWO_HOLE_TRAJECTORY or 
-        #         USE_TRAJECTORY == SQUIRCLE_TRAJECTORY):
-        #     self.car_img_rect = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
-        #     prev_center = self.car_img_rect[0].get_rect(center = self.car_img_rect[0].get_rect().center).center
-        #     rot_img = pygame.transform.rotate(self.car_img_rect[0], degrees(self.car.angle))
-        #     rot_img = rot_img.convert_alpha()
-        #     rot_rect = rot_img.get_rect(center = prev_center)
-        #     self.car_img_rect = (rot_img, rot_rect)
-        #     self.car.load()
 
         # draw bars
         if self.manager.draw_occlusion_bars:
