@@ -373,7 +373,7 @@ class Tracker:
         return target_location
 
     def process_image_complete(self, new_frame):
-        """Processes new frame and performs and delegated various tracking based tasks.
+        """Processes new frame and performs and delegates various tracking based tasks.
             1. Extracts target attributes and stores them
             2. Processes each next frame and tracks target
             3. Delegates kinematics computation
