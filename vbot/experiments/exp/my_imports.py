@@ -2,6 +2,7 @@ import os
 import sys
 
 
+
 # from settings import *                                      #pylint: disable=unused-wildcard-import
 from .optical_flow_config import (FARNEBACK_PARAMS,          #pylint: disable=unused-import
                                  FARN_TEMP_FOLDER,
@@ -10,15 +11,15 @@ from .optical_flow_config import (FARNEBACK_PARAMS,          #pylint: disable=un
                                  LK_TEMP_FOLDER,
                                  MAX_NUM_CORNERS)
 
-from .game_utils import (load_image,                         #pylint: disable=unused-import
+from .game_utils import (load_image_rect,                         #pylint: disable=unused-import
                         _prep_temp_folder,
                         vec_str,
                         scale_img,
                         ImageDumper)
-# add vca\ to sys.path
-vca_path = os.path.abspath(os.path.join('..'))
-if vca_path not in sys.path:
-    sys.path.append(vca_path)
+# add vbot\ to sys.path
+vbot_path = os.path.abspath(os.path.join('..'))
+if vbot_path not in sys.path:
+    sys.path.append(vbot_path)
 
 from utils.vid_utils import create_video_from_images
 from utils.optical_flow_utils \
