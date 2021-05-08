@@ -9,18 +9,20 @@ import pygame.locals as GAME_GLOBALS
 import pygame.event as GAME_EVENTS
 import numpy as np
 
-from high_precision_clock import HighPrecisionClock
-from block import Block
-from bar import Bar
-from car import Car
-from drone_camera import DroneCamera
-from settings import *
+from .high_precision_clock import HighPrecisionClock
+from .block import Block
+from .bar import Bar
+from .car import Car
+from .drone_camera import DroneCamera
+from .settings import *
 
 
-from my_imports import (load_image,
+from .my_imports import (load_image,
                         _prep_temp_folder,
                         vec_str,
                         images_assemble,)
+
+
 
 class Simulator:
     """Simulator object creates the simulation game.

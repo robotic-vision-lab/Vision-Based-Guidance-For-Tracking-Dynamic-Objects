@@ -6,15 +6,16 @@ from math import degrees, atan2
 import numpy as np
 
 
-from manager import ExperimentManager
-from settings import *
+from .manager import ExperimentManager
+from .settings import *
 
-from my_imports import _prep_temp_folder
+from .my_imports import _prep_temp_folder
+
 
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
@@ -23,7 +24,7 @@ if __name__ == '__main__':
     DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -36,10 +37,10 @@ if __name__ == '__main__':
                                                use_true_kin=USE_TRUE_KINEMATICS,
                                                use_real_clock=USE_REAL_CLOCK,
                                                draw_occlusion_bars=DRAW_OCCLUSION_BARS)
-        print(f'\nExperiment started. [{time.strftime("%H:%M:%S")}]\n')
+        print(f'\nOcclusion experiment started. [{time.strftime("%H:%M:%S")}]\n')
         EXPERIMENT_MANAGER.run()
 
-        print(f'\n\nExperiment finished. [{time.strftime("%H:%M:%S")}]\n')
+        print(f'\n\nOcclusion experiment finished. [{time.strftime("%H:%M:%S")}]\n')
 
     if RUN_TRACK_PLOT:
         FILE = open('plot_info.csv', 'r')

@@ -1,7 +1,7 @@
 import os
 import pygame
 from math import tan, radians
-from colors import *
+from .colors import *
 
 # special constants
 POS_INF = float('inf')

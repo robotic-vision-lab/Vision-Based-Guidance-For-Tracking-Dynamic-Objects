@@ -1,7 +1,7 @@
 from random import randint, randrange, uniform
 import pygame
 
-from settings import *
+from .settings import *
 
 class Block(pygame.sprite.Sprite):
     """Defines a Block sprite.
@@ -25,7 +25,8 @@ class Block(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
 
         # self.reset_kinematics()
-        _x = randrange(-(WIDTH - self.rect.width), (WIDTH - self.rect.width))
+        # _x = randrange(-(WIDTH - self.rect.width), (WIDTH - self.rect.width))
+        _x = randrange(-(WIDTH - self.rect.width), (CAR_INITIAL_POSITION[0] - self.rect.width))
         _y = randrange(-(HEIGHT - self.rect.height), (HEIGHT - self.rect.height))
         self.position = pygame.Vector2(_x, _y) * self.simulator.pxm_fac
         self.velocity = pygame.Vector2(0.0, 0.0)

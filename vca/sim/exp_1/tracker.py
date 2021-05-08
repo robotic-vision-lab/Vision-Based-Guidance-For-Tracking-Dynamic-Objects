@@ -3,10 +3,10 @@ from math import isnan
 
 import cv2 as cv
 import numpy as np
-from settings import *
+from .settings import *
 
 
-from my_imports import (Sift,
+from .my_imports import (Sift,
                         BruteL2,
                         CorrelationCoeffNormed,
                         ImageDumper,

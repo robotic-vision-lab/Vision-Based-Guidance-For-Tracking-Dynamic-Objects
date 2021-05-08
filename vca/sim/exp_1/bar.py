@@ -1,7 +1,7 @@
 from random import randrange, randint, uniform
 import pygame
 
-from settings import *
+from .settings import *
 
 class Bar(pygame.sprite.Sprite):
     """Defines an Occlusion Bar sprite.

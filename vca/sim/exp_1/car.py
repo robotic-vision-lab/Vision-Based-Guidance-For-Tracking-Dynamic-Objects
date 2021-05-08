@@ -3,7 +3,9 @@ from copy import deepcopy
 
 import pygame
 
-from settings import *
+from .settings import *
+
+from .my_imports import load_image
 
 class Car(pygame.sprite.Sprite):
     """Defines a car sprite.

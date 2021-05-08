@@ -1,32 +1,16 @@
 import os
 import sys
-# import ctypes
-# import random
-# import shutil
-# import time
-# import threading as th
-# from queue import deque
-# from copy import deepcopy
-# from random import randrange
-# from datetime import timedelta
-# from math import atan2, degrees, radians, cos, sin, pi, tau, isnan, e
-
-# import numpy as np
-# import cv2 as cv
-# import pygame
-# import pygame.locals as GAME_GLOBALS
-# import pygame.event as GAME_EVENTS
 
 
 # from settings import *                                      #pylint: disable=unused-wildcard-import
-from optical_flow_config import (FARNEBACK_PARAMS,          #pylint: disable=unused-import
+from .optical_flow_config import (FARNEBACK_PARAMS,          #pylint: disable=unused-import
                                  FARN_TEMP_FOLDER,
                                  FEATURE_PARAMS,
                                  LK_PARAMS,
                                  LK_TEMP_FOLDER,
                                  MAX_NUM_CORNERS)
 
-from game_utils import (load_image,                         #pylint: disable=unused-import
+from .game_utils import (load_image,                         #pylint: disable=unused-import
                         _prep_temp_folder,
                         vec_str,
                         scale_img,

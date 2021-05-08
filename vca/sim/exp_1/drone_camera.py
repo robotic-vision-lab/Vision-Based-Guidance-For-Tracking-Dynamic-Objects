@@ -1,7 +1,7 @@
 from copy import deepcopy
 import pygame
 
-from settings import *
+from .settings import *
 
 class DroneCamera(pygame.sprite.Sprite):
     def __init__(self, simulator):
