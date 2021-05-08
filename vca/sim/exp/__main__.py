@@ -11,10 +11,6 @@ from .settings import *
 
 from .my_imports import _prep_temp_folder
 
-import warnings
-warnings.filterwarnings('ignore')
-
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
 if __name__ == '__main__':
 

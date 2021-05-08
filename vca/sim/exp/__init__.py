@@ -1,6 +1,12 @@
 import os
 import sys
 
+
+# ignore warnings, suppress pygame greeting message
+import warnings
+warnings.filterwarnings('ignore')
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
 # add vca\ to sys.path
 vca_path = os.path.abspath(os.path.join('..'))
 if vca_path not in sys.path:

@@ -22,7 +22,6 @@ from .my_imports import (load_image_rect,
                         vec_str,
                         images_assemble,)
 
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
 class Simulator:
     """Enables image data capture through simulation using Pygame.
