@@ -37,10 +37,10 @@ if __name__ == '__main__':
                                                use_true_kin=USE_TRUE_KINEMATICS,
                                                use_real_clock=USE_REAL_CLOCK,
                                                draw_occlusion_bars=DRAW_OCCLUSION_BARS)
-        print(f'\nOcclusion experiment started. [{time.strftime("%H:%M:%S")}]\n')
+        print(f'\nLane Changing experiment started. [{time.strftime("%H:%M:%S")}]\n')
         EXPERIMENT_MANAGER.run()
 
-        print(f'\n\nOcclusion experiment finished. [{time.strftime("%H:%M:%S")}]\n')
+        print(f'\n\nLane Changing experiment finished. [{time.strftime("%H:%M:%S")}]\n')
 
     if RUN_TRACK_PLOT:
         FILE = open('plot_info.csv', 'r')
