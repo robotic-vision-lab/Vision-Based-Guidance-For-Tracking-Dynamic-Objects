@@ -5,7 +5,7 @@ import cv2 as cv
 # set farneback parameters
 PYRAMID_SCALE = 0.5         
 NUM_LEVELS = 3
-WINDOW_SIZE = 15
+WINDOW_SIZE = 5
 NUM_ITER = 3
 POLY_NEIGHBORHOOD = 5
 POLY_SIGMA = 1.2
@@ -25,7 +25,7 @@ FARNEBACK_PARAMS = dict( pyr_scale=PYRAMID_SCALE,
 # set params for ShiTomasi corner detection
 MAX_NUM_CORNERS = 4
 WORST_TO_BEST_CORNER_QUALITY_RATIO = 0.3
-MIN_DISTANCE_BETWEEN_CORNERS = 10
+MIN_DISTANCE_BETWEEN_CORNERS = 3
 DERIVATIVE_COVARIATION_BLOCK_SIZE = 5
 
 # create a dictionary for goodFeaturesToTrack parameters

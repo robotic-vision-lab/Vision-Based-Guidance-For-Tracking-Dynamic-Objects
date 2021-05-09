@@ -21,7 +21,7 @@ if __name__ == '__main__':
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
-    DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
+    DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
@@ -37,10 +37,10 @@ if __name__ == '__main__':
                                                use_true_kin=USE_TRUE_KINEMATICS,
                                                use_real_clock=USE_REAL_CLOCK,
                                                draw_occlusion_bars=DRAW_OCCLUSION_BARS)
-        print(f'\nOcclusion experiment started. [{time.strftime("%H:%M:%S")}]\n')
+        print(f'\nSquircle Following experiment started. [{time.strftime("%H:%M:%S")}]\n')
         EXPERIMENT_MANAGER.run()
 
-        print(f'\n\nOcclusion experiment finished. [{time.strftime("%H:%M:%S")}]\n')
+        print(f'\n\nSquircle Following experiment finished. [{time.strftime("%H:%M:%S")}]\n')
 
     if RUN_TRACK_PLOT:
         FILE = open('plot_info.csv', 'r')
