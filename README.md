@@ -1,4 +1,4 @@
-## Vision-Based Ojbect Tracking for Unmanned Aircraft Systems 
+## Vision-Based Object Tracking for Unmanned Aircraft Systems 
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/keras-team/keras/blob/master/LICENSE)
 
