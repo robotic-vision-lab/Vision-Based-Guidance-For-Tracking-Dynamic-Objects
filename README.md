@@ -1,14 +1,12 @@
-## Vision-Based Collision Avoidance 
+## Vision-Based Ojbect Tracking for Unmanned Aircraft Systems 
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/keras-team/keras/blob/master/LICENSE)
 
 ### Overview
-One of several key applications of computer vision algorithms is performing navigation tasks with robots around obstacles, primarily using visual information to avoid collisions.
+A key application of computer vision systems is to identify and track moving objects.
 
 ### Purpose
-Contain computer vision algorithms needed to perform Vision-based Collision Avoidance. These algorithms may be used in various combinations, pipelines or standalone depending upon the complexity and/or requirement of fulfillment of a task.
-
-
+Contain computer vision algorithms needed to perform vision-based ojbect tracking. These algorithms may be used in various combinations, pipelines or standalone depending upon the complexity and/or requirement of fulfillment of a task.
 
 ### Papers
 
@@ -22,5 +20,5 @@ Contain computer vision algorithms needed to perform Vision-based Collision Avoi
 
 ### License
 
-[MIT](https://github.com/robotic-vision-lab/Vision-Collision-Avoidance/blob/master/LICENSE)
+[MIT](https://github.com/robotic-vision-lab/Vision-Based-Ojbect-Tracking/blob/master/LICENSE)
 
