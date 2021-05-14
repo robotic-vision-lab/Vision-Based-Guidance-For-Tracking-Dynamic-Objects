@@ -6,7 +6,7 @@
 A key application of computer vision systems is to identify and track moving objects.
 
 ### Purpose
-Contain computer vision algorithms needed to perform vision-based ojbect tracking. These algorithms may be used in various combinations, pipelines or standalone depending upon the complexity and/or requirement of fulfillment of a task.
+This software consists of computer vision algorithms needed to perform vision-based object tracking. These algorithms may be used in various combinations, pipelines, or standalone depending upon the complexity and/or requirements of the task.
 
 ### Papers
 
