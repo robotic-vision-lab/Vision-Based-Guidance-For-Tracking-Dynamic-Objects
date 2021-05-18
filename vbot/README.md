@@ -6,14 +6,10 @@ This directory contains main code files with tests, experiments and implementati
 
 📦vbot  
  ┣ 📂algorithms  
- ┃ ┣ 📂feature_detection  
- ┃ ┃ ┃ ┣ 📜sift.cpython-37.pyc  
- ┃ ┃ ┃ ┗ 📜__init__.cpython-37.pyc  
+ ┃ ┣ 📂feature_detection   
  ┃ ┃ ┣ 📜sift.py  
  ┃ ┃ ┗ 📜__init__.py  
- ┃ ┣ 📂feature_match  
- ┃ ┃ ┃ ┣ 📜brute_l2.cpython-37.pyc  
- ┃ ┃ ┃ ┗ 📜__init__.cpython-37.pyc  
+ ┃ ┣ 📂feature_match   
  ┃ ┃ ┣ 📜brute_l2.py  
  ┃ ┃ ┣ 📜flann.py  
  ┃ ┃ ┗ 📜__init__.py  
@@ -32,12 +28,9 @@ This directory contains main code files with tests, experiments and implementati
  ┃ ┃ ┣ 📜lucas_kanade.py  
  ┃ ┃ ┣ 📜README.md  
  ┃ ┃ ┗ 📜__init__.py  
- ┃ ┣ 📂template_match  
- ┃ ┃ ┃ ┣ 📜corr_coeff_norm.cpython-37.pyc  
- ┃ ┃ ┃ ┗ 📜__init__.cpython-37.pyc  
+ ┃ ┣ 📂template_match   
  ┃ ┃ ┣ 📜corr_coeff_norm.py  
  ┃ ┃ ┗ 📜__init__.py  
- ┃ ┃ ┗ 📜__init__.cpython-37.pyc  
  ┃ ┣ 📜README.md  
  ┃ ┗ 📜__init__.py  
  ┣ 📂experiments  
