@@ -1,15 +1,24 @@
-import os 
+import os
 import sys
 
-# ignore warnings, suppress pygame greeting message
-import warnings
-warnings.filterwarnings('ignore')
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
-# add vca\ to sys.path
-vca_path = os.path.abspath(os.path.join('..'))
-if vca_path not in sys.path:
-    sys.path.append(vca_path)
+# from settings import *                                      #pylint: disable=unused-wildcard-import
+from .optical_flow_config import (FARNEBACK_PARAMS,          #pylint: disable=unused-import
+                                 FARN_TEMP_FOLDER,
+                                 FEATURE_PARAMS,
+                                 LK_PARAMS,
+                                 LK_TEMP_FOLDER,
+                                 MAX_NUM_CORNERS)
+
+from .game_utils import (load_image,                         #pylint: disable=unused-import
+                        _prep_temp_folder,
+                        vec_str,
+                        scale_img,
+                        ImageDumper)
+# add vbot\ to sys.path
+vbot_path = os.path.abspath(os.path.join('..'))
+if vbot_path not in sys.path:
+    sys.path.append(vbot_path)
 
 from utils.vid_utils import create_video_from_images
 from utils.optical_flow_utils \
@@ -23,11 +32,7 @@ from utils.img_utils import (convert_to_grayscale,          #pylint: disable=unu
                              images_assemble,
                              add_salt_pepper)
 from utils.img_utils import scale_image as cv_scale_img
-from .game_utils import (load_image,                         #pylint: disable=unused-import
-                        _prep_temp_folder,
-                        vec_str,
-                        scale_img,
-                        ImageDumper)
+
 from algorithms.optical_flow \
                 import (compute_optical_flow_farneback,     #pylint: disable=unused-import
                         compute_optical_flow_HS,
@@ -42,8 +47,3 @@ from algorithms.feature_match \
 from algorithms.template_match \
                 import (CorrelationCoeffNormed,
                         TemplateMatcher)
-
-
-from .simulator import Simulator
-from .tracker import Tracker
-from .controller import Controller

@@ -16,10 +16,10 @@ from .game_utils import (load_image_rect,                         #pylint: disab
                         vec_str,
                         scale_img,
                         ImageDumper)
-# add vca\ to sys.path
-vca_path = os.path.abspath(os.path.join('..'))
-if vca_path not in sys.path:
-    sys.path.append(vca_path)
+# add vbot\ to sys.path
+vbot_path = os.path.abspath(os.path.join('..'))
+if vbot_path not in sys.path:
+    sys.path.append(vbot_path)
 
 from utils.vid_utils import create_video_from_images
 from utils.optical_flow_utils \
