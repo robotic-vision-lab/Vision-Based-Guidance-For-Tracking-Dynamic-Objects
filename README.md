@@ -2,6 +2,8 @@
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/keras-team/keras/blob/master/LICENSE)
 
+![occlusion_handling.gif](./docs/experiment_vids/final_experiments/gifs/occ.gif)
+
 ### Overview
 One of several key applications of computer vision algorithms is performing navigation tasks with robots, using visual information primarily. This repository consists of code base and documentation of a vision-based object tracking project.
 It consists of implementations of experiments for performing diagnosis and analysis of visual tracking techniques under occlusions along with guidance based on a rendezvous cone approach.
@@ -46,9 +48,6 @@ The process of running experiments will have the following steps
 
 
 <!-- 
-
-
-
 
 ### Papers
 
