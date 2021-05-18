@@ -1,18 +1,8 @@
-<<<<<<< HEAD
-## Vision-Based Object Tracking for Unmanned Aircraft Systems 
-=======
 ## Vision-Based Object Tracking for Unmanned Aircraft Systems
->>>>>>> develop
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/keras-team/keras/blob/master/LICENSE)
 
 ### Overview
-<<<<<<< HEAD
-A key application of computer vision systems is to identify and track moving objects.
-
-### Purpose
-This software consists of computer vision algorithms needed to perform vision-based object tracking. These algorithms may be used in various combinations, pipelines, or standalone depending upon the complexity and/or requirements of the task.
-=======
 One of several key applications of computer vision algorithms is performing navigation tasks with robots, using visual information primarily. This repository consists of code base and documentation of a vision-based object tracking project.
 It consists of implementations of experiments for performing diagnosis and analysis of visual tracking techniques under occlusions along with guidance based on a rendezvous cone approach.
 
@@ -59,7 +49,6 @@ The process of running experiments will have the following steps
 
 
 
->>>>>>> develop
 
 ### Papers
 
