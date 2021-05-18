@@ -15,3 +15,15 @@ Documents the results of using algorithms in vca repo.
 
 * [**car_blocks**](./experiment_vids/car_blocks)
     * Lucas-Kanade + Pyr + Tracking on moving car and blocks simulation
+
+* [**simulation_tracker**](./experiment_vids/simulation_tracker)
+    * Simulator + Bounding box input + KLT Tracking of moving car
+
+* [**sim_track_control**](./experiment_vids/sim_track_control)
+    * Simulator + Bounding box input + KLT Tracking of moving car + Control
+
+* [**sim_track_contrl_alt**](./experiment_vids/sim_track_control_alt)
+    * Simulator + Bounding box input + KLT Tracking of moving car + Control + Altitude changes
+
+* [**final_experiments**](./experiment_vids/final_experiments)
+    * Occlusion Handling, Lane Changing Trajectory and Squircle Following Trajectory final experiments
