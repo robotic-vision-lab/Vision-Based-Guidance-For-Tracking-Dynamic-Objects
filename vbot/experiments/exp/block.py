@@ -19,9 +19,11 @@ class Block(pygame.sprite.Sprite):
         self.w = BLOCK_WIDTH / PIXEL_TO_METERS_FACTOR
         self.h = BLOCK_HEIGHT / PIXEL_TO_METERS_FACTOR
         self.image = pygame.Surface((int(self.w), int(self.h)))
-        self.fill_image()
+        # self.fill_image()
+        # initialize invisible blocks, fill using background color
+        self.image.fill(SCREEN_BG_COLOR)
 
-        # Fetch the rectangle object that has the dimensions of the image
+        # fetch block Rect object for block image, and update block rect
         self.rect = self.image.get_rect()
 
         # self.reset_kinematics()
