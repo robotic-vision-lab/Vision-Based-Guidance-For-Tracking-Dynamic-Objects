@@ -225,12 +225,14 @@ class Simulator:
         time_rect = time_surf.get_rect()
         self.SCREEN_SURFACE.blit(time_surf, (WIDTH - 12 - time_rect.width, HEIGHT - 25))
 
-        # draw bounding box
+        # draw bounding box while inputting (remember bb_start and bb_end represent initial bb)
         if self.bb_start and self.bb_end and self.pause:
             x = min(self.bb_start[0], self.bb_end[0])
             y = min(self.bb_start[1], self.bb_end[1])
             w = abs(self.bb_start[0] - self.bb_end[0])
             h = abs(self.bb_start[1] - self.bb_end[1])
+
+            # manager will fetch this bounding_box for later computation
             self.bounding_box = (x, y, w, h)
             pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
 
@@ -300,6 +302,8 @@ class Simulator:
 
     def drone_up(self):
         """Helper function to implement drone altitude increments.
+        Calls camera.fly_higher() to update altitude using fixed alt_change and to update simulator.alt_change_fac.
+        load() gets called for all sprties except camera. For car additionally image and rect and loaded again with udpated car_scale
         """
         self.camera.fly_higher()
         self.pxm_fac = ((self.camera.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
@@ -316,6 +320,8 @@ class Simulator:
 
     def drone_down(self):
         """Helper function to implement drone altitude decrements.
+        Calls camera.fly_higher() to update altitude using fixed alt_change and to update simulator.alt_change_fac.
+        load() gets called for all sprties except camera. For car additionally image and rect and loaded again with udpated car_scale
         """
         self.camera.fly_lower()
         self.pxm_fac = ((self.camera.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
