@@ -14,3 +14,6 @@ class Target:
         self.old_feature_points = old_feature_points
         self.new_feature_points = new_feature_points
         self.centroid_offset = centroid_offset
+
+    def get_bounding_box(self):
+        pass
