@@ -38,6 +38,8 @@ class Simulator:
         # initialize screen
         os.environ['SDL_VIDEO_WINDOW_POS'] = "2,30"
         pygame.init()
+
+        # set screen size, bg color and display title
         self.SCREEN_SURFACE = pygame.display.set_mode(SCREEN_SIZE)
         self.SCREEN_SURFACE.fill(SCREEN_BG_COLOR)
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
@@ -46,7 +48,7 @@ class Simulator:
         self.clock = HighPrecisionClock()
 
         # load image and rect for each car and drone sprite
-        self.car_img_rect_1 = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+        self.car_img_rect = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         self.car_img_rect_2 = load_image_rect(CAR_IMG_2, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         self.car_img_rect_3 = load_image_rect(CAR_IMG_3, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         
@@ -96,7 +98,7 @@ class Simulator:
             self.blocks.append(Block(self))
 
         # spawn car
-        self.car_1 = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_1)
+        self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect)
         self.car_2 = Car(self, *CAR_INITIAL_POSITION_2, *CAR_INITIAL_VELOCITY_2, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_2)
         self.car_3 = Car(self, *CAR_INITIAL_POSITION_3, *CAR_INITIAL_VELOCITY_3, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_3)
 
@@ -173,8 +175,8 @@ class Simulator:
                 # assume appropriate bounding box was inputted and indicate green flag for tracker
                 self.tracker_ready = True
                 # set car rect center offset from bounding box topleft
-                # self.car_rect_center_bb_offset[0] = self.bb_start[0] - self.car.rect.centerx 
-                # self.car_rect_center_bb_offset[1] = self.bb_start[1] - self.car.rect.centery
+                self.car_rect_center_bb_offset[0] = self.bb_start[0] - self.car.rect.centerx 
+                self.car_rect_center_bb_offset[1] = self.bb_start[1] - self.car.rect.centery
 
             GAME_EVENTS.pump()
 
@@ -302,8 +304,10 @@ class Simulator:
         self.camera.fly_higher()
         self.pxm_fac = ((self.camera.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
         car_scale = (CAR_LENGTH / (CAR_LENGTH_PX * self.pxm_fac)) / self.alt_change_fac
-        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=car_scale)
+
+        self.car_img_rect = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=car_scale)
         self.car.load()
+        
         for block in self.blocks:
             block.load()
 
@@ -316,8 +320,10 @@ class Simulator:
         self.camera.fly_lower()
         self.pxm_fac = ((self.camera.altitude * PIXEL_SIZE) / FOCAL_LENGTH)
         car_scale = (CAR_LENGTH / (CAR_LENGTH_PX * self.pxm_fac)) / self.alt_change_fac
-        self.car_img = load_image(CAR_IMG, colorkey=BLACK, alpha=True, scale=car_scale)
+
+        self.car_img_rect = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=car_scale)
         self.car.load()
+
         for block in self.blocks:
             block.load()
         for bar in self.bars:
@@ -348,14 +354,11 @@ class Simulator:
         Returns:
             bool: Can tracker begin tracking
         """
-        # ready = True
-
-        # not ready if bb not selected or if simulated is still paused
-        if (self.bb_start and self.bb_end) or not self.pause:
-            # self.manager.image_deque.clear()
-            ready = True
-
-        return self.tracker_ready
+        return (((self.bb_start 
+                and self.bb_end 
+                and not self.bb_start==self.bb_end)
+                and not self.pause)
+                and self.tracker_ready)
 
     def quit(self):
         """Helper function, sets running flag to False and quits pygame.
