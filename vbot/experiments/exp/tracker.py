@@ -74,7 +74,7 @@ class Tracker:
         # self.true_old_pt = None
         # self.true_new_pt = None
 
-        # self.cur_img = None
+        self.cur_img = None
 
         self._can_begin_control_flag = False    # will be modified in process_image
         self.kin = None
@@ -962,8 +962,8 @@ class Tracker:
                                                                                  self.keypoints_new_good,
                                                                                  self.kin)
 
-            # set cur_img; to be used for saving # TODO investigated it's need, used in Simulator, fix it
-            # self.cur_img = self.frame_color_edited
+            # set cur_img; to be used for saving # TODO investigated it's need, used in Simulator to save screen, fix it
+            self.cur_img = self.frame_color_edited
 
             # show resultant img
             cv.imshow(self.win_name, self.frame_color_edited)
