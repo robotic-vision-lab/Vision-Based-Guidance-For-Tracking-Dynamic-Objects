@@ -17,6 +17,7 @@ from .my_imports import (Sift,
                         TemplateMatcher,
                         compute_optical_flow_LK,
                         draw_tracks,
+                        draw_point,
                         draw_sparse_optical_flow_arrows,
                         put_text,
                         images_assemble,)
@@ -51,15 +52,15 @@ class Tracker:
         self.initial_keypoints = None
         self.initial_centroid = None
 
-        self.frame_new_color_edited = None
-        self.img_tracker_display = None
+        # self.frame_new_color_edited = None
+        # self.img_tracker_display = None
         
         self.feature_found_statuses = None
         self.cross_feature_errors = None
 
         # desc are computed at keypoints, detected ones are all desc inside bounding box
         self.initial_target_descriptors = None
-        self.initial_detected_target_descriptors = None
+        # self.initial_detected_target_descriptors = None
         self.initial_target_template_gray = None
         self.initial_target_template_color = None
         self.target_bounding_box = None
@@ -70,10 +71,10 @@ class Tracker:
         self.descriptor_matcher = BruteL2()
         self.template_matcher = CorrelationCoeffNormed()
 
-        self.true_old_pt = None
-        self.true_new_pt = None
+        # self.true_old_pt = None
+        # self.true_new_pt = None
 
-        self.cur_img = None
+        # self.cur_img = None
 
         self._can_begin_control_flag = False    # will be modified in process_image
         self.kin = None
@@ -89,7 +90,7 @@ class Tracker:
 
         self._frame_num = 0
         self.track_length = 10
-        self.tracker_info_mask = None
+        self.tracker_info_mask = None   # mask ove which tracker information is drawn persistently
         self.target_bounding_box_mask = None
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
@@ -161,7 +162,6 @@ class Tracker:
 
     def update_template(self):
         self.target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
-
 
     def augment_old_frame(self):
         # keypoints that were not found in new frame would get discounted by the next iteration
@@ -963,7 +963,7 @@ class Tracker:
                                                                                  self.kin)
 
             # set cur_img; to be used for saving # TODO investigated it's need, used in Simulator, fix it
-            self.cur_img = self.frame_color_edited
+            # self.cur_img = self.frame_color_edited
 
             # show resultant img
             cv.imshow(self.win_name, self.frame_color_edited)
