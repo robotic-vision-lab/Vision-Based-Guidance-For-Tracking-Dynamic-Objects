@@ -10,7 +10,7 @@ class Target:
                  old_feature_points=None,
                  new_feature_points=None,
                  centroid_offset=[0,0]):
-        self.sprite_obj = position
+        self.sprite_obj = sprite_obj
         self.bounding_box = bounding_box
         self.occlusion_state = occlusion_state
         self.old_feature_points = old_feature_points
