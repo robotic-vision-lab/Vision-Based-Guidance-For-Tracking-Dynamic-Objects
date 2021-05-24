@@ -14,6 +14,7 @@ from .block import Block
 from .bar import Bar
 from .car import Car
 from .drone_camera import DroneCamera
+from .target import Target
 from .settings import *
 
 
@@ -66,7 +67,7 @@ class Simulator:
         self.bounding_box_drawn = False
 
         self.running = True
-        self.tracker_ready = False
+        self.tracker_ready = True
 
         self.alt_change_fac = 1.0
         self.pxm_fac = PIXEL_TO_METERS_FACTOR
@@ -85,9 +86,9 @@ class Simulator:
         # initiate screen shot generator
         self.screen_shot = self.screen_saver(path=SIMULATOR_TEMP_FOLDER)
 
-        # create default Group for all sprites, but drone
+        # create a Group for each type of sprite
         self.all_sprites = pygame.sprite.Group()
-        self.drone_sprite = pygame.sprite.Group()
+        self.drone_sprites = pygame.sprite.Group()
         self.car_sprites = pygame.sprite.Group()
         self.block_sprites = pygame.sprite.Group()
         self.bar_sprites = pygame.sprite.Group()
@@ -109,9 +110,15 @@ class Simulator:
 
         # spawn drone camera
         self.camera = DroneCamera(self)
-        self.cam_accel_command = pygame.Vector2(0, 0)
+
+        # compensate camera motion on all sprites
         for sprite in self.all_sprites:
             self.camera.compensate_camera_motion(sprite)
+
+        # set targets 
+        self.manager.target_1 = Target(self.car)
+        self.manager.target_2 = Target(self.car_2)
+        self.manager.target_3 = Target(self.car_3)
 
     def show_drawing(self):
         """Flip the drawing board to show drawings.
@@ -161,22 +168,22 @@ class Simulator:
             #   4. MOUSEBUTTONUP event (triggers end of drag along with final end point update)
             # At step 4, we have a bounding box
             # Bounding Box input event handling will be statefully managed
-            if self.pause and event.type == pygame.MOUSEBUTTONDOWN:
-                self.bb_start = self.bb_end = pygame.mouse.get_pos()
-                self.bb_drag = True
-            if event.type == pygame.MOUSEMOTION and self.bb_drag:
-                self.bb_end = pygame.mouse.get_pos()
+            # if self.pause and event.type == pygame.MOUSEBUTTONDOWN:
+            #     self.bb_start = self.bb_end = pygame.mouse.get_pos()
+            #     self.bb_drag = True
+            # if event.type == pygame.MOUSEMOTION and self.bb_drag:
+            #     self.bb_end = pygame.mouse.get_pos()
 
-            if event.type == pygame.MOUSEBUTTONUP:
-                self.bb_end = pygame.mouse.get_pos()
-                self.bb_drag = False
-                # at this point bounding box is assumed to be drawn
-                self.bounding_box_drawn = True
-                # assume appropriate bounding box was inputted and indicate green flag for tracker
-                self.tracker_ready = True
-                # set car rect center offset from bounding box topleft
-                self.car_rect_center_bb_offset[0] = self.bb_start[0] - self.car.rect.centerx 
-                self.car_rect_center_bb_offset[1] = self.bb_start[1] - self.car.rect.centery
+            # if event.type == pygame.MOUSEBUTTONUP:
+            #     self.bb_end = pygame.mouse.get_pos()
+            #     self.bb_drag = False
+            #     # at this point bounding box is assumed to be drawn
+            #     self.bounding_box_drawn = True
+            #     # assume appropriate bounding box was inputted and indicate green flag for tracker
+            #     self.tracker_ready = True
+            #     # set car rect center offset from bounding box topleft
+            #     self.car_rect_center_bb_offset[0] = self.bb_start[0] - self.car.rect.centerx 
+            #     self.car_rect_center_bb_offset[1] = self.bb_start[1] - self.car.rect.centery
 
             GAME_EVENTS.pump()
 
@@ -216,7 +223,7 @@ class Simulator:
         """Components to be drawn after tracker captures screen, are drawn here.
         """
         # draw drone cross hair
-        self.drone_sprite.draw(self.SCREEN_SURFACE)
+        self.drone_sprites.draw(self.SCREEN_SURFACE)
 
         # draw simulation time
         time_str = f'Simulation Time - {str(timedelta(seconds=self.time))}'
@@ -224,23 +231,20 @@ class Simulator:
         time_rect = time_surf.get_rect()
         self.SCREEN_SURFACE.blit(time_surf, (WIDTH - 12 - time_rect.width, HEIGHT - 25))
 
-        # draw bounding box while inputting (remember bb_start and bb_end represent initial bb)
-        if self.bb_start and self.bb_end and self.pause:
-            x = min(self.bb_start[0], self.bb_end[0])
-            y = min(self.bb_start[1], self.bb_end[1])
-            w = abs(self.bb_start[0] - self.bb_end[0])
-            h = abs(self.bb_start[1] - self.bb_end[1])
+        # draw bounding box
+        if self.pause:
+            # x = self.car.rect.centerx - int(self.car.rect.width * 0.8)
+            # y = self.car.rect.centery - int(self.car.rect.height * 0.8)
+            # w = int(self.car.rect.width * 1.6)
+            # h = int(self.car.rect.height * 1.6)
+            # self.bounding_box = (x, y, w, h)
+            # pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
+            self.bounding_box = self.manager.target_1.get_updated_bounding_box()
+            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.target_1.get_updated_bounding_box()), 2)
+            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.target_2.get_updated_bounding_box()), 2)
+            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.target_3.get_updated_bounding_box()), 2)
 
-            # manager will fetch this bounding_box for later computation
-            self.bounding_box = (x, y, w, h)
-
-            x = self.car.rect.centerx - int(self.car.rect.width * 0.8)
-            y = self.car.rect.centery - int(self.car.rect.height * 0.8)
-            w = int(self.car.rect.width * 1.6)
-            h = int(self.car.rect.height * 1.6)
-            self.bounding_box = (x, y, w, h)
-            self.tracker_ready = True
-            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
+            
 
         if not CLEAR_TOP:
             # draw drone altitude info
