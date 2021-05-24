@@ -198,10 +198,9 @@ class Simulator:
 
         # make and set the window title
         sim_fps = 'NA' if self.dt == 0 else f'{1/self.dt:.2f}'
-        pygame.display.set_caption(
-            f'  FPS {sim_fps}')
+        pygame.display.set_caption(f'  FPS {sim_fps}')
 
-        # draw only car and blocks (not drone)
+        # draw only blocks and cars (in that order). Do not draw drone crosshair yet
         self.block_sprites.draw(self.SCREEN_SURFACE)
         self.car_sprites.draw(self.SCREEN_SURFACE)
 
@@ -209,12 +208,12 @@ class Simulator:
         for car_sprite in self.car_sprites:
             car_sprite.update_image_rect()
 
-        # draw bars
+        # draw bars (after blocks and cars)
         if self.manager.draw_occlusion_bars:
             self.bar_sprites.draw(self.SCREEN_SURFACE)
 
     def draw_extra(self):
-        """Components to be drawn after screen capture for tracking/controllers is performed.
+        """Components to be drawn after tracker captures screen, are drawn here.
         """
         # draw drone cross hair
         self.drone_sprite.draw(self.SCREEN_SURFACE)
@@ -234,6 +233,13 @@ class Simulator:
 
             # manager will fetch this bounding_box for later computation
             self.bounding_box = (x, y, w, h)
+
+            x = self.car.rect.centerx - int(self.car.rect.width * 0.8)
+            y = self.car.rect.centery - int(self.car.rect.height * 0.8)
+            w = int(self.car.rect.width * 1.6)
+            h = int(self.car.rect.height * 1.6)
+            self.bounding_box = (x, y, w, h)
+            self.tracker_ready = True
             pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
 
         if not CLEAR_TOP:
@@ -360,11 +366,12 @@ class Simulator:
         Returns:
             bool: Can tracker begin tracking
         """
-        return (((self.bb_start 
-                and self.bb_end 
-                and not self.bb_start==self.bb_end)
-                and not self.pause)
-                and self.tracker_ready)
+        # return (((self.bb_start 
+        #         and self.bb_end 
+        #         and not self.bb_start==self.bb_end)
+        #         and not self.pause)
+        #         and self.tracker_ready)
+        return self.tracker_ready
 
     def quit(self):
         """Helper function, sets running flag to False and quits pygame.
