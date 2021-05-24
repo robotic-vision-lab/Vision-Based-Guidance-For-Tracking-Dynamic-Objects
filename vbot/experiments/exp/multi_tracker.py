@@ -141,39 +141,40 @@ class MultiTracker:
         # then save to old
         pass
 
-    def find_saved_patches_in_img_bb(self, img, bb):
+    def find_saved_patches_in_img_bb(self, img, target):
         """Uses patch template matchers to locate patches in given image inside given bounding box.
 
         Args:
             img (numpy.ndarray): Image in which patches are to be found.
-            bb (tuple): Bounding box inside which template matching is to be performed.
+            target (Target): Target for which patches need to be found 
 
         Returns:
             tuple: Best matched template locations, best match values
         """
-        self.template_points = np.array([
+        bb = target.get_updated_bounding_box()
+        target.template_points = np.array([
             temp_matcher.find_template_center_in_image_bb(img, bb)
-            for temp_matcher in self.template_matchers
+            for temp_matcher in target.template_matchers
             ]).reshape(-1, 1, 2)
 
-        self.template_scores = np.array([
+        target.template_scores = np.array([
             temp_matcher.get_best_match_score()
-            for temp_matcher in self.template_matchers
+            for temp_matcher in target.template_matchers
             ]).reshape(-1, 1)
 
-        return self.template_points, self.template_scores
+        return target.template_points, target.template_scores
 
-    def get_relative_associated_patch(self, keypoint, centroid):
+    def get_relative_associated_patch(self, keypoint, centroid, target):
         # make sure shape is consistent
         keypoint = keypoint.reshape(-1, 1, 2)
         centroid = centroid.reshape(-1, 1, 2)
         rel = keypoint - centroid
 
         # find index of closest relative keypoints
-        index = ((self.rel_keypoints - rel)**2).sum(axis=2).argmin()
+        index = ((target.rel_keypoints - rel)**2).sum(axis=2).argmin()
 
         # return corresponding patch
-        return self.initial_patches_gray[index]
+        return target.initial_patches_gray[index]
 
     def put_patch_at_point(self, img, patch, point):
         """Stick a given patch onto given image at given point
