@@ -198,7 +198,8 @@ class Simulator:
             self.camera.compensate_camera_motion(sprite)
 
     def draw(self):
-        """Draws components on screen. Note: drone_img is drawn after screen capture for tracking is performed.
+        """Draws components on screen. 
+        Note: drone_img is drawn after screen capture for tracking is performed.
         """
         # fill background
         self.SCREEN_SURFACE.fill(SCREEN_BG_COLOR)
