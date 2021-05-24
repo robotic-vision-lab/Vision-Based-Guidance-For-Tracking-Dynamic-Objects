@@ -213,7 +213,6 @@ class Car(pygame.sprite.Sprite):
             self.car_img_rect = (rot_img, rot_rect)
             self.image, self.rect = self.car_img_rect
             self.update_rect()
-            # self.car.load()
 
     def update(self):
         """ update sprite attributes.
