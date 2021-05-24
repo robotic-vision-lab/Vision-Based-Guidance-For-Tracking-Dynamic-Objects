@@ -21,13 +21,14 @@ class Bar(pygame.sprite.Sprite):
         self.image = pygame.Surface((int(self.w), int(self.h)))
         self.fill_image()
 
-        # Fetch the rectangle object that has the dimensions of the image
+        # fetch bar Rect object from bar image and update bar rect
         self.rect = self.image.get_rect()
 
         # self.reset_kinematics()
         _x = WIDTH + self.rect.centerx
         # _x = randrange(-(WIDTH - self.rect.width), (WIDTH - self.rect.width))
         _y = randrange(-(HEIGHT - self.rect.height), (HEIGHT - self.rect.height))
+
         self.position = pygame.Vector2(_x, _y) * self.simulator.pxm_fac
         self.velocity = pygame.Vector2(0.0, 0.0)
         self.acceleration = pygame.Vector2(0.0, 0.0)
@@ -88,23 +89,30 @@ class Bar(pygame.sprite.Sprite):
     def fill_image(self):
         """Helper function fills block image
         """
+
+        # use BAR_COLOR and BAR_DELTA to generate random color 
         r, g, b = BAR_COLOR
         d = BAR_COLOR_DELTA
         r += randint(-d[0], d[0])
         g += randint(-d[1], d[1])
         b += randint(-d[2], d[2])
+
+        # fill bar with random color
         self.image.fill((r, g, b))
 
     def load(self):
-        """Helper function updates width and height of image and fills image.
+        """Helper function updates image width and height and fills image.
         Also, updates rect.
         """
+
+        # recompute width and height corresponding to altitude change
         self.w /= self.simulator.alt_change_fac
         self.h /= self.simulator.alt_change_fac
 
+        # update the image width and height, only if >= 2
         if self.w >= 2 and self.h >= 2:
             self.image = pygame.Surface((int(self.w), int(self.h)))
             self.fill_image()
 
-        # Fetch the rectangle object that has the dimensions of the image
+        # fetch bar Rect object from image, and update bar rect
         self.rect = self.image.get_rect()

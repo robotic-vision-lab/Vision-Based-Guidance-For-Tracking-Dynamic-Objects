@@ -195,15 +195,14 @@ class ExperimentManager:
                 new_centroid_x,
                 new_centroid_y)
 
-    def filters_ready(self):
-        ready = True
-        if USE_TRACKER_FILTER:
-            if USE_KALMAN:
-                ready = ready and self.KF.done_waiting()
-            if USE_MA:
-                ready = ready and self.MAF.done_waiting()
-        return ready
-
+    # def filters_ready(self):
+    #     ready = True
+    #     if USE_TRACKER_FILTER:
+    #         if USE_KALMAN:
+    #             ready = ready and self.KF.done_waiting()
+    #         if USE_MA:
+    #             ready = ready and self.MAF.done_waiting()
+    #     return ready
 
     def run(self):
         """Main run function. Running experiment equates to calling this function.
@@ -302,10 +301,8 @@ class ExperimentManager:
                         status = self.tracker.process_image_complete(screen_capture)
                         self.tracker.print_to_console()
 
-                        # let controller generate acceleration, when tracker indicates ok
-                        if (self.tracker.can_begin_control() and 
-                                # (self.use_true_kin or self.tracker.kin is not None) and
-                                self.filters_ready() ):
+                        # let controller generate acceleration, when tracker indicates ok (which is when first frame is processed)
+                        if self.tracker.can_begin_control():
                             # collect kinematics tuple
                             kin = self.get_true_kinematics() if (self.use_true_kin or not status[0]) else self.get_tracked_kinematics()
                             # let controller process kinematics

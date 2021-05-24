@@ -1,6 +1,7 @@
 import os
 import sys
 
+
 # ignore warnings, suppress pygame greeting message
 import warnings
 warnings.filterwarnings('ignore')

@@ -11,10 +11,6 @@ from .settings import *
 
 from .my_imports import _prep_temp_folder
 
-import warnings
-warnings.filterwarnings('ignore')
-
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
 if __name__ == '__main__':
 
@@ -25,7 +21,7 @@ if __name__ == '__main__':
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
     USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
-    DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
+    DRAW_OCCLUSION_BARS = 1  # pylint: disable=bad-whitespace
 
     RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace

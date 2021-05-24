@@ -90,7 +90,7 @@ TIME_COLOR = LIGHT_GRAY_2   # used for all simulator texts
 DELTA_TIME = 0.1           # used in full blocking mode
 
 # Bounding box settings
-BB_COLOR = BLUE     # pygame color
+BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
 
 # tracker settings
 METRICS_COLOR = LIGHT_GRAY_2
@@ -127,7 +127,7 @@ else:
     METRICS_COLOR = (128, 128, 128)
     DOT_COLOR = (31, 31, 31)
     DRONE_IMG_ALPHA = 102
-    BB_COLOR = (102, 102, 255)
+    BB_COLOR = SAFETY_YELLOW_RGB#(102, 102, 255)
 
 
 # tracker settings

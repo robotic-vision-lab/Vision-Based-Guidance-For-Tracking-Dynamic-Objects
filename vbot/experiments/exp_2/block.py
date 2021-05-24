@@ -4,7 +4,8 @@ import pygame
 from .settings import *
 
 class Block(pygame.sprite.Sprite):
-    """Defines a Block sprite.
+    """Defines a Block sprite object.
+    image, rect and update() are defined.
     """
 
     def __init__(self, simulator):
@@ -19,9 +20,11 @@ class Block(pygame.sprite.Sprite):
         self.w = BLOCK_WIDTH / PIXEL_TO_METERS_FACTOR
         self.h = BLOCK_HEIGHT / PIXEL_TO_METERS_FACTOR
         self.image = pygame.Surface((int(self.w), int(self.h)))
-        self.fill_image()
+        # self.fill_image()
+        # initialize invisible blocks, fill using background color
+        self.image.fill(SCREEN_BG_COLOR)
 
-        # Fetch the rectangle object that has the dimensions of the image
+        # fetch block Rect object for block image, and update block rect
         self.rect = self.image.get_rect()
 
         # self.reset_kinematics()
@@ -48,6 +51,8 @@ class Block(pygame.sprite.Sprite):
         self.velocity = pygame.Vector2(0.0, 0.0)
         self.acceleration = pygame.Vector2(0.0, 0.0)
 
+        self.fill_image()
+
     def update_kinematics(self):
         """helper function to update kinematics of object
         """
@@ -64,11 +69,10 @@ class Block(pygame.sprite.Sprite):
             self.reset_kinematics()
 
     def update_rect(self):
-        """Position information is in bottom-left reference frame.
-        This method transforms it to top-left reference frame and update the sprite's rect.
+        """Position information is in the bottom-left reference frame(m).
+        This method transforms it to top-left reference frame(px) and updates the sprite's rect.
         This is for rendering purposes only, to decide where to draw the sprite.
         """
-
         x, y = self.position.elementwise() * (1, -1) / self.simulator.pxm_fac
         self.rect.centerx = int(x)
         self.rect.centery = int(y) + HEIGHT

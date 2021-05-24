@@ -1,8 +1,6 @@
 import os
 import sys
 
-
-
 # from settings import *                                      #pylint: disable=unused-wildcard-import
 from .optical_flow_config import (FARNEBACK_PARAMS,          #pylint: disable=unused-import
                                  FARN_TEMP_FOLDER,

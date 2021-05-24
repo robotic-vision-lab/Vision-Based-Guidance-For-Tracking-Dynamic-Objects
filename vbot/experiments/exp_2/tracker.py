@@ -17,6 +17,7 @@ from .my_imports import (Sift,
                         TemplateMatcher,
                         compute_optical_flow_LK,
                         draw_tracks,
+                        draw_point,
                         draw_sparse_optical_flow_arrows,
                         put_text,
                         images_assemble,)
@@ -51,15 +52,15 @@ class Tracker:
         self.initial_keypoints = None
         self.initial_centroid = None
 
-        self.frame_new_color_edited = None
-        self.img_tracker_display = None
+        # self.frame_new_color_edited = None
+        # self.img_tracker_display = None
         
         self.feature_found_statuses = None
         self.cross_feature_errors = None
 
         # desc are computed at keypoints, detected ones are all desc inside bounding box
         self.initial_target_descriptors = None
-        self.initial_detected_target_descriptors = None
+        # self.initial_detected_target_descriptors = None
         self.initial_target_template_gray = None
         self.initial_target_template_color = None
         self.target_bounding_box = None
@@ -70,8 +71,8 @@ class Tracker:
         self.descriptor_matcher = BruteL2()
         self.template_matcher = CorrelationCoeffNormed()
 
-        self.true_old_pt = None
-        self.true_new_pt = None
+        # self.true_old_pt = None
+        # self.true_new_pt = None
 
         self.cur_img = None
 
@@ -89,7 +90,7 @@ class Tracker:
 
         self._frame_num = 0
         self.track_length = 10
-        self.tracker_info_mask = None
+        self.tracker_info_mask = None   # mask ove which tracker information is drawn persistently
         self.target_bounding_box_mask = None
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
@@ -161,7 +162,6 @@ class Tracker:
 
     def update_template(self):
         self.target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
-
 
     def augment_old_frame(self):
         # keypoints that were not found in new frame would get discounted by the next iteration
@@ -373,7 +373,7 @@ class Tracker:
         return target_location
 
     def process_image_complete(self, new_frame):
-        """Processes new frame and performs and delegates various tracking based tasks.
+        """Processes new frame and performs and delegated various tracking based tasks.
             1. Extracts target attributes and stores them
             2. Processes each next frame and tracks target
             3. Delegates kinematics computation
@@ -389,7 +389,7 @@ class Tracker:
         self.frame_new_color = new_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
         # self.frame_new_gray = cv.GaussianBlur(self.frame_new_gray, (3,3), 0)
-        self.true_new_pt = self._get_target_image_location()
+        # self.true_new_pt = self._get_target_image_location()
         # cv.imshow('nxt_frame', self.frame_new_gray); cv.waitKey(1)
         if self.is_first_time():
             # compute bb
@@ -414,7 +414,7 @@ class Tracker:
             self.centroid_old = self.centroid_new = self.initial_centroid
             self.target_occlusion_case_old = self.target_occlusion_case_new
             self.manager.set_target_centroid_offset()
-            self.true_old_pt = self.true_new_pt
+            # self.true_old_pt = self.true_new_pt
             return self._FAILURE
 
         # cv.imshow('cur_frame', self.frame_old_gray); cv.waitKey(1)
@@ -962,7 +962,7 @@ class Tracker:
                                                                                  self.keypoints_new_good,
                                                                                  self.kin)
 
-            # set cur_img; to be used for saving # TODO investigated it's need, used in Simulator, fix it
+            # set cur_img; to be used for saving # TODO investigated it's need, used in Simulator to save screen, fix it
             self.cur_img = self.frame_color_edited
 
             # show resultant img
@@ -988,9 +988,9 @@ class Tracker:
 
     def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
         img = frame
-        old_pt = np.array(self.true_old_pt).astype(np.int).reshape(-1,1,2)
-        new_pt = np.array(self.true_new_pt).astype(np.int).reshape(-1,1,2)
-        self.true_old_pt = self.true_new_pt
+        # old_pt = np.array(self.true_old_pt).astype(np.int).reshape(-1,1,2)
+        # new_pt = np.array(self.true_new_pt).astype(np.int).reshape(-1,1,2)
+        # self.true_old_pt = self.true_new_pt
         est_cents = self.manager.get_estimated_centroids()
         old_pt = (est_cents[0],est_cents[1])
         new_pt = (est_cents[2],est_cents[3])
