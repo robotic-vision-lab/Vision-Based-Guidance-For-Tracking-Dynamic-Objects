@@ -11,6 +11,7 @@ from .simulator import Simulator
 from .tracker import Tracker
 from .controller import Controller
 from .ekf import ExtendedKalman
+from .target import Target
 
 from .settings import *
 from .my_imports import (create_video_from_images,)
