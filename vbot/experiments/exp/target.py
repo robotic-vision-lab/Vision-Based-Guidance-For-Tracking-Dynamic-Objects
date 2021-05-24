@@ -32,6 +32,8 @@ class Target:
         self.cross_feature_errrors = cross_feature_errors
         self.occlusion_case_old = occlusion_case_old
         self.occlusion_case_new = occlusion_case_new
+        self.centroid_old = centroid_old
+        self.centroid_new = centroid_new
         self.centroid_offset = centroid_offset
         self.bb_top_left_offset = bb_top_left_offset
 
