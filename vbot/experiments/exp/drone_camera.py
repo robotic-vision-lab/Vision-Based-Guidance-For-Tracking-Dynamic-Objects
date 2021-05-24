@@ -5,7 +5,7 @@ from .settings import *
 
 class DroneCamera(pygame.sprite.Sprite):
     def __init__(self, simulator):
-        self.groups = [simulator.all_sprites, simulator.drone_sprite]
+        self.groups = [simulator.all_sprites, simulator.drone_sprites]
 
         # call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self, self.groups)
