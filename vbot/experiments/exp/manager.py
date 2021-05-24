@@ -9,6 +9,7 @@ from pygame.locals import *
 
 from .simulator import Simulator
 from .tracker import Tracker
+from .multi_tracker import MultiTracker
 from .controller import Controller
 from .ekf import ExtendedKalman
 from .target import Target
@@ -59,7 +60,7 @@ class ExperimentManager:
 
         # instantiate simulator, tracker, controller and EKF
         self.simulator = Simulator(self)
-        self.tracker = Tracker(self)
+        self.tracker = MultiTracker(self)
         self.controller = Controller(self)
         self.EKF = ExtendedKalman(self)
 
@@ -210,6 +211,19 @@ class ExperimentManager:
         """
         # initialize simulator
         self.simulator.start_new()
+
+        # set targets 
+        self.targets = []
+        for sprite in self.simulator.car_sprites:
+            self.targets.append(Target(sprite))
+
+        self.tracker.set_targets(self.targets)
+        # self.target_1 = Target(self.simulator.car)
+        # self.target_2 = Target(self.simulator.car_2)
+        # self.target_3 = Target(self.simulator.car_3)
+
+        # self.targets = [self.target_1, self.target_2, self.target_3]
+
 
         # open plot file if write_plot is indicated
         if self.write_plot:
