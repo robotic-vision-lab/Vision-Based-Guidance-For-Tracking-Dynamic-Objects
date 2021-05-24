@@ -227,4 +227,3 @@ class Car(pygame.sprite.Sprite):
         """
         self.image, self.rect = self.simulator.car_img_rect
         self.update_rect()
-        # self.rect.center = self.position + SCREEN_CENTER
