@@ -62,6 +62,10 @@ SQUIRCLE_PARAM_S = 0.9
 SQUIRCLE_PARAM_R = 1000
 SQUIRCLE_PERIOD = 360
 
+# occlusion case sentinels
+NO_OCC = 0
+PARTIAL_OCC = 1
+TOTAL_OCC = 2
 
 # block settings
 BLOCK_COLOR = DARK_GRAY_2
