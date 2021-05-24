@@ -36,62 +36,27 @@ class MultiTracker:
         self.frame_old_color = None
         self.frame_new_gray = None
         self.frame_new_color = None
-        
-        self.keypoints_old = None
-        self.keypoints_old_good = None
-        self.keypoints_old_bad = None
-        self.keypoints_new = None
-        self.keypoints_new_good = None
-        self.keypoints_new_bad = None
-        self.rel_keypoints = None
 
-        self.centroid_old = None
-        self.centroid_new = None
-        self.centroid_adjustment = None
-
-        self.initial_keypoints = None
-        self.initial_centroid = None
-
+        self.targets = None
         # self.frame_new_color_edited = None
         # self.img_tracker_display = None
-        
-        self.feature_found_statuses = None
-        self.cross_feature_errors = None
 
-        # desc are computed at keypoints, detected ones are all desc inside bounding box
-        self.initial_target_descriptors = None
-        # self.initial_detected_target_descriptors = None
-        self.initial_target_template_gray = None
-        self.initial_target_template_color = None
-        self.target_bounding_box = None
         self.patch_size = round(1.5/PIXEL_TO_METERS_FACTOR)   # meters
-        self.patches_gray = None
 
         self.detector = Sift()
         self.descriptor_matcher = BruteL2()
         self.template_matcher = CorrelationCoeffNormed()
 
-        # self.true_old_pt = None
-        # self.true_new_pt = None
-
         self.cur_img = None
 
         self._can_begin_control_flag = False    # will be modified in process_image
-        self.kin = None
         self.window_size = 5
 
-        self._NO_OCC = 0
-        self._PARTIAL_OCC = 1
-        self._TOTAL_OCC = 2
-        self.display_arrow_color = {self._NO_OCC:GREEN_CV, self._PARTIAL_OCC:ORANGE_PEEL_BGR, self._TOTAL_OCC:TOMATO_BGR}
-
-        self.target_occlusion_case_old = None
-        self.target_occlusion_case_new = self._NO_OCC   # assumption: start with no_occ
+        self.display_arrow_color = {NO_OCC:GREEN_CV, PARTIAL_OCC:ORANGE_PEEL_BGR, TOTAL_OCC:TOMATO_BGR}
 
         self._frame_num = 0
-        self.track_length = 10
-        self.tracker_info_mask = None   # mask ove which tracker information is drawn persistently
-        self.target_bounding_box_mask = None
+        # self.track_length = 10
+        self.tracker_info_mask = None   # mask over which tracker information is drawn persistently
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
         self.DES_MATCH_DISTANCE_THRESH = 250 #450
@@ -101,6 +66,9 @@ class MultiTracker:
         self._FAILURE = False, None
         self._SUCCESS = True, self.kin
         self.MAX_ERR = 15
+
+    def set_targets(self, targets):
+        self.targets = targets
 
     def is_first_time(self):
         """Indicates if tracker never received a frame for the first time
@@ -112,8 +80,8 @@ class MultiTracker:
         # it indicates if this the first time process_image received a frame
         return self.frame_old_gray is None
 
-    def is_total_occlusion(self):
-        return self.target_occlusion_case_new == self._TOTAL_OCC
+    def is_total_occlusion(self, target):
+        return target.occlusion_case_new == TOTAL_OCC
 
     def can_begin_control(self):
         """Returns boolean check indicating if controller can be used post tracking.
@@ -128,11 +96,12 @@ class MultiTracker:
         """
         # use keypoints from new frame, 
         # save descriptors of new keypoints(good)
-        keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in self.initial_keypoints]
-        self.initial_kps, self.initial_target_descriptors = self.detector.get_descriptors_at_keypoints(
-                                                                self.frame_new_gray, 
-                                                                keyPoints,
-                                                                self.target_bounding_box)
+        for target in self.targets:
+            keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in target.initial_keypoints]
+            target.initial_kps, target.initial_target_descriptors = self.detector.get_descriptors_at_keypoints(
+                                                                    self.frame_new_gray, 
+                                                                    keyPoints,
+                                                                    target.bounding_box)
 
     def save_initial_target_template(self):
         """Helper function used after feature keypoints and centroid computation. Saves initial target template.
@@ -140,19 +109,20 @@ class MultiTracker:
         # use the bounding box location to save the target template
         # x, y, w, h = bb = self.manager.get_target_bounding_box()
         # center = tuple(map(int, (x+w/2, y+h/2)))
-
-        self.initial_target_template_color = self.get_bb_patch_from_image(self.frame_new_color, self.target_bounding_box)
-        self.initial_target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
+        for target in self.targets:
+            target.initial_target_template_color = self.get_bb_patch_from_image(self.frame_new_color, target.bounding_box)
+            target.initial_target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, target.bounding_box)
 
     def save_initial_patches(self):
         """Helper function used after feature keypoints and centroid computation. Saves initial patches around keypoints.
         Also, initializes dedicated template matchers
         """
-        self.initial_patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.initial_keypoints]
-        self.initial_patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.initial_keypoints]
-        
-        # initialize template matcher object for each patch
-        self.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in self.initial_patches_gray]
+        for target in self.targets:
+            target.initial_patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.initial_keypoints]
+            target.initial_patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.initial_keypoints]
+            
+            # initialize template matcher object for each patch
+            target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.initial_patches_gray]
 
     def update_patches(self):
         pass
@@ -161,7 +131,8 @@ class MultiTracker:
         # self.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in self.patches_gray]
 
     def update_template(self):
-        self.target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, self.target_bounding_box)
+        for target in self.targets:
+            target.template_gray = self.get_bb_patch_from_image(self.frame_new_gray, target.bounding_box)
 
     def augment_old_frame(self):
         # keypoints that were not found in new frame would get discounted by the next iteration
