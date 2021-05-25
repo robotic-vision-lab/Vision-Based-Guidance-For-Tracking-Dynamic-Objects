@@ -63,8 +63,8 @@ class MultiTracker:
         self.DES_MATCH_DEV_THRESH = 0.50 # float('inf') to get every match
         self.TEMP_MATCH_THRESH = 0.9849
 
-        self._FAILURE = False, None
-        self._SUCCESS = True, self.kin
+        self._FAILURE = False
+        self._SUCCESS = True
         self.MAX_ERR = 15
 
     def set_targets(self, targets):
@@ -91,44 +91,41 @@ class MultiTracker:
         """
         return self._can_begin_control_flag  # and self.prev_car_pos is not None
 
-    def save_initial_target_descriptors(self):
+    def save_initial_target_descriptors(self, target):
         """Helper function used after feature keypoints and centroid computation. Saves initial target descriptors.
         """
         # use keypoints from new frame, 
         # save descriptors of new keypoints(good)
-        for target in self.targets:
-            keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in target.initial_keypoints]
-            target.initial_kps, target.initial_target_descriptors = self.detector.get_descriptors_at_keypoints(
-                                                                    self.frame_new_gray, 
-                                                                    keyPoints,
-                                                                    target.bounding_box)
+        keyPoints = [cv.KeyPoint(*kp.ravel(), 15) for kp in target.initial_keypoints]
+        target.initial_kps, target.initial_target_descriptors = self.detector.get_descriptors_at_keypoints(
+                                                                self.frame_new_gray, 
+                                                                keyPoints,
+                                                                target.bounding_box)
 
-    def save_initial_target_template(self):
+    def save_initial_target_template(self, target):
         """Helper function used after feature keypoints and centroid computation. Saves initial target template.
         """
         # use the bounding box location to save the target template
         # x, y, w, h = bb = self.manager.get_target_bounding_box()
         # center = tuple(map(int, (x+w/2, y+h/2)))
-        for target in self.targets:
-            target.initial_target_template_color = self.get_bb_patch_from_image(self.frame_new_color, target.bounding_box)
-            target.initial_target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, target.bounding_box)
+        target.initial_target_template_color = self.get_bb_patch_from_image(self.frame_new_color, target.bounding_box)
+        target.initial_target_template_gray = self.get_bb_patch_from_image(self.frame_new_gray, target.bounding_box)
 
-    def save_initial_patches(self):
+    def save_initial_patches(self, target):
         """Helper function used after feature keypoints and centroid computation. Saves initial patches around keypoints.
         Also, initializes dedicated template matchers
         """
-        for target in self.targets:
-            target.initial_patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.initial_keypoints]
-            target.initial_patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.initial_keypoints]
-            
-            # initialize template matcher object for each patch
-            target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.initial_patches_gray]
+        target.initial_patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.initial_keypoints]
+        target.initial_patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.initial_keypoints]
+        
+        # initialize template matcher object for each patch
+        target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.initial_patches_gray]
 
-    def update_patches(self):
-        pass
-        # self.patch_size = round(1.5 / self.manager.simulator.pxm_fac)
-        # self.patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in self.keypoints_new_good]
-        # self.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in self.patches_gray]
+    def update_patches(self, target):
+        # pass
+        self.patch_size = round(1.5 / self.manager.simulator.pxm_fac)
+        target.patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.keypoints_new_good]
+        target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.patches_gray]
 
     def update_template(self):
         for target in self.targets:
@@ -364,29 +361,30 @@ class MultiTracker:
         # self.true_new_pt = self._get_target_image_location()
         # cv.imshow('nxt_frame', self.frame_new_gray); cv.waitKey(1)
         if self.is_first_time():
-            # compute bb
-            self.target_bounding_box = self.manager.get_target_bounding_box()
-            self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
+            for target in self.targets:
+                # compute bb
+                target.bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *target.bounding_box)
 
-            # compute initial feature keypoints and centroid
-            self.initial_keypoints = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
-            self.initial_centroid = self.get_centroid(self.initial_keypoints)
-            self.rel_keypoints = self.initial_keypoints - self.initial_centroid
+                # compute initial feature keypoints and centroid
+                target.initial_keypoints = cv.goodFeaturesToTrack(self.frame_new_gray, mask=target.bounding_box_mask, **FEATURE_PARAMS)
+                target.initial_centroid = self.get_centroid(target.initial_keypoints)
+                target.rel_keypoints = target.initial_keypoints - target.initial_centroid
 
-            # compute and save descriptors at keypoints, save target template
-            self.save_initial_target_descriptors()
-            self.save_initial_target_template()
-            self.save_initial_patches()
+                # compute and save descriptors at keypoints, save target template
+                self.save_initial_target_descriptors(target)
+                self.save_initial_target_template(target)
+                self.save_initial_patches(target)
 
-            # posterity - save frames, keypoints, centroid, occ_case, centroid location relative to rect center
+                # posterity - keypoints, centroid, occ_case, centroid location relative to rect center
+                target.keypoints_old = target.keypoints_new = target.initial_keypoints
+                # target.keypoints_old_good = target.keypoints_new_good # not needed, since next iter will have from_no_occ
+                target.centroid_old = target.centroid_new = target.initial_centroid
+                target.occlusion_case_old = target.occlusion_case_new
+                self.manager.set_target_centroid_offset(self.targets[0])
+            
+            # posterity - save frames
             self.frame_old_gray = self.frame_new_gray
             self.frame_old_color = self.frame_new_color
-            self.keypoints_old = self.keypoints_new = self.initial_keypoints
-            # self.keypoints_old_good = self.keypoints_new_good # not needed, since next iter will have from_no_occ
-            self.centroid_old = self.centroid_new = self.initial_centroid
-            self.target_occlusion_case_old = self.target_occlusion_case_new
-            self.manager.set_target_centroid_offset()
-            # self.true_old_pt = self.true_new_pt
             return self._FAILURE
 
         # cv.imshow('cur_frame', self.frame_old_gray); cv.waitKey(1)
@@ -394,25 +392,25 @@ class MultiTracker:
         
         # ################################################################################
         # CASE |NO_OCC, _>
-        if self.target_occlusion_case_old == self._NO_OCC:
+        if target.occlusion_case_old == NO_OCC:
             # (a priori) older could have been start or no_occ, or partial_occ or total_occ
             # we should have all keypoints as good ones, and old centroid exists, if old now has no_occ
 
             # try to compute flow at keypoints and infer next occlusion case
-            self.compute_flow()
+            self.compute_flow(target)
 
             # amplify bad errors
-            self.cross_feature_errors[(self.cross_feature_errors > 0.75 * self.MAX_ERR) & (self.cross_feature_errors > 100*self.cross_feature_errors.min())] *= 10
+            target.cross_feature_errors[(target.cross_feature_errors > 0.75 * self.MAX_ERR) & (target.cross_feature_errors > 100*target.cross_feature_errors.min())] *= 10
 
             # ---------------------------------------------------------------------
             # |NO_OCC, NO_OCC>
-            if (self.feature_found_statuses.all() and self.feature_found_statuses.shape[0] == MAX_NUM_CORNERS and 
-                    self.cross_feature_errors.max() < self.MAX_ERR):
-                self.target_occlusion_case_new = self._NO_OCC
+            if (target.feature_found_statuses.all() and target.feature_found_statuses.shape[0] == MAX_NUM_CORNERS and 
+                    target.cross_feature_errors.max() < self.MAX_ERR):
+                target.occlusion_case_new = NO_OCC
 
                 # set good points (since no keypoints were occluded all are good, no need to compute)
-                self.keypoints_new_good = self.keypoints_new
-                self.keypoints_old_good = self.keypoints_old
+                target.keypoints_new_good = target.keypoints_new
+                target.keypoints_old_good = target.keypoints_old
                 self.update_patches()
 
                 # compute centroid
@@ -827,7 +825,7 @@ class MultiTracker:
                 return self._FAILURE
 
 
-    def compute_flow(self, use_good=False):
+    def compute_flow(self, target, use_good=False):
         # it's main purpose is to compute new points
         # looks at 2 frames, uses flow, tells where old points went
         # make clever use of this function, we want to use good 
@@ -836,20 +834,20 @@ class MultiTracker:
         if use_good:
             flow_output = compute_optical_flow_LK(self.frame_old_gray,
                                                 self.frame_new_gray,
-                                                self.keypoints_old_good.astype('float32'), # good from previous frame
+                                                target.keypoints_old_good.astype('float32'), # good from previous frame
                                                 LK_PARAMS)
             # self.keypoints_old_good = flow_output[0]
         else:
             flow_output = compute_optical_flow_LK(self.frame_old_gray,
                                                 self.frame_new_gray,
-                                                self.keypoints_old.astype('float32'), # good from previous frame
+                                                target.keypoints_old.astype('float32'), # good from previous frame
                                                 LK_PARAMS)
 
         # note that new keypoints are going to be of cardinality at most that of old keypoints
-        self.keypoints_old = flow_output[0]
-        self.keypoints_new = flow_output[1]
-        self.feature_found_statuses = flow_output[2]
-        self.cross_feature_errors  = flow_output[3]
+        target.keypoints_old = flow_output[0]
+        target.keypoints_new = flow_output[1]
+        target.feature_found_statuses = flow_output[2]
+        target.cross_feature_errors  = flow_output[3]
 
     def compute_kinematics_by_centroid(self, old_centroid, new_centroid):
 
