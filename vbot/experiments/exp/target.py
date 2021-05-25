@@ -10,51 +10,34 @@ class Target:
     """
     def __init__(self, 
                  sprite_obj=None, 
-                 bounding_box=None,
-                 keypoints_old=None,
-                 keypoints_new=None,
-                 rel_keypoints=None,
-                 feature_found_statuses=np.array([[1]]*4),
-                 cross_feature_errors=np.array([[0]]*4),
-                 occlusion_case_old=None,
-                 occlusion_case_new=NO_OCC,
-                 centroid_old=None,
-                 centroid_new=None,
-                 centroid_adjustment=None,
-                 initial_centroid=None,
-                 initial_target_descriptors=None,
-                 initial_target_template_gray=None,
-                 initial_target_template_color=None,
-                 initial_patches_color=None,
-                 initial_patches_gray=None,
-                 template_matchers=None,
-                 patches_gray=None,
-                 kinematics=None,
-                 centroid_offset=[0,0],
-                 bb_top_left_offset=[0,0]):
+                 bounding_box=None):
         self.sprite_obj = sprite_obj
         self.bounding_box = bounding_box
-        self.keypoints_old = keypoints_old
-        self.keypoints_new = keypoints_new
-        self.rel_keypoints = rel_keypoints
-        self.feature_found_statuses = feature_found_statuses
-        self.cross_feature_errrors = cross_feature_errors
-        self.occlusion_case_old = occlusion_case_old
-        self.occlusion_case_new = occlusion_case_new
-        self.centroid_old = centroid_old
-        self.centroid_new = centroid_new
-        self.centroid_adjustment = centroid_adjustment
-        self.initial_centroid = initial_centroid,
-        self.initial_target_descriptors = initial_target_descriptors,
-        self.initial_target_template_gray = initial_target_template_gray,
-        self.initial_target_template_color = initial_target_template_color,
-        self.initial_patches_color = initial_patches_color,
-        self.initial_patches_gray = initial_patches_gray,
-        self.template_matchers = template_matchers,
-        self.patches_gray = patches_gray,
-        self.kinematics = kinematics,
-        self.centroid_offset = centroid_offset
-        self.bb_top_left_offset = bb_top_left_offset
+        self.keypoints_old=None
+        self.keypoints_new=None
+        self.keypoints_old_good=None
+        self.keypoints_new_good=None
+        self.keypoints_old_bad=None
+        self.keypoints_new_bad=None
+        self.rel_keypoints=None
+        self.feature_found_statuses=np.array([[1]]*4)
+        self.cross_feature_errors=np.array([[0]]*4)
+        self.occlusion_case_old=None
+        self.occlusion_case_new=NO_OCC
+        self.centroid_old=None
+        self.centroid_new=None
+        self.centroid_adjustment=None
+        self.initial_centroid=None
+        self.initial_target_descriptors=None
+        self.initial_target_template_gray=None
+        self.initial_target_template_color=None
+        self.initial_patches_color=None
+        self.initial_patches_gray=None
+        self.template_matchers=None
+        self.patches_gray=None
+        self.kinematics=None
+        self.centroid_offset=[0,0]
+        self.bb_top_left_offset=[0,0]
 
         self.update_bounding_box()
 
@@ -73,4 +56,3 @@ class Target:
         self.bb_top_left_offset[0] = self.bounding_box[0] - self.sprite_obj.rect.centerx
         self.bb_top_left_offset[1] = self.bounding_box[1] - self.sprite_obj.rect.centery
 
-    
