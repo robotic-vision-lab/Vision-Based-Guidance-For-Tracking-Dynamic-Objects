@@ -115,10 +115,7 @@ class Simulator:
         for sprite in self.all_sprites:
             self.camera.compensate_camera_motion(sprite)
 
-        # set targets 
-        self.manager.target_1 = Target(self.car)
-        self.manager.target_2 = Target(self.car_2)
-        self.manager.target_3 = Target(self.car_3)
+        
 
     def show_drawing(self):
         """Flip the drawing board to show drawings.
@@ -223,9 +220,6 @@ class Simulator:
     def draw_extra(self):
         """Components to be drawn after tracker captures screen, are drawn here.
         """
-        # draw drone cross hair
-        self.drone_sprites.draw(self.SCREEN_SURFACE)
-
         # draw simulation time
         time_str = f'Simulation Time - {str(timedelta(seconds=self.time))}'
         time_surf = self.time_font.render(time_str, True, TIME_COLOR)
@@ -240,15 +234,14 @@ class Simulator:
             # h = int(self.car.rect.height * 1.6)
             # self.bounding_box = (x, y, w, h)
             # pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
-            self.bounding_box = self.manager.target_1.get_updated_bounding_box()
-            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.target_1.get_updated_bounding_box()), 2)
-            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.target_2.get_updated_bounding_box()), 2)
-            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.target_3.get_updated_bounding_box()), 2)
+            self.bounding_box = self.manager.targets[0].get_updated_bounding_box()
+            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.targets[0].get_updated_bounding_box()), 1)
+            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.targets[1].get_updated_bounding_box()), 1)
+            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.targets[2].get_updated_bounding_box()), 1)
 
-            
 
+        # draw drone altitude info
         if not CLEAR_TOP:
-            # draw drone altitude info
             alt_str = f'car loc - {self.car.rect.center}, Alt - {self.camera.altitude:0.2f}m, fac - {self.alt_change_fac:0.4f}, pxm - {self.pxm_fac:0.4f}'
             alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
             alt_rect = alt_surf.get_rect()
@@ -257,6 +250,10 @@ class Simulator:
             alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
             alt_rect = alt_surf.get_rect()
             self.SCREEN_SURFACE.blit(alt_surf, (15, 35))
+        
+        # draw drone cross hair
+        self.drone_sprites.draw(self.SCREEN_SURFACE)
+
 
     def screen_saver(self, path):
         """Creates a generator to perform screen saving.
