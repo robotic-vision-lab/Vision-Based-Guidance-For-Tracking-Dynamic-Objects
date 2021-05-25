@@ -136,12 +136,12 @@ class ExperimentManager:
         vel += self.get_true_drone_velocity()
         return vel
 
-    def set_target_centroid_offset(self):
+    def set_target_centroid_offset(self, target):
         """Worker function, to be called from tracker at the first run after first centroid calculation
         uses tracked new centroid to compute it's relative position from car rect center
         """
-        self.car_rect_center_centroid_offset[0] = self.tracker.centroid_new.flatten()[0] - self.simulator.car.rect.centerx
-        self.car_rect_center_centroid_offset[1] = self.tracker.centroid_new.flatten()[1] - self.simulator.car.rect.centery
+        self.car_rect_center_centroid_offset[0] = target.centroid_new.flatten()[0] - self.simulator.car.rect.centerx
+        self.car_rect_center_centroid_offset[1] = target.centroid_new.flatten()[1] - self.simulator.car.rect.centery
 
     def get_target_centroid(self):
         """helper function adds centroid offset to car rect center and returns the target centroid 
@@ -319,7 +319,7 @@ class ExperimentManager:
                         # let controller generate acceleration, when tracker indicates ok (which is when first frame is processed)
                         if self.tracker.can_begin_control():
                             # collect kinematics tuple
-                            kin = self.get_true_kinematics() if (self.use_true_kin or not status[0]) else self.get_tracked_kinematics()
+                            kin = self.get_true_kinematics() if (self.use_true_kin or not status) else self.get_tracked_kinematics()
                             # let controller process kinematics
                             ax, ay = self.controller.generate_acceleration(kin)
                             # feed controller generated acceleration commands to simulator
