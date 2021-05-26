@@ -411,13 +411,13 @@ class MultiTracker:
                 # set good points (since no keypoints were occluded all are good, no need to compute)
                 target.keypoints_new_good = target.keypoints_new
                 target.keypoints_old_good = target.keypoints_old
-                self.update_patches()
+                self.update_patches(target)
 
                 # compute centroid
-                self.centroid_new = self.get_centroid(self.keypoints_new_good)
+                target.centroid_new = self.get_centroid(target.keypoints_new_good)
 
                 # compute kinematics measurements using centroid
-                self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
+                target.kinematics = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
                 # update tracker display
                 self.display()
@@ -524,7 +524,7 @@ class MultiTracker:
             self.target_bounding_box = self.get_true_bb_from_oracle()
             self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
 
-            # perform template matching for patches to update template points and scores
+            # perform part template matching and update template points and scores
             self.find_saved_patches_in_img_bb(self.frame_new_gray, self.target_bounding_box)
 
             # compute good feature keypoints in the new frame (shi-tomasi + SIFT)
