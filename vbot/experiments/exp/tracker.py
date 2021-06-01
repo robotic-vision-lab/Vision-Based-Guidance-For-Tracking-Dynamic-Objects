@@ -681,10 +681,6 @@ class Tracker:
                     centroid_new_good = self.get_centroid(self.keypoints_new_good)
                     self.centroid_adjustment = self.centroid_old - centroid_old_good
                     self.centroid_new = centroid_new_good + self.centroid_adjustment
-                else:
-                    # flow failed, matching also failed
-                    # recover before adjusting, remember we assume we still have old centroid
-                    pass
 
                 self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
