@@ -13,6 +13,7 @@ class Target:
                  bounding_box=None):
         self.sprite_obj = sprite_obj
         self.bounding_box = bounding_box
+        self.track_status = False
         self.keypoints_old = None
         self.keypoints_new = None
         self.keypoints_old_good = None
