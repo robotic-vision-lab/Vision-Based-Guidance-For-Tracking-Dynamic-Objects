@@ -55,7 +55,7 @@ class MultiTracker:
         self.display_arrow_color = {NO_OCC:GREEN_CV, PARTIAL_OCC:ORANGE_PEEL_BGR, TOTAL_OCC:TOMATO_BGR}
 
         self._frame_num = 0
-        # self.track_length = 10
+        # self.track_length = 10 # for lifetime management
         self.tracker_info_mask = None   # mask over which tracker information is drawn persistently
         self.win_name = 'Tracking in progress'
         self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
@@ -651,16 +651,12 @@ class MultiTracker:
                     centroid_new_good = self.get_centroid(self.keypoints_new_good)
                     self.centroid_adjustment = self.centroid_old - centroid_old_good
                     self.centroid_new = centroid_new_good + self.centroid_adjustment
-                else:
-                    # flow failed, matching also failed
-                    # recover before adjusting, remember we assume we still have old centroid
-                    pass
 
                 self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
 
                 # treat keypoints that were lost during flow
                 if (self.keypoints_new_good.shape[0] > 0 and 
-                        not (len(good_distances) > 0 or (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0) and
+                        # not (len(good_distances) > 0 or (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0) and
                         ((self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)).sum() > 0):
                     # adjust missing old keypoints (need to check recovery)
                     keypoints_missing = self.keypoints_old[(self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)]
