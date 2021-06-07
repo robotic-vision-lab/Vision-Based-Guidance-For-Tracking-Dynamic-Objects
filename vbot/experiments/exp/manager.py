@@ -212,18 +212,9 @@ class ExperimentManager:
         # initialize simulator
         self.simulator.start_new()
 
-        # set targets 
-        self.targets = []
-        for sprite in self.simulator.car_sprites:
-            self.targets.append(Target(sprite))
-
+        # set targets and tell tracker
+        self.targets = [Target(sprite) for sprite in self.simulator.car_sprites]
         self.tracker.set_targets(self.targets)
-        # self.target_1 = Target(self.simulator.car)
-        # self.target_2 = Target(self.simulator.car_2)
-        # self.target_3 = Target(self.simulator.car_3)
-
-        # self.targets = [self.target_1, self.target_2, self.target_3]
-
 
         # open plot file if write_plot is indicated
         if self.write_plot:
