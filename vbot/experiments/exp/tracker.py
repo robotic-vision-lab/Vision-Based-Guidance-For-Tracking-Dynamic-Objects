@@ -686,7 +686,7 @@ class Tracker:
 
                 # treat keypoints that were lost during flow
                 if (self.keypoints_new_good.shape[0] > 0 and 
-                        not (len(good_distances) > 0 or (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0) and
+                        # not (len(good_distances) > 0 or (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0) and
                         ((self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)).sum() > 0):
                     # adjust missing old keypoints (need to check recovery)
                     keypoints_missing = self.keypoints_old[(self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)]
