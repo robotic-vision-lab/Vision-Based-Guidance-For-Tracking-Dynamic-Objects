@@ -35,7 +35,7 @@ HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
 PIXEL_TO_METERS_FACTOR = HORIZONTAL_SPAN / WIDTH
 
 # car settings
-CAR_IMG = 'car3.png'
+CAR_IMG = 'cars_1.png'
 CAR_LENGTH = 6          # meters
 CAR_LENGTH_PX = 128
 CAR_SCALE = CAR_LENGTH / (CAR_LENGTH_PX * PIXEL_TO_METERS_FACTOR)
@@ -235,9 +235,9 @@ CAR_RADIUS = 0.1
 
 # 7 open
 CAR_INITIAL_POSITION    = (10.0, -10.0)
-CAR_INITIAL_VELOCITY    = (5.22, 0.0)
+CAR_INITIAL_VELOCITY    = (6.31, 0.0)
 DRONE_POSITION          = (0.0, 0.0)
-DRONE_INITIAL_VELOCITY  = (5.31, 0.0)
+DRONE_INITIAL_VELOCITY  = (5.22, 0.0)
 K_1                     = 0.5
 K_2                     = 0.2
 K_W                      = -0.1
