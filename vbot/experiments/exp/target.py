@@ -1,6 +1,7 @@
 from math import ceil
 import numpy as np
 
+from .ekf import ExtendedKalman
 from .settings import (NO_OCC,
                       PARTIAL_OCC,
                       TOTAL_OCC)
@@ -9,10 +10,13 @@ class Target:
     """Encapsulates necessary and sufficient attributes to define a visual object/target
     """
     def __init__(self, 
-                 sprite_obj=None, 
+                 sprite_obj=None,
+                 manager=None, 
                  bounding_box=None):
         self.sprite_obj = sprite_obj
+        self.manager = manager
         self.bounding_box = bounding_box
+        self.bounding_box_mask = None
         self.track_status = False
         self.keypoints_old = None
         self.keypoints_new = None
@@ -25,6 +29,7 @@ class Target:
         self.cross_feature_errors = np.array([[0]]*4)
         self.occlusion_case_old = None
         self.occlusion_case_new = NO_OCC
+        self.centroid_old_true = None
         self.centroid_old = None
         self.centroid_new = None
         self.centroid_adjustment = None
@@ -42,6 +47,7 @@ class Target:
         self.centroid_offset = [0,0]
         self.bb_top_left_offset = [0,0]
 
+        self.EKF = ExtendedKalman(self.manager, self)
         self.update_bounding_box()
 
     def update_bounding_box(self):
