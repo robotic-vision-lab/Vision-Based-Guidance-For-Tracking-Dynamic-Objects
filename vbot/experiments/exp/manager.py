@@ -97,13 +97,13 @@ class ExperimentManager:
         """
         return self.simulator.camera.velocity
 
-    def get_target_bounding_box(self):
+    def get_target_bounding_box(self, target):
         """helper function returns bounding box of the target fetched from simulator
 
         Returns:
             tuple(int, int, int, int): x, y, w, h defining target bounding box
         """
-        return self.simulator.bounding_box
+        return target.get_updated_bounding_box()
 
     def transform_pos_corner_img_pixels_to_center_cam_meters(self, pos):
         """helper function transforms frame of reference for position.
@@ -140,18 +140,21 @@ class ExperimentManager:
         """Worker function, to be called from tracker at the first run after first centroid calculation
         uses tracked new centroid to compute it's relative position from car rect center
         """
-        self.car_rect_center_centroid_offset[0] = target.centroid_new.flatten()[0] - self.simulator.car.rect.centerx
-        self.car_rect_center_centroid_offset[1] = target.centroid_new.flatten()[1] - self.simulator.car.rect.centery
+        target.centroid_offset[0] = target.centroid_new.flatten()[0] - target.sprite_obj.rect.centerx
+        target.centroid_offset[1] = target.centroid_new.flatten()[1] - target.sprite_obj.rect.centery
 
-    def get_target_centroid(self):
+    def get_target_centroid(self,target=None):
         """helper function adds centroid offset to car rect center and returns the target centroid 
 
         Returns:
             [np.ndarray]: Target centroid
         """
-        target_cent = self.car_rect_center_centroid_offset.copy()
-        target_cent[0] += self.simulator.car.rect.centerx
-        target_cent[1] += self.simulator.car.rect.centery
+        # target_cent = self.car_rect_center_centroid_offset.copy()
+        # target_cent[0] += self.simulator.car.rect.centerx
+        # target_cent[1] += self.simulator.car.rect.centery
+        target_cent = target.centroid_offset.copy()
+        target_cent[0] += target.sprite_obj.rect.centerx
+        target_cent[1] += target.sprite_obj.rect.centery
         return np.array(target_cent).reshape(1, 2)
 
     def get_target_centroid_offset(self):
@@ -177,11 +180,11 @@ class ExperimentManager:
         y = self.simulator.car.rect.center[1] + bb_offset[1]
         return x, y, w, h
 
-    def get_estimated_centroids(self):
-        old_x = self.EKF.old_x if self.EKF.old_x is not None else 0.0
-        old_y = self.EKF.old_y if self.EKF.old_y is not None else 0.0
-        x = self.EKF.x if self.EKF.x is not None else 0.0
-        y = self.EKF.y if self.EKF.y is not None else 0.0
+    def get_estimated_centroids(self, target):
+        old_x = target.EKF.old_x if target.EKF.old_x is not None else 0.0
+        old_y = target.EKF.old_y if target.EKF.old_y is not None else 0.0
+        x = target.EKF.x if target.EKF.x is not None else 0.0
+        y = target.EKF.y if target.EKF.y is not None else 0.0
         old_centroid_x = old_x-self.simulator.camera.prev_origin[0]
         old_centroid_y = old_y-self.simulator.camera.prev_origin[1]
         new_centroid_x = x-self.simulator.camera.origin[0]
@@ -213,7 +216,7 @@ class ExperimentManager:
         self.simulator.start_new()
 
         # set targets and tell tracker
-        self.targets = [Target(sprite) for sprite in self.simulator.car_sprites]
+        self.targets = [Target(sprite, self) for sprite in self.simulator.car_sprites]
         self.tracker.set_targets(self.targets)
 
         # open plot file if write_plot is indicated
@@ -304,23 +307,24 @@ class ExperimentManager:
                     if self.tracker_on:
                         screen_capture = self.simulator.get_screen_capture()
                         # process image and record status
-                        status = self.tracker.process_image_complete(screen_capture)
-                        self.tracker.print_to_console()
+                        self.tracker.process_image_complete(screen_capture)
+                        # self.tracker.print_to_console()
 
                         # let controller generate acceleration, when tracker indicates ok (which is when first frame is processed)
                         if self.tracker.can_begin_control():
                             # collect kinematics tuple
-                            kin = self.get_true_kinematics() if (self.use_true_kin or not status) else self.get_tracked_kinematics()
+                            for target in self.targets:
+                                target.kinematics = self.get_true_kinematics(target) if (self.use_true_kin or not target.track_status) else self.get_tracked_kinematics(target)
                             # let controller process kinematics
-                            ax, ay = self.controller.generate_acceleration(kin)
+                            # ax, ay = self.controller.generate_acceleration(self.targets[0].kinematics)
                             # feed controller generated acceleration commands to simulator
-                            self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
+                            # self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
 
                     else: # tracker is off
                         if self.control_on:
                             kin = self.get_true_kinematics()
                             # let controller process kinematics
-                            ax, ay = self.controller.generate_acceleration(kin)
+                            # ax, ay = self.controller.generate_acceleration(kin)
                             # feed controller generated acceleration commands to simulator
                             self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
 
@@ -349,7 +353,7 @@ class ExperimentManager:
     def get_sim_dt(self):
         return self.simulator.dt
 
-    def get_true_kinematics(self):
+    def get_true_kinematics(self, target):
         """Helper function returns drone and car position and velocity
 
         Returns:
@@ -357,23 +361,23 @@ class ExperimentManager:
         """
         kin = (self.simulator.camera.position,
                self.simulator.camera.velocity,
-               self.simulator.car.position,
-               self.simulator.car.velocity)
+               target.sprite_obj.position,
+               target.sprite_obj.velocity)
 
         return kin
 
-    def get_tracked_kinematics(self):
+    def get_tracked_kinematics(self, target):
         # use kinematics from the tracker, but rearrange items before returning
         return (
-            self.tracker.kin[0],    # true drone position    
-            self.tracker.kin[1],    # true drone velocity
-            self.tracker.kin[6],    # measured car position in camera frame (meters)
-            self.tracker.kin[7],    # measured car velocity in camera frame (meters)
-            self.tracker.kin[2],    # kalman estimated car position
-            self.tracker.kin[3],    # kalman estimated car velocity
-            self.tracker.kin[4],    # moving averaged car position
-            self.tracker.kin[5],    # moving averaged car velocity
-        ) if self.tracker.kin is not None else self.get_true_kinematics()
+            target.kinematics[0],    # true drone position    
+            target.kinematics[1],    # true drone velocity
+            target.kinematics[6],    # measured car position in camera frame (meters)
+            target.kinematics[7],    # measured car velocity in camera frame (meters)
+            target.kinematics[2],    # kalman estimated car position
+            target.kinematics[3],    # kalman estimated car velocity
+            target.kinematics[4],    # moving averaged car position
+            target.kinematics[5],    # moving averaged car velocity
+        ) if target.kinematics is not None else self.get_true_kinematics(target)
 
     def get_cam_origin(self):
         return self.simulator.camera.origin
