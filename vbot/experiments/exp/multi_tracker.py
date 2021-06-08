@@ -312,13 +312,14 @@ class MultiTracker:
         kps, descriptors = self.detector.get_descriptors_at_keypoints(self.frame_new_gray, kps, bb)
         return kps, descriptors
 
-    def get_true_bb_from_oracle(self):
+    def get_true_bb_from_oracle(self, target):
         """Helper function to get the true target bounding box.
 
         Returns:
             tuple: True target bounding box
         """
-        return self.manager.get_target_bounding_box_from_offset()
+        # return self.manager.get_target_bounding_box_from_offset()
+        return target.get_updated_bounding_box()
 
     def _get_kin_from_manager(self):
         """Helper function to fetch appropriate kinematics from manager
@@ -381,444 +382,456 @@ class MultiTracker:
                 target.centroid_old = target.centroid_new = target.initial_centroid
                 target.occlusion_case_old = target.occlusion_case_new
                 self.manager.set_target_centroid_offset(self.targets[0])
+                target.track_status = self._FAILURE
             
             # posterity - save frames
             self.frame_old_gray = self.frame_new_gray
             self.frame_old_color = self.frame_new_color
-            return self._FAILURE
+            # return self._FAILURE
 
         # cv.imshow('cur_frame', self.frame_old_gray); cv.waitKey(1)
         self._can_begin_control_flag = True
-        
-        # ################################################################################
-        # CASE |NO_OCC, _>
-        if target.occlusion_case_old == NO_OCC:
-            # (a priori) older could have been start or no_occ, or partial_occ or total_occ
-            # we should have all keypoints as good ones, and old centroid exists, if old now has no_occ
-
-            # try to compute flow at keypoints and infer next occlusion case
-            self.compute_flow(target)
-
-            # amplify bad errors
-            target.cross_feature_errors[(target.cross_feature_errors > 0.75 * self.MAX_ERR) & (target.cross_feature_errors > 100*target.cross_feature_errors.min())] *= 10
-
-            # ---------------------------------------------------------------------
-            # |NO_OCC, NO_OCC>
-            if (target.feature_found_statuses.all() and target.feature_found_statuses.shape[0] == MAX_NUM_CORNERS and 
-                    target.cross_feature_errors.max() < self.MAX_ERR):
-                target.occlusion_case_new = NO_OCC
-
-                # set good points (since no keypoints were occluded all are good, no need to compute)
-                target.keypoints_new_good = target.keypoints_new
-                target.keypoints_old_good = target.keypoints_old
-                self.update_patches(target)
-
-                # compute centroid
-                target.centroid_new = self.get_centroid(target.keypoints_new_good)
-
-                # compute kinematics measurements using centroid
-                target.kinematics = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
-
-                # update tracker display
-                self.display()
-
-                # posterity - save frames, keypoints, centroid
-                self.frame_old_gray = self.frame_new_gray
-                self.frame_old_color = self.frame_new_color
-                self.keypoints_old = self.keypoints_new
-                self.keypoints_old_good = self.keypoints_new_good
-                self.centroid_adjustment = None
-                self.centroid_old = self.centroid_new
-                self.target_occlusion_case_old = self.target_occlusion_case_new
-                return self._SUCCESS
-
-            # ---------------------------------------------------------------------
-            # |NO_OCC, TOTAL_OCC>
-            elif not self.feature_found_statuses.all() or self.cross_feature_errors.min() >= self.MAX_ERR:
-                self.target_occlusion_case_new = self._TOTAL_OCC
-
-                # cannot compute kinematics
-                self.kin = None
-
-                # update tracker display
-                self.display()
-
-                # posterity
-                self.frame_old_gray = self.frame_new_gray
-                self.frame_old_color = self.frame_new_color
-                self.centroid_adjustment = None
-                self.centroid_old_true = self.manager.get_target_centroid()
-                self.target_occlusion_case_old = self.target_occlusion_case_new
-                return self._FAILURE
-
-            # ---------------------------------------------------------------------
-            # |NO_OCC, PARTIAL_OCC>
-            else:
-                self.target_occlusion_case_new = self._PARTIAL_OCC
-
-                # in this case of from no_occ to partial_occ, no more keypoints are needed to be found
-                # good keypoints need to be computed for kinematics computation as well as posterity
-                self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
-                self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
-
-                # compute adjusted centroid
-                centroid_old_good = self.get_centroid(self.keypoints_old_good)
-                centroid_new_good = self.get_centroid(self.keypoints_new_good)
-                self.centroid_adjustment = self.centroid_old - centroid_old_good
-                self.centroid_new = centroid_new_good + self.centroid_adjustment
-
-                # compute kinematics measurements
-                self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
-
-                # adjust missing old keypoints (no need to check recovery)
-                keypoints_missing = self.keypoints_old[(self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)]
-                self.keypoints_new_bad = keypoints_missing - self.centroid_old + self.centroid_new
-
-                # put patches over bad points in new frame
-                for kp in self.keypoints_new_bad:
-                    # fetch appropriate patch
-                    patch = self.get_relative_associated_patch(kp, self.centroid_new)
-                    # paste patch at appropriate location
-                    self.put_patch_at_point(self.frame_new_gray, patch, tuple(map(int,kp.flatten())))
-
-                # update tracker display
-                self.display()
-
-                # add revived bad points to good points
-                self.keypoints_new_good = np.concatenate((self.keypoints_new_good, self.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
-
-                self.update_patches()
-
-                # posterity
-                self.frame_old_gray = self.frame_new_gray
-                self.frame_old_color = self.frame_new_color
-                self.keypoints_old = self.keypoints_new
-                self.keypoints_old_good = self.keypoints_new_good.reshape(-1, 1, 2)
-                self.keypoints_old_bad = self.keypoints_new_bad.reshape(-1, 1, 2)
-                self.centroid_old = self.centroid_new
-                self.centroid_old_true = self.manager.get_target_centroid()
-                self.target_occlusion_case_old = self.target_occlusion_case_new
-                return self._SUCCESS
-
-        # ################################################################################
-        # CASE |PARTIAL_OCC, _>
-        if self.target_occlusion_case_old == self._PARTIAL_OCC:
-            # (a priori) older could have been no_occ, partial_occ or total_occ
-            # we should have some keypoints that are good, if old now has partial_occ
-            
-            # use good keypoints, to compute flow (keypoints_old_good used as input, and outputs into keypoints_new)
-            self.compute_flow(use_good=True)
-
-            # amplify bad errors 
-            if self.cross_feature_errors.shape[0] > 0.5 * MAX_NUM_CORNERS:
-                self.cross_feature_errors[(self.cross_feature_errors > 0.75 * self.MAX_ERR) & (self.cross_feature_errors > 100*self.cross_feature_errors.min())] *= 10
-            
-            # update good old and new
-            # good keypoints are used for kinematics computation as well as posterity
-            self.keypoints_new_good = self.keypoints_new[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
-            self.keypoints_old_good = self.keypoints_old[(self.feature_found_statuses==1) & (self.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
-
-            # these good keypoints may not be sufficient for precise partial occlusion detection
-            # for precision, we will need to check if any other keypoints can be recovered or reconstructed
-            # we should still have old centroid
-            self.target_bounding_box = self.get_true_bb_from_oracle()
-            self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
-
-            # perform part template matching and update template points and scores
-            self.find_saved_patches_in_img_bb(self.frame_new_gray, self.target_bounding_box)
-
-            # compute good feature keypoints in the new frame (shi-tomasi + SIFT)
-            good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=self.target_bounding_box_mask, bb=self.target_bounding_box)
-
-            if good_keypoints_new is None or good_keypoints_new.shape[0] == 0:
-                good_distances = []
-            else:
-                # compute descriptors at the new keypoints
-                kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new, bb=self.target_bounding_box)
-
-                # match descriptors 
-                matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
-                                                                descriptors, 
-                                                                threshold=-1)
-
-                distances = np.array([m.distance for m in matches]).reshape(-1, 1)
-                good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
-
-            # ---------------------------------------------------------------------
-            # |PARTIAL_OCC, TOTAL_OCC>
-            if ((not self.feature_found_statuses.all() or 
-                    self.cross_feature_errors.min() >= self.MAX_ERR) and 
-                    len(good_distances) == 0 and 
-                    (self.template_scores > self.TEMP_MATCH_THRESH).sum() == 0):
-                self.target_occlusion_case_new = self._TOTAL_OCC
-
-                # cannot compute kinematics
-                self.kin = None
-
-                # update tracker display
-                self.display()
-
-                # posterity
-                self.frame_old_gray = self.frame_new_gray
-                self.frame_old_color = self.frame_new_color
-                self.centroid_old_true = self.manager.get_target_centroid()
-                self.target_occlusion_case_old = self.target_occlusion_case_new
-                return self._FAILURE
-
-            # ---------------------------------------------------------------------
-            # |PARTIAL_OCC, NO_OCC>
-            elif ((self.keypoints_new_good.shape[0] > 0) and
-                    len(good_distances) == MAX_NUM_CORNERS and
-                    (self.template_scores > self.TEMP_MATCH_THRESH).sum() == MAX_NUM_CORNERS):
-                self.target_occlusion_case_new = self._NO_OCC
-
-                # compute centroid 
-                self.centroid_new = self.get_centroid(self.keypoints_new_good)
-
-                # update keypoints
-                if len(good_distances) == MAX_NUM_CORNERS:
-                    good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
-                    self.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
-                    self.keypoints_new = self.keypoints_new_good
-                    self.centroid_new = self.get_centroid(self.keypoints_new_good)
-                    self.rel_keypoints = self.keypoints_new - self.centroid_new
-                    
-                if (self.template_scores > self.TEMP_MATCH_THRESH).sum()==MAX_NUM_CORNERS:
-                    self.keypoints_new_good = self.template_points
-                    self.keypoints_new = self.keypoints_new_good
-                    self.centroid_new = self.get_centroid(self.keypoints_new_good)
-                    self.rel_keypoints = self.keypoints_new - self.centroid_new
 
 
-                    # also adjust old centroid, since 
-                    # no dont .. old centroid would have been adjusted
+        for target in self.targets:
+            # ################################################################################
+            # CASE |NO_OCC, _>
+            if target.occlusion_case_old == NO_OCC:
+                # (a priori) older could have been start or no_occ, or partial_occ or total_occ
+                # we should have all keypoints as good ones, and old centroid exists, if old now has no_occ
 
+                # try to compute flow at keypoints and infer next occlusion case
+                self.compute_flow(target)
 
-                # compute kinematics
-                self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
+                # amplify bad errors
+                target.cross_feature_errors[(target.cross_feature_errors > 0.75 * self.MAX_ERR) & (target.cross_feature_errors > 100*target.cross_feature_errors.min())] *= 10
 
-                # adjust centroid
-                if len(good_distances) == MAX_NUM_CORNERS:
-                   self.centroid_adjustment = None
-                else: 
-                    centroid_new_good = self.get_centroid(good_keypoints_new)
-                    self.centroid_adjustment = centroid_new_good - self.centroid_new
-                    self.centroid_new = centroid_new_good
+                # ---------------------------------------------------------------------
+                # |NO_OCC, NO_OCC>
+                if (target.feature_found_statuses.all() and target.feature_found_statuses.shape[0] == MAX_NUM_CORNERS and 
+                        target.cross_feature_errors.max() < self.MAX_ERR):
+                    target.occlusion_case_new = NO_OCC
 
-                    # update keypoints
-                    self.keypoints_new_good = self.keypoints_new = self.centroid_new + self.rel_keypoints         
-                
-                self.update_patches()
-                # update tracker display
-                self.display()
+                    # set good points (since no keypoints were occluded all are good, no need to compute)
+                    target.keypoints_new_good = target.keypoints_new
+                    target.keypoints_old_good = target.keypoints_old
+                    self.update_patches(target)
 
-                # posterity
-                self.frame_old_gray = self.frame_new_gray
-                self.frame_old_color = self.frame_new_color
-                self.keypoints_old = self.keypoints_new_good
-                self.keypoints_old_good = self.keypoints_new_good
-                self.centroid_adjustment = None
-                self.centroid_old = self.centroid_new
-                self.target_occlusion_case_old = self.target_occlusion_case_new
-                return self._SUCCESS
+                    # compute centroid
+                    target.centroid_new = self.get_centroid(target.keypoints_new_good)
 
-            # ---------------------------------------------------------------------
-            # |PARTIAL_OCC, PARTIAL_OCC>
-            else:
-                # if we come to this, it means at least something can be salvaged
-                self.target_occlusion_case_new = self._PARTIAL_OCC
+                    # compute kinematics measurements using centroid
+                    target.kinematics = self.compute_kinematics_by_centroid(target.centroid_old, target.centroid_new)
 
+                    # update tracker display
+                    # self.display()
 
-                if self.keypoints_new_good.shape[0] == 0:
-                    # flow failed, matching succeeded (feature or template)
-                    # compute new good keypoints using matching
-                    if len(good_distances) > 0: 
-                        good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
-                        self.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
-                        self.keypoints_new = self.keypoints_new_good
-                        self.centroid_old = self.centroid_old_true
-                        self.centroid_new = self.manager.get_target_centroid()
-                    if (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0:
-                        self.keypoints_new_good = self.template_points[self.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
-                        self.keypoints_new = self.keypoints_new_good
-                        self.centroid_old = self.centroid_old_true
-                        self.centroid_new = self.manager.get_target_centroid()
-                
-                elif self.keypoints_new_good.shape[0] > 0:
-                    # flow succeeded, (at least one new keypoint was found)
-                    # compute adjusted centroid and compute kinematics
-                    centroid_old_good = self.get_centroid(self.keypoints_old_good)
-                    centroid_new_good = self.get_centroid(self.keypoints_new_good)
-                    self.centroid_adjustment = self.centroid_old - centroid_old_good
-                    self.centroid_new = centroid_new_good + self.centroid_adjustment
+                    # posterity - save frames, keypoints, centroid
+                    self.frame_old_gray = self.frame_new_gray
+                    self.frame_old_color = self.frame_new_color
+                    target.keypoints_old = target.keypoints_new
+                    target.keypoints_old_good = target.keypoints_new_good
+                    target.centroid_adjustment = None
+                    target.centroid_old = target.centroid_new
+                    target.occlusion_case_old = target.occlusion_case_new
+                    target.track_status = self._SUCCESS
 
-                self.kin = self.compute_kinematics_by_centroid(self.centroid_old, self.centroid_new)
+                # ---------------------------------------------------------------------
+                # |NO_OCC, TOTAL_OCC>
+                elif not target.feature_found_statuses.all() or target.cross_feature_errors.min() >= self.MAX_ERR:
+                    target.occlusion_case_new = TOTAL_OCC
 
-                # treat keypoints that were lost during flow
-                if (self.keypoints_new_good.shape[0] > 0 and 
-                        # not (len(good_distances) > 0 or (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0) and
-                        ((self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)).sum() > 0):
-                    # adjust missing old keypoints (need to check recovery)
-                    keypoints_missing = self.keypoints_old[(self.feature_found_statuses==0) | (self.cross_feature_errors >= self.MAX_ERR)]
-                    self.keypoints_new_bad = keypoints_missing - self.centroid_old + self.centroid_new
+                    # cannot compute kinematics
+                    target.kinematics = None
+
+                    # update tracker display
+                    # self.display()
+
+                    # posterity
+                    self.frame_old_gray = self.frame_new_gray
+                    self.frame_old_color = self.frame_new_color
+                    target.centroid_adjustment = None
+                    target.centroid_old_true = self.manager.get_target_centroid(target)
+                    target.occlusion_case_old = target.occlusion_case_new
+                    # return self._FAILURE
+                    target.track_status = self._FAILURE
+
+                # ---------------------------------------------------------------------
+                # |NO_OCC, PARTIAL_OCC>
+                else:
+                    target.occlusion_case_new = PARTIAL_OCC
+
+                    # in this case of from no_occ to partial_occ, no more keypoints are needed to be found
+                    # good keypoints need to be computed for kinematics computation as well as posterity
+                    target.keypoints_new_good = target.keypoints_new[(target.feature_found_statuses==1) & (target.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
+                    target.keypoints_old_good = target.keypoints_old[(target.feature_found_statuses==1) & (target.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
+
+                    # compute adjusted centroid
+                    centroid_old_good = self.get_centroid(target.keypoints_old_good)
+                    centroid_new_good = self.get_centroid(target.keypoints_new_good)
+                    target.centroid_adjustment = target.centroid_old - centroid_old_good
+                    target.centroid_new = centroid_new_good + target.centroid_adjustment
+
+                    # compute kinematics measurements
+                    target.kinematics = self.compute_kinematics_by_centroid(target.centroid_old, target.centroid_new)
+
+                    # adjust missing old keypoints (no need to check recovery)
+                    keypoints_missing = target.keypoints_old[(target.feature_found_statuses==0) | (target.cross_feature_errors >= self.MAX_ERR)]
+                    target.keypoints_new_bad = keypoints_missing - target.centroid_old + target.centroid_new
 
                     # put patches over bad points in new frame
-                    for kp in self.keypoints_new_bad:
+                    for kp in target.keypoints_new_bad:
                         # fetch appropriate patch
-                        patch = self.get_relative_associated_patch(kp, self.centroid_new)
+                        patch = self.get_relative_associated_patch(kp, target.centroid_new, target)
                         # paste patch at appropriate location
                         self.put_patch_at_point(self.frame_new_gray, patch, tuple(map(int,kp.flatten())))
-                else:
-                    self.keypoints_new_bad = None
 
+                    # update tracker display
+                    # self.display()
 
-                # update tracker display
-                self.display()
+                    # add revived bad points to good points
+                    target.keypoints_new_good = np.concatenate((target.keypoints_new_good, target.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
 
-                # add bad points to good 
-                if self.keypoints_new_bad is not None:
-                    self.keypoints_new_good = np.concatenate((self.keypoints_new_good, self.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
+                    self.update_patches(target)
 
-                if (len(good_distances) > self.keypoints_new_good.shape[0] and
-                        (self.template_scores > self.TEMP_MATCH_THRESH).sum() > self.keypoints_new_good.shape[0]):
-                    self.keypoints_new_good = self.template_points[self.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
-                    self.keypoints_new = self.keypoints_new_good
-                    self.centroid_new = self.manager.get_target_centroid()
+                    # posterity
+                    self.frame_old_gray = self.frame_new_gray
+                    self.frame_old_color = self.frame_new_color
+                    target.keypoints_old = target.keypoints_new
+                    target.keypoints_old_good = target.keypoints_new_good.reshape(-1, 1, 2)
+                    target.keypoints_old_bad = target.keypoints_new_bad.reshape(-1, 1, 2)
+                    target.centroid_old = target.centroid_new
+                    target.centroid_old_true = self.manager.get_target_centroid(target)
+                    target.occlusion_case_old = target.occlusion_case_new
+                    # return self._SUCCESS
+                    target.track_status = self._SUCCESS
 
-                self.update_patches()
-                # posterity
-                self.frame_old_gray = self.frame_new_gray
-                self.frame_old_color = self.frame_new_color
-                self.keypoints_old = self.keypoints_new
-                self.keypoints_old_good = self.keypoints_new_good.reshape(-1, 1, 2)
-                self.centroid_old = self.centroid_new
-                self.centroid_old_true = self.manager.get_target_centroid()
-                self.target_occlusion_case_old = self.target_occlusion_case_new
-                return self._SUCCESS
-
-
-        # ################################################################################
-        # CASE FROM_TOTAL_OCC
-        if self.target_occlusion_case_old == self._TOTAL_OCC:
-            # (a priori) older could have been no_occ, partial_occ or total_occ
-            # we should have no good keypoints, if old now has total_occ
-            # here we are looking for the target again, see if we can spot it again
-            # purpose being redetecting target to recover from occlusion
-            
-            # where do we start, nothing in the old frame to work off of
-            # no flow computations, so ask help from oracle or estimator (KF or EKF)
-            self.target_bounding_box = self.get_true_bb_from_oracle()
-            self.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *self.target_bounding_box)
-
-            # perform template matching for patches to update template points and scores
-            self.find_saved_patches_in_img_bb(self.frame_new_gray, self.target_bounding_box)
-
-            # compute good feature keypoints in the new frame
-            # good_keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
-            good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=self.target_bounding_box_mask, bb=self.target_bounding_box)
-
-            if good_keypoints_new is None or good_keypoints_new.shape[0] == 0:
-                good_distances = []
-            else:
-                # compute descriptors at the new keypoints
-                kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new, bb=self.target_bounding_box)
-
-                # match descriptors 
-                # note, matching only finds best matching/pairing, 
-                # no guarantees of quality of match
-                matches = self.descriptor_matcher.compute_matches(self.initial_target_descriptors, 
-                                                                descriptors, 
-                                                                threshold=-1)
-
-                distances = np.array([m.distance for m in matches]).reshape(-1, 1)  # redundant TODO clean it
-
-                # good distances indicate good matches
-                good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
-                # if (distances < self.DES_MATCH_DISTANCE_THRESH).sum()
-
-
-            # ---------------------------------------------------------------------
-            # |TOTAL_OCC, NO_OCC>
-            if (len(good_distances) == MAX_NUM_CORNERS and 
-                    (self.template_scores > self.TEMP_MATCH_THRESH).sum()==MAX_NUM_CORNERS):
-                self.target_occlusion_case_new = self._NO_OCC
-                good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
-                self.keypoints_new = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
-                self.keypoints_new_good = self.keypoints_new
-                self.centroid_new = self.get_centroid(self.keypoints_new)
-                self.rel_keypoints = self.keypoints_new - self.centroid_new
-
-                self.update_patches()
-                # update tracker display
-                self.display()
-
-                # posterity
-                self.frame_old_gray = self.frame_new_gray
-                self.frame_old_color = self.frame_new_color
-                self.keypoints_old = self.keypoints_new
-                self.initial_keypoints = self.keypoints_old = self.keypoints_new
-                self.initial_centroid = self.centroid_old = self.centroid_new
-                self.centroid_adjustment = None
-                self.centroid_old = self.centroid_new
-                self.centroid_old_true = self.manager.get_target_centroid()
-                self.target_occlusion_case_old = self.target_occlusion_case_new
-                self.manager.set_target_centroid_offset()
-                return self._FAILURE
-
-            # ---------------------------------------------------------------------
-            # |TOTAL_OCC, TOTAL_OCC>
-            elif (len(good_distances) == 0 and 
-                    (self.template_scores > self.TEMP_MATCH_THRESH).sum()==0):
-                self.target_occlusion_case_new = self._TOTAL_OCC
-
-                self.centroid_old = self.centroid_old_true
-                self.centroid_new = self.manager.get_target_centroid()
-
-                # cannot compute kinematics
-                self.kin = None
-
-                # update tracker display
-                self.display()
-
-                # posterity
-                self.frame_old_gray = self.frame_new_gray
-                self.frame_old_color = self.frame_new_color
-                self.centroid_old_true = self.manager.get_target_centroid()
-                self.target_occlusion_case_old = self.target_occlusion_case_new
-                return self._FAILURE
-
-            # ---------------------------------------------------------------------
-            # |TOTAL_OCC, PARTIAL_OCC>
-            else: 
-                self.target_occlusion_case_new = self._PARTIAL_OCC
-
-                self.centroid_old = self.centroid_old_true
-                self.centroid_new = self.manager.get_target_centroid()
-
-                if len(good_distances) > 0:
-                    # compute good matches
-                    good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
-                    
-                    # compute good points, centroid adjustments
-                    self.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)    #NOTE changed queryIdx to trainIdx .. double check later
+            # ################################################################################
+            # CASE |PARTIAL_OCC, _>
+            elif target.occlusion_case_old == PARTIAL_OCC:
+                # (a priori) older could have been no_occ, partial_occ or total_occ
+                # we should have some keypoints that are good, if old now has partial_occ
                 
-                if (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0:
-                    self.keypoints_new_good = self.template_points[self.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
+                # use good keypoints, to compute flow (keypoints_old_good used as input, and outputs into keypoints_new)
+                self.compute_flow(target, use_good=True)
 
-                self.update_patches()
-                # update tracker display
-                self.display()
+                # amplify bad errors 
+                if target.cross_feature_errors.shape[0] > 0.5 * MAX_NUM_CORNERS:
+                    target.cross_feature_errors[(target.cross_feature_errors > 0.75 * self.MAX_ERR) & (target.cross_feature_errors > 100*target.cross_feature_errors.min())] *= 10
+                
+                # update good old and new
+                # good keypoints are used for kinematics computation as well as posterity
+                target.keypoints_new_good = target.keypoints_new[(target.feature_found_statuses==1) & (target.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
+                target.keypoints_old_good = target.keypoints_old[(target.feature_found_statuses==1) & (target.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
 
-                # posterity
-                self.frame_old_gray = self.frame_new_gray
-                self.frame_old_color = self.frame_new_color
-                self.keypoints_old = self.keypoints_new  = self.keypoints_new_good
-                self.keypoints_old_good = self.keypoints_new_good
-                self.centroid_old = self.centroid_new
-                self.centroid_old_true = self.manager.get_target_centroid()
-                self.target_occlusion_case_old = self.target_occlusion_case_new
-                self.manager.set_target_centroid_offset()
-                return self._FAILURE
+                # these good keypoints may not be sufficient for precise partial occlusion detection
+                # for precision, we will need to check if any other keypoints can be recovered or reconstructed
+                # we should still have old centroid
+                target.bounding_box = self.get_true_bb_from_oracle(target)
+                target.bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *target.bounding_box)
+
+                # perform part template matching and update template points and scores
+                self.find_saved_patches_in_img_bb(self.frame_new_gray, target)
+
+                # compute good feature keypoints in the new frame (shi-tomasi + SIFT)
+                good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=target.bounding_box_mask, bb=target.bounding_box)
+
+                if good_keypoints_new is None or good_keypoints_new.shape[0] == 0:
+                    good_distances = []
+                else:
+                    # compute descriptors at the new keypoints
+                    kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new, bb=target.bounding_box)
+
+                    # match descriptors 
+                    matches = self.descriptor_matcher.compute_matches(target.initial_target_descriptors, 
+                                                                    descriptors, 
+                                                                    threshold=-1)
+
+                    distances = np.array([m.distance for m in matches]).reshape(-1, 1)
+                    good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
+
+                # ---------------------------------------------------------------------
+                # |PARTIAL_OCC, TOTAL_OCC>
+                if ((not target.feature_found_statuses.all() or 
+                        target.cross_feature_errors.min() >= self.MAX_ERR) and 
+                        len(good_distances) == 0 and 
+                        (target.template_scores > self.TEMP_MATCH_THRESH).sum() == 0):
+                    target.occlusion_case_new = TOTAL_OCC
+
+                    # cannot compute kinematics
+                    target.kinematics = None
+
+                    # update tracker display
+                    # self.display()
+
+                    # posterity
+                    self.frame_old_gray = self.frame_new_gray
+                    self.frame_old_color = self.frame_new_color
+                    target.centroid_old_true = self.manager.get_target_centroid(target)
+                    target.occlusion_case_old = target.occlusion_case_new
+                    # return self._FAILURE
+                    target.track_status = self._FAILURE
+
+                # ---------------------------------------------------------------------
+                # |PARTIAL_OCC, NO_OCC>
+                elif ((target.keypoints_new_good.shape[0] > 0) and
+                        len(good_distances) == MAX_NUM_CORNERS and
+                        (target.template_scores > self.TEMP_MATCH_THRESH).sum() == MAX_NUM_CORNERS):
+                    target.occlusion_case_new = NO_OCC
+
+                    # compute centroid 
+                    target.centroid_new = self.get_centroid(target.keypoints_new_good)
+
+                    # update keypoints
+                    if len(good_distances) == MAX_NUM_CORNERS:
+                        good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
+                        target.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
+                        target.keypoints_new = target.keypoints_new_good
+                        target.centroid_new = self.get_centroid(target.keypoints_new_good)
+                        target.rel_keypoints = target.keypoints_new - target.centroid_new
+                        
+                    if (target.template_scores > self.TEMP_MATCH_THRESH).sum()==MAX_NUM_CORNERS:
+                        target.keypoints_new_good = target.template_points
+                        target.keypoints_new = target.keypoints_new_good
+                        target.centroid_new = self.get_centroid(target.keypoints_new_good)
+                        target.rel_keypoints = target.keypoints_new - target.centroid_new
+
+
+                    # compute kinematics
+                    target.kinematics = self.compute_kinematics_by_centroid(target.centroid_old, target.centroid_new)
+
+                    # adjust centroid
+                    if len(good_distances) == MAX_NUM_CORNERS:
+                        target.centroid_adjustment = None
+                    else: 
+                        centroid_new_good = self.get_centroid(good_keypoints_new)
+                        target.centroid_adjustment = centroid_new_good - target.centroid_new
+                        target.centroid_new = centroid_new_good
+
+                        # update keypoints
+                        self.keypoints_new_good = self.keypoints_new = self.centroid_new + self.rel_keypoints         
+                    
+                    self.update_patches(target)
+
+                    # update tracker display
+                    # self.display()
+
+                    # posterity
+                    self.frame_old_gray = self.frame_new_gray
+                    self.frame_old_color = self.frame_new_color
+                    target.keypoints_old = target.keypoints_new_good
+                    target.keypoints_old_good = target.keypoints_new_good
+                    target.centroid_adjustment = None
+                    target.centroid_old = target.centroid_new
+                    target.occlusion_case_old = target.occlusion_case_new
+                    # return self._SUCCESS
+                    target.track_status = self._SUCCESS
+
+                # ---------------------------------------------------------------------
+                # |PARTIAL_OCC, PARTIAL_OCC>
+                else:
+                    # if we come to this, it means at least something can be salvaged
+                    target.occlusion_case_new = PARTIAL_OCC
+
+                    if target.keypoints_new_good.shape[0] == 0:
+                        # flow failed, matching succeeded (feature or template)
+                        # compute new good keypoints using matching
+                        if len(good_distances) > 0: 
+                            good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
+                            target.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
+                            target.keypoints_new = target.keypoints_new_good
+                            target.centroid_old = target.centroid_old_true
+                            target.centroid_new = self.manager.get_target_centroid(target)
+                        if (target.template_scores > self.TEMP_MATCH_THRESH).sum() > 0:
+                            target.keypoints_new_good = target.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
+                            target.keypoints_new = target.keypoints_new_good
+                            target.centroid_old = target.centroid_old_true
+                            target.centroid_new = self.manager.get_target_centroid(target)
+                    
+                    elif target.keypoints_new_good.shape[0] > 0:
+                        # flow succeeded, (at least one new keypoint was found)
+                        # compute adjusted centroid and compute kinematics
+                        centroid_old_good = self.get_centroid(target.keypoints_old_good)
+                        centroid_new_good = self.get_centroid(target.keypoints_new_good)
+                        target.centroid_adjustment = target.centroid_old - centroid_old_good
+                        target.centroid_new = centroid_new_good + target.centroid_adjustment
+
+                    target.kinematics = self.compute_kinematics_by_centroid(target.centroid_old, target.centroid_new)
+
+                    # treat keypoints that were lost during flow
+                    if (target.keypoints_new_good.shape[0] > 0 and 
+                            # not (len(good_distances) > 0 or (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0) and
+                            ((target.feature_found_statuses==0) | (target.cross_feature_errors >= self.MAX_ERR)).sum() > 0):
+                        # adjust missing old keypoints (need to check recovery)
+                        keypoints_missing = target.keypoints_old[(target.feature_found_statuses==0) | (target.cross_feature_errors >= self.MAX_ERR)]
+                        target.keypoints_new_bad = keypoints_missing - target.centroid_old + target.centroid_new
+
+                        # put patches over bad points in new frame
+                        for kp in target.keypoints_new_bad:
+                            # fetch appropriate patch
+                            patch = self.get_relative_associated_patch(kp, target.centroid_new, target)
+                            # paste patch at appropriate location
+                            self.put_patch_at_point(self.frame_new_gray, patch, tuple(map(int,kp.flatten())))
+                    else:
+                        target.keypoints_new_bad = None
+
+
+                    # update tracker display
+                    # self.display()
+
+                    # add bad points to good 
+                    if target.keypoints_new_bad is not None:
+                        target.keypoints_new_good = np.concatenate((target.keypoints_new_good, target.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
+
+                    if (len(good_distances) > target.keypoints_new_good.shape[0] and
+                            (target.template_scores > self.TEMP_MATCH_THRESH).sum() > target.keypoints_new_good.shape[0]):
+                        self.keypoints_new_good = self.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
+                        target.keypoints_new = target.keypoints_new_good
+                        target.centroid_new = self.manager.get_target_centroid(target)
+
+                    self.update_patches(target)
+
+                    # posterity
+                    self.frame_old_gray = self.frame_new_gray
+                    self.frame_old_color = self.frame_new_color
+                    target.keypoints_old = target.keypoints_new
+                    target.keypoints_old_good = target.keypoints_new_good.reshape(-1, 1, 2)
+                    target.centroid_old = target.centroid_new
+                    target.centroid_old_true = self.manager.get_target_centroid(target)
+                    target.occlusion_case_old = target.occlusion_case_new
+                    # return self._SUCCESS
+                    target.track_status = self._SUCCESS
+
+            # ################################################################################
+            # CASE FROM_TOTAL_OCC
+            elif target.occlusion_case_old == TOTAL_OCC:
+                # (a priori) older could have been no_occ, partial_occ or total_occ
+                # we should have no good keypoints, if old now has total_occ
+                # here we are looking for the target again, see if we can spot it again
+                # purpose being redetecting target to recover from occlusion
+                
+                # where do we start, nothing in the old frame to work off of
+                # no flow computations, so ask help from oracle or estimator (KF or EKF)
+                target.target_bounding_box = self.get_true_bb_from_oracle(target)
+                target.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *target.bounding_box)
+
+                # perform template matching for patches to update template points and scores
+                self.find_saved_patches_in_img_bb(self.frame_new_gray, target)
+
+                # compute good feature keypoints in the new frame
+                # good_keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
+                good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=target.bounding_box_mask, bb=target.bounding_box)
+
+                if good_keypoints_new is None or good_keypoints_new.shape[0] == 0:
+                    good_distances = []
+                else:
+                    # compute descriptors at the new keypoints
+                    kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new, bb=target.bounding_box)
+
+                    # match descriptors 
+                    # note, matching only finds best matching/pairing, 
+                    # no guarantees of quality of match
+                    matches = self.descriptor_matcher.compute_matches(target.initial_target_descriptors, 
+                                                                    descriptors, 
+                                                                    threshold=-1)
+
+                    distances = np.array([m.distance for m in matches]).reshape(-1, 1)  # redundant TODO clean it
+
+                    # good distances indicate good matches
+                    good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
+                    # if (distances < self.DES_MATCH_DISTANCE_THRESH).sum()
+
+
+                # ---------------------------------------------------------------------
+                # |TOTAL_OCC, NO_OCC>
+                if (len(good_distances) == MAX_NUM_CORNERS and 
+                        (target.template_scores > self.TEMP_MATCH_THRESH).sum()==MAX_NUM_CORNERS):
+                    target.occlusion_case_new = NO_OCC
+
+                    good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
+                    target.keypoints_new = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
+                    target.keypoints_new_good = target.keypoints_new
+                    target.centroid_new = self.get_centroid(target.keypoints_new)
+                    target.rel_keypoints = target.keypoints_new - target.centroid_new
+
+                    self.update_patches(target)
+
+                    # update tracker display
+                    # self.display()
+
+                    # posterity
+                    self.frame_old_gray = self.frame_new_gray
+                    self.frame_old_color = self.frame_new_color
+                    target.keypoints_old = target.keypoints_new
+                    target.initial_keypoints = target.keypoints_old = target.keypoints_new
+                    target.initial_centroid = target.centroid_old = target.centroid_new
+                    target.centroid_adjustment = None
+                    target.centroid_old = target.centroid_new
+                    target.centroid_old_true = self.manager.get_target_centroid(target)
+                    target.occlusion_case_old = target.occlusion_case_new
+                    self.manager.set_target_centroid_offset(target)
+                    # return self._FAILURE
+                    target.track_status = self._FAILURE
+
+                # ---------------------------------------------------------------------
+                # |TOTAL_OCC, TOTAL_OCC>
+                elif (len(good_distances) == 0 and 
+                        (target.template_scores > self.TEMP_MATCH_THRESH).sum()==0):
+                    target.occlusion_case_new = TOTAL_OCC
+
+                    target.centroid_old = target.centroid_old_true
+                    target.centroid_new = self.manager.get_target_centroid(target)
+
+                    # cannot compute kinematics
+                    target.kinematics = None
+
+                    # update tracker display
+                    # self.display()
+
+                    # posterity
+                    self.frame_old_gray = self.frame_new_gray
+                    self.frame_old_color = self.frame_new_color
+                    target.centroid_old_true = self.manager.get_target_centroid(target)
+                    target.occlusion_case_old = target.occlusion_case_new
+                    # return self._FAILURE
+                    target.track_status = self._FAILURE
+
+                # ---------------------------------------------------------------------
+                # |TOTAL_OCC, PARTIAL_OCC>
+                else: 
+                    target.occlusion_case_new = PARTIAL_OCC
+
+                    target.centroid_old = target.centroid_old_true
+                    target.centroid_new = self.manager.get_target_centroid(target)
+
+                    if len(good_distances) > 0:
+                        # compute good matches
+                        good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
+                        
+                        # compute good points, centroid adjustments
+                        target.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)    #NOTE changed queryIdx to trainIdx .. double check later
+                    
+                    if (target.template_scores > self.TEMP_MATCH_THRESH).sum() > 0:
+                        target.keypoints_new_good = target.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
+
+                    self.update_patches(target)
+
+                    # update tracker display
+                    # self.display()
+
+                    # posterity
+                    self.frame_old_gray = self.frame_new_gray
+                    self.frame_old_color = self.frame_new_color
+                    target.keypoints_old = target.keypoints_new  = target.keypoints_new_good
+                    target.keypoints_old_good = target.keypoints_new_good
+                    target.centroid_old = target.centroid_new
+                    target.centroid_old_true = self.manager.get_target_centroid(target)
+                    target.occlusion_case_old = target.occlusion_case_new
+                    self.manager.set_target_centroid_offset(target)
+                    # return self._FAILURE
+                    target.track_status = self._FAILURE
+
+        self.display()
 
 
     def compute_flow(self, target, use_good=False):
@@ -923,10 +936,7 @@ class MultiTracker:
         if self.manager.tracker_display_on:
             # add cosmetics to frame_2 for display purpose
             self.frame_color_edited, self.tracker_info_mask = self.add_cosmetics(self.frame_new_color.copy(), 
-                                                                                 self.tracker_info_mask,
-                                                                                 self.keypoints_old_good,
-                                                                                 self.keypoints_new_good,
-                                                                                 self.kin)
+                                                                                 self.tracker_info_mask)
 
             # set cur_img; to be used for saving # TODO investigated it's need, used in Simulator to save screen, fix it
             self.cur_img = self.frame_color_edited
@@ -943,69 +953,68 @@ class MultiTracker:
             self.show_me_something()
             assembled_img = images_assemble([self.frame_old_gray.copy(), self.nf6.copy(), self.frame_color_edited.copy()], (1,3))
         else:
-        # dump frames for analysis
-            assembled_img = images_assemble([self.frame_old_gray.copy(), self.frame_new_gray.copy(), self.frame_color_edited.copy()], (1,3))
-        self.img_dumper.dump(assembled_img)
+            # dump frames for analysis
+            pass
+        #     assembled_img = images_assemble([self.frame_old_gray.copy(), self.frame_new_gray.copy(), self.frame_color_edited.copy()], (1,3))
+        # self.img_dumper.dump(assembled_img)
 
-        # ready for next iteration. set cur frame and points to next frame and points
-        # self.frame_cur_gray = self.frame_nxt_gray.copy()
-        # self.key_point_set_cur = self.key_point_set_nxt_good.reshape(-1, 1, 2)  # -1 indicates to infer that dim size
         cv.waitKey(1)
 
-    def add_cosmetics(self, frame, mask, good_cur, good_nxt, kin):
+    def add_cosmetics(self, frame, mask):
         img = frame
         # old_pt = np.array(self.true_old_pt).astype(np.int).reshape(-1,1,2)
         # new_pt = np.array(self.true_new_pt).astype(np.int).reshape(-1,1,2)
         # self.true_old_pt = self.true_new_pt
-        est_cents = self.manager.get_estimated_centroids()
-        old_pt = (est_cents[0],est_cents[1])
-        new_pt = (est_cents[2],est_cents[3])
-        _ARROW_COLOR = self.display_arrow_color[self.target_occlusion_case_new]
-        # draw tracks on the mask, apply mask to frame, save mask for future use
-        if 0 and kin is None:
-            # its to and from TOTAL_OCC cases, use true old and new points
-            img, mask = draw_tracks(frame, old_pt, new_pt, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(2*TRACK_SCALE))
-            img = draw_sparse_optical_flow_arrows(img,
-                                                  old_pt,
-                                                  new_pt,
-                                                  thickness=int(2*TRACK_SCALE),
-                                                  arrow_scale=int(ARROW_SCALE*TRACK_SCALE),
-                                                  color=_ARROW_COLOR)
-            if good_nxt is not None:
-                # from TOTAL_OCC
-                for nxt in good_nxt:
-                    img = cv.circle(img, tuple(map(int,nxt.flatten())), int(7*TRACK_SCALE), TURQUOISE_GREEN_BGR, int(1*TRACK_SCALE))
-        else:
-            # if self.centroid_adjustment is not None:
-            #     cent_old = self.get_centroid(good_cur) + self.centroid_adjustment
-            #     cent_new = self.get_centroid(good_nxt) + self.centroid_adjustment
+        for target in self.targets:
+            est_cents = self.manager.get_estimated_centroids(target)
+            old_pt = (est_cents[0],est_cents[1])
+            new_pt = (est_cents[2],est_cents[3])
+            _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
+            # draw tracks on the mask, apply mask to frame, save mask for future use
+            # if 0 and kin is None:
+            #     # its to and from TOTAL_OCC cases, use true old and new points
+            #     img, mask = draw_tracks(frame, old_pt, new_pt, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(2*TRACK_SCALE))
+            #     img = draw_sparse_optical_flow_arrows(img,
+            #                                           old_pt,
+            #                                           new_pt,
+            #                                           thickness=int(2*TRACK_SCALE),
+            #                                           arrow_scale=int(ARROW_SCALE*TRACK_SCALE),
+            #                                           color=_ARROW_COLOR)
+            #     if good_nxt is not None:
+            #         # from TOTAL_OCC
+            #         for nxt in good_nxt:
+            #             img = cv.circle(img, tuple(map(int,nxt.flatten())), int(7*TRACK_SCALE), TURQUOISE_GREEN_BGR, int(1*TRACK_SCALE))
             # else:
-            #     cent_old = self.get_centroid(good_cur)
-            #     cent_new = self.get_centroid(good_nxt)
+                # if self.centroid_adjustment is not None:
+                #     cent_old = self.get_centroid(good_cur) + self.centroid_adjustment
+                #     cent_new = self.get_centroid(good_nxt) + self.centroid_adjustment
+                # else:
+                #     cent_old = self.get_centroid(good_cur)
+                #     cent_new = self.get_centroid(good_nxt)
 
-            # cent_old = None if np.isnan(np.sum(cent_old)) else cent_old.astype(np.int)
-            # cent_new = None if np.isnan(np.sum(cent_new)) else cent_new.astype(np.int)
+                # cent_old = None if np.isnan(np.sum(cent_old)) else cent_old.astype(np.int)
+                # cent_new = None if np.isnan(np.sum(cent_new)) else cent_new.astype(np.int)
 
-            # img, mask = draw_tracks(frame, cent_old, cent_new, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
-            
+                # img, mask = draw_tracks(frame, cent_old, cent_new, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
+                
             # draw circle and tracks between old and new centroids
-            img, mask = draw_tracks(frame, self.centroid_old, self.centroid_new, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(2*TRACK_SCALE))
+            img, mask = draw_tracks(frame, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(2*TRACK_SCALE))
             
             if DRAW_KEYPOINT_TRACKS:
                 if not DRAW_KEYPOINTS_ONLY_WITHOUT_TRACKS:
                     # draw tracks between old and new keypoints
-                    for cur, nxt in zip(good_cur, good_nxt):
+                    for cur, nxt in zip(target.keypoints_old_good, target.keypoints_new_good):
                         img, mask = draw_tracks(frame, [cur], [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(1*TRACK_SCALE))
                 # draw circle for new keypoints
-                for nxt in good_nxt:
+                for nxt in target.keypoints_new_good:
                     img, mask = draw_tracks(frame, None, [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(1*TRACK_SCALE))
                 
 
             # add optical flow arrows
             img = draw_sparse_optical_flow_arrows(
                 img,
-                self.centroid_old, # self.get_centroid(good_cur),
-                self.centroid_new, # self.get_centroid(good_nxt),
+                target.centroid_old, # self.get_centroid(good_cur),
+                target.centroid_new, # self.get_centroid(good_nxt),
                 thickness=int(2*TRACK_SCALE),
                 arrow_scale=int(ARROW_SCALE*TRACK_SCALE),
                 color=_ARROW_COLOR)
@@ -1017,7 +1026,7 @@ class MultiTracker:
         img = cv.circle(img, SCREEN_CENTER, radius=1, color=DOT_COLOR, thickness=2)
 
         # put metrics text
-        img = self.put_metrics(img, kin)
+        # img = self.put_metrics(img, kin)
 
         return img, mask
 
