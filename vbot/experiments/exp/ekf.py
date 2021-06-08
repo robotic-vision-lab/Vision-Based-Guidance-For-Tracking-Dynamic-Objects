@@ -5,9 +5,9 @@ class ExtendedKalman:
     """Implement continuous-continuous EKF for the UAS and Vehicle system in stateful fashion
     """
 
-    def __init__(self, manager):
+    def __init__(self, manager, target=None):
         self.manager = manager
-
+        self.target = target
         self.prev_r = None
         self.prev_theta = None
         self.prev_Vr = None
@@ -141,7 +141,7 @@ class ExtendedKalman:
 
     def estimate_acc_x(self):
         # set R and x appropriate to occlusion state
-        if self.manager.tracker.is_total_occlusion():
+        if self.manager.tracker.is_total_occlusion(self.target):
             self.R_acc = 10 #100
             self.x_measured = self.prev_x
         else:
@@ -184,7 +184,7 @@ class ExtendedKalman:
 
     def estimate_acc_y(self):
         # set R and x appropriate to occlusion state
-        if self.manager.tracker.is_total_occlusion():
+        if self.manager.tracker.is_total_occlusion(self.target):
             self.R_acc_y = 10 #1000
             self.y_measured = self.prev_y
         else:
@@ -215,7 +215,7 @@ class ExtendedKalman:
         beta_est = atan2(self.vy, self.vx)
         car_speed_est = (self.vx**2 + self.vy**2)**0.5
 
-        true_kin = self.manager.get_true_kinematics()
+        true_kin = self.manager.get_true_kinematics(self.target)
         cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
         drone_pos_x, drone_pos_y = true_kin[0]
         drone_vel_x, drone_vel_y = true_kin[1]
@@ -259,7 +259,7 @@ class ExtendedKalman:
     def correct(self):
         """Implement continuous-continuous EKF correction (implicit) step.
         """
-        if self.manager.tracker.is_total_occlusion():
+        if self.manager.tracker.is_total_occlusion(self.target):
             self.R = np.diag([100, 100])
         else:
             self.R = self.R_
