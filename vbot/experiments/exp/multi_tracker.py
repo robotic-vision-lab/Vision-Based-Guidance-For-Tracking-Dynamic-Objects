@@ -423,12 +423,7 @@ class MultiTracker:
                     # compute kinematics measurements using centroid
                     target.kinematics = self.compute_kinematics_by_centroid(target.centroid_old, target.centroid_new)
 
-                    # update tracker display
-                    # self.display()
-
                     # posterity - save frames, keypoints, centroid
-                    self.frame_old_gray = self.frame_new_gray
-                    self.frame_old_color = self.frame_new_color
                     target.keypoints_old = target.keypoints_new
                     target.keypoints_old_good = target.keypoints_new_good
                     target.centroid_adjustment = None
@@ -444,16 +439,10 @@ class MultiTracker:
                     # cannot compute kinematics
                     target.kinematics = None
 
-                    # update tracker display
-                    # self.display()
-
                     # posterity
-                    self.frame_old_gray = self.frame_new_gray
-                    self.frame_old_color = self.frame_new_color
                     target.centroid_adjustment = None
                     target.centroid_old_true = self.manager.get_target_centroid(target)
                     target.occlusion_case_old = target.occlusion_case_new
-                    # return self._FAILURE
                     target.track_status = self._FAILURE
 
                 # ---------------------------------------------------------------------
@@ -486,24 +475,18 @@ class MultiTracker:
                         # paste patch at appropriate location
                         self.put_patch_at_point(self.frame_new_gray, patch, tuple(map(int,kp.flatten())))
 
-                    # update tracker display
-                    # self.display()
-
                     # add revived bad points to good points
                     target.keypoints_new_good = np.concatenate((target.keypoints_new_good, target.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
 
                     self.update_patches(target)
 
                     # posterity
-                    self.frame_old_gray = self.frame_new_gray
-                    self.frame_old_color = self.frame_new_color
                     target.keypoints_old = target.keypoints_new
                     target.keypoints_old_good = target.keypoints_new_good.reshape(-1, 1, 2)
                     target.keypoints_old_bad = target.keypoints_new_bad.reshape(-1, 1, 2)
                     target.centroid_old = target.centroid_new
                     target.centroid_old_true = self.manager.get_target_centroid(target)
                     target.occlusion_case_old = target.occlusion_case_new
-                    # return self._SUCCESS
                     target.track_status = self._SUCCESS
 
             # ################################################################################
@@ -561,15 +544,9 @@ class MultiTracker:
                     # cannot compute kinematics
                     target.kinematics = None
 
-                    # update tracker display
-                    # self.display()
-
                     # posterity
-                    self.frame_old_gray = self.frame_new_gray
-                    self.frame_old_color = self.frame_new_color
                     target.centroid_old_true = self.manager.get_target_centroid(target)
                     target.occlusion_case_old = target.occlusion_case_new
-                    # return self._FAILURE
                     target.track_status = self._FAILURE
 
                 # ---------------------------------------------------------------------
@@ -613,18 +590,12 @@ class MultiTracker:
                     
                     self.update_patches(target)
 
-                    # update tracker display
-                    # self.display()
-
                     # posterity
-                    self.frame_old_gray = self.frame_new_gray
-                    self.frame_old_color = self.frame_new_color
                     target.keypoints_old = target.keypoints_new_good
                     target.keypoints_old_good = target.keypoints_new_good
                     target.centroid_adjustment = None
                     target.centroid_old = target.centroid_new
                     target.occlusion_case_old = target.occlusion_case_new
-                    # return self._SUCCESS
                     target.track_status = self._SUCCESS
 
                 # ---------------------------------------------------------------------
@@ -675,10 +646,6 @@ class MultiTracker:
                     else:
                         target.keypoints_new_bad = None
 
-
-                    # update tracker display
-                    # self.display()
-
                     # add bad points to good 
                     if target.keypoints_new_bad is not None:
                         target.keypoints_new_good = np.concatenate((target.keypoints_new_good, target.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
@@ -692,14 +659,11 @@ class MultiTracker:
                     self.update_patches(target)
 
                     # posterity
-                    self.frame_old_gray = self.frame_new_gray
-                    self.frame_old_color = self.frame_new_color
                     target.keypoints_old = target.keypoints_new
                     target.keypoints_old_good = target.keypoints_new_good.reshape(-1, 1, 2)
                     target.centroid_old = target.centroid_new
                     target.centroid_old_true = self.manager.get_target_centroid(target)
                     target.occlusion_case_old = target.occlusion_case_new
-                    # return self._SUCCESS
                     target.track_status = self._SUCCESS
 
             # ################################################################################
@@ -756,12 +720,7 @@ class MultiTracker:
 
                     self.update_patches(target)
 
-                    # update tracker display
-                    # self.display()
-
                     # posterity
-                    self.frame_old_gray = self.frame_new_gray
-                    self.frame_old_color = self.frame_new_color
                     target.keypoints_old = target.keypoints_new
                     target.initial_keypoints = target.keypoints_old = target.keypoints_new
                     target.initial_centroid = target.centroid_old = target.centroid_new
@@ -770,7 +729,6 @@ class MultiTracker:
                     target.centroid_old_true = self.manager.get_target_centroid(target)
                     target.occlusion_case_old = target.occlusion_case_new
                     self.manager.set_target_centroid_offset(target)
-                    # return self._FAILURE
                     target.track_status = self._FAILURE
 
                 # ---------------------------------------------------------------------
@@ -785,12 +743,7 @@ class MultiTracker:
                     # cannot compute kinematics
                     target.kinematics = None
 
-                    # update tracker display
-                    # self.display()
-
                     # posterity
-                    self.frame_old_gray = self.frame_new_gray
-                    self.frame_old_color = self.frame_new_color
                     target.centroid_old_true = self.manager.get_target_centroid(target)
                     target.occlusion_case_old = target.occlusion_case_new
                     # return self._FAILURE
@@ -816,22 +769,20 @@ class MultiTracker:
 
                     self.update_patches(target)
 
-                    # update tracker display
-                    # self.display()
-
                     # posterity
-                    self.frame_old_gray = self.frame_new_gray
-                    self.frame_old_color = self.frame_new_color
                     target.keypoints_old = target.keypoints_new  = target.keypoints_new_good
                     target.keypoints_old_good = target.keypoints_new_good
                     target.centroid_old = target.centroid_new
                     target.centroid_old_true = self.manager.get_target_centroid(target)
                     target.occlusion_case_old = target.occlusion_case_new
                     self.manager.set_target_centroid_offset(target)
-                    # return self._FAILURE
                     target.track_status = self._FAILURE
 
+        
         self.display()
+
+        self.frame_old_gray = self.frame_new_gray
+        self.frame_old_color = self.frame_new_color
 
 
     def compute_flow(self, target, use_good=False):
@@ -962,40 +913,12 @@ class MultiTracker:
 
     def add_cosmetics(self, frame, mask):
         img = frame
-        # old_pt = np.array(self.true_old_pt).astype(np.int).reshape(-1,1,2)
-        # new_pt = np.array(self.true_new_pt).astype(np.int).reshape(-1,1,2)
-        # self.true_old_pt = self.true_new_pt
+        
         for target in self.targets:
             est_cents = self.manager.get_estimated_centroids(target)
             old_pt = (est_cents[0],est_cents[1])
             new_pt = (est_cents[2],est_cents[3])
             _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
-            # draw tracks on the mask, apply mask to frame, save mask for future use
-            # if 0 and kin is None:
-            #     # its to and from TOTAL_OCC cases, use true old and new points
-            #     img, mask = draw_tracks(frame, old_pt, new_pt, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(2*TRACK_SCALE))
-            #     img = draw_sparse_optical_flow_arrows(img,
-            #                                           old_pt,
-            #                                           new_pt,
-            #                                           thickness=int(2*TRACK_SCALE),
-            #                                           arrow_scale=int(ARROW_SCALE*TRACK_SCALE),
-            #                                           color=_ARROW_COLOR)
-            #     if good_nxt is not None:
-            #         # from TOTAL_OCC
-            #         for nxt in good_nxt:
-            #             img = cv.circle(img, tuple(map(int,nxt.flatten())), int(7*TRACK_SCALE), TURQUOISE_GREEN_BGR, int(1*TRACK_SCALE))
-            # else:
-                # if self.centroid_adjustment is not None:
-                #     cent_old = self.get_centroid(good_cur) + self.centroid_adjustment
-                #     cent_new = self.get_centroid(good_nxt) + self.centroid_adjustment
-                # else:
-                #     cent_old = self.get_centroid(good_cur)
-                #     cent_new = self.get_centroid(good_nxt)
-
-                # cent_old = None if np.isnan(np.sum(cent_old)) else cent_old.astype(np.int)
-                # cent_new = None if np.isnan(np.sum(cent_new)) else cent_new.astype(np.int)
-
-                # img, mask = draw_tracks(frame, cent_old, cent_new, [TRACK_COLOR], mask, track_thickness=2, radius=7, circle_thickness=2)
                 
             # draw circle and tracks between old and new centroids
             img, mask = draw_tracks(frame, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(2*TRACK_SCALE))
