@@ -400,7 +400,7 @@ class MultiTracker:
                 # (a priori) older could have been start or no_occ, or partial_occ or total_occ
                 # we should have all keypoints as good ones, and old centroid exists, if old now has no_occ
 
-                # try to compute flow at keypoints and infer next occlusion case
+                # try to target compute flow at keypoints and infer next occlusion case
                 self.compute_flow(target)
 
                 # amplify bad errors
@@ -417,13 +417,13 @@ class MultiTracker:
                     target.keypoints_old_good = target.keypoints_old
                     self.update_patches(target)
 
-                    # compute centroid
+                    # compute target centroid
                     target.centroid_new = self.get_centroid(target.keypoints_new_good)
 
-                    # compute kinematics measurements using centroid
+                    # compute target kinematics measurements using centroid
                     target.kinematics = self.compute_kinematics_by_centroid(target.centroid_old, target.centroid_new)
 
-                    # posterity - save frames, keypoints, centroid
+                    # posterity
                     target.keypoints_old = target.keypoints_new
                     target.keypoints_old_good = target.keypoints_new_good
                     target.centroid_adjustment = None
@@ -436,7 +436,7 @@ class MultiTracker:
                 elif not target.feature_found_statuses.all() or target.cross_feature_errors.min() >= self.MAX_ERR:
                     target.occlusion_case_new = TOTAL_OCC
 
-                    # cannot compute kinematics
+                    # cannot compute target kinematics
                     target.kinematics = None
 
                     # posterity
@@ -455,13 +455,13 @@ class MultiTracker:
                     target.keypoints_new_good = target.keypoints_new[(target.feature_found_statuses==1) & (target.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
                     target.keypoints_old_good = target.keypoints_old[(target.feature_found_statuses==1) & (target.cross_feature_errors < self.MAX_ERR)].reshape(-1, 1, 2)
 
-                    # compute adjusted centroid
+                    # compute adjusted target centroid
                     centroid_old_good = self.get_centroid(target.keypoints_old_good)
                     centroid_new_good = self.get_centroid(target.keypoints_new_good)
                     target.centroid_adjustment = target.centroid_old - centroid_old_good
                     target.centroid_new = centroid_new_good + target.centroid_adjustment
 
-                    # compute kinematics measurements
+                    # compute target kinematics measurements
                     target.kinematics = self.compute_kinematics_by_centroid(target.centroid_old, target.centroid_new)
 
                     # adjust missing old keypoints (no need to check recovery)
@@ -746,7 +746,6 @@ class MultiTracker:
                     # posterity
                     target.centroid_old_true = self.manager.get_target_centroid(target)
                     target.occlusion_case_old = target.occlusion_case_new
-                    # return self._FAILURE
                     target.track_status = self._FAILURE
 
                 # ---------------------------------------------------------------------
@@ -895,17 +894,16 @@ class MultiTracker:
             # show resultant img
             cv.imshow(self.win_name, self.frame_color_edited)
         
-        if SHOW_EXTRA:
-            patches = self.initial_patches_gray if self.patches_gray is None else self.patches_gray
-            p = images_assemble(patches, grid_shape=(1,len(patches)))
-            of = self.frame_old_gray.copy()
-            of[0:p.shape[0],0:p.shape[1]] = convert_to_grayscale(p)
-            cv.imshow("cur_frame", of)
-            self.show_me_something()
-            assembled_img = images_assemble([self.frame_old_gray.copy(), self.nf6.copy(), self.frame_color_edited.copy()], (1,3))
-        else:
-            # dump frames for analysis
-            pass
+        # if SHOW_EXTRA:
+        #     patches = self.initial_patches_gray if self.patches_gray is None else self.patches_gray
+        #     p = images_assemble(patches, grid_shape=(1,len(patches)))
+        #     of = self.frame_old_gray.copy()
+        #     of[0:p.shape[0],0:p.shape[1]] = convert_to_grayscale(p)
+        #     cv.imshow("cur_frame", of)
+        #     self.show_me_something()
+        #     assembled_img = images_assemble([self.frame_old_gray.copy(), self.nf6.copy(), self.frame_color_edited.copy()], (1,3))
+        # else:
+        #     # dump frames for analysis
         #     assembled_img = images_assemble([self.frame_old_gray.copy(), self.frame_new_gray.copy(), self.frame_color_edited.copy()], (1,3))
         # self.img_dumper.dump(assembled_img)
 
@@ -915,9 +913,9 @@ class MultiTracker:
         img = frame
         
         for target in self.targets:
-            est_cents = self.manager.get_estimated_centroids(target)
-            old_pt = (est_cents[0],est_cents[1])
-            new_pt = (est_cents[2],est_cents[3])
+            # est_cents = self.manager.get_estimated_centroids(target)
+            # old_pt = (est_cents[0],est_cents[1])
+            # new_pt = (est_cents[2],est_cents[3])
             _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
                 
             # draw circle and tracks between old and new centroids
@@ -934,13 +932,12 @@ class MultiTracker:
                 
 
             # add optical flow arrows
-            img = draw_sparse_optical_flow_arrows(
-                img,
-                target.centroid_old, # self.get_centroid(good_cur),
-                target.centroid_new, # self.get_centroid(good_nxt),
-                thickness=int(2*TRACK_SCALE),
-                arrow_scale=int(ARROW_SCALE*TRACK_SCALE),
-                color=_ARROW_COLOR)
+            img = draw_sparse_optical_flow_arrows(img,
+                                                  target.centroid_old, # self.get_centroid(good_cur),
+                                                  target.centroid_new, # self.get_centroid(good_nxt),
+                                                  thickness=int(2*TRACK_SCALE),
+                                                  arrow_scale=int(ARROW_SCALE*TRACK_SCALE),
+                                                  color=_ARROW_COLOR)
 
         # add axes
         img = self.add_axes_at_point(img, SCREEN_CENTER)
