@@ -17,7 +17,7 @@ pip install -r requirements.txt
 ```
 
 ### Usage
-From the source folder, navigate into the experiments folder and run
+From the source folder, navigate into the experiments folder
 ```bash
 cd .\vbot\experiments
 ```
