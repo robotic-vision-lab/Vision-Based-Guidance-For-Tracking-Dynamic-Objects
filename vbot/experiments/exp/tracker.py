@@ -772,6 +772,7 @@ class Tracker:
             if (len(good_distances) == MAX_NUM_CORNERS and 
                     (self.template_scores > self.TEMP_MATCH_THRESH).sum()==MAX_NUM_CORNERS):
                 self.target_occlusion_case_new = self._NO_OCC
+
                 good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
                 self.keypoints_new = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
                 self.keypoints_new_good = self.keypoints_new
@@ -779,6 +780,7 @@ class Tracker:
                 self.rel_keypoints = self.keypoints_new - self.centroid_new
 
                 self.update_patches()
+                
                 # update tracker display
                 self.display()
 
