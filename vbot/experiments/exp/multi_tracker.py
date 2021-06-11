@@ -647,16 +647,16 @@ class MultiTracker:
                         target.keypoints_new_bad = None
 
                     # add bad points to good 
-                    if target.keypoints_new_bad is not None:
-                        target.keypoints_new_good = np.concatenate((target.keypoints_new_good, target.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
+                    # if target.keypoints_new_bad is not None:
+                    #     target.keypoints_new_good = np.concatenate((target.keypoints_new_good, target.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
 
-                    if (len(good_distances) > target.keypoints_new_good.shape[0] and
-                            (target.template_scores > self.TEMP_MATCH_THRESH).sum() > target.keypoints_new_good.shape[0]):
-                        self.keypoints_new_good = self.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
-                        target.keypoints_new = target.keypoints_new_good
-                        target.centroid_new = self.manager.get_target_centroid(target)
+                    # if (len(good_distances) > target.keypoints_new_good.shape[0] and
+                    #         (target.template_scores > self.TEMP_MATCH_THRESH).sum() > target.keypoints_new_good.shape[0]):
+                    #     self.keypoints_new_good = self.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
+                    #     target.keypoints_new = target.keypoints_new_good
+                    #     target.centroid_new = self.manager.get_target_centroid(target)
 
-                    self.update_patches(target)
+                    # self.update_patches(target)
 
                     # posterity
                     # target.keypoints_old = target.keypoints_new
@@ -779,7 +779,7 @@ class MultiTracker:
 
         
         self.display()
-        
+
         self.frame_old_gray = self.frame_new_gray
         self.frame_old_color = self.frame_new_color
 
@@ -842,6 +842,17 @@ class MultiTracker:
                 # ---------------------------------------------------------------------
                 # |PARTIAL_OCC, PARTIAL_OCC>
                 else:
+                    if target.keypoints_new_bad is not None:
+                        target.keypoints_new_good = np.concatenate((target.keypoints_new_good, target.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
+
+                    if (len(good_distances) > target.keypoints_new_good.shape[0] and
+                            (target.template_scores > self.TEMP_MATCH_THRESH).sum() > target.keypoints_new_good.shape[0]):
+                        self.keypoints_new_good = self.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
+                        target.keypoints_new = target.keypoints_new_good
+                        target.centroid_new = self.manager.get_target_centroid(target)
+
+                    self.update_patches(target)
+
                     target.keypoints_old = target.keypoints_new
                     target.keypoints_old_good = target.keypoints_new_good.reshape(-1, 1, 2)
                     target.centroid_old = target.centroid_new
@@ -1022,17 +1033,20 @@ class MultiTracker:
             # new_pt = (est_cents[2],est_cents[3])
             _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
                 
-            # draw circle and tracks between old and new centroids
-            img, mask = draw_tracks(frame, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(2*TRACK_SCALE))
-            
+            # centroid track - circle for centroid_new and line between centroid_old and centroid_new
+            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(2*TRACK_SCALE))
+            cv.imshow('cosmetics', img);cv.waitKey(1)
+
+            # keypoint tracks - circle for keypoint_new and line between keypoint_old and keypoint_new
             if DRAW_KEYPOINT_TRACKS:
                 if not DRAW_KEYPOINTS_ONLY_WITHOUT_TRACKS:
                     # draw tracks between old and new keypoints
                     for cur, nxt in zip(target.keypoints_old_good, target.keypoints_new_good):
-                        img, mask = draw_tracks(frame, [cur], [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(1*TRACK_SCALE))
+                        img, mask = draw_tracks(img, [cur], [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(1*TRACK_SCALE))
                 # draw circle for new keypoints
                 for nxt in target.keypoints_new_good:
-                    img, mask = draw_tracks(frame, None, [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(1*TRACK_SCALE))
+                    img, mask = draw_tracks(img, None, [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(1*TRACK_SCALE))
+                    cv.imshow('cosmetics', img);cv.waitKey(1)
                 
 
             # add optical flow arrows
@@ -1042,6 +1056,7 @@ class MultiTracker:
                                                   thickness=int(2*TRACK_SCALE),
                                                   arrow_scale=int(ARROW_SCALE*TRACK_SCALE),
                                                   color=_ARROW_COLOR)
+            cv.imshow('cosmetics', img);cv.waitKey(1)
 
         # add axes
         img = self.add_axes_at_point(img, SCREEN_CENTER)
