@@ -26,7 +26,8 @@ class Target:
         self.keypoints_new_bad = None
         self.rel_keypoints = None
         self.feature_found_statuses = np.array([[1]]*4)
-        self.cross_feature_errors = np.array([[0]]*4)
+        self.cross_feature_errors_old = np.array([[0]]*4)
+        self.cross_feature_errors_new = np.array([[0]]*4)
         self.occlusion_case_old = None
         self.occlusion_case_new = NO_OCC
         self.centroid_old_true = None
