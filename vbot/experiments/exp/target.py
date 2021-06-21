@@ -2,6 +2,7 @@ from math import ceil
 import numpy as np
 
 from .ekf import ExtendedKalman
+from .optical_flow_config import MAX_NUM_CORNERS
 from .settings import (NO_OCC,
                       PARTIAL_OCC,
                       TOTAL_OCC)
@@ -25,9 +26,9 @@ class Target:
         self.keypoints_old_bad = None
         self.keypoints_new_bad = None
         self.rel_keypoints = None
-        self.feature_found_statuses = np.array([[1]]*4)
-        self.cross_feature_errors_old = np.array([[0]]*4)
-        self.cross_feature_errors_new = np.array([[0]]*4)
+        self.feature_found_statuses = np.array([[1]]*MAX_NUM_CORNERS)
+        self.cross_feature_errors_old = np.array([[0]]*MAX_NUM_CORNERS)
+        self.cross_feature_errors_new = np.array([[0]]*MAX_NUM_CORNERS)
         self.occlusion_case_old = None
         self.occlusion_case_new = NO_OCC
         self.centroid_old_true = None
