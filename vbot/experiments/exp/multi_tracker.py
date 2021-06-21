@@ -936,26 +936,26 @@ class MultiTracker:
                                                 LK_PARAMS)
 
         # impose rigidity constraint
-        plt.clf()
-        flow = flow_output[1] - flow_output[0]
-        x = np.array([p[0][0] for p in flow]).flatten()
-        y = np.array([p[0][1] for p in flow]).flatten()
-        w = [target is t for t in self.targets]
-        if w[0]:
-            n = 1
-        elif w[1]:
-            n = 2
-        else:
-            n = 3
-        plt.plot(0,0, '+')
-        plt.plot(x[0], y[0], 'k*', alpha=0.7)
-        plt.plot(x[1], y[1], 'r*', alpha=0.7)
-        plt.plot(x[2], y[2], 'g*', alpha=0.7)
-        plt.plot(x[3], y[3], 'b*', alpha=0.7)
-        plt.title(f'target {n}')
-        plt.axis('equal')
-        plt.grid()
-        plt.show()
+        # plt.clf()
+        # flow = flow_output[1] - flow_output[0]
+        # x = np.array([p[0][0] for p in flow]).flatten()
+        # y = np.array([p[0][1] for p in flow]).flatten()
+        # w = [target is t for t in self.targets]
+        # if w[0]:
+        #     n = 1
+        # elif w[1]:
+        #     n = 2s
+        # else:
+        #     n = 3
+        # plt.plot(0,0, '+')
+        # plt.plot(x[0], y[0], 'k*', alpha=0.7)
+        # plt.plot(x[1], y[1], 'r*', alpha=0.7)
+        # plt.plot(x[2], y[2], 'g*', alpha=0.7)
+        # plt.plot(x[3], y[3], 'b*', alpha=0.7)
+        # plt.title(f'target {n}')
+        # plt.axis('equal')
+        # plt.grid()
+        # plt.show()
         # for i, (new, old) in enumerate(zip(flow_output[1], flow_output[0])):
         #     rel = new - old
         #     distances = [rel-p for p in flow]
