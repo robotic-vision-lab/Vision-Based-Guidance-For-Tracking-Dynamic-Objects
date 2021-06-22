@@ -1,5 +1,5 @@
 from datetime import timedelta
-from math import isnan
+from math import isnan, ceil
 
 import cv2 as cv
 import numpy as np
@@ -414,7 +414,8 @@ class MultiTracker:
 
                 # ---------------------------------------------------------------------
                 # |NO_OCC, NO_OCC>
-                if (target.feature_found_statuses.all() and target.feature_found_statuses.shape[0] == MAX_NUM_CORNERS and 
+                if (target.feature_found_statuses.all() and 
+                        target.feature_found_statuses.shape[0] == MAX_NUM_CORNERS and 
                         target.cross_feature_errors_new.max() < self.MAX_ERR):
                     target.occlusion_case_new = NO_OCC
 
@@ -439,7 +440,8 @@ class MultiTracker:
 
                 # ---------------------------------------------------------------------
                 # |NO_OCC, TOTAL_OCC>
-                elif not target.feature_found_statuses.all() or target.cross_feature_errors_new.min() >= self.MAX_ERR:
+                elif (not target.feature_found_statuses.all() or 
+                        target.cross_feature_errors_new.min() >= self.MAX_ERR):
                     target.occlusion_case_new = TOTAL_OCC
 
                     # cannot compute target kinematics
@@ -1071,9 +1073,14 @@ class MultiTracker:
         img = frame
         
         for target in self.targets:
-            # est_cents = self.manager.get_estimated_centroids(target)
-            # old_pt = (est_cents[0],est_cents[1])
-            # new_pt = (est_cents[2],est_cents[3])
+            # draw bounding box say 10x10 m^2 (5x5 to SW and NE)
+            x1,y1 = tuple(map(int,target.centroid_new.flatten()))
+            print((x1,y1))
+            size = ceil(5/self.manager.simulator.pxm_fac)
+            img = cv.rectangle(img, (x1-size,y1-size), (x1+size, y1+size), SILVER_PINK_BGR, 1, cv.LINE_AA)
+            img = cv.line(img, (x1-size,y1-size), (x1+size, y1+size),TURQUOISE_GREEN_BGR, 3, cv.LINE_AA)
+
+
             _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
                 
             # centroid track - circle for centroid_new and line between centroid_old and centroid_new
@@ -1114,8 +1121,8 @@ class MultiTracker:
 
     def add_axes_at_point(self, img, point, size=25, thickness=2):
         x, y = point
-        img = cv.arrowedLine(img, (x+1, y), (x+1+size, y), (51, 51, 255), thickness)
-        img = cv.arrowedLine(img, (x, y-1 ), (x, y-1-size), (51, 255, 51), thickness)
+        img = cv.arrowedLine(img, (x+1, y), (x+1+size, y), (51, 51, 255), thickness, cv.LINE_AA)
+        img = cv.arrowedLine(img, (x, y-1 ), (x, y-1-size), (51, 255, 51), thickness, cv.LINE_AA)
         return img
 
     def put_metrics(self, img, k):
