@@ -187,7 +187,7 @@ def draw_sparse_optical_flow_arrows(img,
                              pt2=to_point,
                              color=color,
                              thickness=thickness,
-                             line_type=None,
+                             line_type=cv.LINE_AA,
                              shift=None,
                              tipLength=0.2)
     return img
@@ -231,7 +231,7 @@ def draw_tracks(img, old_pts,
                 color = colors[0]
             else:
                 color = (102, 255, 102) if colors is None else colors[i].tolist()
-            img = cv.circle(img, (a, b), radius, color, circle_thickness)
+            img = cv.circle(img, (a, b), radius, color, circle_thickness, cv.LINE_AA)
 
     if new_pts is not None and old_pts is not None:
         for i, (new, old) in enumerate(zip(new_pts, old_pts)):
@@ -241,11 +241,12 @@ def draw_tracks(img, old_pts,
                 color = colors[0]
             else:
                 color = (102, 255, 102) if colors is None else colors[i].tolist()
-            mask = cv.line(mask, (a, b), (c, d), color, track_thickness)
+            mask = cv.line(mask, (a, b), (c, d), color, track_thickness, cv.LINE_AA)
 
     # add mask to img
-    img[mask > 0] = 0
-    img = cv.add(img, mask)
+    # img[mask > 0] = 0
+    # img = cv.add(img, mask)
+    img[mask==color] = mask[mask==color]
 
     return img, mask
 
