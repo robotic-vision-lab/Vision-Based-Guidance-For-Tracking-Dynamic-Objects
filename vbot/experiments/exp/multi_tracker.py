@@ -1075,16 +1075,13 @@ class MultiTracker:
         for target in self.targets:
             # draw bounding box say 10x10 m^2 (5x5 to SW and NE)
             x1,y1 = tuple(map(int,target.centroid_new.flatten()))
-            print((x1,y1))
-            size = ceil(5/self.manager.simulator.pxm_fac)
-            img = cv.rectangle(img, (x1-size,y1-size), (x1+size, y1+size), SILVER_PINK_BGR, 1, cv.LINE_AA)
-            img = cv.line(img, (x1-size,y1-size), (x1+size, y1+size),TURQUOISE_GREEN_BGR, 3, cv.LINE_AA)
-
+            size = ceil(6/self.manager.simulator.pxm_fac)
+            img = cv.rectangle(img, (x1-size,y1-size), (x1+size, y1+size), MIDDLE_YELLOW_BGR, 1, cv.LINE_AA)
 
             _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
                 
             # centroid track - circle for centroid_new and line between centroid_old and centroid_new
-            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(2*TRACK_SCALE))
+            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(1.5*TRACK_SCALE))
             cv.imshow('cosmetics', img);cv.waitKey(1)
 
             # keypoint tracks - circle for keypoint_new and line between keypoint_old and keypoint_new
