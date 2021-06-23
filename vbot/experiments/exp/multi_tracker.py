@@ -974,14 +974,16 @@ class MultiTracker:
         # - centroids are computed using get_centroid, therefore, centroid shape (1,2)
         # - centroids represent the target location in old and new frames
 
+        # get delta t
+        dt = self.manager.get_sim_dt()
+
         # form pygame.Vector2 objects representing measured car_position and car_velocity 
         # in corner image coord frame in spatial units of *pixels* 
         measured_car_pos = pygame.Vector2(list(new_centroid.flatten()))
-        dt = self.manager.get_sim_dt()
         measured_car_vel = pygame.Vector2(list( ((new_centroid-old_centroid)/dt).flatten() ))
 
         # collect fov and true drone position and velocity from simulator
-        fov = self.manager.get_drone_cam_field_of_view()
+        # fov = self.manager.get_drone_cam_field_of_view()
         true_drone_pos = self.manager.get_true_drone_position()
         true_drone_vel = self.manager.get_true_drone_velocity()
 
@@ -992,52 +994,52 @@ class MultiTracker:
 
         #TODO consider handling the filtering part in a separate function
         # filter tracked measurements
-        if USE_TRACKER_FILTER:
-            if USE_MA:
-                if not self.manager.MAF.ready:
-                    self.manager.MAF.init_filter(measured_car_pos_cam_frame_meters, measured_car_vel_cam_frame_meters)    
-                else:
-                    self.manager.MAF.add_pos(measured_car_pos_cam_frame_meters)
-                    maf_est_car_pos = self.manager.MAF.get_pos()
-                    if dt == 0:
-                        maf_est_car_vel = self.manager.MAF.get_vel()
-                    else:
-                        maf_est_car_vel = (self.manager.MAF.new_pos - self.manager.MAF.old_pos) / dt
+        # if USE_TRACKER_FILTER:
+        #     if USE_MA:
+        #         if not self.manager.MAF.ready:
+        #             self.manager.MAF.init_filter(measured_car_pos_cam_frame_meters, measured_car_vel_cam_frame_meters)    
+        #         else:
+        #             self.manager.MAF.add_pos(measured_car_pos_cam_frame_meters)
+        #             maf_est_car_pos = self.manager.MAF.get_pos()
+        #             if dt == 0:
+        #                 maf_est_car_vel = self.manager.MAF.get_vel()
+        #             else:
+        #                 maf_est_car_vel = (self.manager.MAF.new_pos - self.manager.MAF.old_pos) / dt
 
-                    self.manager.MAF.add_vel(measured_car_vel_cam_frame_meters)
-            else:
-                maf_est_car_pos = NAN
-                maf_est_car_vel = NAN
+        #             self.manager.MAF.add_vel(measured_car_vel_cam_frame_meters)
+        #     else:
+        #         maf_est_car_pos = NAN
+        #         maf_est_car_vel = NAN
 
 
-            if USE_KALMAN:
-                if not self.manager.KF.ready:
-                    self.manager.KF.init_filter(measured_car_pos_cam_frame_meters, measured_car_vel_cam_frame_meters)
-                else:
-                    self.manager.KF.add(measured_car_pos_cam_frame_meters, measured_car_vel_cam_frame_meters)
-                    kf_est_car_pos = self.manager.KF.get_pos()
-                    kf_est_car_vel = self.manager.KF.get_vel()
-            else:
-                kf_est_car_pos = NAN
-                kf_est_car_vel = NAN
-        else:
-            maf_est_car_pos = NAN
-            maf_est_car_vel = NAN
-            kf_est_car_pos = NAN
-            kf_est_car_vel = NAN
+        #     if USE_KALMAN:
+        #         if not self.manager.KF.ready:
+        #             self.manager.KF.init_filter(measured_car_pos_cam_frame_meters, measured_car_vel_cam_frame_meters)
+        #         else:
+        #             self.manager.KF.add(measured_car_pos_cam_frame_meters, measured_car_vel_cam_frame_meters)
+        #             kf_est_car_pos = self.manager.KF.get_pos()
+        #             kf_est_car_vel = self.manager.KF.get_vel()
+        #     else:
+        #         kf_est_car_pos = NAN
+        #         kf_est_car_vel = NAN
+        # else:
+        #     maf_est_car_pos = NAN
+        #     maf_est_car_vel = NAN
+        #     kf_est_car_pos = NAN
+        #     kf_est_car_vel = NAN
 
 
         # return kinematics in camera frame in spatial units of meters
-        ret_maf_est_car_vel = NAN if isnan(maf_est_car_vel) else maf_est_car_vel + true_drone_vel
-        ret_kf_est_car_vel = NAN if isnan(kf_est_car_vel) else kf_est_car_vel + true_drone_vel
+        # ret_maf_est_car_vel = NAN if isnan(maf_est_car_vel) else maf_est_car_vel + true_drone_vel
+        # ret_kf_est_car_vel = NAN if isnan(kf_est_car_vel) else kf_est_car_vel + true_drone_vel
 
         return (
             true_drone_pos,
             true_drone_vel,
-            maf_est_car_pos,
-            ret_maf_est_car_vel,
-            kf_est_car_pos,
-            ret_kf_est_car_vel,
+            # maf_est_car_pos,
+            # ret_maf_est_car_vel,
+            # kf_est_car_pos,
+            # ret_kf_est_car_vel,
             measured_car_pos_cam_frame_meters,
             measured_car_vel_cam_frame_meters
         )
@@ -1076,12 +1078,12 @@ class MultiTracker:
             # draw bounding box say 10x10 m^2 (5x5 to SW and NE)
             xc,yc = tuple(map(int,target.centroid_new.flatten()))
             size = ceil(6/self.manager.simulator.pxm_fac)
-            img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), MIDDLE_YELLOW_BGR, 1, cv.LINE_AA)
+            img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), MIDDLE_YELLOW_BGR, 1, cv.LINE_4)
 
             _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
                 
             # centroid track - circle for centroid_new and line between centroid_old and centroid_new
-            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(2*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(1.5*TRACK_SCALE))
+            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(1.5*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
             cv.imshow('cosmetics', img);cv.waitKey(1)
 
             # keypoint tracks - circle for keypoint_new and line between keypoint_old and keypoint_new
@@ -1089,10 +1091,10 @@ class MultiTracker:
                 if not DRAW_KEYPOINTS_ONLY_WITHOUT_TRACKS:
                     # draw tracks between old and new keypoints
                     for cur, nxt in zip(target.keypoints_old_good, target.keypoints_new_good):
-                        img, mask = draw_tracks(img, [cur], [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(1*TRACK_SCALE))
+                        img, mask = draw_tracks(img, [cur], [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(0.75*TRACK_SCALE))
                 # draw circle for new keypoints
                 for nxt in target.keypoints_new_good:
-                    img, mask = draw_tracks(img, None, [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(7*TRACK_SCALE), circle_thickness=int(1*TRACK_SCALE))
+                    img, mask = draw_tracks(img, None, [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(0.75*TRACK_SCALE))
                     cv.imshow('cosmetics', img);cv.waitKey(1)
                 
 
@@ -1100,7 +1102,7 @@ class MultiTracker:
             img = draw_sparse_optical_flow_arrows(img,
                                                   target.centroid_old, # self.get_centroid(good_cur),
                                                   target.centroid_new, # self.get_centroid(good_nxt),
-                                                  thickness=int(2*TRACK_SCALE),
+                                                  thickness=int(1.5*TRACK_SCALE),
                                                   arrow_scale=int(ARROW_SCALE*TRACK_SCALE),
                                                   color=_ARROW_COLOR)
             cv.imshow('cosmetics', img);cv.waitKey(1)
