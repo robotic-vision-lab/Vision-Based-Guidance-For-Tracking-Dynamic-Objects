@@ -364,10 +364,6 @@ class ExperimentManager:
             target.kinematics[1],    # true drone velocity
             target.kinematics[2],    # measured car position in camera frame (meters)
             target.kinematics[3],    # measured car velocity in camera frame (meters)
-            # target.kinematics[2],    # kalman estimated car position
-            # target.kinematics[3],    # kalman estimated car velocity
-            # target.kinematics[4],    # moving averaged car position
-            # target.kinematics[5],    # moving averaged car velocity
         ) if target.kinematics is not None else self.get_true_kinematics(target)
 
     def get_cam_origin(self):
