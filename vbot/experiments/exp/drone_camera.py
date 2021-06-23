@@ -80,27 +80,6 @@ class DroneCamera(pygame.sprite.Sprite):
         # sprite_obj.velocity -= self.velocity    # consider investigating for correctness
         sprite_obj.update_rect()
 
-    # def change_acceleration(self, command_vec):
-    #     """Changes the drone acceleration appropriately in reponse to given command vector.
-
-    #     Args:
-    #         command_vec (tuple(float, float)): Command vector tuple. Indicates acceleration change to be made.
-    #     """
-    #     # update acceleration
-    #     COMMAND_SENSITIVITY = 0.1
-    #     command_vec *= COMMAND_SENSITIVITY
-    #     self.acceleration += command_vec
-
-    #     # counter floating point arithmetic noise
-    #     if abs(self.acceleration[0]) < COMMAND_SENSITIVITY:
-    #         self.acceleration[0] = 0.0
-    #     if abs(self.acceleration[1]) < COMMAND_SENSITIVITY:
-    #         self.acceleration[1] = 0.0
-
-    #     # make sure acceleration magnitude stays within a set limit
-    #     if abs(self.acceleration.length()) > self.acc_limit:
-    #         self.acceleration -= command_vec
-
     def convert_px_to_m(self, p):
         """Convert pixels to meters
 
