@@ -392,7 +392,6 @@ class MultiTracker:
         # cv.imshow('cur_frame', self.frame_old_gray); cv.waitKey(1)
         self._can_begin_control_flag = True
 
-
         for target in self.targets:
             # ################################################################################
             # CASE |NO_OCC, _>
@@ -400,7 +399,7 @@ class MultiTracker:
                 # (a priori) older could have been start or no_occ, or partial_occ or total_occ
                 # we should have all keypoints as good ones, and old centroid exists, if old now has no_occ
 
-                # try to target compute flow at keypoints and infer next occlusion case
+                # try to compute flow for target at keypoints and infer next occlusion case
                 self.compute_flow(target)
 
                 # amplify bad errors
@@ -409,7 +408,10 @@ class MultiTracker:
                 print('NO OCC')
                 print([target is i for i in self.targets])
                 print(target.cross_feature_errors_new - target.cross_feature_errors_old)
-                target.cross_feature_errors_new[(target.cross_feature_errors_new > 0.75 * self.MAX_ERR) | (target.cross_feature_errors_new > 100*target.cross_feature_errors_new.min())] *= 100
+                target.cross_feature_errors_new[
+                    (target.cross_feature_errors_new > 0.75 * self.MAX_ERR) | 
+                    (target.cross_feature_errors_new > 100*target.cross_feature_errors_new.min())
+                    ] *= 100
 
                 # ---------------------------------------------------------------------
                 # |NO_OCC, NO_OCC>
@@ -429,7 +431,6 @@ class MultiTracker:
                     # compute target kinematics measurements using centroid
                     target.kinematics = self.compute_kinematics_by_centroid(target.centroid_old, target.centroid_new)
 
-
                 # ---------------------------------------------------------------------
                 # |NO_OCC, TOTAL_OCC>
                 elif (not target.feature_found_statuses.all() or 
@@ -439,7 +440,6 @@ class MultiTracker:
                     # cannot compute target kinematics
                     target.kinematics = None
 
-
                 # ---------------------------------------------------------------------
                 # |NO_OCC, PARTIAL_OCC>
                 else:
@@ -447,8 +447,14 @@ class MultiTracker:
 
                     # in this case of from no_occ to partial_occ, no more keypoints are needed to be found
                     # good keypoints need to be computed for kinematics computation as well as posterity
-                    target.keypoints_new_good = target.keypoints_new[(target.feature_found_statuses==1) & (target.cross_feature_errors_new < self.MAX_ERR)].reshape(-1, 1, 2)
-                    target.keypoints_old_good = target.keypoints_old[(target.feature_found_statuses==1) & (target.cross_feature_errors_new < self.MAX_ERR)].reshape(-1, 1, 2)
+                    target.keypoints_new_good = target.keypoints_new[
+                        (target.feature_found_statuses==1) & 
+                        (target.cross_feature_errors_new < self.MAX_ERR)
+                        ].reshape(-1, 1, 2)
+                    target.keypoints_old_good = target.keypoints_old[
+                        (target.feature_found_statuses==1) & 
+                        (target.cross_feature_errors_new < self.MAX_ERR)
+                        ].reshape(-1, 1, 2)
 
                     # compute adjusted target centroid
                     centroid_old_good = self.get_centroid(target.keypoints_old_good)
@@ -460,7 +466,10 @@ class MultiTracker:
                     target.kinematics = self.compute_kinematics_by_centroid(target.centroid_old, target.centroid_new)
 
                     # adjust missing old keypoints (no need to check recovery)
-                    keypoints_missing = target.keypoints_old[(target.feature_found_statuses==0) | (target.cross_feature_errors_new >= self.MAX_ERR)]
+                    keypoints_missing = target.keypoints_old[
+                        (target.feature_found_statuses==0) | 
+                        (target.cross_feature_errors_new >= self.MAX_ERR)
+                        ]
                     target.keypoints_new_bad = keypoints_missing - target.centroid_old + target.centroid_new
 
                     # put patches over bad points in new frame
@@ -471,7 +480,10 @@ class MultiTracker:
                         self.put_patch_at_point(self.frame_new_gray, patch, tuple(map(int,kp.flatten())))
 
                     # add revived bad points to good points
-                    target.keypoints_new_good = np.concatenate((target.keypoints_new_good, target.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
+                    target.keypoints_new_good = np.concatenate(
+                        (target.keypoints_new_good, target.keypoints_new_bad.reshape(-1, 1, 2)), 
+                        axis=0
+                        )
 
                     self.update_patches(target)
 
@@ -491,12 +503,21 @@ class MultiTracker:
                     print('PARITAL OCC')
                     print([target is i for i in self.targets])
                     print(target.cross_feature_errors_new - target.cross_feature_errors_old)
-                    target.cross_feature_errors_new[(target.cross_feature_errors_new > 0.75 * self.MAX_ERR) | (target.cross_feature_errors_new > 100*target.cross_feature_errors_new.min())] *= 100
+                    target.cross_feature_errors_new[
+                        (target.cross_feature_errors_new > 0.75 * self.MAX_ERR) | 
+                        (target.cross_feature_errors_new > 100*target.cross_feature_errors_new.min())
+                        ] *= 100
                 
                 # update good old and new
                 # good keypoints are used for kinematics computation as well as posterity
-                target.keypoints_new_good = target.keypoints_new[(target.feature_found_statuses==1) & (target.cross_feature_errors_new < self.MAX_ERR)].reshape(-1, 1, 2)
-                target.keypoints_old_good = target.keypoints_old[(target.feature_found_statuses==1) & (target.cross_feature_errors_new < self.MAX_ERR)].reshape(-1, 1, 2)
+                target.keypoints_new_good = target.keypoints_new[
+                    (target.feature_found_statuses==1) & 
+                    (target.cross_feature_errors_new < self.MAX_ERR)
+                    ].reshape(-1, 1, 2)
+                target.keypoints_old_good = target.keypoints_old[
+                    (target.feature_found_statuses==1) & 
+                    (target.cross_feature_errors_new < self.MAX_ERR)
+                    ].reshape(-1, 1, 2)
 
                 # these good keypoints may not be sufficient for precise partial occlusion detection
                 # for precision, we will need to check if any other keypoints can be recovered or reconstructed
@@ -534,7 +555,6 @@ class MultiTracker:
 
                     # cannot compute kinematics
                     target.kinematics = None
-
 
                 # ---------------------------------------------------------------------
                 # |PARTIAL_OCC, NO_OCC>
@@ -576,7 +596,6 @@ class MultiTracker:
                         self.keypoints_new_good = self.keypoints_new = self.centroid_new + self.rel_keypoints         
                     
                     self.update_patches(target)
-
 
                 # ---------------------------------------------------------------------
                 # |PARTIAL_OCC, PARTIAL_OCC>
@@ -668,7 +687,6 @@ class MultiTracker:
                     good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
                     # if (distances < self.DES_MATCH_DISTANCE_THRESH).sum()
 
-
                 # ---------------------------------------------------------------------
                 # |TOTAL_OCC, NO_OCC>
                 if (len(good_distances) == MAX_NUM_CORNERS and 
@@ -683,7 +701,6 @@ class MultiTracker:
 
                     self.update_patches(target)
 
-
                 # ---------------------------------------------------------------------
                 # |TOTAL_OCC, TOTAL_OCC>
                 elif (len(good_distances) == 0 and 
@@ -695,7 +712,6 @@ class MultiTracker:
 
                     # cannot compute kinematics
                     target.kinematics = None
-
 
                 # ---------------------------------------------------------------------
                 # |TOTAL_OCC, PARTIAL_OCC>
@@ -966,11 +982,11 @@ class MultiTracker:
 
             _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
                 
-            # centroid track - circle for centroid_new and line between centroid_old and centroid_new
+            # draw centroid track - circle for centroid_new and line between centroid_old and centroid_new
             img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(1.5*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
             cv.imshow('cosmetics', img);cv.waitKey(1)
 
-            # keypoint tracks - circle for keypoint_new and line between keypoint_old and keypoint_new
+            # draw keypoint tracks - circle for keypoint_new and line between keypoint_old and keypoint_new
             if DRAW_KEYPOINT_TRACKS:
                 if not DRAW_KEYPOINTS_ONLY_WITHOUT_TRACKS:
                     # draw tracks between old and new keypoints
