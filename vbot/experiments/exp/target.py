@@ -46,6 +46,12 @@ class Target:
         self.template_points = None
         self.template_scores = None
         self.kinematics = None
+        self.r = None
+        self.theta = None
+        self.Vr = None
+        self.Vtheta = None
+        self.deltaB_est = None
+        self.acc_est = None
         self.centroid_offset = [0,0]
         self.bb_top_left_offset = [0,0]
 
