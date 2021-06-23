@@ -359,8 +359,7 @@ class MultiTracker:
         # save new frame, compute grayscale
         self.frame_new_color = new_frame
         self.frame_new_gray = convert_to_grayscale(self.frame_new_color)
-        # self.frame_new_gray = cv.GaussianBlur(self.frame_new_gray, (3,3), 0)
-        # self.true_new_pt = self._get_target_image_location()
+
         # cv.imshow('nxt_frame', self.frame_new_gray); cv.waitKey(1)
         if self.is_first_time():
             for target in self.targets:
@@ -430,13 +429,6 @@ class MultiTracker:
                     # compute target kinematics measurements using centroid
                     target.kinematics = self.compute_kinematics_by_centroid(target.centroid_old, target.centroid_new)
 
-                    # posterity
-                    # target.keypoints_old = target.keypoints_new
-                    # target.keypoints_old_good = target.keypoints_new_good
-                    # target.centroid_adjustment = None
-                    # target.centroid_old = target.centroid_new
-                    # target.occlusion_case_old = target.occlusion_case_new
-                    # target.track_status = self._SUCCESS
 
                 # ---------------------------------------------------------------------
                 # |NO_OCC, TOTAL_OCC>
@@ -447,11 +439,6 @@ class MultiTracker:
                     # cannot compute target kinematics
                     target.kinematics = None
 
-                    # posterity
-                    # target.centroid_adjustment = None
-                    # target.centroid_old_true = self.manager.get_target_centroid(target)
-                    # target.occlusion_case_old = target.occlusion_case_new
-                    # target.track_status = self._FAILURE
 
                 # ---------------------------------------------------------------------
                 # |NO_OCC, PARTIAL_OCC>
@@ -488,14 +475,6 @@ class MultiTracker:
 
                     self.update_patches(target)
 
-                    # posterity
-                    # target.keypoints_old = target.keypoints_new
-                    # target.keypoints_old_good = target.keypoints_new_good.reshape(-1, 1, 2)
-                    # target.keypoints_old_bad = target.keypoints_new_bad.reshape(-1, 1, 2)
-                    # target.centroid_old = target.centroid_new
-                    # target.centroid_old_true = self.manager.get_target_centroid(target)
-                    # target.occlusion_case_old = target.occlusion_case_new
-                    # target.track_status = self._SUCCESS
 
             # ################################################################################
             # CASE |PARTIAL_OCC, _>
@@ -556,10 +535,6 @@ class MultiTracker:
                     # cannot compute kinematics
                     target.kinematics = None
 
-                    # posterity
-                    # target.centroid_old_true = self.manager.get_target_centroid(target)
-                    # target.occlusion_case_old = target.occlusion_case_new
-                    # target.track_status = self._FAILURE
 
                 # ---------------------------------------------------------------------
                 # |PARTIAL_OCC, NO_OCC>
@@ -602,13 +577,6 @@ class MultiTracker:
                     
                     self.update_patches(target)
 
-                    # posterity
-                    # target.keypoints_old = target.keypoints_new_good
-                    # target.keypoints_old_good = target.keypoints_new_good
-                    # target.centroid_adjustment = None
-                    # target.centroid_old = target.centroid_new
-                    # target.occlusion_case_old = target.occlusion_case_new
-                    # target.track_status = self._SUCCESS
 
                 # ---------------------------------------------------------------------
                 # |PARTIAL_OCC, PARTIAL_OCC>
@@ -658,25 +626,6 @@ class MultiTracker:
                     else:
                         target.keypoints_new_bad = None
 
-                    # add bad points to good 
-                    # if target.keypoints_new_bad is not None:
-                    #     target.keypoints_new_good = np.concatenate((target.keypoints_new_good, target.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
-
-                    # if (len(good_distances) > target.keypoints_new_good.shape[0] and
-                    #         (target.template_scores > self.TEMP_MATCH_THRESH).sum() > target.keypoints_new_good.shape[0]):
-                    #     self.keypoints_new_good = self.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
-                    #     target.keypoints_new = target.keypoints_new_good
-                    #     target.centroid_new = self.manager.get_target_centroid(target)
-
-                    # self.update_patches(target)
-
-                    # posterity
-                    # target.keypoints_old = target.keypoints_new
-                    # target.keypoints_old_good = target.keypoints_new_good.reshape(-1, 1, 2)
-                    # target.centroid_old = target.centroid_new
-                    # target.centroid_old_true = self.manager.get_target_centroid(target)
-                    # target.occlusion_case_old = target.occlusion_case_new
-                    # target.track_status = self._SUCCESS
 
             # ################################################################################
             # CASE FROM_TOTAL_OCC
@@ -734,16 +683,6 @@ class MultiTracker:
 
                     self.update_patches(target)
 
-                    # posterity
-                    # target.keypoints_old = target.keypoints_new
-                    # target.initial_keypoints = target.keypoints_old = target.keypoints_new
-                    # target.initial_centroid = target.centroid_old = target.centroid_new
-                    # target.centroid_adjustment = None
-                    # target.centroid_old = target.centroid_new
-                    # target.centroid_old_true = self.manager.get_target_centroid(target)
-                    # target.occlusion_case_old = target.occlusion_case_new
-                    # self.manager.set_target_centroid_offset(target)
-                    # target.track_status = self._FAILURE
 
                 # ---------------------------------------------------------------------
                 # |TOTAL_OCC, TOTAL_OCC>
@@ -757,10 +696,6 @@ class MultiTracker:
                     # cannot compute kinematics
                     target.kinematics = None
 
-                    # posterity
-                    # target.centroid_old_true = self.manager.get_target_centroid(target)
-                    # target.occlusion_case_old = target.occlusion_case_new
-                    # target.track_status = self._FAILURE
 
                 # ---------------------------------------------------------------------
                 # |TOTAL_OCC, PARTIAL_OCC>
@@ -782,21 +717,15 @@ class MultiTracker:
 
                     self.update_patches(target)
 
-                    # posterity
-                    # target.keypoints_old = target.keypoints_new  = target.keypoints_new_good
-                    # target.keypoints_old_good = target.keypoints_new_good
-                    # target.centroid_old = target.centroid_new
-                    # target.centroid_old_true = self.manager.get_target_centroid(target)
-                    # target.occlusion_case_old = target.occlusion_case_new
-                    # self.manager.set_target_centroid_offset(target)
-                    # target.track_status = self._FAILURE
 
-        
+        # display information 
         self.display()
 
+        # handle posterity - frame
         self.frame_old_gray = self.frame_new_gray
         self.frame_old_color = self.frame_new_color
 
+        # handle posterity - target attributes
         for target in self.targets:
             # ################################################################################
             # CASE |NO_OCC, _>
