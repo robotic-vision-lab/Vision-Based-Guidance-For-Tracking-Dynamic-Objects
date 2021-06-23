@@ -342,6 +342,11 @@ class ExperimentManager:
             shutil.rmtree(folder_path)
 
     def get_sim_dt(self):
+        """return simulation delta time
+
+        Returns:
+            float: simulation delta time
+        """
         return self.simulator.dt
 
     def get_true_kinematics(self, target):
