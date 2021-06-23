@@ -992,54 +992,9 @@ class MultiTracker:
         measured_car_pos_cam_frame_meters = self.manager.transform_pos_corner_img_pixels_to_center_cam_meters(measured_car_pos)
         measured_car_vel_cam_frame_meters = self.manager.transform_vel_img_pixels_to_cam_meters(measured_car_vel)
 
-        #TODO consider handling the filtering part in a separate function
-        # filter tracked measurements
-        # if USE_TRACKER_FILTER:
-        #     if USE_MA:
-        #         if not self.manager.MAF.ready:
-        #             self.manager.MAF.init_filter(measured_car_pos_cam_frame_meters, measured_car_vel_cam_frame_meters)    
-        #         else:
-        #             self.manager.MAF.add_pos(measured_car_pos_cam_frame_meters)
-        #             maf_est_car_pos = self.manager.MAF.get_pos()
-        #             if dt == 0:
-        #                 maf_est_car_vel = self.manager.MAF.get_vel()
-        #             else:
-        #                 maf_est_car_vel = (self.manager.MAF.new_pos - self.manager.MAF.old_pos) / dt
-
-        #             self.manager.MAF.add_vel(measured_car_vel_cam_frame_meters)
-        #     else:
-        #         maf_est_car_pos = NAN
-        #         maf_est_car_vel = NAN
-
-
-        #     if USE_KALMAN:
-        #         if not self.manager.KF.ready:
-        #             self.manager.KF.init_filter(measured_car_pos_cam_frame_meters, measured_car_vel_cam_frame_meters)
-        #         else:
-        #             self.manager.KF.add(measured_car_pos_cam_frame_meters, measured_car_vel_cam_frame_meters)
-        #             kf_est_car_pos = self.manager.KF.get_pos()
-        #             kf_est_car_vel = self.manager.KF.get_vel()
-        #     else:
-        #         kf_est_car_pos = NAN
-        #         kf_est_car_vel = NAN
-        # else:
-        #     maf_est_car_pos = NAN
-        #     maf_est_car_vel = NAN
-        #     kf_est_car_pos = NAN
-        #     kf_est_car_vel = NAN
-
-
-        # return kinematics in camera frame in spatial units of meters
-        # ret_maf_est_car_vel = NAN if isnan(maf_est_car_vel) else maf_est_car_vel + true_drone_vel
-        # ret_kf_est_car_vel = NAN if isnan(kf_est_car_vel) else kf_est_car_vel + true_drone_vel
-
         return (
             true_drone_pos,
             true_drone_vel,
-            # maf_est_car_pos,
-            # ret_maf_est_car_vel,
-            # kf_est_car_pos,
-            # ret_kf_est_car_vel,
             measured_car_pos_cam_frame_meters,
             measured_car_vel_cam_frame_meters
         )
