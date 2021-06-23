@@ -1074,9 +1074,9 @@ class MultiTracker:
         
         for target in self.targets:
             # draw bounding box say 10x10 m^2 (5x5 to SW and NE)
-            x1,y1 = tuple(map(int,target.centroid_new.flatten()))
+            xc,yc = tuple(map(int,target.centroid_new.flatten()))
             size = ceil(6/self.manager.simulator.pxm_fac)
-            img = cv.rectangle(img, (x1-size,y1-size), (x1+size, y1+size), MIDDLE_YELLOW_BGR, 1, cv.LINE_AA)
+            img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), MIDDLE_YELLOW_BGR, 1, cv.LINE_AA)
 
             _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
                 
