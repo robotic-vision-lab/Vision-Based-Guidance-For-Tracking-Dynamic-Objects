@@ -200,15 +200,6 @@ class ExperimentManager:
                 new_centroid_x,
                 new_centroid_y)
 
-    # def filters_ready(self):
-    #     ready = True
-    #     if USE_TRACKER_FILTER:
-    #         if USE_KALMAN:
-    #             ready = ready and self.KF.done_waiting()
-    #         if USE_MA:
-    #             ready = ready and self.MAF.done_waiting()
-    #     return ready
-
     def run(self):
         """Main run function. Running experiment equates to calling this function.
         """
