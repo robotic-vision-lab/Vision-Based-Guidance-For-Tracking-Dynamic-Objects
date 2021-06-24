@@ -1,4 +1,4 @@
-from math import ceil
+from math import ceil, atan2, cos, sin
 import numpy as np
 
 from .ekf import ExtendedKalman
@@ -46,10 +46,15 @@ class Target:
         self.template_points = None
         self.template_scores = None
         self.kinematics = None
-        self.r = None
-        self.theta = None
-        self.Vr = None
-        self.Vtheta = None
+        self.car_beta = None
+        self.r_meas = None
+        self.theta_meas = None
+        self.Vr_meas = None
+        self.Vtheta_meas = None
+        self.r_est = None
+        self.theta_est = None
+        self.Vr_est = None
+        self.Vtheta_est = None
         self.deltaB_est = None
         self.acc_est = None
         self.centroid_offset = [0,0]
@@ -72,4 +77,58 @@ class Target:
     def get_bb_top_left_offset(self):
         self.bb_top_left_offset[0] = self.bounding_box[0] - self.sprite_obj.rect.centerx
         self.bb_top_left_offset[1] = self.bounding_box[1] - self.sprite_obj.rect.centery
+
+    @staticmethod
+    def sat(x, bound):
+        return min(max(x, -bound), bound)
+
+    def filter_measurements(self):
+        drone_pos_x, drone_pos_y = self.manager.get_true_drone_position()
+        drone_vel_x, drone_vel_y = self.manager.get_true_drone_velocity()
+        car_pos_x, car_pos_y = self.kinemmatics[0]
+        car_vel_x, car_vel_y = self.kinematics[1]
+
+        # convert kinematics to inertial frame
+        cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
+        # positions translated by camera origin
+        drone_pos_x = cam_origin_x
+        drone_pos_y = cam_origin_y
+        car_pos_x += cam_origin_x
+        car_pos_y += cam_origin_y
+
+        # compute speeds of drone and car
+        drone_speed = (drone_vel_x**2 + drone_vel_y**2)**0.5
+        car_speed = (car_vel_x**2 + car_vel_y**2)**0.5
+
+        # heading angle of drone
+        drone_alpha = atan2(drone_vel_y, drone_vel_x)
+
+        # heading angle of car
+        self.car_beta = atan2(car_vel_y, car_vel_x)
+
+        # distance between the drone and car
+        self.r_meas = ((car_pos_x - drone_pos_x)**2 + (car_pos_y - drone_pos_y)**2)**0.5
+
+        # angle of LOS from drone to car
+        self.theta_meas = atan2(car_pos_y - drone_pos_y, car_pos_x - drone_pos_x)
+
+        # compute Vr and Vθ
+        self.Vr_meas = car_speed*cos(self.car_beta - self.theta_meas) - drone_speed*cos(drone_alpha - self.theta_meas)
+        self.Vtheta_meas = car_speed*sin(self.car_beta - self.theta_meas) - drone_speed*sin(drone_alpha - self.theta_meas)
+
+        # use EKF 
+        self.EKF.add(self.r_meas, 
+                     self.theta_meas, 
+                     self.Vr_meas, 
+                     self.Vtheta_meas, 
+                     drone_alpha, 
+                     self.a_lt, 
+                     self.a_ln, 
+                     car_pos_x, 
+                     car_pos_y, 
+                     car_vel_x, 
+                     car_vel_y)
+        self.r_est, self.theta_est, self.Vr_est, self.Vtheta_est, self.deltaB_est, self.acc_est = self.EKF.get_estimated_state()
+
+        
 
