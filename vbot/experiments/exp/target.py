@@ -130,5 +130,9 @@ class Target:
                      car_vel_y)
         self.r_est, self.theta_est, self.Vr_est, self.Vtheta_est, self.deltaB_est, self.acc_est = self.EKF.get_estimated_state()
 
-        
+        # update estimated centroids
+        centroids_est = self.manager.get_estimated_centroid(self)
+        self.centroid_old = np.array([[centroids_est[0], centroids_est[1]]])
+        self.centroid_new = np.array([[centroids_est[2], centroids_est[3]]])
+
 
