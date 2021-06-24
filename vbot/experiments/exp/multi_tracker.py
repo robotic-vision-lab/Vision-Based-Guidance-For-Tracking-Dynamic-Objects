@@ -699,6 +699,9 @@ class MultiTracker:
                     target.centroid_new = self.get_centroid(target.keypoints_new)
                     target.rel_keypoints = target.keypoints_new - target.centroid_new
 
+                    # cannot compute kinematics
+                    target.kinematics = None
+
                     self.update_patches(target)
 
                 # ---------------------------------------------------------------------
@@ -731,8 +734,16 @@ class MultiTracker:
                     if (target.template_scores > self.TEMP_MATCH_THRESH).sum() > 0:
                         target.keypoints_new_good = target.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
 
+                    # cannot compute kinematics
+                    target.kinematics = None
+
                     self.update_patches(target)
 
+
+        # use filter 
+        for target in self.targets:
+            # make sure target.kinematics is filtered
+            pass
 
         # display information 
         self.display()
@@ -929,8 +940,8 @@ class MultiTracker:
 
         # collect fov and true drone position and velocity from simulator
         # fov = self.manager.get_drone_cam_field_of_view()
-        true_drone_pos = self.manager.get_true_drone_position()
-        true_drone_vel = self.manager.get_true_drone_velocity()
+        # true_drone_pos = self.manager.get_true_drone_position()
+        # true_drone_vel = self.manager.get_true_drone_velocity()
 
         # transform measured car kinematics from topleft img coord frame to centered world coord frame
         # also, convert spatial units from image pixels to meters
@@ -938,8 +949,8 @@ class MultiTracker:
         measured_car_vel_cam_frame_meters = self.manager.transform_vel_img_pixels_to_cam_meters(measured_car_vel)
 
         return (
-            true_drone_pos,
-            true_drone_vel,
+            # true_drone_pos,
+            # true_drone_vel,
             measured_car_pos_cam_frame_meters,
             measured_car_vel_cam_frame_meters
         )
