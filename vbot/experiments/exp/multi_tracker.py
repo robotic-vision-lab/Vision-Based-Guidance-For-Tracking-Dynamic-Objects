@@ -743,7 +743,7 @@ class MultiTracker:
         # use filter 
         for target in self.targets:
             # make sure target.kinematics is filtered
-            pass
+            target.filter_measurements()
 
         # display information 
         self.display()
