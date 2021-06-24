@@ -873,8 +873,6 @@ class MultiTracker:
                     target.track_status = self._FAILURE
 
         
-
-
     def compute_flow(self, target, use_good=False):
         # it's main purpose is to compute new points
         # looks at 2 frames, uses flow, tells where old points went
