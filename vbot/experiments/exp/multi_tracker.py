@@ -320,7 +320,7 @@ class MultiTracker:
             tuple: True target bounding box
         """
         # return self.manager.get_target_bounding_box_from_offset()
-        return target.get_updated_bounding_box()
+        return target.get_updated_true_bounding_box()
 
     def _get_kin_from_manager(self):
         """Helper function to fetch appropriate kinematics from manager
@@ -522,7 +522,8 @@ class MultiTracker:
                 # these good keypoints may not be sufficient for precise partial occlusion detection
                 # for precision, we will need to check if any other keypoints can be recovered or reconstructed
                 # we should still have old centroid
-                target.bounding_box = self.get_true_bb_from_oracle(target)
+                # target.bounding_box = self.get_true_bb_from_oracle(target)
+                target.update_estimated_bounding_box()
                 target.bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *target.bounding_box)
 
                 # perform part template matching and update template points and scores
@@ -658,7 +659,8 @@ class MultiTracker:
                 
                 # where do we start, nothing in the old frame to work off of
                 # no flow computations, so ask help from oracle or estimator (KF or EKF)
-                target.target_bounding_box = self.get_true_bb_from_oracle(target)
+                # target.target_bounding_box = self.get_true_bb_from_oracle(target)
+                target.update_estimated_bounding_box()
                 target.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *target.bounding_box)
 
                 # perform template matching for patches to update template points and scores
