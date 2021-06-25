@@ -305,7 +305,9 @@ class ExperimentManager:
                         if self.tracker.can_begin_control():
                             # collect kinematics tuple
                             for target in self.targets:
-                                target.kinematics = self.get_true_kinematics(target) if (self.use_true_kin or not target.track_status) else self.get_tracked_kinematics(target)
+                                pass
+                                # target.kinematics = self.get_true_kinematics(target) if (self.use_true_kin or not target.track_status) else self.get_tracked_kinematics(target)
+                            
                             # let controller process kinematics
                             # ax, ay = self.controller.generate_acceleration(self.targets[0].kinematics)
                             # feed controller generated acceleration commands to simulator
