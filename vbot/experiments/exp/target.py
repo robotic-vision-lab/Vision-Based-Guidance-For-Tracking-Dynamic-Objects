@@ -61,22 +61,34 @@ class Target:
         self.bb_top_left_offset = [0,0]
 
         self.EKF = ExtendedKalman(self.manager, self)
-        self.update_bounding_box()
+        self.update_true_bounding_box()
 
-    def update_bounding_box(self):
+    def update_true_bounding_box(self):
         x = self.sprite_obj.rect.centerx - ceil(self.sprite_obj.rect.width * 0.8)
         y = self.sprite_obj.rect.centery - ceil(self.sprite_obj.rect.height * 0.8)
         w = ceil(self.sprite_obj.rect.width * 1.6)
         h = ceil(self.sprite_obj.rect.height * 1.6)
         self.bounding_box = (x, y, w, h)
 
-    def get_updated_bounding_box(self):
+    def get_updated_true_bounding_box(self):
         self.update_bounding_box()
         return self.bounding_box
 
     def get_bb_top_left_offset(self):
         self.bb_top_left_offset[0] = self.bounding_box[0] - self.sprite_obj.rect.centerx
         self.bb_top_left_offset[1] = self.bounding_box[1] - self.sprite_obj.rect.centery
+
+    def update_estimated_bounding_box(self):
+        d = ceil(5 / self.manager.simulator.pxm)
+        x = self.centroid_new.flatten()[0] - d
+        y = self.centroid_new.flatten()[1] - d
+        w = 2*d
+        h = 2*d
+        self.bounding_box = (x, y, w, h)
+
+    def get_updated_estimated_bounding_box(self):
+        self.update_estimated_bounding_box()
+        return self.bounding_box
 
     @staticmethod
     def sat(x, bound):
