@@ -57,6 +57,8 @@ class Target:
         self.Vtheta_est = None
         self.deltaB_est = None
         self.acc_est = None
+        self.a_lt = 0.0
+        self.a_ln = 0.0
         self.centroid_offset = [0,0]
         self.bb_top_left_offset = [0,0]
 
@@ -71,7 +73,7 @@ class Target:
         self.bounding_box = (x, y, w, h)
 
     def get_updated_true_bounding_box(self):
-        self.update_bounding_box()
+        self.update_true_bounding_box()
         return self.bounding_box
 
     def get_bb_top_left_offset(self):
@@ -79,7 +81,7 @@ class Target:
         self.bb_top_left_offset[1] = self.bounding_box[1] - self.sprite_obj.rect.centery
 
     def update_estimated_bounding_box(self):
-        d = ceil(5 / self.manager.simulator.pxm)
+        d = ceil(5 / self.manager.simulator.pxm_fac)
         x = self.centroid_new.flatten()[0] - d
         y = self.centroid_new.flatten()[1] - d
         w = 2*d
@@ -97,7 +99,7 @@ class Target:
     def filter_measurements(self):
         drone_pos_x, drone_pos_y = self.manager.get_true_drone_position()
         drone_vel_x, drone_vel_y = self.manager.get_true_drone_velocity()
-        car_pos_x, car_pos_y = self.kinemmatics[0]
+        car_pos_x, car_pos_y = self.kinematics[0]
         car_vel_x, car_vel_y = self.kinematics[1]
 
         # convert kinematics to inertial frame
@@ -143,7 +145,7 @@ class Target:
         self.r_est, self.theta_est, self.Vr_est, self.Vtheta_est, self.deltaB_est, self.acc_est = self.EKF.get_estimated_state()
 
         # update estimated centroids
-        centroids_est = self.manager.get_estimated_centroid(self)
+        centroids_est = self.manager.get_estimated_centroids(self)
         self.centroid_old = np.array([[centroids_est[0], centroids_est[1]]])
         self.centroid_new = np.array([[centroids_est[2], centroids_est[3]]])
 
