@@ -234,10 +234,10 @@ class Simulator:
             # h = int(self.car.rect.height * 1.6)
             # self.bounding_box = (x, y, w, h)
             # pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
-            self.bounding_box = self.manager.targets[0].get_updated_bounding_box()
-            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.targets[0].get_updated_bounding_box()), 1)
-            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.targets[1].get_updated_bounding_box()), 1)
-            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.targets[2].get_updated_bounding_box()), 1)
+            self.bounding_box = self.manager.targets[0].get_updated_true_bounding_box()
+            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.targets[0].get_updated_true_bounding_box()), 1)
+            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.targets[1].get_updated_true_bounding_box()), 1)
+            pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.targets[2].get_updated_true_bounding_box()), 1)
 
 
         # draw drone altitude info
