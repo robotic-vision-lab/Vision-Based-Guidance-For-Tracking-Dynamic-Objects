@@ -364,6 +364,19 @@ class ExperimentManager:
 
         return kin
 
+    def get_true_drone_kinematics(self):
+        drone_kin = (self.simulator.camera.position,
+                     self.simulator.camera.velocity)
+        
+        return drone_kin
+
+
+    def get_true_target_kinematics(self, target):
+        target_kin = (target.sprite_obj.position,
+                      target.sprite_obj.velocity)
+
+        return target_kin
+
     def get_tracked_kinematics(self, target):
         # use kinematics from the tracker, but rearrange items before returning
         return (
