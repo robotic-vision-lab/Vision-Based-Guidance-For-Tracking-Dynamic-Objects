@@ -66,6 +66,7 @@ class MultiTracker:
 
         self._FAILURE = False
         self._SUCCESS = True
+        self._NONE_KINEMATICS = [[None, None],[None, None]]
         self.MAX_ERR = 15
 
     def set_targets(self, targets):
@@ -149,7 +150,7 @@ class MultiTracker:
         Returns:
             tuple: Best matched template locations, best match values
         """
-        bb = target.get_updated_bounding_box()
+        bb = target.get_updated_estimated_bounding_box()
         target.template_points = np.array([
             temp_matcher.find_template_center_in_image_bb(img, bb)
             for temp_matcher in target.template_matchers
@@ -387,6 +388,7 @@ class MultiTracker:
             # posterity - save frames
             self.frame_old_gray = self.frame_new_gray
             self.frame_old_color = self.frame_new_color
+            return
             # return self._FAILURE
 
         # cv.imshow('cur_frame', self.frame_old_gray); cv.waitKey(1)
@@ -438,7 +440,7 @@ class MultiTracker:
                     target.occlusion_case_new = TOTAL_OCC
 
                     # cannot compute target kinematics
-                    target.kinematics = None
+                    target.kinematics = self._NONE_KINEMATICS
 
                 # ---------------------------------------------------------------------
                 # |NO_OCC, PARTIAL_OCC>
@@ -555,7 +557,7 @@ class MultiTracker:
                     target.occlusion_case_new = TOTAL_OCC
 
                     # cannot compute kinematics
-                    target.kinematics = None
+                    target.kinematics = self._NONE_KINEMATICS
 
                 # ---------------------------------------------------------------------
                 # |PARTIAL_OCC, NO_OCC>
@@ -702,7 +704,7 @@ class MultiTracker:
                     target.rel_keypoints = target.keypoints_new - target.centroid_new
 
                     # cannot compute kinematics
-                    target.kinematics = None
+                    target.kinematics = self._NONE_KINEMATICS
 
                     self.update_patches(target)
 
@@ -716,7 +718,7 @@ class MultiTracker:
                     target.centroid_new = self.manager.get_target_centroid(target)
 
                     # cannot compute kinematics
-                    target.kinematics = None
+                    target.kinematics = self._NONE_KINEMATICS
 
                 # ---------------------------------------------------------------------
                 # |TOTAL_OCC, PARTIAL_OCC>
@@ -737,7 +739,7 @@ class MultiTracker:
                         target.keypoints_new_good = target.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
 
                     # cannot compute kinematics
-                    target.kinematics = None
+                    target.kinematics = self._NONE_KINEMATICS
 
                     self.update_patches(target)
 
@@ -986,12 +988,12 @@ class MultiTracker:
         img = frame
         
         for target in self.targets:
+            _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
             # draw bounding box say 10x10 m^2 (5x5 to SW and NE)
             xc,yc = tuple(map(int,target.centroid_new.flatten()))
             size = ceil(6/self.manager.simulator.pxm_fac)
-            img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), MIDDLE_YELLOW_BGR, 1, cv.LINE_4)
+            img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), _ARROW_COLOR, 1, cv.LINE_4)
 
-            _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
                 
             # draw centroid track - circle for centroid_new and line between centroid_old and centroid_new
             img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(1.5*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
