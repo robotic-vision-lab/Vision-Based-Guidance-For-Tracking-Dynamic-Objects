@@ -183,7 +183,7 @@ class ExtendedKalman:
         self.ax = state_est_acc.flatten()[2]
 
     def estimate_acc_y(self):
-        # set R and x appropriate to occlusion state
+        # set R and y appropriate to occlusion state
         if self.manager.tracker.is_total_occlusion(self.target):
             self.R_acc_y = 10 #1000
             self.y_measured = self.prev_y
