@@ -6,6 +6,7 @@ import cv2 as cv
 import numpy as np
 import pygame
 from pygame.locals import *
+from math import degrees
 
 from .simulator import Simulator
 from .tracker import Tracker
@@ -15,7 +16,8 @@ from .ekf import ExtendedKalman
 from .target import Target
 
 from .settings import *
-from .my_imports import (create_video_from_images,)
+from .my_imports import (create_video_from_images,
+                         tight_ellipse)
 
 
 class ExperimentManager:
@@ -304,9 +306,31 @@ class ExperimentManager:
                         # let controller generate acceleration, when tracker indicates ok (which is when first frame is processed)
                         if self.tracker.can_begin_control():
                             # collect kinematics tuple
-                            for target in self.targets:
-                                pass
-                                # target.kinematics = self.get_true_kinematics(target) if (self.use_true_kin or not target.track_status) else self.get_tracked_kinematics(target)
+                            points = np.concatenate(
+                                (self.targets[0].centroid_new_est, 
+                                self.targets[0].centroid_old_est, 
+                                self.targets[1].centroid_new_est, 
+                                self.targets[2].centroid_new_est),
+                                    axis=0
+                                ).reshape(-1,1,2)
+                            print(points.shape)
+                            a,b,c,angle=tight_ellipse(points)
+                            print(f'a={a}, b={b}, c={c}, angle={angle}')
+                            # self.tracker.frame_color_edited = cv.ellipse(
+                            #     img=self.tracker.frame_color_edited,
+                            #     center=tuple(c),
+                            #     axes=(int(a/2),int(b/2)),
+                            #     angle=degrees(angle),
+                            #     startAngle=0,
+                            #     endAngle=360,
+                            #     color=(32,32,32),
+                            #     thickness=1,
+                            #     lineType=cv.LINE_AA
+                            # )
+                            # cv.imshow('Tracking in progress', self.tracker.frame_color_edited);cv.waitKey(1)
+                            
+                                
+                            # target.kinematics = self.get_true_kinematics(target) if (self.use_true_kin or not target.track_status) else self.get_tracked_kinematics(target)
                             
                             # let controller process kinematics
                             # ax, ay = self.controller.generate_acceleration(self.targets[0].kinematics)
