@@ -1,4 +1,4 @@
-from math import pi, tau, degrees
+from math import pi, tau, degrees, atan2, sin, cos
 from copy import deepcopy
 
 import pygame
@@ -11,7 +11,7 @@ class Car(pygame.sprite.Sprite):
     """Defines a car sprite.
     """
 
-    def __init__(self, simulator, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0, loaded_image_rect=None):
+    def __init__(self, simulator, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0, loaded_image_rect=None, traj=DEFAULT_TRAJECTORY):
         # assign itself to the all_sprites group
         self.groups = [simulator.all_sprites, simulator.car_sprites]
 
@@ -27,16 +27,17 @@ class Car(pygame.sprite.Sprite):
         self.velocity = pygame.Vector2(vx, vy)
         self.acceleration = pygame.Vector2(ax, ay)
         self.angle = pi/2
+        self.traj = traj
 
         # hold onto the game/simulator reference
         self.simulator = simulator
 
-        if (USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or
-                USE_TRAJECTORY == TWO_HOLE_TRAJECTORY or
-                USE_TRAJECTORY == SQUIRCLE_TRAJECTORY):
+        if (self.traj == ONE_HOLE_TRAJECTORY or
+                self.traj == TWO_HOLE_TRAJECTORY or
+                self.traj == SQUIRCLE_TRAJECTORY):
             self.init_x = 0
             self.init_y = 0
-            # if USE_TRAJECTORY== ONE_HOLE_TRAJECTORY:
+            # if self.traj== ONE_HOLE_TRAJECTORY:
             #     CW = -1
             #     ACW = 1
             #     DIRECTION = CW
@@ -48,7 +49,7 @@ class Car(pygame.sprite.Sprite):
             #     self.velocity[0] = -(OMEGA*size) * sin(OMEGA*t*DIRECTION+OFFSET)
             #     self.velocity[1] = (OMEGA*size) * cos(OMEGA*t*DIRECTION+OFFSET)
 
-            # if USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+            # if self.traj == TWO_HOLE_TRAJECTORY:
             #     CW = -1
             #     ACW = 1
             #     DIRECTION = CW
@@ -74,7 +75,7 @@ class Car(pygame.sprite.Sprite):
         ACW = 1
         DIRECTION = ACW
         OFFSET = -pi/2
-        if USE_TRAJECTORY == ONE_HOLE_TRAJECTORY:
+        if self.traj == ONE_HOLE_TRAJECTORY:
             t = self.simulator.time
             T = ONE_HOLE_PERIOD
             size = ONE_HOLE_SIZE
@@ -87,7 +88,7 @@ class Car(pygame.sprite.Sprite):
             self.position += self.velocity * self.simulator.dt
             self.angle = atan2(cos(OMEGA*t*DIRECTION+OFFSET), - sin(OMEGA*t*DIRECTION+OFFSET))
 
-        elif USE_TRAJECTORY == TWO_HOLE_TRAJECTORY:
+        elif self.traj == TWO_HOLE_TRAJECTORY:
             t = self.simulator.time
             T = TWO_HOLE_PERIOD
             size = TWO_HOLE_SIZE
@@ -100,7 +101,7 @@ class Car(pygame.sprite.Sprite):
             self.position += self.velocity * self.simulator.dt
             self.angle = atan2(cos(2*OMEGA*t*DIRECTION+OFFSET), - sin(OMEGA*t*DIRECTION+OFFSET))
         
-        elif USE_TRAJECTORY == LANE_CHANGE_TRAJECTORY:
+        elif self.traj == LANE_CHANGE_TRAJECTORY:
             t = self.simulator.time
             if t >= 5 and t < 7:
                 self.acceleration = pygame.Vector2(0, -1)
@@ -160,7 +161,7 @@ class Car(pygame.sprite.Sprite):
 
             self.position += self.velocity * self.simulator.dt
 
-        elif USE_TRAJECTORY == SQUIRCLE_TRAJECTORY:
+        elif self.traj == SQUIRCLE_TRAJECTORY:
             s = SQUIRCLE_PARAM_S
             r = SQUIRCLE_PARAM_R
             t = self.simulator.time
@@ -201,9 +202,9 @@ class Car(pygame.sprite.Sprite):
     def update_image_rect(self):
         """Update car image and rect for changes in orientations
         """
-        if (USE_TRAJECTORY == ONE_HOLE_TRAJECTORY or
-                USE_TRAJECTORY == TWO_HOLE_TRAJECTORY or 
-                USE_TRAJECTORY == SQUIRCLE_TRAJECTORY):
+        if (self.traj == ONE_HOLE_TRAJECTORY or
+                self.traj == TWO_HOLE_TRAJECTORY or 
+                self.traj == SQUIRCLE_TRAJECTORY):
             # load the unrotated image and rect
             self.car_img_rect = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
             prev_center = self.car_img_rect[0].get_rect(center = self.car_img_rect[0].get_rect().center).center
