@@ -151,7 +151,7 @@ def tight_ellipse(points, tolerance=0.001):
 
     A = (1/d) * LA.pinv(( np.matmul(np.matmul(points, U), points.T) - np.matmul(np.matmul(points, u), np.matmul(u.T,points.T)) ))
 
-    c = np.matmul(points, u).flatten()
+    c = tuple(map(int,np.matmul(points, u).flatten()))
 
     _, Q, V = LA.svd(A)
 
