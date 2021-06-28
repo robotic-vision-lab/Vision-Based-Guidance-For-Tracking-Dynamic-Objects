@@ -487,7 +487,7 @@ class MultiTracker:
                         axis=0
                         )
 
-                    self.update_patches(target)
+                    # self.update_patches(target)
 
 
             # ################################################################################
@@ -532,27 +532,27 @@ class MultiTracker:
                 self.find_saved_patches_in_img_bb(self.frame_new_gray, target)
 
                 # compute good feature keypoints in the new frame (shi-tomasi + SIFT)
-                good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=target.bounding_box_mask, bb=target.bounding_box)
+                target.good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=target.bounding_box_mask, bb=target.bounding_box)
 
-                if good_keypoints_new is None or good_keypoints_new.shape[0] == 0:
-                    good_distances = []
+                if target.good_keypoints_new is None or target.good_keypoints_new.shape[0] == 0:
+                    target.good_distances = []
                 else:
                     # compute descriptors at the new keypoints
-                    kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new, bb=target.bounding_box)
+                    kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, target.good_keypoints_new, bb=target.bounding_box)
 
                     # match descriptors 
-                    matches = self.descriptor_matcher.compute_matches(target.initial_target_descriptors, 
+                    target.matches = self.descriptor_matcher.compute_matches(target.initial_target_descriptors, 
                                                                     descriptors, 
                                                                     threshold=-1)
 
-                    distances = np.array([m.distance for m in matches]).reshape(-1, 1)
-                    good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
+                    target.distances = np.array([m.distance for m in target.matches]).reshape(-1, 1)
+                    target.good_distances = target.distances[target.distances < self.DES_MATCH_DISTANCE_THRESH]
 
                 # ---------------------------------------------------------------------
                 # |PARTIAL_OCC, TOTAL_OCC>
                 if ((not target.feature_found_statuses.all() or 
                         target.cross_feature_errors_new.min() >= self.MAX_ERR) and 
-                        len(good_distances) == 0 and 
+                        len(target.good_distances) == 0 and 
                         (target.template_scores > self.TEMP_MATCH_THRESH).sum() == 0):
                     target.occlusion_case_new = TOTAL_OCC
 
@@ -562,7 +562,7 @@ class MultiTracker:
                 # ---------------------------------------------------------------------
                 # |PARTIAL_OCC, NO_OCC>
                 elif ((target.keypoints_new_good.shape[0] > 0) and
-                        len(good_distances) == MAX_NUM_CORNERS and
+                        len(target.good_distances) == MAX_NUM_CORNERS and
                         (target.template_scores > self.TEMP_MATCH_THRESH).sum() == MAX_NUM_CORNERS):
                     target.occlusion_case_new = NO_OCC
 
@@ -570,9 +570,9 @@ class MultiTracker:
                     target.centroid_new = self.get_centroid(target.keypoints_new_good)
 
                     # update keypoints
-                    if len(good_distances) == MAX_NUM_CORNERS:
-                        good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
-                        target.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
+                    if len(target.good_distances) == MAX_NUM_CORNERS:
+                        good_matches = np.array(target.matches).reshape(-1, 1)[target.distances < self.DES_MATCH_DISTANCE_THRESH]
+                        target.keypoints_new_good = np.array([list(target.good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
                         target.keypoints_new = target.keypoints_new_good
                         target.centroid_new = self.get_centroid(target.keypoints_new_good)
                         target.rel_keypoints = target.keypoints_new - target.centroid_new
@@ -588,15 +588,15 @@ class MultiTracker:
                     target.kinematics = self.compute_kinematics_by_centroid(target.centroid_old, target.centroid_new)
 
                     # adjust centroid
-                    if len(good_distances) == MAX_NUM_CORNERS:
+                    if len(target.good_distances) == MAX_NUM_CORNERS:
                         target.centroid_adjustment = None
                     else: 
-                        centroid_new_good = self.get_centroid(good_keypoints_new)
+                        centroid_new_good = self.get_centroid(target.good_keypoints_new)
                         target.centroid_adjustment = centroid_new_good - target.centroid_new
                         target.centroid_new = centroid_new_good
 
                         # update keypoints
-                        self.keypoints_new_good = self.keypoints_new = self.centroid_new + self.rel_keypoints         
+                        target.keypoints_new_good = target.keypoints_new = target.centroid_new + target.rel_keypoints         
                     
                     self.update_patches(target)
 
@@ -609,9 +609,9 @@ class MultiTracker:
                     if target.keypoints_new_good.shape[0] == 0:
                         # flow failed, matching succeeded (feature or template)
                         # compute new good keypoints using matching
-                        if len(good_distances) > 0: 
-                            good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
-                            target.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
+                        if len(target.good_distances) > 0: 
+                            good_matches = np.array(target.matches).reshape(-1, 1)[target.distances < self.DES_MATCH_DISTANCE_THRESH]
+                            target.keypoints_new_good = np.array([list(target.good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
                             target.keypoints_new = target.keypoints_new_good
                             target.centroid_old = target.centroid_old_true
                             target.centroid_new = self.manager.get_target_centroid(target)
@@ -633,7 +633,7 @@ class MultiTracker:
 
                     # treat keypoints that were lost during flow
                     if (target.keypoints_new_good.shape[0] > 0 and 
-                            # not (len(good_distances) > 0 or (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0) and
+                            # not (len(target.good_distances) > 0 or (self.template_scores > self.TEMP_MATCH_THRESH).sum() > 0) and
                             ((target.feature_found_statuses==0) | (target.cross_feature_errors_new >= self.MAX_ERR)).sum() > 0):
                         # adjust missing old keypoints (need to check recovery)
                         keypoints_missing = target.keypoints_old[(target.feature_found_statuses==0) | (target.cross_feature_errors_new >= self.MAX_ERR)]
@@ -663,42 +663,42 @@ class MultiTracker:
                 # no flow computations, so ask help from oracle or estimator (KF or EKF)
                 # target.target_bounding_box = self.get_true_bb_from_oracle(target)
                 target.update_estimated_bounding_box()
-                target.target_bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *target.bounding_box)
+                target.bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *target.bounding_box)
 
                 # perform template matching for patches to update template points and scores
                 self.find_saved_patches_in_img_bb(self.frame_new_gray, target)
 
                 # compute good feature keypoints in the new frame
                 # good_keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
-                good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=target.bounding_box_mask, bb=target.bounding_box)
+                target.good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=target.bounding_box_mask, bb=target.bounding_box)
 
-                if good_keypoints_new is None or good_keypoints_new.shape[0] == 0:
-                    good_distances = []
+                if target.good_keypoints_new is None or target.good_keypoints_new.shape[0] == 0:
+                    target.good_distances = []
                 else:
                     # compute descriptors at the new keypoints
-                    kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, good_keypoints_new, bb=target.bounding_box)
+                    kps, descriptors = self.get_descriptors_at_keypoints(self.frame_new_gray, target.good_keypoints_new, bb=target.bounding_box)
 
                     # match descriptors 
                     # note, matching only finds best matching/pairing, 
                     # no guarantees of quality of match
-                    matches = self.descriptor_matcher.compute_matches(target.initial_target_descriptors, 
+                    target.matches = self.descriptor_matcher.compute_matches(target.initial_target_descriptors, 
                                                                     descriptors, 
                                                                     threshold=-1)
 
-                    distances = np.array([m.distance for m in matches]).reshape(-1, 1)  # redundant TODO clean it
+                    target.distances = np.array([m.distance for m in target.matches]).reshape(-1, 1)  # redundant TODO clean it
 
                     # good distances indicate good matches
-                    good_distances = distances[distances < self.DES_MATCH_DISTANCE_THRESH]
+                    target.good_distances = target.distances[target.distances < self.DES_MATCH_DISTANCE_THRESH]
                     # if (distances < self.DES_MATCH_DISTANCE_THRESH).sum()
 
                 # ---------------------------------------------------------------------
                 # |TOTAL_OCC, NO_OCC>
-                if (len(good_distances) == MAX_NUM_CORNERS and 
+                if (len(target.good_distances) == MAX_NUM_CORNERS and 
                         (target.template_scores > self.TEMP_MATCH_THRESH).sum()==MAX_NUM_CORNERS):
                     target.occlusion_case_new = NO_OCC
 
-                    good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
-                    target.keypoints_new = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
+                    good_matches = np.array(target.matches).reshape(-1, 1)[target.distances < self.DES_MATCH_DISTANCE_THRESH]
+                    target.keypoints_new = np.array([list(target.good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)
                     target.keypoints_new_good = target.keypoints_new
                     target.centroid_new = self.get_centroid(target.keypoints_new)
                     target.rel_keypoints = target.keypoints_new - target.centroid_new
@@ -710,7 +710,7 @@ class MultiTracker:
 
                 # ---------------------------------------------------------------------
                 # |TOTAL_OCC, TOTAL_OCC>
-                elif (len(good_distances) == 0 and 
+                elif (len(target.good_distances) == 0 and 
                         (target.template_scores > self.TEMP_MATCH_THRESH).sum()==0):
                     target.occlusion_case_new = TOTAL_OCC
 
@@ -728,12 +728,12 @@ class MultiTracker:
                     target.centroid_old = target.centroid_old_true
                     target.centroid_new = self.manager.get_target_centroid(target)
 
-                    if len(good_distances) > 0:
+                    if len(target.good_distances) > 0:
                         # compute good matches
-                        good_matches = np.array(matches).reshape(-1, 1)[distances < self.DES_MATCH_DISTANCE_THRESH]
+                        good_matches = np.array(target.matches).reshape(-1, 1)[target.distances < self.DES_MATCH_DISTANCE_THRESH]
                         
                         # compute good points, centroid adjustments
-                        target.keypoints_new_good = np.array([list(good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)    #NOTE changed queryIdx to trainIdx .. double check later
+                        target.keypoints_new_good = np.array([list(target.good_keypoints_new[gm.trainIdx]) for gm in good_matches.flatten()]).reshape(-1,1,2)    #NOTE changed queryIdx to trainIdx .. double check later
                     
                     if (target.template_scores > self.TEMP_MATCH_THRESH).sum() > 0:
                         target.keypoints_new_good = target.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
@@ -741,7 +741,7 @@ class MultiTracker:
                     # cannot compute kinematics
                     target.kinematics = NONE_KINEMATICS
 
-                    self.update_patches(target)
+                    # self.update_patches(target)
 
 
         # use filter 
@@ -828,13 +828,13 @@ class MultiTracker:
                     if target.keypoints_new_bad is not None:
                         target.keypoints_new_good = np.concatenate((target.keypoints_new_good, target.keypoints_new_bad.reshape(-1, 1, 2)), axis=0)
 
-                    if (len(good_distances) > target.keypoints_new_good.shape[0] and
+                    if (len(target.good_distances) > target.keypoints_new_good.shape[0] and
                             (target.template_scores > self.TEMP_MATCH_THRESH).sum() > target.keypoints_new_good.shape[0]):
-                        self.keypoints_new_good = self.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
+                        target.keypoints_new_good = target.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
                         target.keypoints_new = target.keypoints_new_good
                         target.centroid_new = self.manager.get_target_centroid(target)
 
-                    self.update_patches(target)
+                    # self.update_patches(target)
 
                     target.keypoints_old = target.keypoints_new
                     target.keypoints_old_good = target.keypoints_new_good.reshape(-1, 1, 2)
@@ -871,7 +871,7 @@ class MultiTracker:
                     target.track_status = self._FAILURE
 
                 # ---------------------------------------------------------------------
-                # |TOTAL_OCC, TOTAL_OCC>
+                # |TOTAL_OCC, PARTIAL_OCC>
                 else:
                     target.keypoints_old = target.keypoints_new  = target.keypoints_new_good
                     target.keypoints_old_good = target.keypoints_new_good
@@ -995,7 +995,7 @@ class MultiTracker:
                 
             # draw centroid track - circle for centroid_new and line between centroid_old and centroid_new
             img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(1.5*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
-            cv.imshow('cosmetics', img);cv.waitKey(1)
+            # cv.imshow('cosmetics', img);cv.waitKey(1)
 
             # draw keypoint tracks - circle for keypoint_new and line between keypoint_old and keypoint_new
             if DRAW_KEYPOINT_TRACKS:
@@ -1006,7 +1006,7 @@ class MultiTracker:
                 # draw circle for new keypoints
                 for nxt in target.keypoints_new_good:
                     img, mask = draw_tracks(img, None, [nxt], [TURQUOISE_GREEN_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(0.75*TRACK_SCALE))
-                    cv.imshow('cosmetics', img);cv.waitKey(1)
+                    # cv.imshow('cosmetics', img);cv.waitKey(1)
                 
 
             # add optical flow arrows
@@ -1016,7 +1016,7 @@ class MultiTracker:
                                                   thickness=int(1.5*TRACK_SCALE),
                                                   arrow_scale=int(ARROW_SCALE*TRACK_SCALE),
                                                   color=_ARROW_COLOR)
-            cv.imshow('cosmetics', img);cv.waitKey(1)
+            # cv.imshow('cosmetics', img);cv.waitKey(1)
 
         # add axes
         img = self.add_axes_at_point(img, SCREEN_CENTER)
