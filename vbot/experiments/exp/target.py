@@ -30,6 +30,12 @@ class Target:
         self.feature_found_statuses = np.array([[1]]*MAX_NUM_CORNERS)
         self.cross_feature_errors_old = np.array([[0]]*MAX_NUM_CORNERS)
         self.cross_feature_errors_new = np.array([[0]]*MAX_NUM_CORNERS)
+        
+        self.good_keypoints_new = None
+        self.good_distances = None
+        self.distances = None
+        self.matches = None
+
         self.occlusion_case_old = None
         self.occlusion_case_new = NO_OCC
         self.centroid_old_true = None
@@ -106,7 +112,7 @@ class Target:
         # convert kinematics to inertial frame
         cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
 
-        # drone
+        # drone (known)
         drone_pos_x, drone_pos_y = self.manager.get_true_drone_position()
         drone_vel_x, drone_vel_y = self.manager.get_true_drone_velocity()
         drone_pos_x += cam_origin_x
@@ -115,7 +121,7 @@ class Target:
         drone_speed = (drone_vel_x**2 + drone_vel_y**2)**0.5
         drone_alpha = atan2(drone_vel_y, drone_vel_x)
 
-        # target
+        # target (measured)
         target_pos_x, target_pos_y = self.kinematics[0]
         # target_vel_x, target_vel_y = self.kinematics[1]
         if not self.kinematics == NONE_KINEMATICS:
@@ -130,7 +136,7 @@ class Target:
             self.r_meas = ((target_pos_x - drone_pos_x)**2 + (target_pos_y - drone_pos_y)**2)**0.5
             self.theta_meas = atan2(target_pos_y - drone_pos_y, target_pos_x - drone_pos_x)
 
-        # use EKF 
+        # use EKF to filter measurements target_pos_x and target_pos_y
         self.EKF.add(target_pos_x, target_pos_y)
         self.x_est, self.vx_est, self.ax_est, self.y_est, self.vy_est, self.ay_est = self.EKF.get_estimated_state()
         # self.r_est, self.theta_est, self.Vr_est, self.Vtheta_est, self.deltaB_est, self.acc_est = self.EKF.get_estimated_state()
