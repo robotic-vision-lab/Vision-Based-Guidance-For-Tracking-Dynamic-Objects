@@ -101,7 +101,7 @@ class Simulator:
         # spawn car
         self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect)
         self.car_2 = Car(self, *CAR_INITIAL_POSITION_2, *CAR_INITIAL_VELOCITY_2, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_2)
-        self.car_3 = Car(self, *CAR_INITIAL_POSITION_3, *CAR_INITIAL_VELOCITY_3, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_3)
+        self.car_3 = Car(self, *CAR_INITIAL_POSITION_3, *CAR_INITIAL_VELOCITY_3, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_3,traj=LANE_CHANGE_TRAJECTORY)
 
         #spawn bar
         self.bars = []
