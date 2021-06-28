@@ -35,6 +35,8 @@ class Target:
         self.centroid_old_true = None
         self.centroid_old = None
         self.centroid_new = None
+        self.centroid_old_est = None
+        self.centroid_new_est = None
         self.centroid_adjustment = None
         self.initial_centroid = None
         self.initial_target_descriptors = None
