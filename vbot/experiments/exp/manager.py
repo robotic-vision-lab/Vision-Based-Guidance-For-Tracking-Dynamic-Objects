@@ -316,18 +316,18 @@ class ExperimentManager:
                             print(points.shape)
                             a,b,c,angle=tight_ellipse(points)
                             print(f'a={a}, b={b}, c={c}, angle={angle}')
-                            # self.tracker.frame_color_edited = cv.ellipse(
-                            #     img=self.tracker.frame_color_edited,
-                            #     center=tuple(c),
-                            #     axes=(int(a/2),int(b/2)),
-                            #     angle=degrees(angle),
-                            #     startAngle=0,
-                            #     endAngle=360,
-                            #     color=(32,32,32),
-                            #     thickness=1,
-                            #     lineType=cv.LINE_AA
-                            # )
-                            # cv.imshow('Tracking in progress', self.tracker.frame_color_edited);cv.waitKey(1)
+                            self.tracker.frame_color_edited = cv.ellipse(
+                                img=self.tracker.frame_color_edited,
+                                center=c,
+                                axes=(int(a),int(b)),
+                                angle=degrees(angle),
+                                startAngle=0,
+                                endAngle=360,
+                                color=(204,204,204),
+                                thickness=1,
+                                lineType=cv.LINE_AA
+                            )
+                            cv.imshow('Tracking in progress', self.tracker.frame_color_edited);cv.waitKey(1)
                             
                                 
                             # target.kinematics = self.get_true_kinematics(target) if (self.use_true_kin or not target.track_status) else self.get_tracked_kinematics(target)
