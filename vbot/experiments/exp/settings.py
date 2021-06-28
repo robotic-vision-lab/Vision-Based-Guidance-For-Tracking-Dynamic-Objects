@@ -67,10 +67,13 @@ NO_OCC = 0
 PARTIAL_OCC = 1
 TOTAL_OCC = 2
 
+# none kinematics sentinel
+NONE_KINEMATICS = [[None, None], [None, None]]
+
 # block settings
 BLOCK_COLOR = DARK_GRAY_2
 BLOCK_SIZE = BLOCK_WIDTH, BLOCK_HEIGHT = 15.0, 0.5 #18.0, 1.0
-NUM_BLOCKS = 10
+NUM_BLOCKS = 0
 
 # bar settings
 BAR_COLOR = DARK_GRAY_3
