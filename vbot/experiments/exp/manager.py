@@ -364,7 +364,7 @@ class ExperimentManager:
 
         return kin
 
-    def get_true_drone_kinematics(self):
+    def get_drone_kinematics(self):
         drone_kin = (self.simulator.camera.position,
                      self.simulator.camera.velocity)
         
