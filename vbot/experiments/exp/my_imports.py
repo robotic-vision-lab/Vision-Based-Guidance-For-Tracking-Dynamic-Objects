@@ -13,7 +13,8 @@ from .game_utils import (load_image_rect,                         #pylint: disab
                         _prep_temp_folder,
                         vec_str,
                         scale_img,
-                        ImageDumper)
+                        ImageDumper,
+                        tight_ellipse)
 # add vbot\ to sys.path
 vbot_path = os.path.abspath(os.path.join('..'))
 if vbot_path not in sys.path:
