@@ -66,7 +66,7 @@ class MultiTracker:
 
         self._FAILURE = False
         self._SUCCESS = True
-        self._NONE_KINEMATICS = [[None, None],[None, None]]
+        
         self.MAX_ERR = 15
 
     def set_targets(self, targets):
@@ -440,7 +440,7 @@ class MultiTracker:
                     target.occlusion_case_new = TOTAL_OCC
 
                     # cannot compute target kinematics
-                    target.kinematics = self._NONE_KINEMATICS
+                    target.kinematics = NONE_KINEMATICS
 
                 # ---------------------------------------------------------------------
                 # |NO_OCC, PARTIAL_OCC>
@@ -450,11 +450,11 @@ class MultiTracker:
                     # in this case of from no_occ to partial_occ, no more keypoints are needed to be found
                     # good keypoints need to be computed for kinematics computation as well as posterity
                     target.keypoints_new_good = target.keypoints_new[
-                        (target.feature_found_statuses==1) & 
+                        (target.feature_found_statuses == 1) & 
                         (target.cross_feature_errors_new < self.MAX_ERR)
                         ].reshape(-1, 1, 2)
                     target.keypoints_old_good = target.keypoints_old[
-                        (target.feature_found_statuses==1) & 
+                        (target.feature_found_statuses == 1) & 
                         (target.cross_feature_errors_new < self.MAX_ERR)
                         ].reshape(-1, 1, 2)
 
@@ -557,7 +557,7 @@ class MultiTracker:
                     target.occlusion_case_new = TOTAL_OCC
 
                     # cannot compute kinematics
-                    target.kinematics = self._NONE_KINEMATICS
+                    target.kinematics = NONE_KINEMATICS
 
                 # ---------------------------------------------------------------------
                 # |PARTIAL_OCC, NO_OCC>
@@ -704,7 +704,7 @@ class MultiTracker:
                     target.rel_keypoints = target.keypoints_new - target.centroid_new
 
                     # cannot compute kinematics
-                    target.kinematics = self._NONE_KINEMATICS
+                    target.kinematics = NONE_KINEMATICS
 
                     self.update_patches(target)
 
@@ -718,7 +718,7 @@ class MultiTracker:
                     target.centroid_new = self.manager.get_target_centroid(target)
 
                     # cannot compute kinematics
-                    target.kinematics = self._NONE_KINEMATICS
+                    target.kinematics = NONE_KINEMATICS
 
                 # ---------------------------------------------------------------------
                 # |TOTAL_OCC, PARTIAL_OCC>
@@ -739,15 +739,20 @@ class MultiTracker:
                         target.keypoints_new_good = target.template_points[target.template_scores > self.TEMP_MATCH_THRESH].reshape(-1, 1, 2)
 
                     # cannot compute kinematics
-                    target.kinematics = self._NONE_KINEMATICS
+                    target.kinematics = NONE_KINEMATICS
 
                     self.update_patches(target)
 
 
         # use filter 
         for target in self.targets:
-            # make sure target.kinematics is filtered
-            target.filter_measurements()
+            # filter target.kinematics
+            target.update_measurements_and_estimations()
+            # update centroid estimation
+            centroids_est = self.manager.get_estimated_centroids(target)
+            target.centroid_old = np.array([[centroids_est[0], centroids_est[1]]])
+            target.centroid_new = np.array([[centroids_est[2], centroids_est[3]]])
+
 
         # display information 
         self.display()
@@ -940,19 +945,12 @@ class MultiTracker:
         measured_car_pos = pygame.Vector2(list(new_centroid.flatten()))
         measured_car_vel = pygame.Vector2(list( ((new_centroid-old_centroid)/dt).flatten() ))
 
-        # collect fov and true drone position and velocity from simulator
-        # fov = self.manager.get_drone_cam_field_of_view()
-        # true_drone_pos = self.manager.get_true_drone_position()
-        # true_drone_vel = self.manager.get_true_drone_velocity()
-
         # transform measured car kinematics from topleft img coord frame to centered world coord frame
         # also, convert spatial units from image pixels to meters
         measured_car_pos_cam_frame_meters = self.manager.transform_pos_corner_img_pixels_to_center_cam_meters(measured_car_pos)
         measured_car_vel_cam_frame_meters = self.manager.transform_vel_img_pixels_to_cam_meters(measured_car_vel)
 
         return (
-            # true_drone_pos,
-            # true_drone_vel,
             measured_car_pos_cam_frame_meters,
             measured_car_vel_cam_frame_meters
         )
