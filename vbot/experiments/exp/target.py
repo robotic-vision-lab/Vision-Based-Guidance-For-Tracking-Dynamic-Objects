@@ -91,8 +91,8 @@ class Target:
 
     def update_estimated_bounding_box(self):
         d = ceil(5 / self.manager.simulator.pxm_fac)
-        x = self.centroid_new.flatten()[0] - d
-        y = self.centroid_new.flatten()[1] - d
+        x = int(self.centroid_new.flatten()[0]) - d
+        y = int(self.centroid_new.flatten()[1]) - d
         w = 2*d
         h = 2*d
         self.bounding_box = (x, y, w, h)

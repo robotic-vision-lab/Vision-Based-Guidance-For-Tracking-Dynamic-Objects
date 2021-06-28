@@ -407,9 +407,9 @@ class MultiTracker:
                 # amplify bad errors
                 # target.cross_feature_errors[(target.cross_feature_errors > 0.75 * self.MAX_ERR) & (target.cross_feature_errors > 100*target.cross_feature_errors.min())] *= 10
                 target.cross_feature_errors_new += 10**-4
-                print('NO OCC')
-                print([target is i for i in self.targets])
-                print(target.cross_feature_errors_new - target.cross_feature_errors_old)
+                # print('NO OCC')
+                # print([target is i for i in self.targets])
+                # print(target.cross_feature_errors_new - target.cross_feature_errors_old)
                 target.cross_feature_errors_new[
                     (target.cross_feature_errors_new > 0.75 * self.MAX_ERR) | 
                     (target.cross_feature_errors_new > 100*target.cross_feature_errors_new.min())
@@ -502,9 +502,9 @@ class MultiTracker:
                 # amplify bad errors 
                 if target.cross_feature_errors_new.shape[0] > 0.5 * MAX_NUM_CORNERS:
                     target.cross_feature_errors_new += 10**-4
-                    print('PARITAL OCC')
-                    print([target is i for i in self.targets])
-                    print(target.cross_feature_errors_new - target.cross_feature_errors_old)
+                    # print('PARITAL OCC')
+                    # print([target is i for i in self.targets])
+                    # print(target.cross_feature_errors_new - target.cross_feature_errors_old)
                     target.cross_feature_errors_new[
                         (target.cross_feature_errors_new > 0.75 * self.MAX_ERR) | 
                         (target.cross_feature_errors_new > 100*target.cross_feature_errors_new.min())
