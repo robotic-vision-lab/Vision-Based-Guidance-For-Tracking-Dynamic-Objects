@@ -750,8 +750,8 @@ class MultiTracker:
             target.update_measurements_and_estimations()
             # update centroid estimation
             centroids_est = self.manager.get_estimated_centroids(target)
-            target.centroid_old = np.array([[centroids_est[0], centroids_est[1]]])
-            target.centroid_new = np.array([[centroids_est[2], centroids_est[3]]])
+            target.centroid_old_est = np.array([[centroids_est[0], centroids_est[1]]])
+            target.centroid_new_est = np.array([[centroids_est[2], centroids_est[3]]])
 
 
         # display information 
