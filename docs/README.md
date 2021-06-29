@@ -1,6 +1,6 @@
 ## Documents
 
-Documents the results of using algorithms in vca repo.
+Documents the results of using algorithms from this repo.
 
 ### Contents
 
@@ -27,3 +27,6 @@ Documents the results of using algorithms in vca repo.
 
 * [**final_experiments**](./experiment_vids/final_experiments)
     * Occlusion Handling, Lane Changing Trajectory and Squircle Following Trajectory final experiments
+
+* [**mot_ellipse**](./experiment_vids/mot_ellipse)
+    * Multi-object Tracking + Enclosing ellipse
