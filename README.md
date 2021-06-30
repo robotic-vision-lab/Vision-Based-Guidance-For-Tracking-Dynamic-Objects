@@ -9,7 +9,7 @@ One key application of computer vision is performing object tracking with robots
 
 ### Purpose
 This software contains computer vision algorithms that may be used in various combinations, pipelines, or standalone depending upon the complexity and/or requirement of the task. The repository was created to contain simulation experiments for our 2021 ICUAS paper entitled "[Vision-Based Guidance for Tracking Dynamic Objects](https://arxiv.org/abs/2104.09301)." If you find this project useful, then please consider citing our work:
-```
+```bibtex
 @inproceedings{karmokar2021vision,
   title={Vision-Based Guidance for Tracking Dynamic Objects},
   author={Karmokar, Pritam and Dhal, Kashish and Beksi, William J and Chakravarthy, Animesh},
