@@ -6,7 +6,7 @@ from math import degrees, atan2
 import numpy as np
 
 
-from .manager import ExperimentManager
+from .exp_manager import ExperimentManager
 from .settings import *
 
 from .my_imports import _prep_temp_folder
