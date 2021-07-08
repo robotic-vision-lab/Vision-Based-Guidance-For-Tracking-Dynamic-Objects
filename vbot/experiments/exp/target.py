@@ -152,6 +152,17 @@ class Target:
         self.deltaB_est = atan2(self.ay_est, self.ax_est)
         self.acc_est = (self.ax_est**2 + self.ay_est**2)**0.5
 
+
+    def get_bb_4_points(self):
+        d = ceil(5 / self.manager.simulator.pxm_fac)
+        cent = int(self.centroid_new)
+        points = []
+        for delta in [[[-d,-d]], [[d,-d]], [[d,d]], [[-d,d]]]:
+            points.append(cent + delta)
+
+        return points
+
+
         
 
 
