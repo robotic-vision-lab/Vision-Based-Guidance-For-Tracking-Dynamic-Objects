@@ -62,7 +62,7 @@ class ExperimentManager:
 
         # instantiate simulator, tracker, controller and EKF
         self.simulator = Simulator(self)
-        self.tracker = MultiTracker(self)
+        self.multi_tracker = MultiTracker(self)
         self.tracking_manager = TrackingManager(self)
         self.controller = Controller(self)
         self.EKF = ExtendedKalman(self)
@@ -211,7 +211,8 @@ class ExperimentManager:
 
         # set targets and tell tracker
         self.targets = [Target(sprite, self) for sprite in self.simulator.car_sprites]
-        self.tracker.set_targets(self.targets)
+        self.multi_tracker.set_targets(self.targets)
+        self.tracking_manager.set_targets(self.targets)
 
         # open plot file if write_plot is indicated
         if self.write_plot:
@@ -301,24 +302,28 @@ class ExperimentManager:
                     if self.tracker_on:
                         screen_capture = self.simulator.get_screen_capture()
                         # process image and record status
-                        self.tracker.process_image_complete(screen_capture)
-                        # self.tracker.print_to_console()
+                        self.multi_tracker.process_image_complete(screen_capture)
+                        # self.multi_tracker.print_to_console()
 
                         # let controller generate acceleration, when tracker indicates ok (which is when first frame is processed)
-                        if self.tracker.can_begin_control():
+                        if self.multi_tracker.can_begin_control():
                             # collect kinematics tuple
+                            # points = np.concatenate(
+                            #     [self.targets[0].centroid_new_est, 
+                            #     self.targets[0].centroid_old_est, 
+                            #     self.targets[1].centroid_new_est, 
+                            #     self.targets[2].centroid_new_est],
+                            #         axis=0
+                            #     ).reshape(-1,1,2)
                             points = np.concatenate(
-                                (self.targets[0].centroid_new_est, 
-                                self.targets[0].centroid_old_est, 
-                                self.targets[1].centroid_new_est, 
-                                self.targets[2].centroid_new_est),
+                                    self.tracking_manager.get_points_to_be_enclosed(),
                                     axis=0
                                 ).reshape(-1,1,2)
                             # print(points.shape)
                             a,b,c,angle=tight_ellipse(points)
                             # print(f'a={a}, b={b}, c={c}, angle={angle}')
-                            self.tracker.frame_color_edited = cv.ellipse(
-                                img=self.tracker.frame_color_edited,
+                            self.multi_tracker.frame_color_edited = cv.ellipse(
+                                img=self.multi_tracker.frame_color_edited,
                                 center=c,
                                 axes=(int(a),int(b)),
                                 angle=degrees(angle),
@@ -328,7 +333,7 @@ class ExperimentManager:
                                 thickness=1,
                                 lineType=cv.LINE_AA
                             )
-                            cv.imshow('Tracking in progress', self.tracker.frame_color_edited);cv.waitKey(1)
+                            cv.imshow('Tracking in progress', self.multi_tracker.frame_color_edited);cv.waitKey(1)
                             
                                 
                             # target.kinematics = self.get_true_kinematics(target) if (self.use_true_kin or not target.track_status) else self.get_tracked_kinematics(target)
