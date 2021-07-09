@@ -965,7 +965,7 @@ class MultiTracker:
             self.cur_img = self.frame_color_edited
 
             # show resultant img
-            cv.imshow(self.win_name, self.frame_color_edited)
+            # cv.imshow(self.win_name, self.frame_color_edited)
         
         # if SHOW_EXTRA:
         #     patches = self.initial_patches_gray if self.patches_gray is None else self.patches_gray
@@ -980,7 +980,7 @@ class MultiTracker:
         #     assembled_img = images_assemble([self.frame_old_gray.copy(), self.frame_new_gray.copy(), self.frame_color_edited.copy()], (1,3))
         # self.img_dumper.dump(assembled_img)
 
-        cv.waitKey(1)
+        # cv.waitKey(1)
 
     def add_cosmetics(self, frame, mask):
         img = frame
@@ -991,6 +991,9 @@ class MultiTracker:
             xc,yc = tuple(map(int,target.centroid_new.flatten()))
             size = ceil(6/self.manager.simulator.pxm_fac)
             img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), _ARROW_COLOR, 1, cv.LINE_4)
+            if target.kinematics == NONE_KINEMATICS:
+                xc,yc = tuple(map(int,target.centroid_new_est.flatten()))
+                img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), (204,204,204), 1, cv.LINE_4)
 
                 
             # draw centroid track - circle for centroid_new and line between centroid_old and centroid_new
@@ -1034,6 +1037,12 @@ class MultiTracker:
         img = cv.arrowedLine(img, (x+1, y), (x+1+size, y), (51, 51, 255), thickness, cv.LINE_AA)
         img = cv.arrowedLine(img, (x, y-1 ), (x, y-1-size), (51, 255, 51), thickness, cv.LINE_AA)
         return img
+
+    def show_point(self, point, color):
+        img = self.frame_color_edited.copy()
+        img = draw_point(img, point, color)
+        cv.imshow(self.win_name, img);cv.waitKey(1)
+
 
     def put_metrics(self, img, k):
         """Helper function, put metrics and stuffs on opencv image.
