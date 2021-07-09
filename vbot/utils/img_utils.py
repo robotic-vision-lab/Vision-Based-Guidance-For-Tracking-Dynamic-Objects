@@ -288,7 +288,7 @@ def draw_point(img, pt_coords, color=None):
     """
     rand_color = np.random.randint(0, 255, (3,))
     circ_color = rand_color.tolist() if color is None else color
-    img = cv.circle(img, pt_coords, radius=3, color=circ_color, thickness=-1)
+    img = cv.circle(img, pt_coords, radius=3, color=circ_color, thickness=-1, lineType=cv.LINE_AA)
     return img 
 
 
