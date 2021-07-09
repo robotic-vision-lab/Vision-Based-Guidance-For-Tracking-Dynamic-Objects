@@ -988,12 +988,14 @@ class MultiTracker:
         for target in self.targets:
             _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
             # draw bounding box say 10x10 m^2 (5x5 to SW and NE)
-            xc,yc = tuple(map(int,target.centroid_new.flatten()))
-            size = ceil(6/self.manager.simulator.pxm_fac)
-            img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), _ARROW_COLOR, 1, cv.LINE_4)
             if target.kinematics == NONE_KINEMATICS:
                 xc,yc = tuple(map(int,target.centroid_new_est.flatten()))
+                size = ceil(12/self.manager.simulator.pxm_fac)
                 img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), (204,204,204), 1, cv.LINE_4)
+            else:
+                xc,yc = tuple(map(int,target.centroid_new.flatten()))
+                size = ceil(6/self.manager.simulator.pxm_fac)
+                img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), _ARROW_COLOR, 1, cv.LINE_4)
 
                 
             # draw centroid track - circle for centroid_new and line between centroid_old and centroid_new

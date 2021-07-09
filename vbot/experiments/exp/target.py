@@ -96,7 +96,8 @@ class Target:
         self.bb_top_left_offset[1] = self.bounding_box[1] - self.sprite_obj.rect.centery
 
     def update_estimated_bounding_box(self):
-        d = ceil(5 / self.manager.simulator.pxm_fac)
+        size = 12 if self.occlusion_case_old == TOTAL_OCC else 6
+        d = ceil(size / self.manager.simulator.pxm_fac)
         x = int(self.centroid_new.flatten()[0]) - d
         y = int(self.centroid_new.flatten()[1]) - d
         w = 2*d
@@ -154,8 +155,11 @@ class Target:
 
 
     def get_bb_4_points(self):
-        d = ceil(5 / self.manager.simulator.pxm_fac)
-        cent = int(self.centroid_new)
+        d = ceil(6 / self.manager.simulator.pxm_fac)
+        if not self.kinematics == NONE_KINEMATICS:
+            cent = self.centroid_new.astype('int')
+        else:
+            cent = self.centroid_new_est.astype('int')
         points = []
         for delta in [[[-d,-d]], [[d,-d]], [[d,d]], [[-d,d]]]:
             points.append(cent + delta)
