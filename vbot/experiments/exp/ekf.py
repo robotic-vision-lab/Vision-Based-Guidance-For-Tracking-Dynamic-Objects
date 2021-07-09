@@ -198,29 +198,6 @@ class ExtendedKalman:
         self.y = state_est_acc_y.flatten()[0]
         self.vy = state_est_acc_y.flatten()[1]
         self.ay = state_est_acc_y.flatten()[2]
-
-
-    # def update_state(self):
-    #     # collect drone kinematics
-    #     drone_kin = self.manager.get_drone_kinematics()
-    #     cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
-    #     drone_pos_x, drone_pos_y = drone_kin[0]
-    #     drone_vel_x, drone_vel_y = drone_kin[1]
-    #     drone_pos_x += cam_origin_x
-    #     drone_pos_y += cam_origin_y
-    #     drone_speed = (drone_vel_x**2 + drone_vel_y**2)**0.5
-
-    #     # {x, y, vx, vy, ax, ay} -> {r, theta, Vr, Vtheta, delta_B, a_B}
-    #     beta_est = atan2(self.vy, self.vx)
-    #     car_speed_est = (self.vx**2 + self.vy**2)**0.5
-
-    #     self.r = ((drone_pos_x - self.x)**2 + (drone_pos_y - self.y)**2)**0.5
-    #     self.theta = atan2((self.y - drone_pos_y), (self.x - drone_pos_x))
-    #     self.Vr = car_speed_est*cos(beta_est - self.theta) - drone_speed*cos(self.drone_alpha - self.theta)
-    #     self.Vtheta = car_speed_est*sin(beta_est - self.theta) - drone_speed*sin(self.drone_alpha - self.theta)
-
-    #     self.deltaB_est = atan2(self.ay, self.ax)
-    #     self.estimated_acceleration = (self.ax**2 + self.ay**2)**0.5
         
 
     def get_estimated_state(self):
