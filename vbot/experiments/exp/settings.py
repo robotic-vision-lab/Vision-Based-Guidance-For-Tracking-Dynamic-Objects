@@ -78,7 +78,7 @@ NUM_BLOCKS = 0
 # bar settings
 BAR_COLOR = DARK_GRAY_3
 BAR_COLOR_DELTA = (8, 8, 8)
-BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 35.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
+BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 20.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
 NUM_BARS = 2
 
 # drone camera settings
@@ -98,6 +98,9 @@ DELTA_TIME = 0.1           # used in full blocking mode
 
 # Bounding box settings
 BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
+
+# Ellipse settings
+ELLIPSE_COLOR = (66, 61, 78)
 
 # tracker settings
 METRICS_COLOR = LIGHT_GRAY_2
@@ -195,4 +198,4 @@ DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (5.31, 0.0)
 K_1                     = 0.5
 K_2                     = 0.2
-K_W                      = -0.1
+K_W                     = -0.1
