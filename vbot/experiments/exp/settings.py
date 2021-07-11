@@ -100,6 +100,7 @@ DELTA_TIME = 0.1           # used in full blocking mode
 BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
 
 # Ellipse settings
+ELLIPSE_TOLERANCE = 0.1
 ELLIPSE_COLOR = (66, 61, 78)
 
 # tracker settings
