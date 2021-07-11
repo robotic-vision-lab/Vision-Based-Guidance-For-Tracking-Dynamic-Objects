@@ -1,7 +1,7 @@
 from math import ceil, atan2, cos, sin
 import numpy as np
 
-from .ekf import ExtendedKalman
+from .target_ekf import TargetEKF
 from .optical_flow_config import MAX_NUM_CORNERS
 from .settings import (NO_OCC,
                       PARTIAL_OCC,
@@ -77,7 +77,7 @@ class Target:
         self.centroid_offset = [0,0]
         self.bb_top_left_offset = [0,0]
 
-        self.EKF = ExtendedKalman(self.manager, self)
+        self.EKF = TargetEKF(self.manager, self)
         self.update_true_bounding_box()
 
     def update_true_bounding_box(self):
