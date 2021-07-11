@@ -13,6 +13,7 @@ from .multi_tracker import MultiTracker
 from .tracking_manager import TrackingManager
 from .controller import Controller
 from .ellipse_ekf import EllipseEKF
+from .ellipse import Ellipse2D
 from .target import Target
 
 from .settings import *
@@ -184,10 +185,13 @@ class ExperimentManager:
         return x, y, w, h
 
     def get_estimated_centroids(self, target):
+        # EKF returns state in inertial frame
         old_x = target.EKF.old_x if target.EKF.old_x is not None else 0.0
         old_y = target.EKF.old_y if target.EKF.old_y is not None else 0.0
         x = target.EKF.x if target.EKF.x is not None else 0.0
         y = target.EKF.y if target.EKF.y is not None else 0.0
+
+        # convert from inertial frame to image frame. 
         old_centroid_x = old_x-self.simulator.camera.prev_origin[0]
         old_centroid_y = old_y-self.simulator.camera.prev_origin[1]
         new_centroid_x = x-self.simulator.camera.origin[0]
@@ -209,7 +213,7 @@ class ExperimentManager:
         # initialize simulator
         self.simulator.start_new()
 
-        # set targets and tell tracker
+        # set targets and tell multi_tracker and tracking_manager
         self.targets = [Target(sprite, self) for sprite in self.simulator.car_sprites]
         self.multi_tracker.set_targets(self.targets)
         self.tracking_manager.set_targets(self.targets)
@@ -301,21 +305,26 @@ class ExperimentManager:
                 if self.simulator.can_begin_tracking():
                     if self.tracker_on:
                         screen_capture = self.simulator.get_screen_capture()
-                        # process image and record status
+                        # process image through multi_tracker; it knows to record information in targets
                         self.multi_tracker.process_image_complete(screen_capture)
 
                         # let controller generate acceleration, when tracker indicates ok (which is when first frame is processed)
                         if self.multi_tracker.can_begin_control():
                             # collect kinematics and compute ellipse parameters
-                            points_to_enclose = self.tracking_manager.get_points_to_be_enclosed()
-                            a, b, c, angle = tight_ellipse(points_to_enclose)
+                            ellipse_params = self.tracking_manager.get_enclosing_ellipse()
+                            
+                            ellipse_axes = tuple(map(int, ellipse_params[:2]))
+                            ellipse_center_x, ellipse_center_y = ellipse_params[2]
+                            ellipse_center = tuple(map(int, ellipse_params[2]))
+                            ellipse_rotation_angle = degrees(ellipse_params[3])
+
 
                             # draw the ellipse on color edited frame and show it
                             self.multi_tracker.frame_color_edited = cv.ellipse(
                                 img=self.multi_tracker.frame_color_edited,
-                                center=c,
-                                axes=(int(a),int(b)),
-                                angle=degrees(angle),
+                                center=ellipse_center,
+                                axes=ellipse_axes,
+                                angle=ellipse_rotation_angle,
                                 startAngle=0,
                                 endAngle=360,
                                 color=ELLIPSE_COLOR,
@@ -341,6 +350,8 @@ class ExperimentManager:
                             4. Using all that compute a_lat and a_long
                             5. feed accleration to simulator
                             '''
+
+
 
 
 
