@@ -329,7 +329,7 @@ class ExperimentManager:
                                 angle=degrees(angle),
                                 startAngle=0,
                                 endAngle=360,
-                                color=(153,153,153),
+                                color=ELLIPSE_COLOR,
                                 thickness=1,
                                 lineType=cv.LINE_AA
                             )
