@@ -303,25 +303,14 @@ class ExperimentManager:
                         screen_capture = self.simulator.get_screen_capture()
                         # process image and record status
                         self.multi_tracker.process_image_complete(screen_capture)
-                        # self.multi_tracker.print_to_console()
 
                         # let controller generate acceleration, when tracker indicates ok (which is when first frame is processed)
                         if self.multi_tracker.can_begin_control():
-                            # collect kinematics tuple
-                            # points = np.concatenate(
-                            #     [self.targets[0].centroid_new_est, 
-                            #     self.targets[0].centroid_old_est, 
-                            #     self.targets[1].centroid_new_est, 
-                            #     self.targets[2].centroid_new_est],
-                            #         axis=0
-                            #     ).reshape(-1,1,2)
-                            points = np.concatenate(
-                                    self.tracking_manager.get_points_to_be_enclosed(),
-                                    axis=0
-                                ).reshape(-1,1,2)
-                            # print(points.shape)
-                            a,b,c,angle=tight_ellipse(points)
-                            # print(f'a={a}, b={b}, c={c}, angle={angle}')
+                            # collect kinematics and compute ellipse parameters
+                            points_to_enclose = self.tracking_manager.get_points_to_be_enclosed()
+                            a, b, c, angle = tight_ellipse(points_to_enclose)
+
+                            # draw the ellipse on color edited frame and show it
                             self.multi_tracker.frame_color_edited = cv.ellipse(
                                 img=self.multi_tracker.frame_color_edited,
                                 center=c,
@@ -335,9 +324,7 @@ class ExperimentManager:
                             )
                             cv.imshow('Tracking in progress', self.multi_tracker.frame_color_edited);cv.waitKey(1)
                             
-                                
-                            # target.kinematics = self.get_true_kinematics(target) if (self.use_true_kin or not target.track_status) else self.get_tracked_kinematics(target)
-                            
+                                                       
                             # let controller process kinematics
                             # ax, ay = self.controller.generate_acceleration(self.targets[0].kinematics)
                             # feed controller generated acceleration commands to simulator
