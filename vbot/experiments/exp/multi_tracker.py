@@ -54,6 +54,7 @@ class MultiTracker:
         self.window_size = 5
 
         self.display_arrow_color = {NO_OCC:GREEN_CV, PARTIAL_OCC:ORANGE_PEEL_BGR, TOTAL_OCC:TOMATO_BGR}
+        self.display_bb_color = {NO_OCC:(90, 158, 57), PARTIAL_OCC:(16, 144, 234), TOTAL_OCC:(82, 98, 232)}
 
         self._frame_num = 0
         # self.track_length = 10 # for lifetime management
@@ -121,13 +122,13 @@ class MultiTracker:
         target.initial_patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.initial_keypoints]
         
         # initialize template matcher object for each patch
-        target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.initial_patches_gray]
+        target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.initial_patches_color]
 
     def update_patches(self, target):
         # pass
         self.patch_size = round(1.5 / self.manager.simulator.pxm_fac)
-        target.patches_gray = [self.get_neighborhood_patch(self.frame_new_gray, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.keypoints_new_good]
-        target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.patches_gray]
+        target.patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.keypoints_new_good]
+        target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.patches_color]
 
     def update_template(self):
         for target in self.targets:
@@ -529,7 +530,7 @@ class MultiTracker:
                 target.bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *target.bounding_box)
 
                 # perform part template matching and update template points and scores
-                self.find_saved_patches_in_img_bb(self.frame_new_gray, target)
+                self.find_saved_patches_in_img_bb(self.frame_new_color, target)
 
                 # compute good feature keypoints in the new frame (shi-tomasi + SIFT)
                 target.good_keypoints_new = self.get_feature_keypoints_from_mask(self.frame_new_gray, mask=target.bounding_box_mask, bb=target.bounding_box)
@@ -666,7 +667,7 @@ class MultiTracker:
                 target.bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *target.bounding_box)
 
                 # perform template matching for patches to update template points and scores
-                self.find_saved_patches_in_img_bb(self.frame_new_gray, target)
+                self.find_saved_patches_in_img_bb(self.frame_new_color, target)
 
                 # compute good feature keypoints in the new frame
                 # good_keypoints_new = cv.goodFeaturesToTrack(self.frame_new_gray, mask=self.target_bounding_box_mask, **FEATURE_PARAMS)
@@ -987,19 +988,20 @@ class MultiTracker:
         
         for target in self.targets:
             _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
+            _BB_COLOR = self.display_bb_color[target.occlusion_case_new]
             # draw bounding box say 10x10 m^2 (5x5 to SW and NE)
             if target.kinematics == NONE_KINEMATICS:
                 xc,yc = tuple(map(int,target.centroid_new_est.flatten()))
                 size = ceil(12/self.manager.simulator.pxm_fac)
-                img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), (204,204,204), 1, cv.LINE_4)
+                img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), _BB_COLOR, 1, cv.LINE_AA)
             else:
                 xc,yc = tuple(map(int,target.centroid_new.flatten()))
                 size = ceil(6/self.manager.simulator.pxm_fac)
-                img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), _ARROW_COLOR, 1, cv.LINE_4)
+                img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), _BB_COLOR, 1, cv.LINE_AA)
 
                 
             # draw centroid track - circle for centroid_new and line between centroid_old and centroid_new
-            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(1.5*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
+            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
             # cv.imshow('cosmetics', img);cv.waitKey(1)
 
             # draw keypoint tracks - circle for keypoint_new and line between keypoint_old and keypoint_new
