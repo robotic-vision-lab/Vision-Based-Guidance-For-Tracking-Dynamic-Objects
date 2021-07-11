@@ -12,7 +12,7 @@ from .simulator import Simulator
 from .multi_tracker import MultiTracker
 from .tracking_manager import TrackingManager
 from .controller import Controller
-from .ekf import ExtendedKalman
+from .ellipse_ekf import EllipseEKF
 from .target import Target
 
 from .settings import *
@@ -65,7 +65,7 @@ class ExperimentManager:
         self.multi_tracker = MultiTracker(self)
         self.tracking_manager = TrackingManager(self)
         self.controller = Controller(self)
-        self.EKF = ExtendedKalman(self)
+        self.EKF = EllipseEKF(self)
 
         # initialize simulation delta time
         self.sim_dt = 0
@@ -288,8 +288,8 @@ class ExperimentManager:
             if not self.simulator.pause:
                 self.simulator.update()
                 # print stuffs to console
-                if not CLEAN_CONSOLE:
-                    print(f'SSSS >> {str(timedelta(seconds=self.simulator.time))} >> DRONE - x:{vec_str(self.simulator.camera.position)} | v:{vec_str(self.simulator.camera.velocity)} | CAR - x:{vec_str(self.simulator.car.position)}, v: {vec_str(self.simulator.car.velocity)} | COMMANDED a:{vec_str(self.simulator.camera.acceleration)} | a_comm:{vec_str(self.simulator.cam_accel_command)} | rel_car_pos: {vec_str(self.simulator.car.position - self.simulator.camera.position)}', end='\n')
+                # if not CLEAN_CONSOLE:
+                #     print(f'SSSS >> {str(timedelta(seconds=self.simulator.time))} >> DRONE - x:{vec_str(self.simulator.camera.position)} | v:{vec_str(self.simulator.camera.velocity)} | CAR - x:{vec_str(self.simulator.car.position)}, v: {vec_str(self.simulator.car.velocity)} | COMMANDED a:{vec_str(self.simulator.camera.acceleration)} | a_comm:{vec_str(self.simulator.cam_accel_command)} | rel_car_pos: {vec_str(self.simulator.car.position - self.simulator.camera.position)}', end='\n')
 
             # draw updated car, blocks and bars (drone will be drawn later)
             self.simulator.draw()
