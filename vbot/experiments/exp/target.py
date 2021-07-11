@@ -155,7 +155,7 @@ class Target:
 
 
     def get_bb_4_points(self):
-        d = ceil(6 / self.manager.simulator.pxm_fac)
+        d = ceil(4 / self.manager.simulator.pxm_fac)
         if not self.kinematics == NONE_KINEMATICS:
             cent = self.centroid_new.astype('int')
         else:
