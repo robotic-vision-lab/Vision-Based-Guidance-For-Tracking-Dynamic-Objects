@@ -22,6 +22,7 @@ RADICAL_RED_RGB = [255, 51, 102]
 TURQUOISE_GREEN_RGB = [192, 229, 200]
 MIDDLE_YELLOW_RGB = [255, 233, 0]
 SILVER_PINK_RGB = [192, 175, 166]
+GUN_METAL = [41, 50, 65]
 
 # define some colors to be used with pygame 
 BLACK = (0, 0, 0)
@@ -67,3 +68,4 @@ RADICAL_RED_BGR = list(reversed([255, 51, 102]))
 TURQUOISE_GREEN_BGR = list(reversed([192, 229, 200]))
 MIDDLE_YELLOW_BGR = list(reversed([255, 233, 0]))
 SILVER_PINK_BGR = list(reversed([192, 175, 166]))
+GUN_METAL_BGR = list(reversed([41, 50, 65]))
