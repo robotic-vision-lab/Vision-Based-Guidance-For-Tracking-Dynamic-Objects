@@ -9,23 +9,20 @@ class ExtendedKalman:
         self.manager = manager
         self.target = target
 
-        # self.prev_r = None
-        # self.prev_theta = None
-        # self.prev_Vr = None
-        # self.prev_Vtheta = None
         self.old_x = None
         self.old_y = None
         self.x = None
         self.y = None
         self.drone_alpha = None
+
         self.filter_initialized_flag = False
 
-        self.H = np.array([[1.0, 0.0, 0.0, 0.0],
-                           [0.0, 1.0, 0.0, 0.0]])
+        # self.H = np.array([[1.0, 0.0, 0.0, 0.0],
+        #                    [0.0, 1.0, 0.0, 0.0]])
 
-        self.P = np.diag([0.0, 0.0, 0.0, 0.0])
-        self.R_ = np.diag([1, 0.1])
-        self.Q = np.diag([0.001, 0.001, 1, 1])
+        # self.P = np.diag([0.0, 0.0, 0.0, 0.0])
+        # self.R_ = np.diag([1, 0.1])
+        # self.Q = np.diag([0.001, 0.001, 1, 1])
 
         self.P_acc = np.diag([0.0, 0.0, 0.0])
         self.P_acc_y = np.diag([0.0, 0.0, 0.0])
@@ -49,17 +46,11 @@ class ExtendedKalman:
         """Initializes EKF. Meant to run only once at first.
 
         Args:
-            r (float32): Euclidean distance between vehicle and UAS (m)
-            theta (float32): Angle (atan2) of LOS from UAS to vehicle (rad)
-            Vr (float32): Relative LOS velocity of vehicle w.r.t UAS (m/s)
-            Vtheta (float32): Relative LOS angular velocity of vehicle w.r.t UAS (rad/s)
-            alpha (float32): Angle of UAS velocity vector w.r.t to inertial frame
+            x (float32): target position x component in inertial frame (m)
+            y (float32): target position y component in inertial frame (m)
+            vx (float32): target velocity vx component in inertial frame (m/s)
+            vy (float32): target velocity vy component in inertial frame (m/s)
         """
-        # self.prev_r = r
-        # self.prev_theta = theta
-        # self.prev_Vr = Vr
-        # self.prev_Vtheta = Vtheta
-        # self.drone_alpha = drone_alpha
         self.prev_x = x
         self.prev_y = y
         self.prev_vx = vx
@@ -73,9 +64,8 @@ class ExtendedKalman:
         """Add measurements and auxiliary data for filtering
 
         Args:
-            r (float32): Euclidean distance between vehicle and UAS (m)
-            theta (float32): Angle (atan2) of LOS from UAS to vehicle (rad)
-            alpha (float32): Angle of UAS velocity vector w.r.t to inertial frame
+            x (float32): target position x component in inertial frame (m)
+            y (float32): target position y component in inertial frame (m)
         """
         # make sure filter is initialized
         if not self.is_initialized():
@@ -87,36 +77,15 @@ class ExtendedKalman:
         # filter is initialized; set ready to true
         self.ready = True
 
-        # # handle theta discontinuity
-        # if (np.sign(self.prev_theta) != np.sign(theta)):
-        #     # print(f'\n---------prev_theta: {self.prev_theta}, theta: {theta}')
-        #     if self.prev_theta > pi/2:
-        #         self.prev_theta -= tau
-        #     if self.prev_theta < -pi/2:
-        #         self.prev_theta += tau
-        #     # print(f'\n---------prev_theta: {self.prev_theta}, theta: {theta}\n')
-
         # store measurement
-        # self.r = r
-        # self.theta = theta
-        # self.drone_alpha = drone_alpha
         self.x = x
         self.y = y
-        # self.vx = vx
-        # self.vy = vy
-        # self.ax = 0.0
-        # self.ay = 0.0
 
         # perform predictor and filter step
         self.estimate_acc_x()
         self.estimate_acc_y()
-        # self.update_state()
 
         # remember state estimations
-        # self.prev_r = self.r
-        # self.prev_theta = self.theta
-        # self.prev_Vr = self.Vr
-        # self.prev_Vtheta = self.Vtheta
         self.old_x = self.prev_x
         self.old_y = self.prev_y
         self.prev_x = self.x
