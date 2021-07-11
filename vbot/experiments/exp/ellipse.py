@@ -7,17 +7,15 @@ class Ellipse2D:
 		self.major_axis_len = major_axis_len
 		self.minor_axis_len = minor_axis_len
 		self.center_coords = center_coords
-		self.rotation_angle = rotation_angle
+		self.rotation_angle = rotation_angle	# rads
 
 		self._POINT_ENCLOSURE_TOLERANCE = 0.1
 
 	def get_ellipse_params(self):
-		return (
-			self.major_axis_len,
-			self.minor_axis_len,
-			self.center_coords,
-			self.rotation_angle
-			)
+		return (self.major_axis_len,
+				self.minor_axis_len,
+				self.center_coords,
+				self.rotation_angle)
 
 	def enclose_points(self, points, tolerance=None):
 		if tolerance is None:
@@ -31,7 +29,7 @@ class Ellipse2D:
 		# augment points with ones to have shape 3 x NUM_POINTS
 		Q = np.concatenate((points, np.ones((1, NUM_POINTS))), axis=0)
 
-		count = 1
+
 		err = 1
 		u  = np.ones((NUM_POINTS, 1)) / NUM_POINTS
 		d = 2
@@ -56,7 +54,6 @@ class Ellipse2D:
 
 			err = LA.norm(new_u - u)
 
-			count +=1 
 			u = new_u
 
 		# U = diag(u)
@@ -80,7 +77,7 @@ class Ellipse2D:
 		# update ellipse params
 		self.minor_axis_len = 1 / (Q[0])**0.5
 		self.major_axis_len = 1 / (Q[1])**0.5
-		self.center_coords = tuple(map(int,np.matmul(points, u).flatten()))
+		self.center_coords = tuple(np.matmul(points, u).flatten())
 		self.rotation_angle = rotation.as_euler('ZYX')[0]
 
 		return self.get_ellipse_params()
