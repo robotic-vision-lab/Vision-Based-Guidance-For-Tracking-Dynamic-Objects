@@ -118,7 +118,7 @@ def vec_str(vec):
     return f'[{vec[0]:0.2f}, {vec[1]:0.2f}]'
 
 
-def tight_ellipse(points, tolerance=0.001):
+def tight_ellipse(points, tolerance=ELLIPSE_TOLERANCE):
     points = points.reshape(-1,2).T
     N = points.shape[-1]
     # add ones 
