@@ -1,3 +1,5 @@
+import numpy as np
+
 class TrackingManager:
     """[summary]
     """
@@ -13,5 +15,7 @@ class TrackingManager:
         for target in self.targets:
             for point in target.get_bb_4_points():
                 points.append(point)
+
+        points = np.concatenate(points, axis=0).reshape(-1, 1, 2)
 
         return points
