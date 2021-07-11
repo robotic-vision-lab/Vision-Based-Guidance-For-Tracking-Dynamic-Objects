@@ -52,7 +52,6 @@ class Simulator:
         self.car_img_rect = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         self.car_img_rect_2 = load_image_rect(CAR_IMG_2, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         self.car_img_rect_3 = load_image_rect(CAR_IMG_3, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
-        
         self.drone_img_rect = load_image_rect(DRONE_IMG, colorkey=BLACK, alpha=True, scale=DRONE_SCALE)
 
         # set screen saving to False
