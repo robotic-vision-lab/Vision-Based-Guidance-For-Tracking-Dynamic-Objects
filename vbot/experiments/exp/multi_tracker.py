@@ -747,9 +747,9 @@ class MultiTracker:
 
         # use filter 
         for target in self.targets:
-            # filter target.kinematics
+            # filter target.kinematics (filtering in inertial frame)
             target.update_measurements_and_estimations()
-            # update centroid estimation
+            # update centroid estimations back to image frame
             centroids_est = self.manager.get_estimated_centroids(target)
             target.centroid_old_est = np.array([[centroids_est[0], centroids_est[1]]])
             target.centroid_new_est = np.array([[centroids_est[2], centroids_est[3]]])
