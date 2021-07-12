@@ -1,13 +1,24 @@
+from math import cos, sin
 import numpy as np
 from numpy import linalg as LA
 from scipy.spatial.transform import Rotation as R
+from .ellipse_ekf import EllipseEKF
 
 class Ellipse2D:
-	def __init__(self, major_axis_len=1, minor_axis_len=1, center_coords=(0,0), rotation_angle=0):
+	def __init__(self, exp_manager=None, tracking_manager=None, major_axis_len=1, minor_axis_len=1, center_coords=(0,0), rotation_angle=0):
+		self.exp_manager = exp_manager
+		self.tracking_manager = tracking_manager
+		
 		self.major_axis_len = major_axis_len
 		self.minor_axis_len = minor_axis_len
 		self.center_coords = center_coords
 		self.rotation_angle = rotation_angle	# rads
+
+		self.focal_length = 0.0
+		self.focal_point_1 = [0.0, 0,0]
+		self.focal_point_2 = [0.0, 0,0]
+
+		self.EKF = EllipseEKF(exp_manager, tracking_manager, self)
 
 		self._POINT_ENCLOSURE_TOLERANCE = 0.1
 
@@ -16,6 +27,16 @@ class Ellipse2D:
 				self.minor_axis_len,
 				self.center_coords,
 				self.rotation_angle)
+
+	def update_focal_length(self):
+		self.focal_length = LA.norm([self.major_axis_len, self.minor_axis_len])
+
+	def update_focal_points(self):
+		self.focal_point_1[0] = self.center_coords[0] + self.focal_length * cos(self.rotation_angle)
+		self.focal_point_1[1] = self.center_coords[1] + self.focal_length * sin(self.rotation_angle)
+		
+		self.focal_point_2[0] = self.center_coords[0] - self.focal_length * cos(self.rotation_angle)
+		self.focal_point_2[1] = self.center_coords[1] - self.focal_length * sin(self.rotation_angle)
 
 	def enclose_points(self, points, tolerance=None):
 		if tolerance is None:
@@ -80,5 +101,12 @@ class Ellipse2D:
 		self.center_coords = tuple(np.matmul(points, u).flatten())
 		self.rotation_angle = rotation.as_euler('ZYX')[0]
 
+		# update focal length and focal points. note: in that order
+		self.update_focal_length()
+		self.update_focal_points()
+
 		return self.get_ellipse_params()
+
+
+	
 
