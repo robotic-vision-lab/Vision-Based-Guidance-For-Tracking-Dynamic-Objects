@@ -15,8 +15,8 @@ class Ellipse2D:
 		self.rotation_angle = rotation_angle	# rads
 
 		self.focal_length = 0.0
-		self.focal_point_1 = [0.0, 0,0]
-		self.focal_point_2 = [0.0, 0,0]
+		self.focal_point_1 = [0.0, 0.0]
+		self.focal_point_2 = [0.0, 0.0]
 
 		self.EKF = EllipseEKF(exp_manager, tracking_manager, self)
 
@@ -110,6 +110,7 @@ class Ellipse2D:
 
 	def update_estimations(self):
 		'''
-		tracking_manager will use this API to have the run filtering and collect estimations of focal_points
+		tracking_manager will use this API to have the filtering run and collect estimations of focal_points
 		'''
-		pass
+
+		
