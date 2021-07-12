@@ -22,7 +22,7 @@ class TrackingManager:
 
         return points
 
-    def get_enclosing_ellipse(self, tolerance=None):
+    def compute_enclosing_ellipse(self, tolerance=None):
         points_to_enclose = self.get_points_to_be_enclosed()
         ellipse_params = self.ellipse.enclose_points(points_to_enclose, tolerance)
 
