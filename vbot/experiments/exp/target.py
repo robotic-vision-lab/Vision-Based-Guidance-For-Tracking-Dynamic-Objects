@@ -77,6 +77,8 @@ class Target:
         self.centroid_offset = [0,0]
         self.bb_top_left_offset = [0,0]
 
+        self.ID = manager.generate_target_id()
+
         self.EKF = TargetEKF(self.manager, self)
         self.update_true_bounding_box()
 
