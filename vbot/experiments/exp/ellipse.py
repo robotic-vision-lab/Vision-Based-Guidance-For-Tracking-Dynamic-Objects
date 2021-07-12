@@ -109,4 +109,7 @@ class Ellipse2D:
 
 
 	def update_estimations(self):
+		'''
+		tracking_manager will use this API to have the run filtering and collect estimations of focal_points
+		'''
 		pass
