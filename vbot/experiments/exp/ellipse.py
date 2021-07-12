@@ -68,13 +68,10 @@ class Ellipse2D:
 			_ARG_MAX_M = np.argmax(M)
 
 			step_size = (_MAX_M - d - 1) / ((d + 1) * (_MAX_M - 1))
-
 			new_u = (1 - step_size) * u
-
 			new_u[_ARG_MAX_M] += step_size
 
 			err = LA.norm(new_u - u)
-
 			u = new_u
 
 		# U = diag(u)
@@ -106,7 +103,6 @@ class Ellipse2D:
 		self.update_focal_points()
 
 		return self.get_ellipse_params()
-
 
 	def update_estimations(self):
 		'''
