@@ -20,17 +20,22 @@ class EllipseEKF:
         self.fp2_x = None
         self.fp2_y = None
 
-        self.filter_initialized_flag = False
+        self.H = np.array([[1.0, 0.0, 0.0]])
 
-        self.H_acc = np.array([[1.0, 0.0, 0.0]])
-        self.P_acc_x = np.diag([0.0, 0.0, 0.0])
-        self.P_acc_y = np.diag([0.0, 0.0, 0.0])
-        self.cov_acc_y = np.array([[self.P_acc[0,0]], [self.P_acc[1,1]], [self.P_acc[2,2]]])
-        self.cov_acc_y = np.array([[self.P_acc_y[0,0]], [self.P_acc_y[1,1]], [self.P_acc_y[2,2]]])
+        self.P_fp1_x = np.diag([0.0, 0.0, 0.0])
+        self.P_fp1_y = np.diag([0.0, 0.0, 0.0])
+        self.P_fp2_x = np.diag([0.0, 0.0, 0.0])
+        self.P_fp2_y = np.diag([0.0, 0.0, 0.0])
+
+        self.cov_fp1_x = np.array([[self.P_fp1_x[0,0]], [self.P_fp1_x[1,1]], [self.P_fp1_x[2,2]]])
+        self.cov_fp1_y = np.array([[self.P_fp1_y[0,0]], [self.P_fp1_y[1,1]], [self.P_fp1_y[2,2]]])
+        self.cov_fp2_x = np.array([[self.P_fp2_x[0,0]], [self.P_fp2_x[1,1]], [self.P_fp2_x[2,2]]])
+        self.cov_fp2_y = np.array([[self.P_fp2_y[0,0]], [self.P_fp2_y[1,1]], [self.P_fp2_y[2,2]]])
         
         self.alpha_acc = 0.1    # reciprocal of maneuver(acceleration) time constant. 1/60-lazy turn, 1/20-evasive,  1-atmospheric turbulence
         self.sigma_square = 0.1
 
+        self.filter_initialized_flag = False
         self.ready = False
 
     def is_initialized(self):
@@ -88,23 +93,32 @@ class EllipseEKF:
         self.ready = True
 
         # store measurement
-        self.x = x
-        self.y = y
+        self.fp1_x = fp1_x
+        self.fp1_y = fp1_y
+        self.fp2_x = fp2_x
+        self.fp2_y = fp2_y
 
         # perform predictor and filter step
         self.preprocess()
-        self.estimate_fp1_x()   #TODO In progress CURRENTLY HERE
-        self.estimate_fp1_y()   #TODO In progress
-        self.estimate_fp2_x()   #TODO In progress
-        self.estimate_fp2_y()   #TODO In progress
+        self.estimate_fp1_x()
+        self.estimate_fp1_y()
+        self.estimate_fp2_x()
+        self.estimate_fp2_y()
 
         # remember state estimations
-        self.old_x = self.prev_x
-        self.old_y = self.prev_y
-        self.prev_x = self.x
-        self.prev_y = self.y
-        self.prev_vx = self.vx
-        self.prev_vy = self.vy
+        self.old_fp1_x = self.prev_fp1_x
+        self.old_fp1_y = self.prev_fp1_y
+        self.prev_fp1_x = self.fp1_x
+        self.prev_fp1_y = self.fp1_y
+        self.prev_fp1_vx = self.fp1_vx
+        self.prev_fp1_vy = self.fp1_vy
+        
+        self.old_fp2_x = self.prev_fp2_x
+        self.old_fp2_y = self.prev_fp2_y
+        self.prev_fp2_x = self.fp2_x
+        self.prev_fp2_y = self.fp2_y
+        self.prev_fp2_vx = self.fp2_vx
+        self.prev_fp2_vy = self.fp2_vy
 
 
     def preprocess(self):
@@ -131,9 +145,9 @@ class EllipseEKF:
                                                [self.q13, self.q23, self.q33]])
 
 
-    #TODO 
+
     def estimate_fp1_x(self):
-        # set R and x appropriate to occlusion state
+        # set R and fp1_x appropriate to occlusion state
         if self.fp1_x is None:
             self.R = 10 #100
             self.fp1_x_measured = self.prev_fp1_x
@@ -141,57 +155,114 @@ class EllipseEKF:
             self.R = 1 #1
             self.fp1_x_measured = self.fp1_x
 
-        self.Q_x = self.sigma_square_x * self.Q
         
         # form state vector
-        state_est = np.array([[self.prev_x], [self.prev_vx], [self.prev_ax]])
+        state_est = np.array([[self.prev_fp1_x], [self.prev_fp1_vx], [self.prev_fp1_ax]])
 
         # predict
         state_est_pre = np.matmul(self.A, state_est)
-        P_pre = LA.multi_dot([self.A, self.P_x, self.A.T]) + self.Q_x
-        S = LA.multi_dot([self.H, P_pre, self.H.T]) + self.R_x
+        P_pre = LA.multi_dot([self.A, self.P_fp1_x, self.A.T]) + self.Q
+        S = LA.multi_dot([self.H, P_pre, self.H.T]) + self.R
         K = LA.multi_dot([P_pre, self.H.T, LA.pinv(S)])
 
         # correct
-        state_est = state_est_pre + np.matmul(K, (self.x_measured - np.matmul(self.H, state_est_pre)))
-        self.P_x = np.matmul((np.eye(3) - np.matmul(K, self.H)), P_pre)
-        self.cov_x = np.array([[self.P_x[0,0]], [self.P_x[1,1]], [self.P_x[1,1]]])
+        state_est = state_est_pre + np.matmul(K, (self.fp1_x_measured - np.matmul(self.H, state_est_pre)))
+        self.P_fp1_x = np.matmul((np.eye(3) - np.matmul(K, self.H)), P_pre)
+        self.cov_fp1_x = np.array([[self.P_fp1_x[0,0]], [self.P_fp1_x[1,1]], [self.P_fp1_x[1,1]]])
 
         # extract estimations from state vector
-        self.x = state_est.flatten()[0]
-        self.vx = state_est.flatten()[1]
-        self.ax = state_est.flatten()[2]
-
-
-    def estimate_y(self):
+        self.fp1_x = state_est.flatten()[0]
+        self.fp1_vx = state_est.flatten()[1]
+        self.fp1_ax = state_est.flatten()[2]
+        
+    def estimate_fp1_y(self):
         # set R and y appropriate to occlusion state
-        if self.y is None:
-            self.R_y = 10 #1000
-            self.y_measured = self.prev_y
+        if self.fp1_y is None:
+            self.R = 10 #100
+            self.fp1_y_measured = self.prev_fp1_y
         else:
-            self.R_y = 1 #10
-            self.y_measured = self.y
+            self.R = 1 #1
+            self.fp1_y_measured = self.fp1_y
 
-        self.Q_y = self.sigma_square_y * self.Q
-
+        
         # form state vector
-        state_est = np.array([[self.prev_y], [self.prev_vy], [self.prev_ay]])
+        state_est = np.array([[self.prev_fp1_y], [self.prev_fp1_vy], [self.prev_fp1_ay]])
 
         # predict
         state_est_pre = np.matmul(self.A, state_est)
-        P_pre = LA.multi_dot([self.A, self.P_y, self.A.T]) + self.Q_y
-        S = LA.multi_dot([self.H, P_pre, self.H.T]) + self.R_y
+        P_pre = LA.multi_dot([self.A, self.P_fp1_y, self.A.T]) + self.Q
+        S = LA.multi_dot([self.H, P_pre, self.H.T]) + self.R
         K = LA.multi_dot([P_pre, self.H.T, LA.pinv(S)])
 
         # correct
-        state_est = state_est_pre + np.matmul(K, (self.y_measured - np.matmul(self.H, state_est_pre)))
-        self.P_y = np.matmul((np.eye(3) - np.matmul(K, self.H)), P_pre)
-        self.cov_y = np.array([[self.P_y[0,0]], [self.P_y[1,1]], [self.P_y[1,1]]])
+        state_est = state_est_pre + np.matmul(K, (self.fp1_y_measured - np.matmul(self.H, state_est_pre)))
+        self.P_fp1_y = np.matmul((np.eye(3) - np.matmul(K, self.H)), P_pre)
+        self.cov_fp1_y = np.array([[self.P_fp1_y[0,0]], [self.P_fp1_y[1,1]], [self.P_fp1_y[1,1]]])
 
         # extract estimations from state vector
-        self.y = state_est.flatten()[0]
-        self.vy = state_est.flatten()[1]
-        self.ay = state_est.flatten()[2]
+        self.fp1_y = state_est.flatten()[0]
+        self.fp1_vy = state_est.flatten()[1]
+        self.fp1_ay = state_est.flatten()[2]
+
+    def estimate_fp2_x(self):
+        # set R and x appropriate to occlusion state
+        if self.fp2_x is None:
+            self.R = 10 #100
+            self.fp2_x_measured = self.prev_fp2_x
+        else:
+            self.R = 1 #1
+            self.fp2_x_measured = self.fp2_x
+
+        
+        # form state vector
+        state_est = np.array([[self.prev_fp2_x], [self.prev_fp2_vx], [self.prev_fp2_ax]])
+
+        # predict
+        state_est_pre = np.matmul(self.A, state_est)
+        P_pre = LA.multi_dot([self.A, self.P_fp2_x, self.A.T]) + self.Q
+        S = LA.multi_dot([self.H, P_pre, self.H.T]) + self.R
+        K = LA.multi_dot([P_pre, self.H.T, LA.pinv(S)])
+
+        # correct
+        state_est = state_est_pre + np.matmul(K, (self.fp2_x_measured - np.matmul(self.H, state_est_pre)))
+        self.P_fp2_x = np.matmul((np.eye(3) - np.matmul(K, self.H)), P_pre)
+        self.cov_fp2_x = np.array([[self.P_fp2_x[0,0]], [self.P_fp2_x[1,1]], [self.P_fp2_x[1,1]]])
+
+        # extract estimations from state vector
+        self.fp2_x = state_est.flatten()[0]
+        self.fp2_vx = state_est.flatten()[1]
+        self.fp2_ax = state_est.flatten()[2]
+
+
+    def estimate_fp2_y(self):
+        # set R and y appropriate to occlusion state
+        if self.fp2_y is None:
+            self.R = 10 #100
+            self.fp2_y_measured = self.prev_fp2_y
+        else:
+            self.R = 1 #1
+            self.fp2_y_measured = self.fp2_y
+
+        
+        # form state vector
+        state_est = np.array([[self.prev_fp2_y], [self.prev_fp2_vy], [self.prev_fp2_ay]])
+
+        # predict
+        state_est_pre = np.matmul(self.A, state_est)
+        P_pre = LA.multi_dot([self.A, self.P_fp2_y, self.A.T]) + self.Q
+        S = LA.multi_dot([self.H, P_pre, self.H.T]) + self.R
+        K = LA.multi_dot([P_pre, self.H.T, LA.pinv(S)])
+
+        # correct
+        state_est = state_est_pre + np.matmul(K, (self.fp2_y_measured - np.matmul(self.H, state_est_pre)))
+        self.P_fp2_y = np.matmul((np.eye(3) - np.matmul(K, self.H)), P_pre)
+        self.cov_fp2_y = np.array([[self.P_fp2_y[0,0]], [self.P_fp2_y[1,1]], [self.P_fp2_y[1,1]]])
+
+        # extract estimations from state vector
+        self.fp2_y = state_est.flatten()[0]
+        self.fp2_vy = state_est.flatten()[1]
+        self.fp2_ay = state_est.flatten()[2]
+
         
 
     def get_estimated_state(self):
@@ -207,6 +278,28 @@ class EllipseEKF:
         #     return (self.prev_r, self.prev_theta, self.prev_Vr, self.prev_Vtheta, 0.0, 0.0)
         # return {r_est, theta_est, Vr_est, Vtheta_est, deltab_est, aB_est}
         if self.ready:
-            return (self.x, self.vx, self.ax, self.y, self.vy, self.ay)
+            return (self.fp1_x,
+                    self.fp1_vx,
+                    self.fp1_ax,
+                    self.fp1_y,
+                    self.fp1_vy,
+                    self.fp1_ay,
+                    self.fp2_x,
+                    self.fp2_vx,
+                    self.fp2_ax,
+                    self.fp2_y,
+                    self.fp2_vy,
+                    self.fp2_ay)
         else:
-            return (self.prev_x, self.prev_vx, self.prev_ax, self.prev_y, self.prev_vy, self.prev_ay)
+            return (self.prev_fp1_x,
+                    self.prev_fp1_vx,
+                    self.prev_fp1_ax,
+                    self.prev_fp1_y,
+                    self.prev_fp1_vy,
+                    self.prev_fp1_ay,
+                    self.prev_fp2_x,
+                    self.prev_fp2_vx,
+                    self.prev_fp2_ax,
+                    self.prev_fp2_y,
+                    self.prev_fp2_vy,
+                    self.prev_fp2_ay)
