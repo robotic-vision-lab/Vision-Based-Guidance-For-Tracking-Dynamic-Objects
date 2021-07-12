@@ -108,5 +108,5 @@ class Ellipse2D:
 		return self.get_ellipse_params()
 
 
-	
-
+	def update_estimations(self):
+		pass
