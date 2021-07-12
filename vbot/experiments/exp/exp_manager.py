@@ -61,6 +61,9 @@ class ExperimentManager:
         self.use_real_clock = use_real_clock
         self.draw_occlusion_bars = draw_occlusion_bars
 
+        # initialize target ID
+        self.current_id = 0
+
         # instantiate simulator, tracker, controller and EKF
         self.simulator = Simulator(self)
         self.multi_tracker = MultiTracker(self)
@@ -205,6 +208,10 @@ class ExperimentManager:
                 old_centroid_y,
                 new_centroid_x,
                 new_centroid_y)
+
+    def generate_target_id(self):
+        self.current_id += 1
+        return self.current_id 
 
     def run(self):
         """Main run function. Running experiment equates to calling this function.
