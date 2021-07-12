@@ -66,7 +66,6 @@ class ExperimentManager:
         self.multi_tracker = MultiTracker(self)
         self.tracking_manager = TrackingManager(self)
         self.controller = Controller(self)
-        self.EKF = EllipseEKF(self)
 
         # initialize simulation delta time
         self.sim_dt = 0
@@ -311,28 +310,14 @@ class ExperimentManager:
                         # let controller generate acceleration, when tracker indicates ok (which is when first frame is processed)
                         if self.multi_tracker.can_begin_control():
                             # collect kinematics and compute ellipse parameters
-                            ellipse_params = self.tracking_manager.get_enclosing_ellipse()
+                            ellipse_params = self.tracking_manager.get_enclosing_ellipse(tolerance=ELLIPSE_TOLERANCE)
                             
                             ellipse_axes = tuple(map(int, ellipse_params[:2]))
                             ellipse_center_x, ellipse_center_y = ellipse_params[2]
                             ellipse_center = tuple(map(int, ellipse_params[2]))
                             ellipse_rotation_angle = degrees(ellipse_params[3])
 
-
-                            # draw the ellipse on color edited frame and show it
-                            self.multi_tracker.frame_color_edited = cv.ellipse(
-                                img=self.multi_tracker.frame_color_edited,
-                                center=ellipse_center,
-                                axes=ellipse_axes,
-                                angle=ellipse_rotation_angle,
-                                startAngle=0,
-                                endAngle=360,
-                                color=ELLIPSE_COLOR,
-                                thickness=1,
-                                lineType=cv.LINE_AA
-                            )
-                            cv.imshow('Tracking in progress', self.multi_tracker.frame_color_edited);cv.waitKey(1)
-                            
+                            # ellipse_focal_length = ellipse
 
                             '''
                             At this point we have ellipse parameters
@@ -359,6 +344,22 @@ class ExperimentManager:
 
 
 
+
+
+                            # draw the ellipse on color edited frame and show it
+                            self.multi_tracker.frame_color_edited = cv.ellipse(
+                                img=self.multi_tracker.frame_color_edited,
+                                center=ellipse_center,
+                                axes=ellipse_axes,
+                                angle=ellipse_rotation_angle,
+                                startAngle=0,
+                                endAngle=360,
+                                color=ELLIPSE_COLOR,
+                                thickness=1,
+                                lineType=cv.LINE_AA
+                            )
+                            cv.imshow('Tracking in progress', self.multi_tracker.frame_color_edited);cv.waitKey(1)
+                            
 
                                                        
                             # let controller process kinematics
