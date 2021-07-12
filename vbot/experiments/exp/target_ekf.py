@@ -15,17 +15,19 @@ class TargetEKF:
         self.x = None
         self.y = None
 
-        self.filter_initialized_flag = False
-
         self.H = np.array([[1.0, 0.0, 0.0]])
+
         self.P_x = np.diag([0.0, 0.0, 0.0])
         self.P_y = np.diag([0.0, 0.0, 0.0])
+
         self.cov_x = np.array([[self.P_x[0,0]], [self.P_x[1,1]], [self.P_x[2,2]]])
         self.cov_y = np.array([[self.P_y[0,0]], [self.P_y[1,1]], [self.P_y[2,2]]])
+        
         self.alpha_acc = 0.1    # reciprocal of maneuver(acceleration) time constant. 1/60-lazy turn, 1/20-evasive,  1-atmospheric turbulence
         self.sigma_square_x = 0.1 
         self.sigma_square_y = 0.05
 
+        self.filter_initialized_flag = False
         self.ready = False
 
     def is_initialized(self):
