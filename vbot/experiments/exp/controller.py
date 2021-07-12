@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from datetime import timedelta
-from math import atan2, degrees, cos, sin, pi
+from math import atan2, degrees, cos, sin, pi, pow
 from .settings import *
 
 class Controller:
@@ -197,3 +197,118 @@ class Controller:
             ax, ay = pygame.Vector2((0.0, 0.0))
 
         return ax, ay
+
+    @staticmethod
+    def compute_objective_functions(r1,r2,Vr1,Vr2,Vtheta1,Vtheta2,a):
+        V1 = pow((Vtheta1**2 + Vr1**2),0.5)
+        V2 = pow((Vtheta2**2 + Vr2**2),0.5)
+        A1 = r1*Vtheta1/V1
+        A2 = r2*Vtheta2/V2
+        tau_num = r1*Vr1/V1**2 - r2*Vr2/V2**2
+        tau_den = A1+A2
+        tau = (tau_num/tau_den)**2
+
+        y1 = A1**2*(1+tau*V1**2) + A2**2*(1+tau*V2**2) + 2*A1*A2*pow((1+tau*(V1**2+V2**2)+tau**2*V1**2*V2**2),0.5)-4*(a)**2
+
+        y2 = Vtheta1**2 + Vr1**2
+
+        return y1, y2
+
+    @staticmethod
+    def compute_y1_y2_derivative(r1,r2,Vr1,Vr2,Vtheta1,Vtheta2):
+        def sqrt(x):
+            return pow(x,0.5)
+
+        # Compute the variables needed for derivatives
+        V1 = sqrt(Vtheta1**2+Vr1**2); V2 = sqrt(Vtheta2**2+Vr2**2) 
+        A1 = r1*Vtheta1/V1 
+        A2 = r2*Vtheta2/V2
+        tau = (r1*Vr1/V1**2 - r2*Vr2/V2**2)**2/(A1+A2)**2
+
+        # Compute the derivatives needed for chain rule
+        dy1dA1 = 2*A1*(1+tau*V1**2)+2*A2*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(1/2)
+        dA1dVr1 = (-1)*r1*Vr1*Vtheta1*(Vr1**2+Vtheta1**2)**(-3/2)
+        dy1dtau = A1**2*V1**2+A2**2*V2**2+A1*A2*(V1**2+V2**2+2*tau*V1**2*V2**2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+        dy1dV1 = 2*A1**2*tau*V1+A1*A2*(2*tau*V1+2*tau**2*V1*V2**2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+        dV1dVr1 = Vr1*(Vr1**2+Vtheta1**2)**(-1/2)
+        dy1dA2 = 2*A2*(1+tau*V2**2)+2*A1*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(1/2)
+        dA2dVr2 = (-1)*r2*Vr2*Vtheta2*(Vr2**2+Vtheta2**2)**(-3/2)
+        dy1dV2 = 2*A2**2*tau*V2+A1*A2*(2*tau*V2+2*tau**2*V1**2*V2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+        dV2dVr2 = Vr2*(Vr2**2+Vtheta2**2)**(-1/2)
+        dA2dVtheta2 = (-1)*r2*Vtheta2**2*(Vr2**2+Vtheta2**2)**(-3/2)+r2*(Vr2**2+Vtheta2**2)**(-1/2)
+        dV2dVtheta2 = Vtheta2*(Vr2**2+Vtheta2**2)**(-1/2)
+        dA1dVtheta1 = (-1)*r1*Vtheta1**2*(Vr1**2+Vtheta1**2)**(-3/2)+r1*(Vr1**2+Vtheta1**2)**(-1/2)
+        dV1dVtheta1 = Vtheta1*(Vr1**2+Vtheta1**2)**(-1/2)
+        dtaudV1 = (-4)*(A1+A2)**(-2)*r1*V1**(-3)*Vr1*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
+        dtaudV2 = 4*(A1+A2)**(-2)*r2*V2**(-3)*Vr2*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
+        dtaudA1 = (-2)*(A1+A2)**(-3)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)**2
+        dtaudA2 = (-2)*(A1+A2)**(-3)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)**2
+        dtaudVr1E = 2*(A1+A2)**(-2)*r1*V1**(-2)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
+        dtaudVr2E = (-2)*(A1+A2)**(-2)*r2*V2**(-2)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
+
+        # Apply chain rule to compute intermediate derivatives
+        dtaudVr1 = dtaudV1*dV1dVr1 + dtaudA1*dA1dVr1  + dtaudVr1E
+        dtaudVr2 = dtaudV2*dV2dVr2 + dtaudA2*dA2dVr2  + dtaudVr2E
+        dtaudVtheta1 = dtaudV1*dV1dVtheta1 + dtaudA1*dA1dVtheta1
+        dtaudVtheta2 = dtaudV2*dV2dVtheta2 + dtaudA2*dA2dVtheta2
+
+        # Final Derivatives as per chain rule
+        dy1dVr1 = dy1dA1*dA1dVr1 + dy1dtau*dtaudVr1 + dy1dV1*dV1dVr1
+        dy1dVr2 = dy1dA2 * dA2dVr2 + dy1dtau * dtaudVr2 + dy1dV2 * dV2dVr2
+        dy1dVtheta1 = dy1dA1 * dA1dVtheta1 + dy1dtau * dtaudVtheta1 + dy1dV1 * dV1dVtheta1
+        dy1dVtheta2 = dy1dA2 * dA2dVtheta2 + dy1dtau * dtaudVtheta2 + dy1dV2 * dV2dVtheta2
+
+        # Derivatives of y2 -- no chain rule needed
+        dy2dVr1 = 2*Vr1
+        dy2dVtheta1 = 2*Vtheta1
+
+        return dy1dVr1,dy1dVtheta1,dy1dVr2,dy1dVtheta2,dy2dVr1,dy2dVtheta1
+
+
+    # def compute_a_lat_a_long(self):
+        # dy1dVr1,dy1dVtheta1,dy1dVr2,dy1dVtheta2,dy2dVr1,dy2dVtheta1 = self.compute_y1_y2_derivative(r1,r2,Vr1,Vr2,Vtheta1,Vtheta2)
+        # a_lat = (-1)*((K2*y2+aB1*dy2dVr1*cos(deltaB1+(-1)*theta1)+aB1* \
+        #     dy2dVtheta1*sin(deltaB1+(-1)*theta1))*(dy1dVr1*cos(alpha+(-1) \
+        #     *theta1)+dy1dVr2*cos(alpha+(-1)*theta2)+dy1dVtheta1*sin(alpha+ \
+        #     (-1)*theta1)+dy1dVtheta2*sin(alpha+(-1)*theta2))+(-1)*( \
+        #     dy2dVr1*cos(alpha+(-1)*theta1)+dy2dVtheta1*sin(alpha+(-1)* \
+        #     theta1))*((-1)*K1*w+K1*y1+aB1*dy1dVr1*cos(deltaB1+(-1)* \
+        #     theta1)+aB2*dy1dVr2*cos(deltaB2+(-1)*theta2)+aB1*dy1dVtheta1* \
+        #     sin(deltaB1+(-1)*theta1)+aB2*dy1dVtheta2*sin(deltaB2+(-1)* \
+        #     theta2)))*(dy1dVtheta1*dy2dVr1+(-1)*dy1dVr1*dy2dVtheta1+( \
+        #     dy1dVtheta2*dy2dVr1+(-1)*dy1dVr2*dy2dVtheta1)*cos(theta1+(-1) \
+        #     *theta2)+(-1)*(dy1dVr2*dy2dVr1+dy1dVtheta2*dy2dVtheta1)*sin( \
+        #     theta1+(-1)*theta2))**(-1)
+
+        # a_long = (1/2)*(dy1dVtheta1*dy2dVr1+(-1)*dy1dVr1*dy2dVtheta1+( \
+        #     dy1dVtheta2*dy2dVr1+(-1)*dy1dVr2*dy2dVtheta1)*cos(theta1+(-1) \
+        #     *theta2)+(-1)*(dy1dVr2*dy2dVr1+dy1dVtheta2*dy2dVtheta1)*sin( \
+        #     theta1+(-1)*theta2))**(-1)*(2*aB1*(dy1dVtheta1*dy2dVr1+(-1)* \
+        #     dy1dVr1*dy2dVtheta1)*cos(alpha+(-1)*deltaB1)+2*(dy2dVtheta1* \
+        #     K1*(w+(-1)*y1)+dy1dVtheta1*K2*y2)*cos(alpha+(-1)*theta1)+ \
+        #     2*dy1dVtheta2*K2*y2*cos(alpha+(-1)*theta2)+aB1* \
+        #     dy1dVtheta2*dy2dVr1*cos(alpha+deltaB1+(-1)*theta1+(-1)*theta2) \
+        #     +aB1*dy1dVr2*dy2dVtheta1*cos(alpha+deltaB1+(-1)*theta1+(-1)* \
+        #     theta2)+(-1)*aB2*dy1dVtheta2*dy2dVr1*cos(alpha+deltaB2+(-1)* \
+        #     theta1+(-1)*theta2)+(-1)*aB2*dy1dVr2*dy2dVtheta1*cos(alpha+ \
+        #     deltaB2+(-1)*theta1+(-1)*theta2)+aB1*dy1dVtheta2*dy2dVr1*cos( \
+        #     alpha+(-1)*deltaB1+theta1+(-1)*theta2)+(-1)*aB1*dy1dVr2* \
+        #     dy2dVtheta1*cos(alpha+(-1)*deltaB1+theta1+(-1)*theta2)+aB2* \
+        #     dy1dVtheta2*dy2dVr1*cos(alpha+(-1)*deltaB2+(-1)*theta1+theta2) \
+        #     +(-1)*aB2*dy1dVr2*dy2dVtheta1*cos(alpha+(-1)*deltaB2+(-1)* \
+        #     theta1+theta2)+(-2)*dy2dVr1*K1*w*sin(alpha+(-1)*theta1)+2* \
+        #     dy2dVr1*K1*y1*sin(alpha+(-1)*theta1)+(-2)*dy1dVr1*K2*y2* \
+        #     sin(alpha+(-1)*theta1)+(-2)*dy1dVr2*K2*y2*sin(alpha+(-1)* \
+        #     theta2)+(-1)*aB1*dy1dVr2*dy2dVr1*sin(alpha+deltaB1+(-1)* \
+        #     theta1+(-1)*theta2)+aB1*dy1dVtheta2*dy2dVtheta1*sin(alpha+ \
+        #     deltaB1+(-1)*theta1+(-1)*theta2)+aB2*dy1dVr2*dy2dVr1*sin( \
+        #     alpha+deltaB2+(-1)*theta1+(-1)*theta2)+(-1)*aB2*dy1dVtheta2* \
+        #     dy2dVtheta1*sin(alpha+deltaB2+(-1)*theta1+(-1)*theta2)+(-1)* \
+        #     aB1*dy1dVr2*dy2dVr1*sin(alpha+(-1)*deltaB1+theta1+(-1)* \
+        #     theta2)+(-1)*aB1*dy1dVtheta2*dy2dVtheta1*sin(alpha+(-1)* \
+        #     deltaB1+theta1+(-1)*theta2)+aB2*dy1dVr2*dy2dVr1*sin(alpha+(-1) \
+        #     *deltaB2+(-1)*theta1+theta2)+aB2*dy1dVtheta2*dy2dVtheta1*sin( \
+        #     alpha+(-1)*deltaB2+(-1)*theta1+theta2))
+
+
+
