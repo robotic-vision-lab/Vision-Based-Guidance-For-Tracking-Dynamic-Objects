@@ -3,7 +3,7 @@ import numpy.linalg as LA
 from math import atan2, sin, cos, e, pi, tau
 
 class EllipseEKF:
-    """Implement continuous-continuous EKF for target in stateful fashion
+    """Implement continuous-continuous EKF for ellipse in stateful fashion
     """
 
     def __init__(self, exp_manager, tracking_manager, ellipse=None):
@@ -143,7 +143,6 @@ class EllipseEKF:
         self.Q = self.sigma_square * np.array([[self.q11, self.q12, self.q13],
                                                [self.q12, self.q22, self.q23],
                                                [self.q13, self.q23, self.q33]])
-
 
 
     def estimate_fp1_x(self):
