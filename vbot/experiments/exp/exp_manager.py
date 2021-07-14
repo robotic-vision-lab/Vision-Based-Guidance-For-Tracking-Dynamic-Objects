@@ -362,7 +362,7 @@ class ExperimentManager:
                                 startAngle=0,
                                 endAngle=360,
                                 color=ELLIPSE_COLOR,
-                                thickness=1,
+                                thickness=2,
                                 lineType=cv.LINE_AA
                             )
                             cv.imshow('Tracking in progress', self.multi_tracker.frame_color_edited);cv.waitKey(1)
