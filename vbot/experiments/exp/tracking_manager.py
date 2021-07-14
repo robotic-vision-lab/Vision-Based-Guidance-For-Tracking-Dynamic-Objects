@@ -32,8 +32,8 @@ class TrackingManager:
     def compute_focal_point_estimations(self):
         '''
         exp_manager will use this API to delegate ellipse focal point estimations
-        this should be followed by converting to r and theta of focal points, also speed heading, Vr Vtheta 
-        and accelerations
+        this should be followed by converting to r and theta of focal points, 
+        also speed heading, Vr Vtheta and accelerations
         then compute y1 y2
         then compute a_lat and a_long
         '''
