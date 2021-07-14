@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.linalg as LA
-from math import e
+from math import e, pow
 
 class TargetEKF:
     """Implement continuous-continuous EKF for target in stateful fashion
@@ -92,20 +92,27 @@ class TargetEKF:
 
 
     def preprocess(self):
+        """pre compute transition matrix and process noise"""
+        # set variables for better numerical efficiency
         dt = self.manager.get_sim_dt()
         adt = self.alpha_acc * dt   # αΔt
+        adt2 = pow(adt, 2)
+        adt3 = pow(adt, 3)
+        a2 = pow(self.alpha_acc, 2)
+        a3 = pow(self.alpha_acc, 3)
+        a4 = pow(self.alpha_acc, 4)
         eadt = e**(-adt)
         e2adt = e**(-2*adt)
 
         # transition matrix
-        self.A = np.array([[1.0, dt, (eadt + adt -1)/(self.alpha_acc**2)],
-                               [0.0, 1.0, (1 - eadt)/(self.alpha_acc)],
-                               [0.0, 0.0, eadt]])
+        self.A = np.array([[1.0, dt, (eadt + adt -1) / pow(self.alpha_acc, 2)],
+                           [0.0, 1.0, (1 - eadt)/(self.alpha_acc)],
+                           [0.0, 0.0, eadt]])
 
-        self.q11 = (1 - e2adt + 2*adt + (2/3)*adt**3 - 2*adt**2 - 4*adt*eadt) / (self.alpha_acc**4)
-        self.q12 = (e2adt + 1 - 2*eadt + 2*adt*eadt - 2*adt + adt**2) / (self.alpha_acc**3)
-        self.q13 = (1 - e2adt - 2*adt*eadt) / (self.alpha_acc**2)
-        self.q22 = (4*eadt - 3 - e2adt + 2*adt) / (self.alpha_acc**2)
+        self.q11 = (1 - e2adt + 2*adt + (2/3)*adt3 - 2*adt2 - 4*adt*eadt) / (a4)
+        self.q12 = (e2adt + 1 - 2*eadt + 2*adt*eadt - 2*adt + adt**2) / (a3)
+        self.q13 = (1 - e2adt - 2*adt*eadt) / (a2)
+        self.q22 = (4*eadt - 3 - e2adt + 2*adt) / (a2)
         self.q23 = (e2adt + 1 -2*eadt) / (self.alpha_acc)
         self.q33 = (1 - e2adt)
 
@@ -130,14 +137,14 @@ class TargetEKF:
         state_est = np.array([[self.prev_x], [self.prev_vx], [self.prev_ax]])
 
         # predict
-        state_est_pre = np.matmul(self.A, state_est)
-        P_pre = LA.multi_dot([self.A, self.P_x, self.A.T]) + self.Q_x
-        S = LA.multi_dot([self.H, P_pre, self.H.T]) + self.R_x
-        K = LA.multi_dot([P_pre, self.H.T, LA.pinv(S)])
+        state_est_pre = self.A @ state_est
+        P_pre = self.A @ self.P_x @ self.A.T + self.Q_x
+        S = self.H @ P_pre @ self.H.T + self.R_x
+        K = P_pre @ self.H.T @ LA.pinv(S)
 
         # correct
-        state_est = state_est_pre + np.matmul(K, (self.x_measured - np.matmul(self.H, state_est_pre)))
-        self.P_x = np.matmul((np.eye(3) - np.matmul(K, self.H)), P_pre)
+        state_est = state_est_pre + K @ (self.x_measured - self.H @ state_est_pre)
+        self.P_x = (np.eye(3) - K @ self.H) @ P_pre
         self.cov_x = np.array([[self.P_x[0,0]], [self.P_x[1,1]], [self.P_x[1,1]]])
 
         # extract estimations from state vector
@@ -161,14 +168,14 @@ class TargetEKF:
         state_est = np.array([[self.prev_y], [self.prev_vy], [self.prev_ay]])
 
         # predict
-        state_est_pre = np.matmul(self.A, state_est)
-        P_pre = LA.multi_dot([self.A, self.P_y, self.A.T]) + self.Q_y
-        S = LA.multi_dot([self.H, P_pre, self.H.T]) + self.R_y
-        K = LA.multi_dot([P_pre, self.H.T, LA.pinv(S)])
+        state_est_pre = self.A @ state_est
+        P_pre = self.A @ self.P_y @ self.A.T + self.Q_y
+        S = self.H @ P_pre @ self.H.T + self.R_y
+        K = P_pre @ self.H.T @ LA.pinv(S)
 
         # correct
-        state_est = state_est_pre + np.matmul(K, (self.y_measured - np.matmul(self.H, state_est_pre)))
-        self.P_y = np.matmul((np.eye(3) - np.matmul(K, self.H)), P_pre)
+        state_est = state_est_pre + K @ (self.y_measured - self.H @ state_est_pre)
+        self.P_y = (np.eye(3) - K @ self.H) @ P_pre
         self.cov_y = np.array([[self.P_y[0,0]], [self.P_y[1,1]], [self.P_y[1,1]]])
 
         # extract estimations from state vector
@@ -183,12 +190,6 @@ class TargetEKF:
         Returns:
             tuple(float32, float32, float32, float32, float32, float32): (x, y, vx, vy, ax, ay)
         """
-        # # return {r_est, theta_est, Vr_est, Vtheta_est, deltab_est, aB_est}
-        # if self.ready:
-        #     return (self.r, self.theta, self.Vr, self.Vtheta, self.deltaB_est, self.estimated_acceleration)
-        # else:
-        #     return (self.prev_r, self.prev_theta, self.prev_Vr, self.prev_Vtheta, 0.0, 0.0)
-        # return {r_est, theta_est, Vr_est, Vtheta_est, deltab_est, aB_est}
         if self.ready:
             return (self.x, self.vx, self.ax, self.y, self.vy, self.ay)
         else:
