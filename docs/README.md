@@ -10,6 +10,9 @@ Documents the results of using algorithms from this repo.
     * Horn-Schunk optical flow on simple synthetic data
 
 #### Videos 🎥
+* [**mot_dyn_bb**](./experiment_vids/mot_dyn_bb)
+    * Multi-object Tracking + Enclosing ellipse + Dynamic bounding box
+
 * [**mot_ellipse**](./experiment_vids/mot_ellipse)
     * Multi-object Tracking + Enclosing ellipse
 
