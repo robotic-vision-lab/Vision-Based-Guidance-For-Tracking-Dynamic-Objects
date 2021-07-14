@@ -274,7 +274,7 @@ class Simulator:
             img_sim = self.get_screen_capture(save_mode=True)
 
             # collect tracker output image
-            img_track = self.manager.tracker.cur_img
+            img_track = self.manager.multi_tracker.cur_img
             if img_track is None:
                 img_track = np.ones_like(img_sim, dtype='uint8') * TRACKER_BLANK
 
