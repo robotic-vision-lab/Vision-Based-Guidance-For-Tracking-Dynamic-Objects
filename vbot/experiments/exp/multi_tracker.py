@@ -989,15 +989,23 @@ class MultiTracker:
         for target in self.targets:
             _ARROW_COLOR = self.display_arrow_color[target.occlusion_case_new]
             _BB_COLOR = self.display_bb_color[target.occlusion_case_new]
+            
             # draw bounding box say 10x10 m^2 (5x5 to SW and NE)
             if target.kinematics == NONE_KINEMATICS:
                 xc,yc = tuple(map(int,target.centroid_new_est.flatten()))
-                size = ceil(12/self.manager.simulator.pxm_fac)
-                img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), _BB_COLOR, 1, cv.LINE_AA)
+                d = int(5 + target.EKF.cov_x.flatten()[0] / 0.13)
+                size = ceil(d/self.manager.simulator.pxm_fac)
             else:
                 xc,yc = tuple(map(int,target.centroid_new.flatten()))
-                size = ceil(6/self.manager.simulator.pxm_fac)
-                img = cv.rectangle(img, (xc-size,yc-size), (xc+size, yc+size), _BB_COLOR, 1, cv.LINE_AA)
+                size = ceil(5/self.manager.simulator.pxm_fac)
+
+            img = cv.rectangle(img, (xc-size, yc-size), (xc+size, yc+size), _BB_COLOR, 1, cv.LINE_AA)
+            
+            # draw target id
+            id_str = f' target-{target.ID} '
+            (t_w, t_h) = cv.getTextSize(id_str, cv.FONT_HERSHEY_SIMPLEX, 0.45, thickness=1)[0]
+            img = cv.rectangle(img, (xc-size, yc-size-12-t_h), (xc-size+t_w+2, yc-size-1), _BB_COLOR, cv.FILLED, cv.LINE_AA)
+            img = put_text(img, id_str, (xc-size, yc-size-7), font=cv.FONT_HERSHEY_SIMPLEX, font_scale=0.45, color=(255,255,255), thickness=1)
 
                 
             # draw centroid track - circle for centroid_new and line between centroid_old and centroid_new
