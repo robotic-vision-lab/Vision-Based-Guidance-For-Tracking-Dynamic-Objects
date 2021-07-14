@@ -993,8 +993,7 @@ class MultiTracker:
             # draw bounding box say 10x10 m^2 (5x5 to SW and NE)
             if target.kinematics == NONE_KINEMATICS:
                 xc,yc = tuple(map(int,target.centroid_new_est.flatten()))
-                d = 4 + target.EKF.cov_x.flatten()[0] / 0.13
-                print (d)
+                d = 4 + target.EKF.cov_x.flatten()[0] / 0.13    # approx 0.133 is what cov stabilizes when measurements are available
                 size = ceil(d/self.manager.simulator.pxm_fac)
             else:
                 xc,yc = tuple(map(int,target.centroid_new.flatten()))
