@@ -79,8 +79,10 @@ class EllipseEKF:
         """Add measurements and auxiliary data for filtering
 
         Args:
-            x (float32): target position x component in inertial frame (m)
-            y (float32): target position y component in inertial frame (m)
+            fp1_x (float32): focal point 1 position x component in inertial frame (m)
+            fp1_y (float32): focal point 1 position y component in inertial frame (m)
+            fp2_x (float32): focal point 2 position x component in inertial frame (m)
+            fp2_y (float32): focal point 2 position y component in inertial frame (m)
         """
         # make sure filter is initialized
         if not self.is_initialized():
@@ -124,18 +126,23 @@ class EllipseEKF:
     def preprocess(self):
         dt = self.manager.get_sim_dt()
         adt = self.alpha_acc * dt   # αΔt
-        eadt = e**(-adt)
-        e2adt = e**(-2*adt)
+        adt2 = pow(adt, 2)
+        adt3 = pow(adt, 3)
+        a2 = pow(self.alpha_acc, 2)
+        a3 = pow(self.alpha_acc, 3)
+        a4 = pow(self.alpha_acc, 4)
+        eadt = pow(e, (-adt))
+        e2adt = pow(e, (-2*adt))
 
         # transition matrix
-        self.A = np.array([[1.0, dt, (eadt + adt -1)/(self.alpha_acc**2)],
-                               [0.0, 1.0, (1 - eadt)/(self.alpha_acc)],
-                               [0.0, 0.0, eadt]])
+        self.A = np.array([[1.0, dt, (eadt + adt -1) / (a2)],
+                           [0.0, 1.0, (1 - eadt)/(self.alpha_acc)],
+                           [0.0, 0.0, eadt]])
 
-        self.q11 = (1 - e2adt + 2*adt + (2/3)*adt**3 - 2*adt**2 - 4*adt*eadt) / (self.alpha_acc**4)
-        self.q12 = (e2adt + 1 - 2*eadt + 2*adt*eadt - 2*adt + adt**2) / (self.alpha_acc**3)
-        self.q13 = (1 - e2adt - 2*adt*eadt) / (self.alpha_acc**2)
-        self.q22 = (4*eadt - 3 - e2adt + 2*adt) / (self.alpha_acc**2)
+        self.q11 = (1 - e2adt + 2*adt + (2/3)*adt3 - 2*adt2 - 4*adt*eadt) / (a4)
+        self.q12 = (e2adt + 1 - 2*eadt + 2*adt*eadt - 2*adt + adt**2) / (a3)
+        self.q13 = (1 - e2adt - 2*adt*eadt) / (a2)
+        self.q22 = (4*eadt - 3 - e2adt + 2*adt) / (a2)
         self.q23 = (e2adt + 1 -2*eadt) / (self.alpha_acc)
         self.q33 = (1 - e2adt)
 
@@ -159,14 +166,14 @@ class EllipseEKF:
         state_est = np.array([[self.prev_fp1_x], [self.prev_fp1_vx], [self.prev_fp1_ax]])
 
         # predict
-        state_est_pre = np.matmul(self.A, state_est)
-        P_pre = LA.multi_dot([self.A, self.P_fp1_x, self.A.T]) + self.Q
-        S = LA.multi_dot([self.H, P_pre, self.H.T]) + self.R
-        K = LA.multi_dot([P_pre, self.H.T, LA.pinv(S)])
+        state_est_pre = self.A @ state_est
+        P_pre = self.A @ self.P_fp1_x @ self.A.T + self.Q
+        S = self.H @ P_pre @ self.H.T + self.R
+        K = P_pre @ self.H.T @ LA.pinv(S)
 
         # correct
-        state_est = state_est_pre + np.matmul(K, (self.fp1_x_measured - np.matmul(self.H, state_est_pre)))
-        self.P_fp1_x = np.matmul((np.eye(3) - np.matmul(K, self.H)), P_pre)
+        state_est = state_est_pre + K @ (self.fp1_x_measured - self.H @ state_est_pre)
+        self.P_fp1_x = (np.eye(3) - K @ self.H) @ P_pre
         self.cov_fp1_x = np.array([[self.P_fp1_x[0,0]], [self.P_fp1_x[1,1]], [self.P_fp1_x[1,1]]])
 
         # extract estimations from state vector
@@ -188,14 +195,14 @@ class EllipseEKF:
         state_est = np.array([[self.prev_fp1_y], [self.prev_fp1_vy], [self.prev_fp1_ay]])
 
         # predict
-        state_est_pre = np.matmul(self.A, state_est)
-        P_pre = LA.multi_dot([self.A, self.P_fp1_y, self.A.T]) + self.Q
-        S = LA.multi_dot([self.H, P_pre, self.H.T]) + self.R
-        K = LA.multi_dot([P_pre, self.H.T, LA.pinv(S)])
+        state_est_pre = self.A @ state_est
+        P_pre = self.A @ self.P_fp1_y @ self.A.T + self.Q
+        S = self.H @ P_pre @ self.H.T + self.R
+        K = P_pre @ self.H.T @ LA.pinv(S)
 
         # correct
-        state_est = state_est_pre + np.matmul(K, (self.fp1_y_measured - np.matmul(self.H, state_est_pre)))
-        self.P_fp1_y = np.matmul((np.eye(3) - np.matmul(K, self.H)), P_pre)
+        state_est = state_est_pre + K @ (self.fp1_y_measured - self.H @ state_est_pre)
+        self.P_fp1_y = (np.eye(3) - K @ self.H) @ P_pre
         self.cov_fp1_y = np.array([[self.P_fp1_y[0,0]], [self.P_fp1_y[1,1]], [self.P_fp1_y[1,1]]])
 
         # extract estimations from state vector
@@ -217,14 +224,14 @@ class EllipseEKF:
         state_est = np.array([[self.prev_fp2_x], [self.prev_fp2_vx], [self.prev_fp2_ax]])
 
         # predict
-        state_est_pre = np.matmul(self.A, state_est)
-        P_pre = LA.multi_dot([self.A, self.P_fp2_x, self.A.T]) + self.Q
-        S = LA.multi_dot([self.H, P_pre, self.H.T]) + self.R
-        K = LA.multi_dot([P_pre, self.H.T, LA.pinv(S)])
+        state_est_pre = self.A @ state_est
+        P_pre = self.A @ self.P_fp2_x @ self.A.T + self.Q
+        S = self.H @ P_pre @ self.H.T + self.R
+        K = P_pre @ self.H.T @ LA.pinv(S)
 
         # correct
-        state_est = state_est_pre + np.matmul(K, (self.fp2_x_measured - np.matmul(self.H, state_est_pre)))
-        self.P_fp2_x = np.matmul((np.eye(3) - np.matmul(K, self.H)), P_pre)
+        state_est = state_est_pre + K @ (self.fp2_x_measured - self.H @ state_est_pre)
+        self.P_fp2_x = (np.eye(3) - K @ self.H) @ P_pre
         self.cov_fp2_x = np.array([[self.P_fp2_x[0,0]], [self.P_fp2_x[1,1]], [self.P_fp2_x[1,1]]])
 
         # extract estimations from state vector
@@ -247,14 +254,14 @@ class EllipseEKF:
         state_est = np.array([[self.prev_fp2_y], [self.prev_fp2_vy], [self.prev_fp2_ay]])
 
         # predict
-        state_est_pre = np.matmul(self.A, state_est)
-        P_pre = LA.multi_dot([self.A, self.P_fp2_y, self.A.T]) + self.Q
-        S = LA.multi_dot([self.H, P_pre, self.H.T]) + self.R
-        K = LA.multi_dot([P_pre, self.H.T, LA.pinv(S)])
+        state_est_pre = self.A @ state_est
+        P_pre = self.A @ self.P_fp2_y @ self.A.T + self.Q
+        S = self.H @ P_pre @ self.H.T + self.R
+        K = P_pre @ self.H.T @ LA.pinv(S)
 
         # correct
-        state_est = state_est_pre + np.matmul(K, (self.fp2_y_measured - np.matmul(self.H, state_est_pre)))
-        self.P_fp2_y = np.matmul((np.eye(3) - np.matmul(K, self.H)), P_pre)
+        state_est = state_est_pre + K @ (self.fp2_y_measured - self.H @ state_est_pre)
+        self.P_fp2_y = (np.eye(3) - K @ self.H) @ P_pre
         self.cov_fp2_y = np.array([[self.P_fp2_y[0,0]], [self.P_fp2_y[1,1]], [self.P_fp2_y[1,1]]])
 
         # extract estimations from state vector
