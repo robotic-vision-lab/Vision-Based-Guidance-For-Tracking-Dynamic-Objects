@@ -101,7 +101,7 @@ BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
 
 # Ellipse settings
 ELLIPSE_TOLERANCE = 0.1
-ELLIPSE_COLOR = (66, 61, 78)
+ELLIPSE_COLOR = (204,204,204)#(66, 61, 78)
 
 # tracker settings
 METRICS_COLOR = LIGHT_GRAY_2
