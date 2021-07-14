@@ -101,11 +101,11 @@ class TargetEKF:
         a2 = pow(self.alpha_acc, 2)
         a3 = pow(self.alpha_acc, 3)
         a4 = pow(self.alpha_acc, 4)
-        eadt = e**(-adt)
-        e2adt = e**(-2*adt)
+        eadt = pow(e, (-adt))
+        e2adt = pow(e, (-2*adt))
 
         # transition matrix
-        self.A = np.array([[1.0, dt, (eadt + adt -1) / pow(self.alpha_acc, 2)],
+        self.A = np.array([[1.0, dt, (eadt + adt -1) / a2],
                            [0.0, 1.0, (1 - eadt)/(self.alpha_acc)],
                            [0.0, 0.0, eadt]])
 
