@@ -993,11 +993,11 @@ class MultiTracker:
             # draw bounding box say 10x10 m^2 (5x5 to SW and NE)
             if target.kinematics == NONE_KINEMATICS:
                 xc,yc = tuple(map(int,target.centroid_new_est.flatten()))
-                d = 4 + target.EKF.cov_x.flatten()[0] / 0.13    # approx 0.133 is what cov stabilizes when measurements are available
-                size = ceil(d/self.manager.simulator.pxm_fac)
+                d = (CAR_LENGTH - 1) + target.EKF.cov_x.flatten()[0] / 0.133    # approx 0.133 is what cov stabilizes when measurements are available
+                size = int(d/self.manager.simulator.pxm_fac)
             else:
                 xc,yc = tuple(map(int,target.centroid_new.flatten()))
-                size = ceil(5/self.manager.simulator.pxm_fac)
+                size = int((CAR_LENGTH)/self.manager.simulator.pxm_fac)
             img = cv.rectangle(img, (xc-size, yc-size), (xc+size, yc+size), _BB_COLOR, 1, cv.LINE_AA)
             
             # draw target id
