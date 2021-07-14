@@ -146,8 +146,7 @@ class Target:
         # use EKF to filter measurements target_pos_x and target_pos_y
         self.EKF.add(target_pos_x, target_pos_y)
         self.x_est, self.vx_est, self.ax_est, self.y_est, self.vy_est, self.ay_est = self.EKF.get_estimated_state()
-        # self.r_est, self.theta_est, self.Vr_est, self.Vtheta_est, self.deltaB_est, self.acc_est = self.EKF.get_estimated_state()
-        # print(f'target - {self.ID} | cov_x - {self.EKF.cov_x.flatten()[0]:0.6f}, cov_y - {self.EKF.cov_y.flatten()[0]:0.6f} | occ_case_new - {self.occlusion_case_new}')
+        
         self.beta_est = atan2(self.vy_est, self.vx_est)
         self.speed_est = (self.vx_est**2 + self.vy_est**2)**0.5
 
