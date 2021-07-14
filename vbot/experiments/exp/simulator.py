@@ -367,11 +367,6 @@ class Simulator:
         Returns:
             bool: Can tracker begin tracking
         """
-        # return (((self.bb_start 
-        #         and self.bb_end 
-        #         and not self.bb_start==self.bb_end)
-        #         and not self.pause)
-        #         and self.tracker_ready)
         return self.tracker_ready
 
     def quit(self):
