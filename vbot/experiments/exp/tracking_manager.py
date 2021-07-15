@@ -2,6 +2,7 @@ from math import degrees
 
 import numpy as np
 import pygame
+import cv2 as cv
 import matplotlib.pyplot as plt
 from pygame.locals import *
 from .ellipse import Ellipse2D
@@ -86,13 +87,11 @@ class TrackingManager:
             # convert params
             ellipse_params = self.ellipse.get_params()
 
-
             ellipse_center = self.convert(ellipse_params[2])
             ellipse_focal_point_1 = self.convert(ellipse_params[5])
             ellipse_focal_point_2 = self.convert(ellipse_params[6])
             ellipse_axes = [int(axis/self.exp_manager.simulator.pxm_fac) for axis in ellipse_params[:2]]
             ellipse_rotation_angle = degrees(ellipse_params[3])
-            
 
             return (ellipse_axes[0], 
                     ellipse_axes[1], 
@@ -101,6 +100,80 @@ class TrackingManager:
                     ellipse_focal_point_1,
                     ellipse_focal_point_2)
 
+
+    def display(self):
+        # collect all params
+        ellipse_params = self.get_ellipse_params(IMAGE_REF_FRAME)
+        ellipse_axes = tuple(map(int, ellipse_params[:2]))
+        ellipse_center = tuple(map(int, ellipse_params[2]))
+        ellipse_rotation_angle = ellipse_params[3]
+        ellipse_focal_point_1 = tuple(map(int, ellipse_params[4]))
+        ellipse_focal_point_2 = tuple(map(int, ellipse_params[5]))
+
+        # focal point estimations must be called before calling display
+        ellipse_focal_point_1_est = (self.ellipse_params_est[0],
+                                    self.ellipse_params_est[3])
+        ellipse_focal_point_2_est = (self.ellipse_params_est[6],
+                                    self.ellipse_params_est[9])
+
+        ellipse_focal_point_1_est = self.convert(ellipse_focal_point_1_est)
+        ellipse_focal_point_2_est = self.convert(ellipse_focal_point_2_est)
+        ellipse_focal_point_1_est = tuple(map(int, ellipse_focal_point_1_est))
+        ellipse_focal_point_2_est = tuple(map(int, ellipse_focal_point_2_est))
+
+        # draw over color edited frame and show it
+        ellipse_img = np.zeros_like(self.exp_manager.multi_tracker.frame_color_edited, np.uint8)
+
+        # draw filled ellipse
+        ellipse_img = cv.ellipse(img=ellipse_img,
+                                 center=ellipse_center,
+                                 axes=ellipse_axes,
+                                 angle=ellipse_rotation_angle,
+                                 startAngle=0,
+                                 endAngle=360,
+                                 color=ELLIPSE_COLOR,
+                                 thickness=cv.FILLED,
+                                 lineType=cv.LINE_8)
+
+        # draw measured focal points
+        ellipse_img = cv.circle(ellipse_img,
+                                ellipse_focal_point_1,
+                                radius=ELLIPSE_MEAS_FP_RADIUS,
+                                color=ELLIPSE_MEAS_FP_COLOR,
+                                thickness=cv.FILLED,
+                                lineType=cv.LINE_AA)
+        ellipse_img = cv.circle(ellipse_img,
+                                ellipse_focal_point_2,
+                                radius=ELLIPSE_MEAS_FP_RADIUS,
+                                color=ELLIPSE_MEAS_FP_COLOR,
+                                thickness=cv.FILLED,
+                                lineType=cv.LINE_AA)
+        
+        # draw estimated focal points
+        ellipse_img = cv.circle(ellipse_img,
+                                ellipse_focal_point_1_est,
+                                radius=ELLIPSE_ESTD_FP_RADIUS,
+                                color=ELLIPSE_ESTD_FP_COLOR,
+                                thickness=cv.FILLED,
+                                lineType=cv.LINE_AA)
+        ellipse_img = cv.circle(ellipse_img,
+                                ellipse_focal_point_2_est,
+                                radius=ELLIPSE_ESTD_FP_RADIUS,
+                                color=ELLIPSE_ESTD_FP_COLOR,
+                                thickness=cv.FILLED,
+                                lineType=cv.LINE_AA)
+
+        # blend this with color edited frame
+        blended_img = self.exp_manager.multi_tracker.frame_color_edited.copy()
+        mask = ellipse_img.astype(bool)
+        blended_img[mask] = cv.addWeighted(self.exp_manager.multi_tracker.frame_color_edited, 
+                                           1 - ELLIPSE_OPACITY,
+                                           ellipse_img,
+                                           ELLIPSE_OPACITY,
+                                           0)[mask]
+
+        # show blended image
+        cv.imshow(self.exp_manager.multi_tracker.win_name, blended_img);cv.waitKey(1)
 
 
     def compute_focal_point_estimations(self):
