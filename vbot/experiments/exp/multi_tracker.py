@@ -951,10 +951,8 @@ class MultiTracker:
         measured_car_pos_cam_frame_meters = self.manager.transform_pos_corner_img_pixels_to_center_cam_meters(measured_car_pos)
         measured_car_vel_cam_frame_meters = self.manager.transform_vel_img_pixels_to_cam_meters(measured_car_vel)
 
-        return (
-            measured_car_pos_cam_frame_meters,
-            measured_car_vel_cam_frame_meters
-        )
+        return (measured_car_pos_cam_frame_meters,
+                measured_car_vel_cam_frame_meters)
 
     def display(self):
         if self.manager.tracker_display_on:
@@ -997,7 +995,7 @@ class MultiTracker:
                 size = int(d/self.manager.simulator.pxm_fac)
             else:
                 xc,yc = tuple(map(int,target.centroid_new.flatten()))
-                size = int((CAR_LENGTH)/self.manager.simulator.pxm_fac)
+                size = int((CAR_LENGTH - 1)/self.manager.simulator.pxm_fac)
             img = cv.rectangle(img, (xc-size, yc-size), (xc+size, yc+size), _BB_COLOR, 1, cv.LINE_AA)
             
             # draw target id
