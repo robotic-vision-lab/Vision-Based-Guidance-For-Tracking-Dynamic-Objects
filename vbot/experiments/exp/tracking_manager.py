@@ -69,26 +69,37 @@ class TrackingManager:
 
         return self.ellipse_params_meas
 
+    def convert(self, point):
+        px2m = self.exp_manager.simulator.pxm_fac
+        point = pygame.Vector2(point) - self.exp_manager.get_cam_origin()
+        point = point.elementwise() * (1, -1) / px2m
+        point[0] = int(point[0])
+        point[1] = int(point[1]) + HEIGHT
+        point += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1)
+        return tuple(point)
 
     def get_ellipse_params(self, frame_of_reference=WORLD_INERTIAL_REF_FRAME):
         if frame_of_reference == WORLD_INERTIAL_REF_FRAME:
             return self.ellipse.get_ellipse_params()
         elif frame_of_reference == IMAGE_REF_FRAME:
-            # convert params
-            px2m = self.exp_manager.simulator.pxm_fac
 
+            # convert params
             ellipse_params = self.ellipse.get_ellipse_params()
 
-            ellipse_axes = [int(axis/px2m) for axis in ellipse_params[:2]]
-            cent = pygame.Vector2(ellipse_params[2]) - self.exp_manager.get_cam_origin()
-            cent = cent.elementwise() * (1, -1) / px2m
-            cent[0] = int(cent[0])
-            cent[1] = int(cent[1]) + HEIGHT
-            cent += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1)
-            ellipse_center = tuple(cent)
-            ellipse_rotation_angle = degrees(ellipse_params[3])
 
-            return (ellipse_axes[0], ellipse_axes[1], ellipse_center, ellipse_rotation_angle)
+            ellipse_center = self.convert(ellipse_params[2])
+            ellipse_focal_point_1 = self.convert(ellipse_params[5])
+            ellipse_focal_point_2 = self.convert(ellipse_params[6])
+            ellipse_axes = [int(axis/self.exp_manager.simulator.pxm_fac) for axis in ellipse_params[:2]]
+            ellipse_rotation_angle = degrees(ellipse_params[3])
+            
+
+            return (ellipse_axes[0], 
+                    ellipse_axes[1], 
+                    ellipse_center, 
+                    ellipse_rotation_angle, 
+                    ellipse_focal_point_1,
+                    ellipse_focal_point_2)
 
 
 
