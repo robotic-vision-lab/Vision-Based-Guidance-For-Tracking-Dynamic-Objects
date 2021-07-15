@@ -26,13 +26,13 @@ class Ellipse2D:
 		return (self.major_axis_len,
 				self.minor_axis_len,
 				self.center_coords,
-				self.rotation_angle,
+				-self.rotation_angle,
 				self.focal_length,
 				self.focal_point_1,
 				self.focal_point_2)
 
 	def update_focal_length(self):
-		self.focal_length = LA.norm([self.major_axis_len, self.minor_axis_len])
+		self.focal_length = (self.major_axis_len**2 - self.minor_axis_len**2)**0.5
 
 	def update_focal_points(self):
 		self.focal_point_1[0] = self.center_coords[0] + self.focal_length * cos(self.rotation_angle)
