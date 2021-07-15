@@ -367,15 +367,15 @@ class ExperimentManager:
                                 thickness=cv.FILLED,
                                 lineType=cv.LINE_8
                             )
-                            out = self.multi_tracker.frame_color_edited.copy()
+                            blended_img = self.multi_tracker.frame_color_edited.copy()
                             alpha = 0.7
                             mask = ellipse_img.astype(bool)
-                            out[mask] = cv.addWeighted(self.multi_tracker.frame_color_edited, 
+                            blended_img[mask] = cv.addWeighted(self.multi_tracker.frame_color_edited, 
                                                        alpha,
                                                        ellipse_img,
                                                        1 - alpha,
                                                        0)[mask]
-                            cv.imshow('Tracking in progress', out);cv.waitKey(1)
+                            cv.imshow('Tracking in progress', blended_img);cv.waitKey(1)
 
                             # self.multi_tracker.frame_color_edited = cv.ellipse(
                             #     img=self.multi_tracker.frame_color_edited,
