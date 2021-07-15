@@ -28,7 +28,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 100.0                                  # meters
+ALTITUDE = 200.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -101,9 +101,9 @@ BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
 
 # Ellipse settings
 ELLIPSE_TOLERANCE = 0.1
-ELLIPSE_COLOR = (232, 232, 230)#(66, 61, 78)
+ELLIPSE_COLOR = (227, 227, 225)#(66, 61, 78)
 ELLIPSE_MEAS_FP_COLOR = (1, 1, 1)
-ELLIPSE_ESTD_FP_COLOR = (11, 11, 255)
+ELLIPSE_ESTD_FP_COLOR = (1, 1, 255)
 ELLIPSE_OPACITY = 0.36
 ELLIPSE_MEAS_FP_RADIUS = 7
 ELLIPSE_ESTD_FP_RADIUS = 6
@@ -208,6 +208,6 @@ CAR_INITIAL_POSITION_3  = (-15.0, 0.0)
 CAR_INITIAL_VELOCITY_3  = (5.22 , 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (5.31, 0.0)
-K_1                     = 0.5
-K_2                     = 0.2
-K_W                     = -0.1
+K_1                     = 0.8
+K_2                     = 0.08
+K_W                     = -1000
