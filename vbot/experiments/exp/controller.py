@@ -198,7 +198,7 @@ class Controller:
 
         return ax, ay
 
-    def generate_acceleration(self, ellipse_focal_points_est_state):
+    def generate_acceleration(self, ellipse_focal_points_est_state, ellipse_major_axis_len):
         cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
 
         # drone (known)
@@ -228,7 +228,88 @@ class Controller:
         fp2_heading = atan2(fp2_vy, fp2_vx)
 
         # compute acceleration magnitude and direction for both focal points
+        fp1_acc = (fp1_ax**2 + fp1_ay**2)**0.5
+        fp2_acc = (fp2_ax**2 + fp2_ay**2)**0.5
 
+        fp1_delta = atan2(fp1_ay, fp1_ax)
+        fp2_delta = atan2(fp2_ay, fp2_ax)
+
+        # compute Vr and Vθ for both focal points
+        Vr1 = fp1_speed*cos(fp1_heading - theta1) - drone_speed*cos(drone_alpha - theta1)
+        Vr2 = fp2_speed*cos(fp2_heading - theta2) - drone_speed*cos(drone_alpha - theta2)
+
+        Vtheta1 = fp1_speed*sin(fp1_heading - theta1) - drone_speed*sin(drone_alpha - theta1)
+        Vtheta2 = fp2_speed*sin(fp2_heading - theta2) - drone_speed*sin(drone_alpha - theta2)
+
+        # compute objective function
+        y1, y2 = self.compute_objective_functions(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, ellipse_major_axis_len)
+
+        # compute objective function derivatives
+        dy1dVr1, dy1dVtheta1, dy1dVr2, dy1dVtheta2, dy2dVr1, dy2dVtheta1 = self.compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2)
+
+        # set gains
+        K1 = K_1 * np.sign(-Vr1)
+        K2 = K_2
+        w = K_W
+
+
+        # compute acceleration command
+        a_lat = (-1)*((K2*y2+fp1_acc*dy2dVr1*cos(fp1_delta+(-1)*theta1)+fp1_acc* \
+            dy2dVtheta1*sin(fp1_delta+(-1)*theta1))*(dy1dVr1*cos(drone_alpha+(-1) \
+            *theta1)+dy1dVr2*cos(drone_alpha+(-1)*theta2)+dy1dVtheta1*sin(drone_alpha+ \
+            (-1)*theta1)+dy1dVtheta2*sin(drone_alpha+(-1)*theta2))+(-1)*( \
+            dy2dVr1*cos(drone_alpha+(-1)*theta1)+dy2dVtheta1*sin(drone_alpha+(-1)* \
+            theta1))*((-1)*K1*w+K1*y1+fp1_acc*dy1dVr1*cos(fp1_delta+(-1)* \
+            theta1)+fp2_acc*dy1dVr2*cos(fp2_delta+(-1)*theta2)+fp1_acc*dy1dVtheta1* \
+            sin(fp1_delta+(-1)*theta1)+fp2_acc*dy1dVtheta2*sin(fp2_delta+(-1)* \
+            theta2)))*(dy1dVtheta1*dy2dVr1+(-1)*dy1dVr1*dy2dVtheta1+( \
+            dy1dVtheta2*dy2dVr1+(-1)*dy1dVr2*dy2dVtheta1)*cos(theta1+(-1) \
+            *theta2)+(-1)*(dy1dVr2*dy2dVr1+dy1dVtheta2*dy2dVtheta1)*sin( \
+            theta1+(-1)*theta2))**(-1)
+
+        a_long = (1/2)*(dy1dVtheta1*dy2dVr1+(-1)*dy1dVr1*dy2dVtheta1+( \
+            dy1dVtheta2*dy2dVr1+(-1)*dy1dVr2*dy2dVtheta1)*cos(theta1+(-1) \
+            *theta2)+(-1)*(dy1dVr2*dy2dVr1+dy1dVtheta2*dy2dVtheta1)*sin( \
+            theta1+(-1)*theta2))**(-1)*(2*fp1_acc*(dy1dVtheta1*dy2dVr1+(-1)* \
+            dy1dVr1*dy2dVtheta1)*cos(drone_alpha+(-1)*fp1_delta)+2*(dy2dVtheta1* \
+            K1*(w+(-1)*y1)+dy1dVtheta1*K2*y2)*cos(drone_alpha+(-1)*theta1)+ \
+            2*dy1dVtheta2*K2*y2*cos(drone_alpha+(-1)*theta2)+fp1_acc* \
+            dy1dVtheta2*dy2dVr1*cos(drone_alpha+fp1_delta+(-1)*theta1+(-1)*theta2) \
+            +fp1_acc*dy1dVr2*dy2dVtheta1*cos(drone_alpha+fp1_delta+(-1)*theta1+(-1)* \
+            theta2)+(-1)*fp2_acc*dy1dVtheta2*dy2dVr1*cos(drone_alpha+fp2_delta+(-1)* \
+            theta1+(-1)*theta2)+(-1)*fp2_acc*dy1dVr2*dy2dVtheta1*cos(drone_alpha+ \
+            fp2_delta+(-1)*theta1+(-1)*theta2)+fp1_acc*dy1dVtheta2*dy2dVr1*cos( \
+            drone_alpha+(-1)*fp1_delta+theta1+(-1)*theta2)+(-1)*fp1_acc*dy1dVr2* \
+            dy2dVtheta1*cos(drone_alpha+(-1)*fp1_delta+theta1+(-1)*theta2)+fp2_acc* \
+            dy1dVtheta2*dy2dVr1*cos(drone_alpha+(-1)*fp2_delta+(-1)*theta1+theta2) \
+            +(-1)*fp2_acc*dy1dVr2*dy2dVtheta1*cos(drone_alpha+(-1)*fp2_delta+(-1)* \
+            theta1+theta2)+(-2)*dy2dVr1*K1*w*sin(drone_alpha+(-1)*theta1)+2* \
+            dy2dVr1*K1*y1*sin(drone_alpha+(-1)*theta1)+(-2)*dy1dVr1*K2*y2* \
+            sin(drone_alpha+(-1)*theta1)+(-2)*dy1dVr2*K2*y2*sin(drone_alpha+(-1)* \
+            theta2)+(-1)*fp1_acc*dy1dVr2*dy2dVr1*sin(drone_alpha+fp1_delta+(-1)* \
+            theta1+(-1)*theta2)+fp1_acc*dy1dVtheta2*dy2dVtheta1*sin(drone_alpha+ \
+            fp1_delta+(-1)*theta1+(-1)*theta2)+fp2_acc*dy1dVr2*dy2dVr1*sin( \
+            drone_alpha+fp2_delta+(-1)*theta1+(-1)*theta2)+(-1)*fp2_acc*dy1dVtheta2* \
+            dy2dVtheta1*sin(drone_alpha+fp2_delta+(-1)*theta1+(-1)*theta2)+(-1)* \
+            fp1_acc*dy1dVr2*dy2dVr1*sin(drone_alpha+(-1)*fp1_delta+theta1+(-1)* \
+            theta2)+(-1)*fp1_acc*dy1dVtheta2*dy2dVtheta1*sin(drone_alpha+(-1)* \
+            fp1_delta+theta1+(-1)*theta2)+fp2_acc*dy1dVr2*dy2dVr1*sin(drone_alpha+(-1) \
+            *fp2_delta+(-1)*theta1+theta2)+fp2_acc*dy1dVtheta2*dy2dVtheta1*sin( \
+            drone_alpha+(-1)*fp2_delta+(-1)*theta1+theta2))
+
+        # clip acceleration commands
+        a_long_bound = 10
+        a_lat_bound = 10
+
+        a_long = self.sat(a_long, a_long_bound)
+        a_lat = self.sat(a_lat, a_lat_bound)
+
+        # compute acceleration commands ax and ay
+        delta = drone_alpha + pi / 2
+        ax = a_lat * cos(delta) + a_long * cos(drone_alpha)
+        ay = a_lat * sin(delta) + a_long * sin(drone_alpha)
+
+        return ax, ay
 
 
 
@@ -251,7 +332,7 @@ class Controller:
     @staticmethod
     def compute_y1_y2_derivative(r1,r2,Vr1,Vr2,Vtheta1,Vtheta2):
         def sqrt(x):
-            return pow(x,0.5)
+            return pow(x, 0.5)
 
         # Compute the variables needed for derivatives
         V1 = sqrt(Vtheta1**2+Vr1**2); V2 = sqrt(Vtheta2**2+Vr2**2) 
@@ -297,52 +378,5 @@ class Controller:
         dy2dVtheta1 = 2*Vtheta1
 
         return dy1dVr1,dy1dVtheta1,dy1dVr2,dy1dVtheta2,dy2dVr1,dy2dVtheta1
-
-
-    # def compute_a_lat_a_long(self):
-        # dy1dVr1,dy1dVtheta1,dy1dVr2,dy1dVtheta2,dy2dVr1,dy2dVtheta1 = self.compute_y1_y2_derivative(r1,r2,Vr1,Vr2,Vtheta1,Vtheta2)
-        # a_lat = (-1)*((K2*y2+aB1*dy2dVr1*cos(deltaB1+(-1)*theta1)+aB1* \
-        #     dy2dVtheta1*sin(deltaB1+(-1)*theta1))*(dy1dVr1*cos(alpha+(-1) \
-        #     *theta1)+dy1dVr2*cos(alpha+(-1)*theta2)+dy1dVtheta1*sin(alpha+ \
-        #     (-1)*theta1)+dy1dVtheta2*sin(alpha+(-1)*theta2))+(-1)*( \
-        #     dy2dVr1*cos(alpha+(-1)*theta1)+dy2dVtheta1*sin(alpha+(-1)* \
-        #     theta1))*((-1)*K1*w+K1*y1+aB1*dy1dVr1*cos(deltaB1+(-1)* \
-        #     theta1)+aB2*dy1dVr2*cos(deltaB2+(-1)*theta2)+aB1*dy1dVtheta1* \
-        #     sin(deltaB1+(-1)*theta1)+aB2*dy1dVtheta2*sin(deltaB2+(-1)* \
-        #     theta2)))*(dy1dVtheta1*dy2dVr1+(-1)*dy1dVr1*dy2dVtheta1+( \
-        #     dy1dVtheta2*dy2dVr1+(-1)*dy1dVr2*dy2dVtheta1)*cos(theta1+(-1) \
-        #     *theta2)+(-1)*(dy1dVr2*dy2dVr1+dy1dVtheta2*dy2dVtheta1)*sin( \
-        #     theta1+(-1)*theta2))**(-1)
-
-        # a_long = (1/2)*(dy1dVtheta1*dy2dVr1+(-1)*dy1dVr1*dy2dVtheta1+( \
-        #     dy1dVtheta2*dy2dVr1+(-1)*dy1dVr2*dy2dVtheta1)*cos(theta1+(-1) \
-        #     *theta2)+(-1)*(dy1dVr2*dy2dVr1+dy1dVtheta2*dy2dVtheta1)*sin( \
-        #     theta1+(-1)*theta2))**(-1)*(2*aB1*(dy1dVtheta1*dy2dVr1+(-1)* \
-        #     dy1dVr1*dy2dVtheta1)*cos(alpha+(-1)*deltaB1)+2*(dy2dVtheta1* \
-        #     K1*(w+(-1)*y1)+dy1dVtheta1*K2*y2)*cos(alpha+(-1)*theta1)+ \
-        #     2*dy1dVtheta2*K2*y2*cos(alpha+(-1)*theta2)+aB1* \
-        #     dy1dVtheta2*dy2dVr1*cos(alpha+deltaB1+(-1)*theta1+(-1)*theta2) \
-        #     +aB1*dy1dVr2*dy2dVtheta1*cos(alpha+deltaB1+(-1)*theta1+(-1)* \
-        #     theta2)+(-1)*aB2*dy1dVtheta2*dy2dVr1*cos(alpha+deltaB2+(-1)* \
-        #     theta1+(-1)*theta2)+(-1)*aB2*dy1dVr2*dy2dVtheta1*cos(alpha+ \
-        #     deltaB2+(-1)*theta1+(-1)*theta2)+aB1*dy1dVtheta2*dy2dVr1*cos( \
-        #     alpha+(-1)*deltaB1+theta1+(-1)*theta2)+(-1)*aB1*dy1dVr2* \
-        #     dy2dVtheta1*cos(alpha+(-1)*deltaB1+theta1+(-1)*theta2)+aB2* \
-        #     dy1dVtheta2*dy2dVr1*cos(alpha+(-1)*deltaB2+(-1)*theta1+theta2) \
-        #     +(-1)*aB2*dy1dVr2*dy2dVtheta1*cos(alpha+(-1)*deltaB2+(-1)* \
-        #     theta1+theta2)+(-2)*dy2dVr1*K1*w*sin(alpha+(-1)*theta1)+2* \
-        #     dy2dVr1*K1*y1*sin(alpha+(-1)*theta1)+(-2)*dy1dVr1*K2*y2* \
-        #     sin(alpha+(-1)*theta1)+(-2)*dy1dVr2*K2*y2*sin(alpha+(-1)* \
-        #     theta2)+(-1)*aB1*dy1dVr2*dy2dVr1*sin(alpha+deltaB1+(-1)* \
-        #     theta1+(-1)*theta2)+aB1*dy1dVtheta2*dy2dVtheta1*sin(alpha+ \
-        #     deltaB1+(-1)*theta1+(-1)*theta2)+aB2*dy1dVr2*dy2dVr1*sin( \
-        #     alpha+deltaB2+(-1)*theta1+(-1)*theta2)+(-1)*aB2*dy1dVtheta2* \
-        #     dy2dVtheta1*sin(alpha+deltaB2+(-1)*theta1+(-1)*theta2)+(-1)* \
-        #     aB1*dy1dVr2*dy2dVr1*sin(alpha+(-1)*deltaB1+theta1+(-1)* \
-        #     theta2)+(-1)*aB1*dy1dVtheta2*dy2dVtheta1*sin(alpha+(-1)* \
-        #     deltaB1+theta1+(-1)*theta2)+aB2*dy1dVr2*dy2dVr1*sin(alpha+(-1) \
-        #     *deltaB2+(-1)*theta1+theta2)+aB2*dy1dVtheta2*dy2dVtheta1*sin( \
-        #     alpha+(-1)*deltaB2+(-1)*theta1+theta2))
-
 
 
