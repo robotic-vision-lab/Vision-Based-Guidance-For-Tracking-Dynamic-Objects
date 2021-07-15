@@ -2,10 +2,12 @@ from math import degrees
 
 import numpy as np
 import pygame
-
+import matplotlib.pyplot as plt
 from pygame.locals import *
 from .ellipse import Ellipse2D
 from .settings import *
+
+
 
 class TrackingManager:
     """[summary]
@@ -17,6 +19,12 @@ class TrackingManager:
 
         self.ellipse_params_meas = None
         self.ellipse_params_est = None
+
+        self.temp = False
+        self.x = None
+        self.y = None
+        self.x_ = None
+        self.y_ = None
         
 
     def set_targets(self, targets):
@@ -35,6 +43,29 @@ class TrackingManager:
     def compute_enclosing_ellipse(self, tolerance=None):
         points_to_enclose = self.get_points_to_be_enclosed()
         self.ellipse_params_meas = self.ellipse.enclose_points(points_to_enclose, tolerance)
+
+        # # DEBUGGING
+        # self.x = np.array([p[0][0] for p in points_to_enclose]).flatten()
+        # self.y = np.array([p[0][1] for p in points_to_enclose]).flatten()
+
+        # fp_x = np.array([self.ellipse_params_meas[5][0], self.ellipse_params_meas[6][0]]).flatten()
+        # fp_y = np.array([self.ellipse_params_meas[5][1], self.ellipse_params_meas[6][1]]).flatten()
+        # self.x = np.concatenate((self.x, fp_x))
+        # self.y = np.concatenate((self.y, fp_y))
+        # plt.plot(self.x[:-2], self.y[:-2], 'k*', alpha=0.9)
+        # plt.plot(self.x[-2:], self.y[-2:], 'r*', alpha=0.9)
+        # if self.temp:
+        #     plt.plot(self.x_, self.y_, 'k*', alpha=0.3)
+        #     plt.plot(self.x_[-2:], self.y_[-2:], 'r*', alpha=0.3)
+
+        # self.x_ = self.x
+        # self.y_ = self.y
+        # self.temp = True if not self.temp else False
+        # plt.title(f'time - {self.exp_manager.simulator.time}')
+        # plt.axis('equal')
+        # plt.grid()
+        # plt.show()
+
 
         return self.ellipse_params_meas
 
@@ -73,6 +104,10 @@ class TrackingManager:
         fp2_x, fp2_y = self.ellipse_params_meas[6]
 
         self.ellipse.EKF.add(fp1_x, fp1_y, fp2_x, fp2_y)
+
+        self.ellipse_params_est = self.ellipse.EKF.get_estimated_state()
+
+
 
         
         
