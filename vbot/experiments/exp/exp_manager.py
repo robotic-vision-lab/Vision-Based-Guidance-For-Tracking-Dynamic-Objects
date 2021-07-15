@@ -324,6 +324,8 @@ class ExperimentManager:
                             ellipse_center_x, ellipse_center_y = ellipse_params[2]
                             ellipse_center = tuple(map(int, ellipse_params[2]))
                             ellipse_rotation_angle = ellipse_params[3]
+                            ellipse_focal_point_1 = tuple(map(int, ellipse_params[4]))
+                            ellipse_focal_point_2 = tuple(map(int, ellipse_params[5]))
 
                             # ellipse_focal_length = ellipse
 
@@ -353,7 +355,6 @@ class ExperimentManager:
 
 
 
-
                             # draw the ellipse on color edited frame and show it
                             ellipse_img = np.zeros_like(self.multi_tracker.frame_color_edited, np.uint8)
                             ellipse_img = cv.ellipse(img=ellipse_img,
@@ -365,6 +366,19 @@ class ExperimentManager:
                                                      color=ELLIPSE_COLOR,
                                                      thickness=cv.FILLED,
                                                      lineType=cv.LINE_8)
+
+                            ellipse_img = cv.circle(ellipse_img,
+                                                    ellipse_focal_point_1,
+                                                    radius=ELLIPSE_FP_RADIUS,
+                                                    color=(1,1,1),
+                                                    thickness=cv.FILLED,
+                                                    lineType=cv.LINE_AA)
+                            ellipse_img = cv.circle(ellipse_img,
+                                                    ellipse_focal_point_2,
+                                                    radius=ELLIPSE_FP_RADIUS,
+                                                    color=(1,1,1),
+                                                    thickness=cv.FILLED,
+                                                    lineType=cv.LINE_AA)
                             blended_img = self.multi_tracker.frame_color_edited.copy()
                             mask = ellipse_img.astype(bool)
                             blended_img[mask] = cv.addWeighted(self.multi_tracker.frame_color_edited, 
