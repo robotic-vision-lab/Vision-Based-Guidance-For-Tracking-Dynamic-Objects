@@ -56,6 +56,8 @@ class Target:
         self.template_scores = None
 
         self.kinematics = None
+        self.measured_pos_x = None  # measured position in inertial frame (m)
+        self.measured_pos_y = None  # measured position in inertial frame (m)
         self.r_meas = None
         self.theta_meas = None
 
@@ -129,22 +131,22 @@ class Target:
         drone_alpha = atan2(drone_vel_y, drone_vel_x)
 
         # target (measured)
-        target_pos_x, target_pos_y = self.kinematics[0]
+        self.measured_pos_x, self.measured_pos_y = self.kinematics[0]
         # target_vel_x, target_vel_y = self.kinematics[1]
         if not self.kinematics == NONE_KINEMATICS:
-            target_pos_x += cam_origin_x
-            target_pos_y += cam_origin_y
+            self.measured_pos_x += cam_origin_x
+            self.measured_pos_y += cam_origin_y
 
         # compute measured r, θ, Vr and Vθ
         if self.kinematics == NONE_KINEMATICS:
             self.r_meas = None
             self.theta_meas = None
         else:
-            self.r_meas = ((target_pos_x - drone_pos_x)**2 + (target_pos_y - drone_pos_y)**2)**0.5
-            self.theta_meas = atan2(target_pos_y - drone_pos_y, target_pos_x - drone_pos_x)
+            self.r_meas = ((self.measured_pos_x - drone_pos_x)**2 + (self.measured_pos_y - drone_pos_y)**2)**0.5
+            self.theta_meas = atan2(self.measured_pos_y - drone_pos_y, self.measured_pos_x - drone_pos_x)
 
-        # use EKF to filter measurements target_pos_x and target_pos_y
-        self.EKF.add(target_pos_x, target_pos_y)
+        # use EKF to filter measurements self.measured_pos_x and self.measured_pos_y
+        self.EKF.add(self.measured_pos_x, self.measured_pos_y)
         self.x_est, self.vx_est, self.ax_est, self.y_est, self.vy_est, self.ay_est = self.EKF.get_estimated_state()
         
         self.beta_est = atan2(self.vy_est, self.vx_est)
