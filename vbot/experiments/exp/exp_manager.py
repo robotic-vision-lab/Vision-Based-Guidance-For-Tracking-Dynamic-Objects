@@ -355,26 +355,24 @@ class ExperimentManager:
 
                             # draw the ellipse on color edited frame and show it
                             ellipse_img = np.zeros_like(self.multi_tracker.frame_color_edited, np.uint8)
-
-                            ellipse_img = cv.ellipse(
-                                img=ellipse_img,
-                                center=ellipse_center,
-                                axes=ellipse_axes,
-                                angle=ellipse_rotation_angle,
-                                startAngle=0,
-                                endAngle=360,
-                                color=ELLIPSE_COLOR,
-                                thickness=cv.FILLED,
-                                lineType=cv.LINE_8
-                            )
+                            ellipse_img = cv.ellipse(img=ellipse_img,
+                                                     center=ellipse_center,
+                                                     axes=ellipse_axes,
+                                                     angle=ellipse_rotation_angle,
+                                                     startAngle=0,
+                                                     endAngle=360,
+                                                     color=ELLIPSE_COLOR,
+                                                     thickness=cv.FILLED,
+                                                     lineType=cv.LINE_8)
                             blended_img = self.multi_tracker.frame_color_edited.copy()
-                            alpha = 0.7
                             mask = ellipse_img.astype(bool)
                             blended_img[mask] = cv.addWeighted(self.multi_tracker.frame_color_edited, 
-                                                       alpha,
-                                                       ellipse_img,
-                                                       1 - alpha,
-                                                       0)[mask]
+                                                               1 - ELLIPSE_OPACITY,
+                                                               ellipse_img,
+                                                               ELLIPSE_OPACITY,
+                                                               0)[mask]
+
+                            # show the blended image
                             cv.imshow('Tracking in progress', blended_img);cv.waitKey(1)
 
                             # self.multi_tracker.frame_color_edited = cv.ellipse(
