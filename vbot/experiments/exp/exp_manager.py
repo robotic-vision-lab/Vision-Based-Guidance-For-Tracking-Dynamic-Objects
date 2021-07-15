@@ -318,25 +318,26 @@ class ExperimentManager:
                         if self.multi_tracker.can_begin_control():
                             # collect kinematics and compute ellipse parameters
                             self.tracking_manager.compute_enclosing_ellipse(tolerance=ELLIPSE_TOLERANCE)
-                            ellipse_params = self.tracking_manager.get_ellipse_params(IMAGE_REF_FRAME)
+                            # ellipse_params = self.tracking_manager.get_ellipse_params(IMAGE_REF_FRAME)
                             
-                            ellipse_axes = tuple(map(int, ellipse_params[:2]))
-                            ellipse_center_x, ellipse_center_y = ellipse_params[2]
-                            ellipse_center = tuple(map(int, ellipse_params[2]))
-                            ellipse_rotation_angle = ellipse_params[3]
-                            ellipse_focal_point_1 = tuple(map(int, ellipse_params[4]))
-                            ellipse_focal_point_2 = tuple(map(int, ellipse_params[5]))
+                            # ellipse_axes = tuple(map(int, ellipse_params[:2]))
+                            # ellipse_center_x, ellipse_center_y = ellipse_params[2]
+                            # ellipse_center = tuple(map(int, ellipse_params[2]))
+                            # ellipse_rotation_angle = ellipse_params[3]
+                            # ellipse_focal_point_1 = tuple(map(int, ellipse_params[4]))
+                            # ellipse_focal_point_2 = tuple(map(int, ellipse_params[5]))
 
                             self.tracking_manager.compute_focal_point_estimations()
-                            ellipse_focal_point_1_est = (self.tracking_manager.ellipse_params_est[0],
-                                                        self.tracking_manager.ellipse_params_est[3])
-                            ellipse_focal_point_2_est = (self.tracking_manager.ellipse_params_est[6],
-                                                        self.tracking_manager.ellipse_params_est[9])
+                            self.tracking_manager.display()
+                            # ellipse_focal_point_1_est = (self.tracking_manager.ellipse_params_est[0],
+                            #                             self.tracking_manager.ellipse_params_est[3])
+                            # ellipse_focal_point_2_est = (self.tracking_manager.ellipse_params_est[6],
+                            #                             self.tracking_manager.ellipse_params_est[9])
 
-                            ellipse_focal_point_1_est = self.tracking_manager.convert(ellipse_focal_point_1_est)
-                            ellipse_focal_point_2_est = self.tracking_manager.convert(ellipse_focal_point_2_est)
-                            ellipse_focal_point_1_est = tuple(map(int, ellipse_focal_point_1_est))
-                            ellipse_focal_point_2_est = tuple(map(int, ellipse_focal_point_2_est))
+                            # ellipse_focal_point_1_est = self.tracking_manager.convert(ellipse_focal_point_1_est)
+                            # ellipse_focal_point_2_est = self.tracking_manager.convert(ellipse_focal_point_2_est)
+                            # ellipse_focal_point_1_est = tuple(map(int, ellipse_focal_point_1_est))
+                            # ellipse_focal_point_2_est = tuple(map(int, ellipse_focal_point_2_est))
 
                             '''
                             At this point we have ellipse parameters
@@ -360,52 +361,52 @@ class ExperimentManager:
 
 
 
-                            # draw the ellipse on color edited frame and show it
-                            ellipse_img = np.zeros_like(self.multi_tracker.frame_color_edited, np.uint8)
-                            ellipse_img = cv.ellipse(img=ellipse_img,
-                                                     center=ellipse_center,
-                                                     axes=ellipse_axes,
-                                                     angle=ellipse_rotation_angle,
-                                                     startAngle=0,
-                                                     endAngle=360,
-                                                     color=ELLIPSE_COLOR,
-                                                     thickness=cv.FILLED,
-                                                     lineType=cv.LINE_8)
+                            # # draw the ellipse on color edited frame and show it
+                            # ellipse_img = np.zeros_like(self.multi_tracker.frame_color_edited, np.uint8)
+                            # ellipse_img = cv.ellipse(img=ellipse_img,
+                            #                          center=ellipse_center,
+                            #                          axes=ellipse_axes,
+                            #                          angle=ellipse_rotation_angle,
+                            #                          startAngle=0,
+                            #                          endAngle=360,
+                            #                          color=ELLIPSE_COLOR,
+                            #                          thickness=cv.FILLED,
+                            #                          lineType=cv.LINE_8)
 
-                            ellipse_img = cv.circle(ellipse_img,
-                                                    ellipse_focal_point_1,
-                                                    radius=ELLIPSE_MEAS_FP_RADIUS,
-                                                    color=ELLIPSE_MEAS_FP_COLOR,
-                                                    thickness=cv.FILLED,
-                                                    lineType=cv.LINE_AA)
-                            ellipse_img = cv.circle(ellipse_img,
-                                                    ellipse_focal_point_2,
-                                                    radius=ELLIPSE_MEAS_FP_RADIUS,
-                                                    color=ELLIPSE_MEAS_FP_COLOR,
-                                                    thickness=cv.FILLED,
-                                                    lineType=cv.LINE_AA)
-                            ellipse_img = cv.circle(ellipse_img,
-                                                    ellipse_focal_point_1_est,
-                                                    radius=ELLIPSE_ESTD_FP_RADIUS,
-                                                    color=ELLIPSE_ESTD_FP_COLOR,
-                                                    thickness=cv.FILLED,
-                                                    lineType=cv.LINE_AA)
-                            ellipse_img = cv.circle(ellipse_img,
-                                                    ellipse_focal_point_2_est,
-                                                    radius=ELLIPSE_ESTD_FP_RADIUS,
-                                                    color=ELLIPSE_ESTD_FP_COLOR,
-                                                    thickness=cv.FILLED,
-                                                    lineType=cv.LINE_AA)
-                            blended_img = self.multi_tracker.frame_color_edited.copy()
-                            mask = ellipse_img.astype(bool)
-                            blended_img[mask] = cv.addWeighted(self.multi_tracker.frame_color_edited, 
-                                                               1 - ELLIPSE_OPACITY,
-                                                               ellipse_img,
-                                                               ELLIPSE_OPACITY,
-                                                               0)[mask]
+                            # ellipse_img = cv.circle(ellipse_img,
+                            #                         ellipse_focal_point_1,
+                            #                         radius=ELLIPSE_MEAS_FP_RADIUS,
+                            #                         color=ELLIPSE_MEAS_FP_COLOR,
+                            #                         thickness=cv.FILLED,
+                            #                         lineType=cv.LINE_AA)
+                            # ellipse_img = cv.circle(ellipse_img,
+                            #                         ellipse_focal_point_2,
+                            #                         radius=ELLIPSE_MEAS_FP_RADIUS,
+                            #                         color=ELLIPSE_MEAS_FP_COLOR,
+                            #                         thickness=cv.FILLED,
+                            #                         lineType=cv.LINE_AA)
+                            # ellipse_img = cv.circle(ellipse_img,
+                            #                         ellipse_focal_point_1_est,
+                            #                         radius=ELLIPSE_ESTD_FP_RADIUS,
+                            #                         color=ELLIPSE_ESTD_FP_COLOR,
+                            #                         thickness=cv.FILLED,
+                            #                         lineType=cv.LINE_AA)
+                            # ellipse_img = cv.circle(ellipse_img,
+                            #                         ellipse_focal_point_2_est,
+                            #                         radius=ELLIPSE_ESTD_FP_RADIUS,
+                            #                         color=ELLIPSE_ESTD_FP_COLOR,
+                            #                         thickness=cv.FILLED,
+                            #                         lineType=cv.LINE_AA)
+                            # blended_img = self.multi_tracker.frame_color_edited.copy()
+                            # mask = ellipse_img.astype(bool)
+                            # blended_img[mask] = cv.addWeighted(self.multi_tracker.frame_color_edited, 
+                            #                                    1 - ELLIPSE_OPACITY,
+                            #                                    ellipse_img,
+                            #                                    ELLIPSE_OPACITY,
+                            #                                    0)[mask]
 
-                            # show the blended image
-                            cv.imshow('Tracking in progress', blended_img);cv.waitKey(1)
+                            # # show the blended image
+                            # cv.imshow('Tracking in progress', blended_img);cv.waitKey(1)
 
                             # self.multi_tracker.frame_color_edited = cv.ellipse(
                             #     img=self.multi_tracker.frame_color_edited,
