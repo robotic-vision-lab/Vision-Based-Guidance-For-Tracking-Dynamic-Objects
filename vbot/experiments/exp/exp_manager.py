@@ -321,8 +321,10 @@ class ExperimentManager:
                             self.tracking_manager.compute_focal_point_estimations()
                             self.tracking_manager.display()
 
-                            self.controller.generate_acceleration(self.tracking_manager.ellipse_params_est)
+                            ax, ay = self.controller.generate_acceleration(self.tracking_manager.ellipse_params_est,
+                                                                           self.tracking_manager.ellipse_params_meas[0])
 
+                            self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
                             '''
                             At this point we have ellipse parameters
                             next steps
