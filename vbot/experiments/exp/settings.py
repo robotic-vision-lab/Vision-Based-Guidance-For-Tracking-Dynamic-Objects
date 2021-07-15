@@ -107,6 +107,7 @@ ELLIPSE_OPACITY = 0.2
 # reference frame
 IMAGE_REF_FRAME = 0
 WORLD_INERTIAL_REF_FRAME = 1
+WORLD_REF_FRAME = 2
 
 
 # tracker settings
