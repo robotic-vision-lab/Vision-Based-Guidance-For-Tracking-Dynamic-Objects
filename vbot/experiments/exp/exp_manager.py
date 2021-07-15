@@ -378,26 +378,26 @@ class ExperimentManager:
 
                             ellipse_img = cv.circle(ellipse_img,
                                                     ellipse_focal_point_1,
-                                                    radius=ELLIPSE_FP_RADIUS,
-                                                    color=(1,1,1),
+                                                    radius=ELLIPSE_MEAS_FP_RADIUS,
+                                                    color=ELLIPSE_MEAS_FP_COLOR,
                                                     thickness=cv.FILLED,
                                                     lineType=cv.LINE_AA)
                             ellipse_img = cv.circle(ellipse_img,
                                                     ellipse_focal_point_2,
-                                                    radius=ELLIPSE_FP_RADIUS,
-                                                    color=(1,1,1),
+                                                    radius=ELLIPSE_MEAS_FP_RADIUS,
+                                                    color=ELLIPSE_MEAS_FP_COLOR,
                                                     thickness=cv.FILLED,
                                                     lineType=cv.LINE_AA)
                             ellipse_img = cv.circle(ellipse_img,
                                                     ellipse_focal_point_1_est,
-                                                    radius=ELLIPSE_FP_RADIUS,
-                                                    color=(255,255,51),
+                                                    radius=ELLIPSE_ESTD_FP_RADIUS,
+                                                    color=ELLIPSE_ESTD_FP_COLOR,
                                                     thickness=cv.FILLED,
                                                     lineType=cv.LINE_AA)
                             ellipse_img = cv.circle(ellipse_img,
                                                     ellipse_focal_point_2_est,
-                                                    radius=ELLIPSE_FP_RADIUS,
-                                                    color=(255,255,51),
+                                                    radius=ELLIPSE_ESTD_FP_RADIUS,
+                                                    color=ELLIPSE_ESTD_FP_COLOR,
                                                     thickness=cv.FILLED,
                                                     lineType=cv.LINE_AA)
                             blended_img = self.multi_tracker.frame_color_edited.copy()
