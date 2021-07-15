@@ -327,7 +327,16 @@ class ExperimentManager:
                             ellipse_focal_point_1 = tuple(map(int, ellipse_params[4]))
                             ellipse_focal_point_2 = tuple(map(int, ellipse_params[5]))
 
-                            # ellipse_focal_length = ellipse
+                            self.tracking_manager.compute_focal_point_estimations()
+                            ellipse_focal_point_1_est = (self.tracking_manager.ellipse_params_est[0],
+                                                        self.tracking_manager.ellipse_params_est[3])
+                            ellipse_focal_point_2_est = (self.tracking_manager.ellipse_params_est[6],
+                                                        self.tracking_manager.ellipse_params_est[9])
+
+                            ellipse_focal_point_1_est = self.tracking_manager.convert(ellipse_focal_point_1_est)
+                            ellipse_focal_point_2_est = self.tracking_manager.convert(ellipse_focal_point_2_est)
+                            ellipse_focal_point_1_est = tuple(map(int, ellipse_focal_point_1_est))
+                            ellipse_focal_point_2_est = tuple(map(int, ellipse_focal_point_2_est))
 
                             '''
                             At this point we have ellipse parameters
@@ -377,6 +386,18 @@ class ExperimentManager:
                                                     ellipse_focal_point_2,
                                                     radius=ELLIPSE_FP_RADIUS,
                                                     color=(1,1,1),
+                                                    thickness=cv.FILLED,
+                                                    lineType=cv.LINE_AA)
+                            ellipse_img = cv.circle(ellipse_img,
+                                                    ellipse_focal_point_1_est,
+                                                    radius=ELLIPSE_FP_RADIUS,
+                                                    color=(255,255,51),
+                                                    thickness=cv.FILLED,
+                                                    lineType=cv.LINE_AA)
+                            ellipse_img = cv.circle(ellipse_img,
+                                                    ellipse_focal_point_2_est,
+                                                    radius=ELLIPSE_FP_RADIUS,
+                                                    color=(255,255,51),
                                                     thickness=cv.FILLED,
                                                     lineType=cv.LINE_AA)
                             blended_img = self.multi_tracker.frame_color_edited.copy()
