@@ -278,14 +278,8 @@ class EllipseEKF:
         """return estimated state information.
 
         Returns:
-            tuple(float32, float32, float32, float32, float32, float32): (x, y, vx, vy, ax, ay)
+            tuple(float32, ..): (fp1_x, fp1_vx, fp1_ax, fp1_y, fp1_vy, fp1_ay, fp2_x, fp2_vx, fp2_ax, fp2_y, fp2_vy, fp2_ay)
         """
-        # # return {r_est, theta_est, Vr_est, Vtheta_est, deltab_est, aB_est}
-        # if self.ready:
-        #     return (self.r, self.theta, self.Vr, self.Vtheta, self.deltaB_est, self.estimated_acceleration)
-        # else:
-        #     return (self.prev_r, self.prev_theta, self.prev_Vr, self.prev_Vtheta, 0.0, 0.0)
-        # return {r_est, theta_est, Vr_est, Vtheta_est, deltab_est, aB_est}
         if self.ready:
             return (self.fp1_x,
                     self.fp1_vx,
