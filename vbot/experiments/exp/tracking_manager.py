@@ -80,11 +80,11 @@ class TrackingManager:
 
     def get_ellipse_params(self, frame_of_reference=WORLD_INERTIAL_REF_FRAME):
         if frame_of_reference == WORLD_INERTIAL_REF_FRAME:
-            return self.ellipse.get_ellipse_params()
+            return self.ellipse.get_params()
         elif frame_of_reference == IMAGE_REF_FRAME:
 
             # convert params
-            ellipse_params = self.ellipse.get_ellipse_params()
+            ellipse_params = self.ellipse.get_params()
 
 
             ellipse_center = self.convert(ellipse_params[2])
