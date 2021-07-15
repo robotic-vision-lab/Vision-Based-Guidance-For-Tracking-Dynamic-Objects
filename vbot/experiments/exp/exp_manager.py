@@ -323,7 +323,7 @@ class ExperimentManager:
                             ellipse_axes = tuple(map(int, ellipse_params[:2]))
                             ellipse_center_x, ellipse_center_y = ellipse_params[2]
                             ellipse_center = tuple(map(int, ellipse_params[2]))
-                            ellipse_rotation_angle = degrees(ellipse_params[3])
+                            ellipse_rotation_angle = ellipse_params[3]
 
                             # ellipse_focal_length = ellipse
 
