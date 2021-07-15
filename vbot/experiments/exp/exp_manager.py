@@ -336,6 +336,19 @@ class ExperimentManager:
 
                             At this point the responsibilities of the tracking manager are almost over
                             Except one final task to offer the API to now display the ellipse
+
+
+                            #TODO add controller responsibilities
+                            take the 2 estimated focal points (along with their estimated velocities and accelerations)
+                            compute r and theta for both
+                            compute focal speed and heading for both
+                            compute acceleration mag and direction for both
+                            compute Vr and Vtheta 
+                            compute_objective_functions()
+                            compute_y1_y2_derivatives()
+                            compute a_lat, a_long
+                            convert to ax, ay
+
                             3. convert to r1, θ1, r2, θ2. Compute focal_point speed and heading, acceleration and angle of acceleration
                             4. Using all that compute a_lat and a_long
                             5. feed accleration to simulator
