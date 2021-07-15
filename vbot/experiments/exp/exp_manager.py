@@ -318,7 +318,6 @@ class ExperimentManager:
                         if self.multi_tracker.can_begin_control():
                             # collect kinematics and compute ellipse parameters
                             self.tracking_manager.compute_enclosing_ellipse(tolerance=ELLIPSE_TOLERANCE)
-
                             self.tracking_manager.compute_focal_point_estimations()
                             self.tracking_manager.display()
 
