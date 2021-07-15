@@ -756,7 +756,7 @@ class MultiTracker:
 
 
         # display information 
-        self.display()
+        self.update_display()
 
         # handle posterity - frame
         self.frame_old_gray = self.frame_new_gray
@@ -954,7 +954,7 @@ class MultiTracker:
         return (measured_car_pos_cam_frame_meters,
                 measured_car_vel_cam_frame_meters)
 
-    def display(self):
+    def update_display(self):
         if self.manager.tracker_display_on:
             # add cosmetics to frame_2 for display purpose
             self.frame_color_edited, self.tracker_info_mask = self.add_cosmetics(self.frame_new_color.copy(), 
