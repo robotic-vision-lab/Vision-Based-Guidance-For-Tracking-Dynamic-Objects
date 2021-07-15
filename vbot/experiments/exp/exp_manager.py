@@ -321,6 +321,8 @@ class ExperimentManager:
                             self.tracking_manager.compute_focal_point_estimations()
                             self.tracking_manager.display()
 
+                            self.controller.generate_acceleration(self.tracking_manager.ellipse_params_est)
+
                             '''
                             At this point we have ellipse parameters
                             next steps
