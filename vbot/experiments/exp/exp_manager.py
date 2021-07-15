@@ -317,7 +317,8 @@ class ExperimentManager:
                         # let controller generate acceleration, when tracker indicates ok (which is when first frame is processed)
                         if self.multi_tracker.can_begin_control():
                             # collect kinematics and compute ellipse parameters
-                            ellipse_params = self.tracking_manager.compute_enclosing_ellipse(tolerance=ELLIPSE_TOLERANCE)
+                            self.tracking_manager.compute_enclosing_ellipse(tolerance=ELLIPSE_TOLERANCE)
+                            ellipse_params = self.tracking_manager.get_ellipse_params(IMAGE_REF_FRAME)
                             
                             ellipse_axes = tuple(map(int, ellipse_params[:2]))
                             ellipse_center_x, ellipse_center_y = ellipse_params[2]
