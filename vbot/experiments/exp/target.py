@@ -162,11 +162,28 @@ class Target:
 
 
     def get_bb_4_points(self):
+        # return image frame points (px)
         d = ceil(4 / self.manager.simulator.pxm_fac)
         if not self.kinematics == NONE_KINEMATICS:
             cent = self.centroid_new.astype('int')
         else:
             cent = self.centroid_new_est.astype('int')
+        points = []
+        for delta in [[[-d,-d]], [[d,-d]], [[d,d]], [[-d,d]]]:
+            points.append(cent + delta)
+
+        return points
+
+
+    def get_4_enclosing_points(self):
+        # return inertial frame points (m)
+        x = self.measured_pos_x if self.measured_pos_x is not None else self.x_est
+        y = self.measured_pos_y if self.measured_pos_y is not None else self.y_est
+
+
+        d = 4
+        cent = np.array([[x, y]])
+        
         points = []
         for delta in [[[-d,-d]], [[d,-d]], [[d,d]], [[-d,d]]]:
             points.append(cent + delta)
