@@ -354,18 +354,41 @@ class ExperimentManager:
 
 
                             # draw the ellipse on color edited frame and show it
-                            self.multi_tracker.frame_color_edited = cv.ellipse(
-                                img=self.multi_tracker.frame_color_edited,
+                            ellipse_img = np.zeros_like(self.multi_tracker.frame_color_edited, np.uint8)
+
+                            ellipse_img = cv.ellipse(
+                                img=ellipse_img,
                                 center=ellipse_center,
                                 axes=ellipse_axes,
                                 angle=ellipse_rotation_angle,
                                 startAngle=0,
                                 endAngle=360,
                                 color=ELLIPSE_COLOR,
-                                thickness=2,
-                                lineType=cv.LINE_AA
+                                thickness=cv.FILLED,
+                                lineType=cv.LINE_8
                             )
-                            cv.imshow('Tracking in progress', self.multi_tracker.frame_color_edited);cv.waitKey(1)
+                            out = self.multi_tracker.frame_color_edited.copy()
+                            alpha = 0.7
+                            mask = ellipse_img.astype(bool)
+                            out[mask] = cv.addWeighted(self.multi_tracker.frame_color_edited, 
+                                                       alpha,
+                                                       ellipse_img,
+                                                       1 - alpha,
+                                                       0)[mask]
+                            cv.imshow('Tracking in progress', out);cv.waitKey(1)
+
+                            # self.multi_tracker.frame_color_edited = cv.ellipse(
+                            #     img=self.multi_tracker.frame_color_edited,
+                            #     center=ellipse_center,
+                            #     axes=ellipse_axes,
+                            #     angle=ellipse_rotation_angle,
+                            #     startAngle=0,
+                            #     endAngle=360,
+                            #     color=ELLIPSE_COLOR,
+                            #     thickness=2,
+                            #     lineType=cv.LINE_AA
+                            # )
+                            # cv.imshow('Tracking in progress', self.multi_tracker.frame_color_edited);cv.waitKey(1)
                             
 
                                                        
