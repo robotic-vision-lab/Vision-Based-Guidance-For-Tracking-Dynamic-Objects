@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.linalg as LA
 from math import atan2, sin, cos, e, pi, tau
+from .settings import *
 
 class EllipseEKF:
     """Implement continuous-continuous EKF for ellipse in stateful fashion
@@ -86,9 +87,11 @@ class EllipseEKF:
         """
         # make sure filter is initialized
         if not self.is_initialized():
-            vx = self.target.sprite_obj.velocity[0]
-            vy = self.target.sprite_obj.velocity[1]
-            self.initialize_filter(x, y, vx, vy)
+            fp1_vx = CAR_INITIAL_VELOCITY[0]
+            fp1_vy = CAR_INITIAL_VELOCITY[1]
+            fp2_vx = CAR_INITIAL_VELOCITY[0]
+            fp2_vy = CAR_INITIAL_VELOCITY[1]
+            self.initialize_filter(fp1_x, fp1_vx, fp1_y, fp1_vy, fp2_x, fp2_vx, fp2_y, fp2_vy)
             return
 
         # filter is initialized; set ready to true
