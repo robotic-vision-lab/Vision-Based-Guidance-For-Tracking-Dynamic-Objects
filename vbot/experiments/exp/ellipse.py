@@ -22,7 +22,7 @@ class Ellipse2D:
 
 		self._POINT_ENCLOSURE_TOLERANCE = 0.1
 
-	def get_ellipse_params(self):
+	def get_params(self):
 		return (self.major_axis_len,
 				self.minor_axis_len,
 				self.center_coords,
@@ -105,7 +105,7 @@ class Ellipse2D:
 		self.update_focal_length()
 		self.update_focal_points()
 
-		return self.get_ellipse_params()
+		return self.get_params()
 
 	def update_estimations(self):
 		'''
