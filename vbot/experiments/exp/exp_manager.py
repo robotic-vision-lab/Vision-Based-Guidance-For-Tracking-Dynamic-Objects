@@ -350,17 +350,13 @@ class ExperimentManager:
                                 ellipse_focal_point_2_x,
                                 ellipse_focal_point_2_y,
                             2. filter focal_points
+
+                            At this point the responsibilities of the tracking manager are almost over
+                            Except one final task to offer the API to now display the ellipse
                             3. convert to r1, θ1, r2, θ2. Compute focal_point speed and heading, acceleration and angle of acceleration
                             4. Using all that compute a_lat and a_long
                             5. feed accleration to simulator
                             '''
-
-
-
-
-
-
-
 
 
 
