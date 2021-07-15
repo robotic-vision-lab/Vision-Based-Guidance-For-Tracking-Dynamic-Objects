@@ -21,11 +21,12 @@ class TrackingManager:
         self.ellipse_params_meas = None
         self.ellipse_params_est = None
 
-        self.temp = False
-        self.x = None
-        self.y = None
-        self.x_ = None
-        self.y_ = None
+        # # for debugging 
+        # self.temp = False
+        # self.x = None
+        # self.y = None
+        # self.x_ = None
+        # self.y_ = None
         
 
     def set_targets(self, targets):
@@ -184,11 +185,14 @@ class TrackingManager:
         then compute y1 y2
         then compute a_lat and a_long
         '''
+        # collect ellipse focal points computed from measured target points 
         fp1_x, fp1_y = self.ellipse_params_meas[5]
         fp2_x, fp2_y = self.ellipse_params_meas[6]
 
+        # filter focal points
         self.ellipse.EKF.add(fp1_x, fp1_y, fp2_x, fp2_y)
 
+        # collect estimated state of focal points
         self.ellipse_params_est = self.ellipse.EKF.get_estimated_state()
 
 
