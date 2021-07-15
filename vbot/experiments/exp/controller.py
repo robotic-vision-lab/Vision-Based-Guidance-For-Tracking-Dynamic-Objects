@@ -16,7 +16,7 @@ class Controller:
     def sat(x, bound):
         return min(max(x, -bound), bound)
 
-    def generate_acceleration(self, kin):
+    def generate_acceleration_(self, kin):
         # unpack kinematics of UAS and vehicle
         drone_pos_x, drone_pos_y = kin[0]
         drone_vel_x, drone_vel_y = kin[1]
@@ -197,6 +197,40 @@ class Controller:
             ax, ay = pygame.Vector2((0.0, 0.0))
 
         return ax, ay
+
+    def generate_acceleration(self, ellipse_focal_points_est_state):
+        cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
+
+        # drone (known)
+        drone_pos_x, drone_pos_y = self.manager.get_true_drone_position()
+        drone_vel_x, drone_vel_y = self.manager.get_true_drone_velocity()
+        drone_pos_x += cam_origin_x
+        drone_pos_y += cam_origin_y
+
+        drone_speed = (drone_vel_x**2 + drone_vel_y**2)**0.5
+        drone_alpha = atan2(drone_vel_y, drone_vel_x)
+
+        # collect estimated focal point state 
+        fp1_x, fp1_vx, fp1_ax, fp1_y, fp1_vy, fp1_ay, fp2_x, fp2_vx, fp2_ax, fp2_y, fp2_vy, fp2_ay = ellipse_focal_points_est_state
+
+        # compute r and θ for both focal points
+        r1 = ((fp1_x - drone_pos_x)**2 + (fp1_y - drone_pos_y)**2)**0.5
+        r2 = ((fp2_x - drone_pos_x)**2 + (fp2_y - drone_pos_y)**2)**0.5
+
+        theta1 = atan2(fp1_y - drone_pos_y, fp1_x - drone_pos_x)
+        theta2 = atan2(fp2_y - drone_pos_y, fp2_x - drone_pos_x)
+
+        # compute focal points speed and heading for both focal points
+        fp1_speed = (fp1_vx**2 + fp1_vy**2)**0.5
+        fp2_speed = (fp2_vx**2 + fp2_vy**2)**0.5
+
+        fp1_heading = atan2(fp1_vy, fp1_vx)
+        fp2_heading = atan2(fp2_vy, fp2_vx)
+
+        # compute acceleration magnitude and direction for both focal points
+
+
+
 
     @staticmethod
     def compute_objective_functions(r1,r2,Vr1,Vr2,Vtheta1,Vtheta2,a):
