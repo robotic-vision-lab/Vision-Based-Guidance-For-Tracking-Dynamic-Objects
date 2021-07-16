@@ -28,7 +28,7 @@ SCREEN_BG_COLOR = DARK_GRAY
 # camera image formation settings
 FOV = 47.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 200.0                                  # meters
+ALTITUDE = 120.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -37,7 +37,7 @@ PIXEL_TO_METERS_FACTOR = HORIZONTAL_SPAN / WIDTH
 # car settings
 CAR_IMG = 'cars_7.png'
 CAR_IMG_2 = 'cars_11.png'
-CAR_IMG_3 = 'cars_4.png'
+CAR_IMG_3 = 'cars_3.png'
 CAR_LENGTH = 6          # meters
 CAR_LENGTH_PX = 128
 CAR_SCALE = CAR_LENGTH / (CAR_LENGTH_PX * PIXEL_TO_METERS_FACTOR)
@@ -78,7 +78,8 @@ NUM_BLOCKS = 0
 # bar settings
 BAR_COLOR = DARK_GRAY_3
 BAR_COLOR_DELTA = (8, 8, 8)
-BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 25.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
+# BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 15.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
+BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 10.0, 15.0 #(HEIGHT-1) * PIXEL_TO_METERS_FACTOR
 NUM_BARS = 3
 
 # drone camera settings
@@ -116,15 +117,15 @@ WORLD_REF_FRAME = 2
 
 # tracker settings
 METRICS_COLOR = LIGHT_GRAY_2
-TRACK_COLOR = (102, 255, 102)
-ARROW_SCALE = 15.0
+TRACK_COLOR = (240, 255, 240) # (102, 255, 102)
+ARROW_SCALE = 10.0
 TRACKER_BLANK = 31
 ADD_METRICS = 0
 ADD_ALTITUDE_INFO = 1
 SHOW_EXTRA = 0
 DRAW_KEYPOINT_TRACKS = 1
 DRAW_KEYPOINTS_ONLY_WITHOUT_TRACKS = 1
-TRACK_SCALE = 2.5
+TRACK_SCALE = 2
 
 # theme
 DARK_ON = 0
@@ -199,12 +200,25 @@ SUPTITLE_ON = 1
 CAR_RADIUS = 0.1
 # initial conditions
 
+# # open
+# CAR_INITIAL_POSITION    = (10.0, -10.0)
+# CAR_INITIAL_VELOCITY    = (5.22, 0.0)
+# CAR_INITIAL_POSITION_2  = (10.0, 10.0)
+# CAR_INITIAL_VELOCITY_2  = (5.22, 0.0)
+# CAR_INITIAL_POSITION_3  = (-15.0, 0.0)
+# CAR_INITIAL_VELOCITY_3  = (5.22 , 0.0)
+# DRONE_POSITION          = (0.0, 0.0)
+# DRONE_INITIAL_VELOCITY  = (5.31, 0.0)
+# K_1                     = 0.8
+# K_2                     = 0.08
+# K_W                     = -1000
+
 # open
-CAR_INITIAL_POSITION    = (10.0, -10.0)
+CAR_INITIAL_POSITION    = (35.0, -25.0)
 CAR_INITIAL_VELOCITY    = (5.22, 0.0)
-CAR_INITIAL_POSITION_2  = (10.0, 10.0)
+CAR_INITIAL_POSITION_2  = (35.0, 5.0)
 CAR_INITIAL_VELOCITY_2  = (5.22, 0.0)
-CAR_INITIAL_POSITION_3  = (-15.0, 0.0)
+CAR_INITIAL_POSITION_3  = (10.0, -5.0)
 CAR_INITIAL_VELOCITY_3  = (5.22 , 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (5.31, 0.0)
