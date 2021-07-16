@@ -325,53 +325,6 @@ class ExperimentManager:
                                                                            self.tracking_manager.ellipse_params_meas[0])
 
                             self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
-                            '''
-                            At this point we have ellipse parameters
-                            next steps
-                            1. compute the following
-                                ellipse_center_x, 
-                                ellipse_center_y, 
-                                ellipse_focal_length, 
-                                ellipse_focal_point_1_x,
-                                ellipse_focal_point_1_y,
-                                ellipse_focal_point_2_x,
-                                ellipse_focal_point_2_y,
-                            2. filter focal_points
-
-                            At this point the responsibilities of the tracking manager are almost over
-                            Except one final task to offer the API to now display the ellipse
-
-
-                            #TODO add controller responsibilities
-                            take the 2 estimated focal points (along with their estimated velocities and accelerations)
-                            compute r and theta for both
-                            compute focal speed and heading for both
-                            compute acceleration mag and direction for both
-                            compute Vr and Vtheta 
-                            compute_objective_functions()
-                            compute_y1_y2_derivatives()
-                            compute a_lat, a_long
-                            convert to ax, ay
-
-                            3. convert to r1, θ1, r2, θ2. Compute focal_point speed and heading, acceleration and angle of acceleration
-                            4. Using all that compute a_lat and a_long
-                            5. feed accleration to simulator
-                            '''
-
-
-                                                       
-                            # let controller process kinematics
-                            # ax, ay = self.controller.generate_acceleration(self.targets[0].kinematics)
-                            # feed controller generated acceleration commands to simulator
-                            # self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
-
-                    else: # tracker is off
-                        if self.control_on:
-                            kin = self.get_true_kinematics()
-                            # let controller process kinematics
-                            # ax, ay = self.controller.generate_acceleration(kin)
-                            # feed controller generated acceleration commands to simulator
-                            self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
 
             self.simulator.draw_extra()
             self.simulator.show_drawing()
