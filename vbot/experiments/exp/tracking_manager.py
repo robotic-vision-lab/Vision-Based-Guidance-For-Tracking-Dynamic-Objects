@@ -173,6 +173,9 @@ class TrackingManager:
                                            ELLIPSE_OPACITY,
                                            0)[mask]
 
+        # save it for screensaver
+        self.exp_manager.multi_tracker.cur_img = blended_img
+
         # show blended image
         cv.imshow(self.exp_manager.multi_tracker.win_name, blended_img);cv.waitKey(1)
 
