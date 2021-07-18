@@ -16,7 +16,9 @@ class DroneCamera(pygame.sprite.Sprite):
         self.origin = self.position
         self.prev_origin = self.position
         self.delta_pos = pygame.Vector2(0.0,0.0)
-        self.altitude = ALTITUDE
+        self.altitude = ALTITUDE    # same as z (subject to accleratiosns)
+        self.vz = 0.0
+        self.az = 0.0
         self.alt_change = 1.0
 
         # self.rect.center = self.position + SCREEN_CENTER
@@ -51,13 +53,7 @@ class DroneCamera(pygame.sprite.Sprite):
     def update_kinematics(self):
         """helper function to update kinematics of object
         """
-        # set a drag coefficient
-        # COEFF = 0.1
-        # print(f'a {self.acceleration}, v {self.velocity}, dt {self.game.dt}')
-        # self.acceleration -= self.acceleration * COEFF
-        # print(f'a {self.acceleration}, v {self.velocity}')
-
-        # update velocity and position
+        # update velocity and position (in the XY plane)
         self.velocity += self.acceleration * self.simulator.dt
         if abs(self.velocity.length()) > self.vel_limit:
             self.velocity -= self.acceleration * self.simulator.dt
@@ -69,6 +65,9 @@ class DroneCamera(pygame.sprite.Sprite):
             # self.simulator.dt**2  # donot touch ☠                    pylint: disable=line-too-long
         self.prev_origin = deepcopy(self.origin)
         self.origin += self.delta_pos
+
+        # update kinematics along Z
+
 
     def compensate_camera_motion(self, sprite_obj):
         """Compensates camera motion by updating position of sprite object.
