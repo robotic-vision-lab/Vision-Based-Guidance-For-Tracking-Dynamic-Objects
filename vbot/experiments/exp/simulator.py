@@ -25,7 +25,23 @@ from .my_imports import (load_image_rect,
 
 
 class Simulator:
-    """Enables image data capture through simulation using Pygame.
+    """
+    
+    A class to represent a Pygame simulation object
+    ...
+        
+
+        Attributes:
+        -----------
+        manager : ExperimentManager
+        clock : HighPrecisionClock
+
+
+        Methods:
+        --------
+
+    
+    Enables image data capture through simulation using Pygame.
     Simulates orthogonally projected image data capture of a simulated scene, from 
     a (dynamic) camera mounted on a drone. 
     Additionally, simulates kinematics of scene along with appropriate response 
@@ -60,19 +76,11 @@ class Simulator:
         self.pause = True
         self.time_font = pygame.font.SysFont(TIME_FONT, 16, False, False)
 
-        self.bb_start = None
-        self.bb_end = None
-        self.bb_drag = False
-        self.bounding_box_drawn = False
-
         self.running = True
         self.tracker_ready = True
 
         self.alt_change_fac = 1.0
         self.pxm_fac = PIXEL_TO_METERS_FACTOR
-
-        self.car_rect_center_bb_offset = [0,0]
-        self.select_mode = True # select or simulator mode
 
         self.time = 0.0
         self.dt = 0.0
@@ -145,7 +153,6 @@ class Simulator:
                 if event.key == pygame.K_SPACE:
                     self.pause = not self.pause
                     if self.pause:
-                        self.bb_start = self.bb_end = None
                         print("\nSimulation paused.")
                     else:
                         print("\nSimulation running.")
@@ -156,30 +163,7 @@ class Simulator:
                 if event.key == pygame.K_k:
                     self.drone_down()
             
-            # capture bounding box input 
-            # Bounding box will be input in the following manner
-            #   1. Simulator will be paused
-            #   2. MOUSEBUTTONDOWN event (triggers bb corner (start and end) points collection)
-            #   3. MOUSEMOTION event (triggers instantaneous end point update while mouse drag)
-            #   4. MOUSEBUTTONUP event (triggers end of drag along with final end point update)
-            # At step 4, we have a bounding box
-            # Bounding Box input event handling will be statefully managed
-            # if self.pause and event.type == pygame.MOUSEBUTTONDOWN:
-            #     self.bb_start = self.bb_end = pygame.mouse.get_pos()
-            #     self.bb_drag = True
-            # if event.type == pygame.MOUSEMOTION and self.bb_drag:
-            #     self.bb_end = pygame.mouse.get_pos()
 
-            # if event.type == pygame.MOUSEBUTTONUP:
-            #     self.bb_end = pygame.mouse.get_pos()
-            #     self.bb_drag = False
-            #     # at this point bounding box is assumed to be drawn
-            #     self.bounding_box_drawn = True
-            #     # assume appropriate bounding box was inputted and indicate green flag for tracker
-            #     self.tracker_ready = True
-            #     # set car rect center offset from bounding box topleft
-            #     self.car_rect_center_bb_offset[0] = self.bb_start[0] - self.car.rect.centerx 
-            #     self.car_rect_center_bb_offset[1] = self.bb_start[1] - self.car.rect.centery
 
             GAME_EVENTS.pump()
 
@@ -227,13 +211,6 @@ class Simulator:
 
         # draw bounding box
         if self.pause:
-            # x = self.car.rect.centerx - int(self.car.rect.width * 0.8)
-            # y = self.car.rect.centery - int(self.car.rect.height * 0.8)
-            # w = int(self.car.rect.width * 1.6)
-            # h = int(self.car.rect.height * 1.6)
-            # self.bounding_box = (x, y, w, h)
-            # pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(x, y, w, h), 2)
-            self.bounding_box = self.manager.targets[0].get_updated_true_bounding_box()
             pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.targets[0].get_updated_true_bounding_box()), 1)
             pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.targets[1].get_updated_true_bounding_box()), 1)
             pygame.draw.rect(self.SCREEN_SURFACE, BB_COLOR, pygame.rect.Rect(*self.manager.targets[2].get_updated_true_bounding_box()), 1)
@@ -243,11 +220,9 @@ class Simulator:
         if not CLEAR_TOP:
             alt_str = f'car loc - {self.car.rect.center}, Alt - {self.camera.altitude:0.2f}m, fac - {self.alt_change_fac:0.4f}, pxm - {self.pxm_fac:0.4f}'
             alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
-            alt_rect = alt_surf.get_rect()
             self.SCREEN_SURFACE.blit(alt_surf, (15, 15))
             alt_str = f'drone loc - {self.camera.rect.center}, FOV - {WIDTH * self.pxm_fac:0.2f}m x {HEIGHT * self.pxm_fac:0.2f}m'
             alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
-            alt_rect = alt_surf.get_rect()
             self.SCREEN_SURFACE.blit(alt_surf, (15, 35))
         
         # draw drone cross hair
