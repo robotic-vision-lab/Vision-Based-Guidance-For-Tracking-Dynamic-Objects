@@ -19,7 +19,6 @@ class DroneCamera(pygame.sprite.Sprite):
         self.altitude = ALTITUDE    # same as z (subject to accleratiosns)
         self.vz = 0.0
         self.az = 0.0
-        self.alt_change = 1.0
 
         # self.rect.center = self.position + SCREEN_CENTER
         self.simulator = simulator
@@ -76,7 +75,6 @@ class DroneCamera(pygame.sprite.Sprite):
             sprite_obj (pygame.sprite.Sprite): Sprite object whose motion needs compensation.
         """
         sprite_obj.position -= self.position
-        # sprite_obj.velocity -= self.velocity    # consider investigating for correctness
         sprite_obj.update_rect()
 
     def convert_px_to_m(self, p):
