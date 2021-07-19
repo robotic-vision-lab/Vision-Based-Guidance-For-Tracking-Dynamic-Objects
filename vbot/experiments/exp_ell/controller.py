@@ -254,18 +254,25 @@ class Controller:
 
 
         # compute acceleration command
-        a_lat = (-1)*((K2*y2+fp1_acc*dy2dVr1*cos(fp1_delta+(-1)*theta1)+fp1_acc* \
-            dy2dVtheta1*sin(fp1_delta+(-1)*theta1))*(dy1dVr1*cos(drone_alpha+(-1) \
-            *theta1)+dy1dVr2*cos(drone_alpha+(-1)*theta2)+dy1dVtheta1*sin(drone_alpha+ \
-            (-1)*theta1)+dy1dVtheta2*sin(drone_alpha+(-1)*theta2))+(-1)*( \
-            dy2dVr1*cos(drone_alpha+(-1)*theta1)+dy2dVtheta1*sin(drone_alpha+(-1)* \
-            theta1))*((-1)*K1*w+K1*y1+fp1_acc*dy1dVr1*cos(fp1_delta+(-1)* \
-            theta1)+fp2_acc*dy1dVr2*cos(fp2_delta+(-1)*theta2)+fp1_acc*dy1dVtheta1* \
-            sin(fp1_delta+(-1)*theta1)+fp2_acc*dy1dVtheta2*sin(fp2_delta+(-1)* \
-            theta2)))*(dy1dVtheta1*dy2dVr1+(-1)*dy1dVr1*dy2dVtheta1+( \
-            dy1dVtheta2*dy2dVr1+(-1)*dy1dVr2*dy2dVtheta1)*cos(theta1+(-1) \
-            *theta2)+(-1)*(dy1dVr2*dy2dVr1+dy1dVtheta2*dy2dVtheta1)*sin( \
-            theta1+(-1)*theta2))**(-1)
+        f1dt1 = fp1_delta - theta1
+        f2dt2 = fp2_delta - theta2
+        dalt1 = drone_alpha - theta1
+        dalt2 = drone_alpha - theta2
+        t1t2 = theta1 - theta2
+        cf1dt1 = cos(f1dt1)
+        sf1dt1 = sin(f1dt1)
+        cf2dt2 = cos(f2dt2)
+        sf2dt2 = sin(f2dt2)
+        cdalt1 = cos(dalt1)
+        sdalt1 = sin(dalt1)
+        cdalt2 = cos(dalt2)
+        sdalt2 = sin(dalt2)
+        ct1t2 = cos(t1t2)
+        st1t2 = sin(t1t2)
+
+        a_lat = (-1)*((K2*y2+fp1_acc*dy2dVr1*cf1dt1+fp1_acc*dy2dVtheta1*sf1dt1)*(dy1dVr1*cdalt1+dy1dVr2*cdalt2+dy1dVtheta1*sdalt1+dy1dVtheta2*sdalt2)+(-1)*(dy2dVr1*cdalt1+dy2dVtheta1*sdalt1)*((-1)*K1*w+K1*y1+fp1_acc*dy1dVr1*cf1dt1+fp2_acc*dy1dVr2*cf2dt2+fp1_acc*dy1dVtheta1*sf1dt1+fp2_acc*dy1dVtheta2*sf2dt2)) \
+            / \
+            (dy1dVtheta1*dy2dVr1+(-1)*dy1dVr1*dy2dVtheta1+(dy1dVtheta2*dy2dVr1+(-1)*dy1dVr2*dy2dVtheta1)*ct1t2+(-1)*(dy1dVr2*dy2dVr1+dy1dVtheta2*dy2dVtheta1)*st1t2)
 
         a_long = (1/2)*(dy1dVtheta1*dy2dVr1+(-1)*dy1dVr1*dy2dVtheta1+( \
             dy1dVtheta2*dy2dVr1+(-1)*dy1dVr2*dy2dVtheta1)*cos(theta1+(-1) \
