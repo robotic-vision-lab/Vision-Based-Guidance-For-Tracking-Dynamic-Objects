@@ -61,7 +61,7 @@ class MultiTracker:
         # self.track_length = 10 # for lifetime management
         self.tracker_info_mask = None   # mask over which tracker information is drawn persistently
         self.win_name = 'Tracking in progress'
-        self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
+        # self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
         self.DES_MATCH_DISTANCE_THRESH = 250 #450
         self.DES_MATCH_DEV_THRESH = 0.50 # float('inf') to get every match
         self.TEMP_MATCH_THRESH = 0.9849
