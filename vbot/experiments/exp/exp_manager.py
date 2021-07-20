@@ -17,8 +17,7 @@ from .ellipse import Ellipse2D
 from .target import Target
 
 from .settings import *
-from .my_imports import (create_video_from_images,
-                         tight_ellipse)
+from .my_imports import create_video_from_images
 
 
 class ExperimentManager:
