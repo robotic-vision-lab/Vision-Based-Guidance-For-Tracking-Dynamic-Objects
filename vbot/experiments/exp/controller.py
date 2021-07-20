@@ -199,6 +199,16 @@ class Controller:
         return ax, ay
 
     def generate_acceleration(self, ellipse_focal_points_est_state, ellipse_major_axis_len):
+        """Uses esitmated state of ellipse focal points and major axis to generate lateral and logintudinal accleration commands for dronecamera.
+        Returns ax, ay
+
+        Args:
+            ellipse_focal_points_est_state (tuple): State estimations for both focal points
+            ellipse_major_axis_len (float): Major axis of enclosing ellipse
+
+        Returns:
+            tuple : ax, ay
+        """
         cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
 
         # drone (known)
