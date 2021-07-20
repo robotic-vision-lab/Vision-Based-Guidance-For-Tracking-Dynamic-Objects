@@ -126,9 +126,10 @@ class Ellipse2D:
 		return self.get_params()
 
 	def update_estimations(self):
-		'''
+		"""
 		tracking_manager will use this API to have the filtering run and collect estimations of focal_points
-		'''
+		(DEPRECATED)
+		"""
 		pass
 
 		
