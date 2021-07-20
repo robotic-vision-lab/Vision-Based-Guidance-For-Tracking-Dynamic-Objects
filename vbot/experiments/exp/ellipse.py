@@ -78,11 +78,9 @@ class Ellipse2D:
 
 		while err > tolerance:
 			# X = Q . diag(u) . Q'
-			# X = np.matmul(np.matmul(Q, np.diag(u.flatten())), Q.T)
 			X = LA.multi_dot([Q, np.diag(u.flatten()), Q.T])
 
 			# M = diag(Q' . X^-1 . Q)
-			# M = np.diag(np.matmul(Q.T, np.matmul(np.linalg.pinv(X), Q)))
 			M = np.diag(LA.multi_dot([Q.T, LA.pinv(X), Q]))
 
 			_MAX_M = np.max(M)
@@ -99,7 +97,6 @@ class Ellipse2D:
 		U = np.diag(u.flatten())
 
 		# A = (1/d) * ( (points . U . points') - (points . u . u.T . points.T) )
-		# A = (1/d) * LA.pinv(( np.matmul(np.matmul(points, U), points.T) - np.matmul(np.matmul(points, u), np.matmul(u.T,points.T)) ))
 		A = (1/d) * LA.pinv(LA.multi_dot([points, U, points.T]) - LA.multi_dot([points, u, u.T, points.T]))
 
 		# compute SVD(A)
