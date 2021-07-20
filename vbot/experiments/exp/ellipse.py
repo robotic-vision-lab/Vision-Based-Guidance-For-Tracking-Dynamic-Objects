@@ -23,6 +23,11 @@ class Ellipse2D:
 		self._POINT_ENCLOSURE_TOLERANCE = 0.1
 
 	def get_params(self):
+		""" returns ellipse parameters
+
+		Returns:
+			tuple: tuple of ellipse params including focal points
+		"""
 		return (self.major_axis_len,
 				self.minor_axis_len,
 				self.center_coords,
@@ -32,9 +37,13 @@ class Ellipse2D:
 				self.focal_point_2)
 
 	def update_focal_length(self):
+		""" helper function updates focal length
+		"""
 		self.focal_length = (self.major_axis_len**2 - self.minor_axis_len**2)**0.5
 
 	def update_focal_points(self):
+		""" helper function updates focal points 
+		"""
 		self.focal_point_1[0] = self.center_coords[0] + self.focal_length * cos(self.rotation_angle)
 		self.focal_point_1[1] = self.center_coords[1] + self.focal_length * sin(self.rotation_angle)
 		
@@ -42,6 +51,15 @@ class Ellipse2D:
 		self.focal_point_2[1] = self.center_coords[1] - self.focal_length * sin(self.rotation_angle)
 
 	def enclose_points(self, points, tolerance=None):
+		""" Enclosed points inside an ellipse. Returns computed ellipse params
+
+		Args:
+			points (np.ndarray): points to be enclosed
+			tolerance (float32, optional): Tolerance for optimization error. Defaults to None.
+
+		Returns:
+			tuple: Tuple of ellipse params including focal points
+		"""
 		if tolerance is None:
 			tolerance = self._POINT_ENCLOSURE_TOLERANCE
 
