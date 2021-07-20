@@ -308,22 +308,26 @@ class ExperimentManager:
 
                 # let tracker process image, when simulator indicates ok
                 if self.simulator.can_begin_tracking():
-                    if self.tracker_on:
-                        screen_capture = self.simulator.get_screen_capture()
-                        # process image through multi_tracker; it knows to record information in targets
-                        self.multi_tracker.process_image_complete(screen_capture)
+                    # get screen capture from simulator
+                    screen_capture = self.simulator.get_screen_capture()
+                    
+                    # process image through multi_tracker; it knows to record information in targets
+                    self.multi_tracker.process_image_complete(screen_capture)
 
-                        # let controller generate acceleration, when tracker indicates ok (which is when first frame is processed)
-                        if self.multi_tracker.can_begin_control():
-                            # collect kinematics and compute ellipse parameters
-                            self.tracking_manager.compute_enclosing_ellipse(tolerance=ELLIPSE_TOLERANCE)
-                            self.tracking_manager.compute_focal_point_estimations()
-                            self.tracking_manager.display()
+                    # let controller generate acceleration, when tracker indicates ok (which is when first frame is processed)
+                    if self.multi_tracker.can_begin_control():
+                        # collect kinematics, compute ellipse parameters, filter
+                        self.tracking_manager.compute_enclosing_ellipse(tolerance=ELLIPSE_TOLERANCE)
+                        self.tracking_manager.compute_focal_point_estimations()
 
-                            ax, ay = self.controller.generate_acceleration(self.tracking_manager.ellipse_params_est,
-                                                                           self.tracking_manager.ellipse_params_meas[0])
+                        # display tracked information 
+                        self.tracking_manager.display()
 
-                            self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
+                        # generate acceleration command for dronecamera, apply
+                        ax, ay = self.controller.generate_acceleration(self.tracking_manager.ellipse_params_est,
+                                                                        self.tracking_manager.ellipse_params_meas[0])
+
+                        self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
 
             self.simulator.draw_extra()
             self.simulator.show_drawing()
