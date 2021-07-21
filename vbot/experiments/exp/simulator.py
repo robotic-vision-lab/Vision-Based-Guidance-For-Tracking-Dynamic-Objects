@@ -57,9 +57,10 @@ class Simulator:
         pygame.init()
 
         # set screen size, bg color and display title
-        self.SCREEN_SURFACE = pygame.display.set_mode(SCREEN_SIZE)
+        self.SCREEN_SURFACE = pygame.display.set_mode(SCREEN_SIZE, flags=pygame.DOUBLEBUF)
         self.SCREEN_SURFACE.fill(SCREEN_BG_COLOR)
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
+        pygame.event.set_allowed([GAME_GLOBALS.QUIT, pygame.KEYDOWN])
 
         # initialize clock
         self.clock = HighPrecisionClock()
