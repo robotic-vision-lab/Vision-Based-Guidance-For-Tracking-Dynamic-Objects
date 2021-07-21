@@ -61,6 +61,7 @@ class Simulator:
         self.SCREEN_SURFACE.fill(SCREEN_BG_COLOR)
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
         pygame.event.set_allowed([GAME_GLOBALS.QUIT, pygame.KEYDOWN])
+        self.SCREEN_SURFACE.set_alpha(None)
 
         # initialize clock
         self.clock = HighPrecisionClock()
