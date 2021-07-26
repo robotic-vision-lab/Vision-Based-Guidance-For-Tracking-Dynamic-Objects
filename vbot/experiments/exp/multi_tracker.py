@@ -1038,14 +1038,14 @@ class MultiTracker:
             img = cv.rectangle(img, (xc-size, yc-size), (xc+size, yc+size), _BB_COLOR, 1, cv.LINE_AA)
             
             # draw target id
-            id_str = f' #{target.ID} '
+            id_str = f'#{target.ID}'
             (t_w, t_h) = cv.getTextSize(id_str, cv.FONT_HERSHEY_SIMPLEX, 0.45, thickness=1)[0]
-            img = cv.rectangle(img, (xc-size, yc-size-12-t_h), (xc-size+t_w+2, yc-size-1), _BB_COLOR, cv.FILLED, cv.LINE_AA)
-            img = put_text(img, id_str, (xc-size, yc-size-7), font=cv.FONT_HERSHEY_SIMPLEX, font_scale=0.45, color=(255,255,255), thickness=1)
+            img = cv.rectangle(img, (xc-size, yc-size-12-t_h), (xc-size+t_w+1, yc-size-1), _BB_COLOR, cv.FILLED, cv.LINE_AA)
+            img = put_text(img, id_str, (xc-size+1, yc-size-7), font=cv.FONT_HERSHEY_SIMPLEX, font_scale=0.45, color=(255,255,255), thickness=1)
 
                 
             # draw centroid track - circle for centroid_new and line between centroid_old and centroid_new
-            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
+            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TURQUOISE_GREEN_LIGHT_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
             # cv.imshow('cosmetics', img);cv.waitKey(1)
 
             # draw keypoint tracks - circle for keypoint_new and line between keypoint_old and keypoint_new
