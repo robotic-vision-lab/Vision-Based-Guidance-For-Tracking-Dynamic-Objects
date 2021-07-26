@@ -1,6 +1,7 @@
 from datetime import timedelta
 from math import isnan, ceil
-import threading as th
+from threading import Thread as worker
+# from multiprocessing import Process as worker
 
 import cv2 as cv
 import numpy as np
@@ -871,7 +872,7 @@ class MultiTracker:
         if self.is_first_time():
             thread_list = []
             for target in self.targets:
-                t = th.Thread(target=self.process_0, args=(target,), daemon=True)
+                t = worker(target=self.process_0, args=(target,), daemon=True)
                 t.start()
                 thread_list.append(t)
             for thread in thread_list: thread.join()
@@ -888,7 +889,7 @@ class MultiTracker:
         self._can_begin_control_flag = True
         thread_list = []
         for target in self.targets:
-            t = th.Thread(target=self.process_1, args=(target,), daemon=True)
+            t = worker(target=self.process_1, args=(target,), daemon=True)
             t.start()
             thread_list.append(t)
         for thread in thread_list: thread.join()
@@ -897,7 +898,7 @@ class MultiTracker:
         # use filter 
         thread_list = []
         for target in self.targets:
-            t = th.Thread(target=self.process_2, args=(target,), daemon=True)
+            t = worker(target=self.process_2, args=(target,), daemon=True)
             t.start()
             thread_list.append(t)
         for thread in thread_list: thread.join()
@@ -914,7 +915,7 @@ class MultiTracker:
         # handle posterity - target attributes
         thread_list = []
         for target in self.targets:
-            t = th.Thread(target=self.process_3, args=(target,), daemon=True)
+            t = worker(target=self.process_3, args=(target,), daemon=True)
             t.start()
             thread_list.append(t)
         for thread in thread_list: thread.join()
