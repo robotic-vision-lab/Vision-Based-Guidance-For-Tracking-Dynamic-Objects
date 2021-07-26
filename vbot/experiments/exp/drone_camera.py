@@ -37,7 +37,11 @@ class DroneCamera(pygame.sprite.Sprite):
     def update_rect(self):
         """update drone sprite's rect.
         """
+        # position is in meters, convert it to pixels
+        # and flip y axis
         x, y = self.position.elementwise() * (1, -1) / self.simulator.pxm_fac
+
+        # set rect, convert to integer
         self.rect.centerx = int(x)
         self.rect.centery = int(y) + HEIGHT
         self.rect.center += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1)
