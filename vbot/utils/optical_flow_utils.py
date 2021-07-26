@@ -241,14 +241,17 @@ def draw_tracks(img, old_pts,
                 color = colors[0]
             else:
                 color = (102, 255, 102) if colors is None else colors[i].tolist()
-            mask = cv.line(mask, (a, b), (c, d), color, track_thickness, cv.LINE_AA)
+            mask = cv.line(mask, (a, b), (c, d), color, track_thickness, cv.LINE_8)
 
     # add mask to img
     # img[mask > 0] = 0
     # img = cv.add(img, mask)
-    img[mask==color] = mask[mask==color]
-
-    return img, mask
+    # img[mask==color] = mask[mask==color]
+    mask_opacity = 0.5
+    blend_img = img.copy()
+    mask_ = mask.astype(bool)
+    blend_img[mask_] = cv.addWeighted(img, 1-mask_opacity, mask, mask_opacity, 0)[mask_]
+    return blend_img, mask
 
 
 if __name__ == "__main__":
