@@ -24,6 +24,8 @@ SCREEN_SIZE = WIDTH, HEIGHT = 800, 600  # 640, 480 # 800, 600
 SCREEN_CENTER = (WIDTH//2, HEIGHT//2)
 SCREEN_DISPLAY_TITLE = "Car Simulation"
 SCREEN_BG_COLOR = DARK_GRAY
+SIMULATOR_ICON_IMG = 'drone.png'
+SIMULATOR_TITLE = 'Simulator'
 
 # camera image formation settings
 FOV = 47.0                                      # degrees
