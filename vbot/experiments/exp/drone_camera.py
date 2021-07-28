@@ -41,9 +41,11 @@ class DroneCamera(pygame.sprite.Sprite):
         # and flip y axis
         x, y = self.position.elementwise() * (1, -1) / self.simulator.pxm_fac
 
-        # set rect, convert to integer
+        # set rect, convert to integer, 
         self.rect.centerx = int(x)
         self.rect.centery = int(y) + HEIGHT
+
+        # translate center to screen center
         self.rect.center += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1)
 
     def reset_kinematics(self):
