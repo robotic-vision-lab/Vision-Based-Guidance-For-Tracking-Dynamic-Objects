@@ -1057,7 +1057,7 @@ class MultiTracker:
             text_bg_bottom_right = (tl_x + text_width + 2*text_pad_width, tl_y)
 
             # compute text placement position (bottom left anchor of text)
-            text_bottom_left_pos = (tl_x + text_pad_width , tl_y - text_pad_height - baseline)
+            text_bottom_left_pos = (tl_x + text_pad_width , tl_y - text_pad_height - baseline+1)
 
             # draw text background rectangle and put text
             img = cv.rectangle(img, text_bg_top_left, text_bg_bottom_right, _BB_COLOR, cv.FILLED, cv.LINE_AA)
