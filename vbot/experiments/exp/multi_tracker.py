@@ -61,7 +61,7 @@ class MultiTracker:
         self._frame_num = 0
         # self.track_length = 10 # for lifetime management
         self.tracker_info_mask = None   # mask over which tracker information is drawn persistently
-        self.win_name = 'Tracking in progress'
+        self.win_name = 'Multi-tracker'
         # self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
         self.DES_MATCH_DISTANCE_THRESH = 250 #450
         self.DES_MATCH_DEV_THRESH = 0.50 # float('inf') to get every match
@@ -1057,7 +1057,7 @@ class MultiTracker:
             text_bg_bottom_right = (tl_x + text_width + 2*text_pad_width, tl_y)
 
             # compute text placement position (bottom left anchor of text)
-            text_bottom_left_pos = (tl_x + text_pad_width , tl_y - text_pad_height - baseline)
+            text_bottom_left_pos = (tl_x + text_pad_width , tl_y - text_pad_height - baseline+1)
 
             # draw text background rectangle and put text
             img = cv.rectangle(img, text_bg_top_left, text_bg_bottom_right, _BB_COLOR, cv.FILLED, cv.LINE_AA)

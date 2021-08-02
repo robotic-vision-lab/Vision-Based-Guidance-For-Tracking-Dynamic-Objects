@@ -192,8 +192,8 @@ class Simulator:
         self.SCREEN_SURFACE.fill(SCREEN_BG_COLOR)
 
         # make and set the window title
-        sim_fps = 'NA' if self.dt == 0 else f'{1/self.dt:.2f}'
-        pygame.display.set_caption(f'{SIMULATOR_TITLE}  [FPS-{sim_fps}]')
+        sim_fps = '' if self.dt == 0 else f'[@{1/self.dt:.2f} fps]'
+        pygame.display.set_caption(f'{SIMULATOR_TITLE} {sim_fps}')
 
         # draw only blocks and cars (in that order). Do not draw drone crosshair yet
         self.block_sprites.draw(self.SCREEN_SURFACE)
