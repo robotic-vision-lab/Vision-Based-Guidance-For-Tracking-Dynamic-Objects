@@ -122,6 +122,24 @@ class TrackingManager:
         ellipse_focal_point_1_est = tuple(map(int, ellipse_focal_point_1_est))
         ellipse_focal_point_2_est = tuple(map(int, ellipse_focal_point_2_est))
 
+
+
+        # test out axis aligned bounding box
+        ellipse_center_est = ((ellipse_focal_point_1_est[0] + ellipse_focal_point_2_est[0]) //2,
+                        (ellipse_focal_point_1_est[1] + ellipse_focal_point_2_est[1]) //2)
+
+        
+
+        
+        
+
+
+
+
+
+
+
+
         # draw over color edited frame and show it
         ellipse_img = np.zeros_like(self.exp_manager.multi_tracker.frame_color_edited, np.uint8)
 
@@ -161,6 +179,14 @@ class TrackingManager:
                                 ellipse_focal_point_2_est,
                                 radius=ELLIPSE_ESTD_FP_RADIUS,
                                 color=ELLIPSE_ESTD_FP_COLOR,
+                                thickness=cv.FILLED,
+                                lineType=cv.LINE_AA)
+
+        # draw midpoint 
+        ellipse_img = cv.circle(ellipse_img,
+                                ellipse_center_est,
+                                radius=2,
+                                color=RED_CV,
                                 thickness=cv.FILLED,
                                 lineType=cv.LINE_AA)
 
