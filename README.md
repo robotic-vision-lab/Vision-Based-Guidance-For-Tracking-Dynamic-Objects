@@ -1,7 +1,5 @@
 ## Vision-Based Object Tracking for Unmanned Aircraft Systems
 
-[![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/keras-team/keras/blob/master/LICENSE)
-
 ![occlusion_handling.gif](./docs/experiment_vids/final_experiments/gifs/occ.gif)
 
 ### Overview
@@ -69,5 +67,4 @@ The process of running experiments has the following steps.
 
 ### License
 
-[MIT](https://github.com/robotic-vision-lab/Vision-Based-Ojbect-Tracking/blob/master/LICENSE)
-
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/robotic-vision-lab/Vision-Based-Object-Tracking/blob/master/LICENSE)
