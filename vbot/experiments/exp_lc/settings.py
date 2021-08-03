@@ -77,8 +77,8 @@ BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 15.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
 NUM_BARS = 2
 
 # drone camera settings
-DRONE_IMG = 'cross_hair2.png'
-DRONE_SCALE = 0.2
+DRONE_IMG = 'cross_hair.png'
+DRONE_SCALE = 1.0
 # note (0,0) at image center, axes: x points right [>], y points down [v]
 # DRONE_POSITION = (0.0, 0.0)#(943.15, -203.48)#(0.0, 50.0)
 # DRONE_INITIAL_VELOCITY = (31.11, 0.0)#(-11.11, 0.0)#(20.0, 0.0)
@@ -101,7 +101,7 @@ ARROW_SCALE = 7.0
 TRACKER_BLANK = 31
 ADD_METRICS = 1
 ADD_ALTITUDE_INFO = 1
-SHOW_EXTRA = 0
+SHOW_EXTRA = 1
 DRAW_KEYPOINT_TRACKS = 1
 DRAW_KEYPOINTS_ONLY_WITHOUT_TRACKS = 1
 TRACK_SCALE = 1.2

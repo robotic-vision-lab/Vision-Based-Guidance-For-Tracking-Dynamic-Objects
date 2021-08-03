@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from datetime import timedelta
-from math import atan2, degrees, cos, sin, pi
+from math import atan2, degrees, cos, sin, pi, pow
 from .settings import *
 
 class Controller:
@@ -10,16 +10,13 @@ class Controller:
         self.plot_info_file = 'plot_info.csv'
         self.R = CAR_RADIUS
         self.f = None
-        self.a_ln = 0.0
-        self.a_lt = 0.0
-        # self.est_def = False
 
 
     @staticmethod
     def sat(x, bound):
         return min(max(x, -bound), bound)
 
-    def generate_acceleration(self, kin):
+    def generate_acceleration_(self, kin):
         # unpack kinematics of UAS and vehicle
         drone_pos_x, drone_pos_y = kin[0]
         drone_vel_x, drone_vel_y = kin[1]
@@ -66,13 +63,9 @@ class Controller:
         # this point on r, θ, Vr, Vθ etc are estimated ones
 
         # EKF filtering [r, theta, Vr, Vtheta] 
-        if not self.manager.use_true_kin and (USE_EXTENDED_KALMAN or USE_NEW_EKF):
-            if USE_NEW_EKF:
-                self.manager.EKF.add(r, theta, Vr, Vtheta, drone_alpha, self.a_lt, self.a_ln, car_pos_x, car_pos_y, car_vel_x, car_vel_y)
-                r, theta, Vr, Vtheta, deltaB_est, estimated_acceleration = self.manager.EKF.get_estimated_state()
-            else: # the old EKF may not be used anymore, here only for backward compat
-                self.manager.EKF.add(r, theta, Vr, Vtheta, drone_alpha, self.a_lt, self.a_ln)
-                r, theta, Vr, Vtheta = self.manager.EKF.get_estimated_state()
+        if not self.manager.use_true_kin:
+            self.manager.EKF.add(r, theta, Vr, Vtheta, drone_alpha, car_pos_x, car_pos_y, car_vel_x, car_vel_y)
+            r, theta, Vr, Vtheta, deltaB_est, estimated_acceleration = self.manager.EKF.get_estimated_state()
 
         # calculate y from drone to car
         y2 = Vtheta**2 + Vr**2
@@ -96,15 +89,7 @@ class Controller:
                 car_acc_x, car_acc_y = self.manager.simulator.car.acceleration
                 estimated_acceleration = (car_acc_x**2 + car_acc_y**2)**0.5
                 deltaB_est = atan2(car_acc_y, car_acc_x)
-                # estimated_acceleration = 0.0
-                # deltaB_est = 0.0
 
-            # a_lat = (K1 * Vr * y1 * cos(drone_alpha - theta) - K1 * Vr * w * cos(drone_alpha - theta) - K1 * Vtheta * w * sin(drone_alpha - theta) + K1 * Vtheta * y1 * sin(drone_alpha - theta)
-            #             - 2*Vr*Vtheta*estimated_acceleration*r**2*sin(drone_alpha - deltaB_est) +
-            #             K2 * self.R**2 * Vr * y2 * cos(drone_alpha - theta) + K2 * self.R**2 * Vtheta * y2 * sin(drone_alpha - theta) - K2 * Vtheta * r**2 * y2 * sin(drone_alpha - theta)) / _D
-            # a_long = (K1 * Vtheta * w * cos(drone_alpha - theta) - K1 * Vtheta * y1 * cos(drone_alpha - theta) - K1 * Vr * w * sin(drone_alpha - theta) + K1 * Vr * y1 * sin(drone_alpha - theta)
-            #             + 2*Vr*Vtheta*estimated_acceleration*r**2*cos(drone_alpha - deltaB_est) -
-            #             K2 * self.R**2 * Vtheta * y2 * cos(drone_alpha - theta) + K2 * self.R**2 * Vr * y2 * sin(drone_alpha - theta) + K2 * Vtheta * r**2 * y2 * cos(drone_alpha - theta)) / _D
             K_a = 1
             dax = 0 #self.manager.simulator.camera.acceleration[0]
             day = 0 #self.manager.simulator.camera.acceleration[1]
@@ -126,8 +111,6 @@ class Controller:
         a_long = self.sat(a_long, a_long_bound)
         a_lat = self.sat(a_lat, a_lat_bound)
 
-        self.a_ln = a_long
-        self.a_lt = a_lat
 
         # compute acceleration command
         delta = drone_alpha + pi / 2
@@ -214,3 +197,223 @@ class Controller:
             ax, ay = pygame.Vector2((0.0, 0.0))
 
         return ax, ay
+
+    def generate_acceleration(self, ellipse_focal_points_est_state, ellipse_major_axis_len):
+        """Uses esitmated state of ellipse focal points and major axis to generate lateral and logintudinal accleration commands for dronecamera.
+        Returns ax, ay
+
+        Args:
+            ellipse_focal_points_est_state (tuple): State estimations for both focal points
+            ellipse_major_axis_len (float): Major axis of enclosing ellipse
+
+        Returns:
+            tuple : ax, ay
+        """
+        cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
+
+        # drone (known)
+        drone_pos_x, drone_pos_y = self.manager.get_true_drone_position()
+        drone_vel_x, drone_vel_y = self.manager.get_true_drone_velocity()
+        drone_pos_x += cam_origin_x
+        drone_pos_y += cam_origin_y
+
+        drone_speed = (drone_vel_x**2 + drone_vel_y**2)**0.5
+        drone_alpha = atan2(drone_vel_y, drone_vel_x)
+
+        # collect estimated focal point state 
+        fp1_x, fp1_vx, fp1_ax, fp1_y, fp1_vy, fp1_ay, fp2_x, fp2_vx, fp2_ax, fp2_y, fp2_vy, fp2_ay = ellipse_focal_points_est_state
+
+        # compute r and θ for both focal points
+        r1 = ((fp1_x - drone_pos_x)**2 + (fp1_y - drone_pos_y)**2)**0.5
+        r2 = ((fp2_x - drone_pos_x)**2 + (fp2_y - drone_pos_y)**2)**0.5
+
+        theta1 = atan2(fp1_y - drone_pos_y, fp1_x - drone_pos_x)
+        theta2 = atan2(fp2_y - drone_pos_y, fp2_x - drone_pos_x)
+
+        # compute focal points speed and heading for both focal points
+        fp1_speed = (fp1_vx**2 + fp1_vy**2)**0.5
+        fp2_speed = (fp2_vx**2 + fp2_vy**2)**0.5
+
+        fp1_heading = atan2(fp1_vy, fp1_vx)
+        fp2_heading = atan2(fp2_vy, fp2_vx)
+
+        # compute acceleration magnitude and direction for both focal points
+        fp1_acc = (fp1_ax**2 + fp1_ay**2)**0.5
+        fp2_acc = (fp2_ax**2 + fp2_ay**2)**0.5
+
+        fp1_delta = atan2(fp1_ay, fp1_ax)
+        fp2_delta = atan2(fp2_ay, fp2_ax)
+
+        # compute Vr and Vθ for both focal points
+        Vr1 = fp1_speed*cos(fp1_heading - theta1) - drone_speed*cos(drone_alpha - theta1)
+        Vr2 = fp2_speed*cos(fp2_heading - theta2) - drone_speed*cos(drone_alpha - theta2)
+
+        Vtheta1 = fp1_speed*sin(fp1_heading - theta1) - drone_speed*sin(drone_alpha - theta1)
+        Vtheta2 = fp2_speed*sin(fp2_heading - theta2) - drone_speed*sin(drone_alpha - theta2)
+
+        # compute objective function
+        y1, y2 = self.compute_objective_functions(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, ellipse_major_axis_len)
+
+        # compute objective function derivatives
+        dy1dVr1, dy1dVtheta1, dy1dVr2, dy1dVtheta2, dy2dVr1, dy2dVtheta1 = self.compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2)
+
+        # set gains
+        K1 = K_1 * np.sign(-Vr1)
+        K2 = K_2
+        w = K_W
+
+
+        # compute acceleration commands
+        # precompute variables for numeric efficiency
+        f1dt1 = fp1_delta - theta1
+        f2dt2 = fp2_delta - theta2
+        dalt1 = drone_alpha - theta1
+        dalt2 = drone_alpha - theta2
+        dalf1d = drone_alpha-fp1_delta
+        t1t2 = theta1 - theta2
+        dalf1dmt1t2 = drone_alpha+fp1_delta-theta1-theta2
+        dalf2dmt1t2 = drone_alpha+fp2_delta-theta1-theta2
+        dalmf1dt1mt2 = drone_alpha-fp1_delta+theta1-theta2
+        dalmf2dmt1t2 = drone_alpha-fp2_delta-theta1+theta2
+        cf1dt1 = cos(f1dt1)
+        sf1dt1 = sin(f1dt1)
+        cf2dt2 = cos(f2dt2)
+        sf2dt2 = sin(f2dt2)
+        cdalt1 = cos(dalt1)
+        sdalt1 = sin(dalt1)
+        cdalt2 = cos(dalt2)
+        sdalt2 = sin(dalt2)
+        ct1t2 = cos(t1t2)
+        st1t2 = sin(t1t2)
+        cdalf1d = cos(dalf1d)
+        cdalf1dmt1t2 = cos(dalf1dmt1t2)
+        sdalf1dmt1t2 = sin(dalf1dmt1t2)
+        cdalf2dmt1t2 = cos(dalf2dmt1t2)
+        sdalf2dmt1t2 = sin(dalf2dmt1t2)
+        cdalmf1dt1mt2 = cos(dalmf1dt1mt2)
+        sdalmf1dt1mt2 = sin(dalmf1dt1mt2)
+        cdalmf2dmt1t2 = cos(dalmf2dmt1t2)
+        sdalmf2dmt1t2 = sin(dalmf2dmt1t2)
+        denom_sub = dy1dVtheta1*dy2dVr1-dy1dVr1*dy2dVtheta1
+        y1vt1dy2vr1 = dy1dVtheta2*dy2dVr1
+        y1vr2dy2vt1 = dy1dVr2*dy2dVtheta1
+        y1vr2dy2vr1 = dy1dVr2*dy2dVr1
+        y1vt2dy2vt1 = dy1dVtheta2*dy2dVtheta1
+        denom = (denom_sub+(y1vt1dy2vr1-y1vr2dy2vt1)*ct1t2-(y1vr2dy2vr1+y1vt2dy2vt1)*st1t2)
+
+        a_lat = -(
+            (K2*y2+fp1_acc*dy2dVr1*cf1dt1+fp1_acc*dy2dVtheta1*sf1dt1)
+            *(dy1dVr1*cdalt1+dy1dVr2*cdalt2+dy1dVtheta1*sdalt1+dy1dVtheta2*sdalt2)
+            -(dy2dVr1*cdalt1+dy2dVtheta1*sdalt1)
+            *(-K1*w+K1*y1+fp1_acc*dy1dVr1*cf1dt1+fp2_acc*dy1dVr2*cf2dt2+fp1_acc*dy1dVtheta1*sf1dt1+fp2_acc*dy1dVtheta2*sf2dt2)
+            ) / denom
+
+        a_long = (1/2)*(
+            2*fp1_acc*(denom_sub)*cdalf1d
+            +2*(dy2dVtheta1*K1*(w-y1)+dy1dVtheta1*K2*y2)*cdalt1
+            +2*dy1dVtheta2*K2*y2*cdalt2
+            -2*dy2dVr1*K1*w*sdalt1
+            +2*dy2dVr1*K1*y1*sdalt1
+            -2*dy1dVr1*K2*y2*sdalt1
+            -2*dy1dVr2*K2*y2*sdalt2
+            +y1vt1dy2vr1*fp1_acc*cdalf1dmt1t2
+            +y1vr2dy2vt1*fp1_acc*cdalf1dmt1t2
+            +y1vt1dy2vr1*fp1_acc*cdalmf1dt1mt2
+            -y1vr2dy2vt1*fp1_acc*cdalmf1dt1mt2
+            -y1vr2dy2vr1*fp1_acc*sdalf1dmt1t2
+            +y1vt2dy2vt1*fp1_acc*sdalf1dmt1t2
+            -y1vr2dy2vr1*fp1_acc*sdalmf1dt1mt2
+            -y1vt2dy2vt1*fp1_acc*sdalmf1dt1mt2
+            -y1vt1dy2vr1*fp2_acc*cdalf2dmt1t2
+            -y1vr2dy2vt1*fp2_acc*cdalf2dmt1t2
+            +y1vt1dy2vr1*fp2_acc*cdalmf2dmt1t2
+            -y1vr2dy2vt1*fp2_acc*cdalmf2dmt1t2
+            +y1vr2dy2vr1*fp2_acc*sdalf2dmt1t2
+            -y1vt2dy2vt1*fp2_acc*sdalf2dmt1t2
+            +y1vr2dy2vr1*fp2_acc*sdalmf2dmt1t2
+            +y1vt2dy2vt1*fp2_acc*sdalmf2dmt1t2
+            ) / denom
+
+        # clip acceleration commands
+        a_long_bound = 10
+        a_lat_bound = 10
+
+        a_long = self.sat(a_long, a_long_bound)
+        a_lat = self.sat(a_lat, a_lat_bound)
+
+        # compute acceleration commands ax and ay
+        delta = drone_alpha + pi / 2
+        ax = a_lat * cos(delta) + a_long * cos(drone_alpha)
+        ay = a_lat * sin(delta) + a_long * sin(drone_alpha)
+
+        return ax, ay
+
+
+
+    @staticmethod
+    def compute_objective_functions(r1,r2,Vr1,Vr2,Vtheta1,Vtheta2,a):
+        V1 = pow((Vtheta1**2 + Vr1**2),0.5)
+        V2 = pow((Vtheta2**2 + Vr2**2),0.5)
+        A1 = r1*Vtheta1/V1
+        A2 = r2*Vtheta2/V2
+        tau_num = r1*Vr1/V1**2 - r2*Vr2/V2**2
+        tau_den = A1+A2
+        tau = (tau_num/tau_den)**2
+
+        y1 = A1**2*(1+tau*V1**2) + A2**2*(1+tau*V2**2) + 2*A1*A2*pow((1+tau*(V1**2+V2**2)+tau**2*V1**2*V2**2),0.5)-4*(a)**2
+
+        y2 = Vtheta1**2 + Vr1**2
+
+        return y1, y2
+
+    @staticmethod
+    def compute_y1_y2_derivative(r1,r2,Vr1,Vr2,Vtheta1,Vtheta2):
+        def sqrt(x):
+            return pow(x, 0.5)
+
+        # Compute the variables needed for derivatives
+        V1 = sqrt(Vtheta1**2+Vr1**2); V2 = sqrt(Vtheta2**2+Vr2**2) 
+        A1 = r1*Vtheta1/V1 
+        A2 = r2*Vtheta2/V2
+        tau = (r1*Vr1/V1**2 - r2*Vr2/V2**2)**2/(A1+A2)**2
+
+        # Compute the derivatives needed for chain rule
+        dy1dA1 = 2*A1*(1+tau*V1**2)+2*A2*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(1/2)
+        dA1dVr1 = (-1)*r1*Vr1*Vtheta1*(Vr1**2+Vtheta1**2)**(-3/2)
+        dy1dtau = A1**2*V1**2+A2**2*V2**2+A1*A2*(V1**2+V2**2+2*tau*V1**2*V2**2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+        dy1dV1 = 2*A1**2*tau*V1+A1*A2*(2*tau*V1+2*tau**2*V1*V2**2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+        dV1dVr1 = Vr1*(Vr1**2+Vtheta1**2)**(-1/2)
+        dy1dA2 = 2*A2*(1+tau*V2**2)+2*A1*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(1/2)
+        dA2dVr2 = (-1)*r2*Vr2*Vtheta2*(Vr2**2+Vtheta2**2)**(-3/2)
+        dy1dV2 = 2*A2**2*tau*V2+A1*A2*(2*tau*V2+2*tau**2*V1**2*V2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+        dV2dVr2 = Vr2*(Vr2**2+Vtheta2**2)**(-1/2)
+        dA2dVtheta2 = (-1)*r2*Vtheta2**2*(Vr2**2+Vtheta2**2)**(-3/2)+r2*(Vr2**2+Vtheta2**2)**(-1/2)
+        dV2dVtheta2 = Vtheta2*(Vr2**2+Vtheta2**2)**(-1/2)
+        dA1dVtheta1 = (-1)*r1*Vtheta1**2*(Vr1**2+Vtheta1**2)**(-3/2)+r1*(Vr1**2+Vtheta1**2)**(-1/2)
+        dV1dVtheta1 = Vtheta1*(Vr1**2+Vtheta1**2)**(-1/2)
+        dtaudV1 = (-4)*(A1+A2)**(-2)*r1*V1**(-3)*Vr1*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
+        dtaudV2 = 4*(A1+A2)**(-2)*r2*V2**(-3)*Vr2*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
+        dtaudA1 = (-2)*(A1+A2)**(-3)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)**2
+        dtaudA2 = (-2)*(A1+A2)**(-3)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)**2
+        dtaudVr1E = 2*(A1+A2)**(-2)*r1*V1**(-2)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
+        dtaudVr2E = (-2)*(A1+A2)**(-2)*r2*V2**(-2)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
+
+        # Apply chain rule to compute intermediate derivatives
+        dtaudVr1 = dtaudV1*dV1dVr1 + dtaudA1*dA1dVr1  + dtaudVr1E
+        dtaudVr2 = dtaudV2*dV2dVr2 + dtaudA2*dA2dVr2  + dtaudVr2E
+        dtaudVtheta1 = dtaudV1*dV1dVtheta1 + dtaudA1*dA1dVtheta1
+        dtaudVtheta2 = dtaudV2*dV2dVtheta2 + dtaudA2*dA2dVtheta2
+
+        # Final Derivatives as per chain rule
+        dy1dVr1 = dy1dA1*dA1dVr1 + dy1dtau*dtaudVr1 + dy1dV1*dV1dVr1
+        dy1dVr2 = dy1dA2 * dA2dVr2 + dy1dtau * dtaudVr2 + dy1dV2 * dV2dVr2
+        dy1dVtheta1 = dy1dA1 * dA1dVtheta1 + dy1dtau * dtaudVtheta1 + dy1dV1 * dV1dVtheta1
+        dy1dVtheta2 = dy1dA2 * dA2dVtheta2 + dy1dtau * dtaudVtheta2 + dy1dV2 * dV2dVtheta2
+
+        # Derivatives of y2 -- no chain rule needed
+        dy2dVr1 = 2*Vr1
+        dy2dVtheta1 = 2*Vtheta1
+
+        return dy1dVr1,dy1dVtheta1,dy1dVr2,dy1dVtheta2,dy2dVr1,dy2dVtheta1
+
+
