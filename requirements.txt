@@ -104,7 +104,7 @@ pygame==1.9.6
 pygame-assets==0.1
 pygifsicle==1.0.1
 pyglet==1.3.2
-Pygments==2.7.3
+Pygments==2.7.4
 PyGraph==0.2.1
 PyHamcrest==2.0.2
 pylint==2.4.4
