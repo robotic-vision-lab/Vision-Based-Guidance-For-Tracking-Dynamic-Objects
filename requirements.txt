@@ -4,7 +4,7 @@ astor==0.8.0
 astroid==2.3.3
 atari-py==0.2.6
 attrs==18.2.0
-autobahn==20.7.1
+autobahn==20.12.3
 Automat==20.2.0
 backcall==0.1.0
 bandit==1.6.2
