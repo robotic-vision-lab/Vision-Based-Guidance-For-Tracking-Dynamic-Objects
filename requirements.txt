@@ -128,7 +128,7 @@ smmap2==2.0.5
 sockets==1.0.0
 stevedore==1.32.0
 tensorboard==2.0.0
-tensorflow==2.0.0
+tensorflow==2.4.2
 tensorflow-estimator==2.0.1
 termcolor==1.1.0
 toml==0.10.2
