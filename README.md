@@ -6,8 +6,9 @@
 One key application of computer vision is performing object tracking with robots through the use of visual information. This repository consists of the code base and documentation for a vision-based object tracking system. Specifically, we implement experiments for performing the diagnosis and analysis of visual tracking techniques under occlusions along with UAS guidance based on a rendezvous cone approach.
 
 ### Purpose
-This software contains computer vision algorithms that may be used in various combinations, pipelines, or standalone depending upon the complexity and/or requirement of the task. The repository was created to contain simulation experiments for our 2021 ICUAS paper entitled "[Vision-Based Guidance for Tracking Dynamic Objects](https://arxiv.org/abs/2104.09301)." If you find this project useful, then please consider citing our work:
+This software contains computer vision algorithms that may be used in various combinations, pipelines, or standalone depending upon the complexity and/or requirement of the task. The repository was created to contain simulation experiments for our 2021 ICUAS paper entitled "[Vision-Based Guidance for Tracking Dynamic Objects](https://arxiv.org/abs/2104.09301)." If you find this project useful, then please consider citing our work.
 
+### Citation
 P.  Karmokar,  K.  Dhal,  W.  J.  Beksi,  and  A.  Chakravarthy,  “Vision-Based Guidance for Tracking Dynamic Objects,” *International  Conference  on  Unmanned  Aircraft  Systems  (ICUAS)*, pp. 1106–1115, 2021.
 
 ```bibtex
