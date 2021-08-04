@@ -1,4 +1,4 @@
-from math import degrees
+from math import degrees, cos, sin, atan, tan, pi
 
 import numpy as np
 import pygame
@@ -122,8 +122,56 @@ class TrackingManager:
         ellipse_focal_point_1_est = tuple(map(int, ellipse_focal_point_1_est))
         ellipse_focal_point_2_est = tuple(map(int, ellipse_focal_point_2_est))
 
+        # compute axis aligned bounding box
+        # use parametric equation for ellipse, parameterized by t
+        #   x = h + a cos(t) cos(φ) - b sin(t) sin(φ) 
+        #   y = k + b sin(t) cos(φ) + a cos(t) sin(φ)
+        # where (h, k) is ellipse center, a is semimajor axis, b is semiminor axis, φ is angle of rotation of ellipse
+        # we can find extremum of x and y wrt t to find xmax, xmin, ymax, ymin as follows
+
+        # extremum of x w.r.t t => dx/dt=0
+        t_x = atan((-ellipse_axes[1] / ellipse_axes[0]) * tan(ellipse_rotation_angle))
+
+        # extremum of y w.r.t t => dy/dt=0
+        t_y = atan((ellipse_axes[1] / ellipse_axes[0])/tan(ellipse_rotation_angle))
+
+        # compute xmax, xmin
+        x1 = int(ellipse_center[0] + ellipse_axes[0] * cos(t_x) * cos(ellipse_rotation_angle) - ellipse_axes[1] * sin(t_x) * sin(ellipse_rotation_angle))
+        x2 = int(ellipse_center[0] + ellipse_axes[0] * cos(t_x+pi) * cos(ellipse_rotation_angle) - ellipse_axes[1] * sin(t_x+pi) * sin(ellipse_rotation_angle))
+        x_max, x_min = (x1, x2) if x1 > x2 else (x2, x1)
+
+        # compute ymax, ymin
+        y1 = int(ellipse_center[1] + ellipse_axes[1] * sin(t_y) * cos(ellipse_rotation_angle) + ellipse_axes[0] * cos(t_y) * sin(ellipse_rotation_angle))
+        y2 = int(ellipse_center[1] + ellipse_axes[1] * sin(t_y+pi) * cos(ellipse_rotation_angle) + ellipse_axes[0] * cos(t_y+pi) * sin(ellipse_rotation_angle))
+        y_max, y_min = (y1, y2) if y1 > y2 else (y2, y1)
+
+        # form corners for the axis aligned bouding box of ellipse
+        p1 = (x_min, y_min)
+        p2 = (x_max, y_max)
+
+
         # draw over color edited frame and show it
         ellipse_img = np.zeros_like(self.exp_manager.multi_tracker.frame_color_edited, np.uint8)
+
+        # draw axis aligned bounding box
+        ellipse_img = cv.rectangle(ellipse_img,
+                                   p1,
+                                   p2,
+                                   (242, 232, 212),
+                                   2,
+                                   cv.LINE_4)
+        ellipse_img = cv.circle(ellipse_img,
+                                p1,
+                                radius=3,
+                                color=(102, 102, 1),
+                                thickness=cv.FILLED,
+                                lineType=cv.LINE_8)
+        ellipse_img = cv.circle(ellipse_img,
+                                p2,
+                                radius=3,
+                                color=(1, 1, 204),
+                                thickness=cv.FILLED,
+                                lineType=cv.LINE_8)
 
         # draw filled ellipse
         ellipse_img = cv.ellipse(img=ellipse_img,

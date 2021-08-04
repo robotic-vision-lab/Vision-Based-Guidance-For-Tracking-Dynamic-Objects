@@ -1,6 +1,7 @@
 from datetime import timedelta
 from math import isnan, ceil
-import threading as th
+from threading import Thread as worker
+# from multiprocessing import Process as worker
 
 import cv2 as cv
 import numpy as np
@@ -60,7 +61,7 @@ class MultiTracker:
         self._frame_num = 0
         # self.track_length = 10 # for lifetime management
         self.tracker_info_mask = None   # mask over which tracker information is drawn persistently
-        self.win_name = 'Tracking in progress'
+        self.win_name = 'Multi-tracker'
         # self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
         self.DES_MATCH_DISTANCE_THRESH = 250 #450
         self.DES_MATCH_DEV_THRESH = 0.50 # float('inf') to get every match
@@ -347,7 +348,7 @@ class MultiTracker:
         return target_location
 
     
-    def process_0(self, target):
+    def process_init(self, target):
         # compute bb
         target.bounding_box_mask = self.get_bounding_box_mask(self.frame_new_gray, *target.bounding_box)
 
@@ -370,7 +371,7 @@ class MultiTracker:
         target.track_status = self._FAILURE
 
 
-    def process_1(self, target):
+    def process_kinematics(self, target):
         # ################################################################################
         # CASE |NO_OCC, _>
         if target.occlusion_case_old == NO_OCC:
@@ -721,7 +722,7 @@ class MultiTracker:
 
 
 
-    def process_2(self, target):
+    def process_filter(self, target):
         # filter target.kinematics (filtering in inertial frame)
         target.update_measurements_and_estimations()
         # update centroid estimations back to image frame
@@ -730,7 +731,7 @@ class MultiTracker:
         target.centroid_new_est = np.array([[centroids_est[2], centroids_est[3]]])
 
 
-    def process_3(self, target):
+    def process_posterity(self, target):
         # ################################################################################
         # CASE |NO_OCC, _>
         if target.occlusion_case_old == NO_OCC:
@@ -871,7 +872,7 @@ class MultiTracker:
         if self.is_first_time():
             thread_list = []
             for target in self.targets:
-                t = th.Thread(target=self.process_0, args=(target,), daemon=True)
+                t = worker(target=self.process_init, args=(target,), daemon=True)
                 t.start()
                 thread_list.append(t)
             for thread in thread_list: thread.join()
@@ -888,7 +889,7 @@ class MultiTracker:
         self._can_begin_control_flag = True
         thread_list = []
         for target in self.targets:
-            t = th.Thread(target=self.process_1, args=(target,), daemon=True)
+            t = worker(target=self.process_kinematics, args=(target,), daemon=True)
             t.start()
             thread_list.append(t)
         for thread in thread_list: thread.join()
@@ -897,7 +898,7 @@ class MultiTracker:
         # use filter 
         thread_list = []
         for target in self.targets:
-            t = th.Thread(target=self.process_2, args=(target,), daemon=True)
+            t = worker(target=self.process_filter, args=(target,), daemon=True)
             t.start()
             thread_list.append(t)
         for thread in thread_list: thread.join()
@@ -914,7 +915,7 @@ class MultiTracker:
         # handle posterity - target attributes
         thread_list = []
         for target in self.targets:
-            t = th.Thread(target=self.process_3, args=(target,), daemon=True)
+            t = worker(target=self.process_posterity, args=(target,), daemon=True)
             t.start()
             thread_list.append(t)
         for thread in thread_list: thread.join()
@@ -1034,17 +1035,36 @@ class MultiTracker:
             else:
                 xc,yc = tuple(map(int,target.centroid_new.flatten()))
                 size = int((CAR_LENGTH - 1)/self.manager.simulator.pxm_fac)
-            img = cv.rectangle(img, (xc-size, yc-size), (xc+size, yc+size), _BB_COLOR, 1, cv.LINE_AA)
-            
-            # draw target id
-            id_str = f' #{target.ID} '
-            (t_w, t_h) = cv.getTextSize(id_str, cv.FONT_HERSHEY_SIMPLEX, 0.45, thickness=1)[0]
-            img = cv.rectangle(img, (xc-size, yc-size-12-t_h), (xc-size+t_w+2, yc-size-1), _BB_COLOR, cv.FILLED, cv.LINE_AA)
-            img = put_text(img, id_str, (xc-size, yc-size-7), font=cv.FONT_HERSHEY_SIMPLEX, font_scale=0.45, color=(255,255,255), thickness=1)
 
-                
+            # save top left anchor point for further drawing
+            top_left = tl_x, tl_y = (xc-size, yc-size)
+            bottom_right = (xc+size, yc+size)
+            img = cv.rectangle(img, top_left, bottom_right, _BB_COLOR, 1, cv.LINE_AA)
+            
+            # make target id text
+            id_str = f'#{target.ID}'
+            (text_width, text_height), baseline = cv.getTextSize(id_str, fontFace=cv.FONT_HERSHEY_SIMPLEX, fontScale=0.45, thickness=1)
+
+            # make text background rectangle and put text over the top left anchor
+            # tl_y -= 1     # raise the text and its bg for zero overlap
+            
+            # set text padding
+            text_pad_width = 1
+            text_pad_height = 3
+
+            # compute text background rectangle corners
+            text_bg_top_left = (tl_x, tl_y - text_height - 2*text_pad_height - baseline)
+            text_bg_bottom_right = (tl_x + text_width + 2*text_pad_width, tl_y)
+
+            # compute text placement position (bottom left anchor of text)
+            text_bottom_left_pos = (tl_x + text_pad_width , tl_y - text_pad_height - baseline+1)
+
+            # draw text background rectangle and put text
+            img = cv.rectangle(img, text_bg_top_left, text_bg_bottom_right, _BB_COLOR, cv.FILLED, cv.LINE_AA)
+            img = put_text(img, id_str, text_bottom_left_pos, font=cv.FONT_HERSHEY_SIMPLEX, font_scale=0.45, color=(255,255,255), thickness=1)
+
             # draw centroid track - circle for centroid_new and line between centroid_old and centroid_new
-            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TRACK_COLOR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
+            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TURQUOISE_GREEN_LIGHT_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
             # cv.imshow('cosmetics', img);cv.waitKey(1)
 
             # draw keypoint tracks - circle for keypoint_new and line between keypoint_old and keypoint_new
