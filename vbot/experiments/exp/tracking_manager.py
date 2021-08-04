@@ -1,4 +1,4 @@
-from math import degrees
+from math import degrees, cos, sin, atan, tan, pi
 
 import numpy as np
 import pygame
@@ -122,22 +122,23 @@ class TrackingManager:
         ellipse_focal_point_1_est = tuple(map(int, ellipse_focal_point_1_est))
         ellipse_focal_point_2_est = tuple(map(int, ellipse_focal_point_2_est))
 
+        # compute axis aligned bounding box        
+        a = ellipse_axes[0]
+        b = ellipse_axes[1]
+        h = ellipse_center[0]
+        k = ellipse_center[1]
+        phi = ellipse_rotation_angle
 
+        t_x = atan((-ellipse_axes[1] / ellipse_axes[0]) * tan(ellipse_rotation_angle))
+        x1 = int(ellipse_center[0] + ellipse_axes[0] * cos(t_x) * cos(ellipse_rotation_angle) - ellipse_axes[1] * sin(t_x) * sin(ellipse_rotation_angle))
+        x2 = int(ellipse_center[0] + ellipse_axes[0] * cos(t_x+pi) * cos(ellipse_rotation_angle) - ellipse_axes[1] * sin(t_x+pi) * sin(ellipse_rotation_angle))
 
-        # test out axis aligned bounding box
-        ellipse_center_est = ((ellipse_focal_point_1_est[0] + ellipse_focal_point_2_est[0]) //2,
-                        (ellipse_focal_point_1_est[1] + ellipse_focal_point_2_est[1]) //2)
+        t_y = atan((ellipse_axes[1] / ellipse_axes[0])/tan(ellipse_rotation_angle))
+        y1 = int(ellipse_center[1] + ellipse_axes[1] * sin(t_y) * cos(ellipse_rotation_angle) + ellipse_axes[0] * cos(t_y) * sin(ellipse_rotation_angle))
+        y2 = int(ellipse_center[1] + ellipse_axes[1] * sin(t_y+pi) * cos(ellipse_rotation_angle) + ellipse_axes[0] * cos(t_y+pi) * sin(ellipse_rotation_angle))
 
-        
-
-        
-        
-
-
-
-
-
-
+        p1 = (x1,y1)
+        p2 = (x2,y2)
 
 
         # draw over color edited frame and show it
@@ -182,13 +183,13 @@ class TrackingManager:
                                 thickness=cv.FILLED,
                                 lineType=cv.LINE_AA)
 
-        # draw midpoint 
-        ellipse_img = cv.circle(ellipse_img,
-                                ellipse_center_est,
-                                radius=2,
-                                color=RED_CV,
-                                thickness=cv.FILLED,
-                                lineType=cv.LINE_AA)
+        # draw axis aligned bounding box
+        ellipse_img = cv.rectangle(ellipse_img,
+                                   p1,
+                                   p2,
+                                   [188,63,188],
+                                   1,
+                                   cv.LINE_AA)
 
         # blend this with color edited frame
         blended_img = self.exp_manager.multi_tracker.frame_color_edited.copy()
