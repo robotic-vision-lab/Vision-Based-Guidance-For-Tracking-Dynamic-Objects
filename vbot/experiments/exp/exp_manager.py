@@ -373,6 +373,11 @@ class ExperimentManager:
         return kin
 
     def get_drone_kinematics(self):
+        """Helper function returns drone position and velocity (camera frame meters)
+
+        Returns:
+            tuple: drone_pos, drone_vel
+        """
         drone_kin = (self.simulator.camera.position,
                      self.simulator.camera.velocity)
         
@@ -380,12 +385,28 @@ class ExperimentManager:
 
 
     def get_true_target_kinematics(self, target):
+        """Helper function returns true position and velocity (camera frame meters) of given target
+
+        Args:
+            target (Target): Target object whose kinematics is requested
+
+        Returns:
+            tuple: target_pos, target_vel
+        """
         target_kin = (target.sprite_obj.position,
                       target.sprite_obj.velocity)
 
         return target_kin
 
     def get_tracked_kinematics(self, target):
+        """Helper function returns tracked kinematics obtained from measurements by tracker
+
+        Args:
+            target (Target): Target object whose tracked kinematics is requested 
+
+        Returns:
+            tuple: true_drone_pos, true_drone_vel, meas_target_pos, meas_target_vel
+        """
         # use kinematics from the tracker, but rearrange items before returning
         return (
             target.kinematics[0],    # true drone position    
@@ -395,4 +416,9 @@ class ExperimentManager:
         ) if target.kinematics is not None else self.get_true_kinematics(target)
 
     def get_cam_origin(self):
+        """Returns the drone camera origin
+
+        Returns:
+            pygame.Vector2: Camera origin (world frame meters)
+        """
         return self.simulator.camera.origin
