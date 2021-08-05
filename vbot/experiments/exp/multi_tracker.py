@@ -1043,7 +1043,7 @@ class MultiTracker:
             
             # make target id text
             id_str = f'#{target.ID}'
-            (text_width, text_height), baseline = cv.getTextSize(id_str, fontFace=cv.FONT_HERSHEY_SIMPLEX, fontScale=0.45, thickness=1)
+            (text_width, text_height), baseline = cv.getTextSize(id_str, fontFace=cv.FONT_HERSHEY_SIMPLEX, fontScale=0.4, thickness=1)
 
             # make text background rectangle and put text over the top left anchor
             # tl_y -= 1     # raise the text and its bg for zero overlap
@@ -1061,10 +1061,10 @@ class MultiTracker:
 
             # draw text background rectangle and put text
             img = cv.rectangle(img, text_bg_top_left, text_bg_bottom_right, _BB_COLOR, cv.FILLED, cv.LINE_AA)
-            img = put_text(img, id_str, text_bottom_left_pos, font=cv.FONT_HERSHEY_SIMPLEX, font_scale=0.45, color=(255,255,255), thickness=1)
+            img = put_text(img, id_str, text_bottom_left_pos, font=cv.FONT_HERSHEY_SIMPLEX, font_scale=0.4, color=(255,255,255), thickness=1)
 
             # draw centroid track - circle for centroid_new and line between centroid_old and centroid_new
-            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TURQUOISE_GREEN_LIGHT_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
+            # img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TURQUOISE_GREEN_LIGHT_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
             # cv.imshow('cosmetics', img);cv.waitKey(1)
 
             # draw keypoint tracks - circle for keypoint_new and line between keypoint_old and keypoint_new
