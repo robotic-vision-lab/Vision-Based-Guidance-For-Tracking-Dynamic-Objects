@@ -327,7 +327,7 @@ class ExperimentManager:
                         ax, ay = self.controller.generate_acceleration(self.tracking_manager.ellipse_params_est,
                                                                         self.tracking_manager.ellipse_params_meas[0])
 
-                        self.simulator.camera.acceleration = pygame.Vector2((ax, ay))
+                        self.simulator.camera.apply_accleration_command(ax, ay)
 
             self.simulator.draw_extra()
             self.simulator.show_drawing()
