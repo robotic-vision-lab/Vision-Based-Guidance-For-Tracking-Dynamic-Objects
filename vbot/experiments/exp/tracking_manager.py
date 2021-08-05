@@ -157,19 +157,19 @@ class TrackingManager:
         ellipse_img = cv.rectangle(ellipse_img,
                                    p1,
                                    p2,
-                                   (252, 242, 222),
+                                   (247, 247, 232),
                                    3,
                                    cv.LINE_4)
         ellipse_img = cv.circle(ellipse_img,
                                 p1,
                                 radius=3,
-                                color=(102, 102, 1),
+                                color=(255, 153, 102),
                                 thickness=cv.FILLED,
                                 lineType=cv.LINE_8)
         ellipse_img = cv.circle(ellipse_img,
                                 p2,
                                 radius=3,
-                                color=(1, 1, 204),
+                                color=(102, 153, 255),
                                 thickness=cv.FILLED,
                                 lineType=cv.LINE_8)
 
