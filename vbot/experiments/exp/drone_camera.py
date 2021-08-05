@@ -73,6 +73,9 @@ class DroneCamera(pygame.sprite.Sprite):
 
         # update kinematics along Z
 
+    def apply_accleration_command(self, ax, ay, az=0):
+        self.acceleration = pygame.Vector2((ax, ay))
+
 
     def compensate_camera_motion(self, sprite_obj):
         """Compensates camera motion by updating position of sprite object.
