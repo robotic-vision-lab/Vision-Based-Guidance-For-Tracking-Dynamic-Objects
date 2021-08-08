@@ -129,6 +129,9 @@ class TrackingManager:
         # where (h, k) is ellipse center, a is semimajor axis, b is semiminor axis, φ is angle of rotation of ellipse
         # we can find extremum of x and y wrt t to find xmax, xmin, ymax, ymin as follows
 
+        h = (ellipse_focal_point_1_est[0] + ellipse_focal_point_2_est[0])//2
+        k = (ellipse_focal_point_1_est[1] + ellipse_focal_point_2_est[1])//2
+        
         # extremum of x w.r.t t => dx/dt=0
         t_x = atan((-ellipse_axes[1] / ellipse_axes[0]) * tan(ellipse_rotation_angle))
 
@@ -136,13 +139,13 @@ class TrackingManager:
         t_y = atan((ellipse_axes[1] / ellipse_axes[0])/tan(ellipse_rotation_angle))
 
         # compute xmax, xmin
-        x1 = int(ellipse_center[0] + ellipse_axes[0] * cos(t_x) * cos(ellipse_rotation_angle) - ellipse_axes[1] * sin(t_x) * sin(ellipse_rotation_angle))
-        x2 = int(ellipse_center[0] + ellipse_axes[0] * cos(t_x+pi) * cos(ellipse_rotation_angle) - ellipse_axes[1] * sin(t_x+pi) * sin(ellipse_rotation_angle))
+        x1 = int(h + ellipse_axes[0] * cos(t_x) * cos(ellipse_rotation_angle) - ellipse_axes[1] * sin(t_x) * sin(ellipse_rotation_angle))
+        x2 = int(h + ellipse_axes[0] * cos(t_x+pi) * cos(ellipse_rotation_angle) - ellipse_axes[1] * sin(t_x+pi) * sin(ellipse_rotation_angle))
         x_max, x_min = (x1, x2) if x1 > x2 else (x2, x1)
 
         # compute ymax, ymin
-        y1 = int(ellipse_center[1] + ellipse_axes[1] * sin(t_y) * cos(ellipse_rotation_angle) + ellipse_axes[0] * cos(t_y) * sin(ellipse_rotation_angle))
-        y2 = int(ellipse_center[1] + ellipse_axes[1] * sin(t_y+pi) * cos(ellipse_rotation_angle) + ellipse_axes[0] * cos(t_y+pi) * sin(ellipse_rotation_angle))
+        y1 = int(k + ellipse_axes[1] * sin(t_y) * cos(ellipse_rotation_angle) + ellipse_axes[0] * cos(t_y) * sin(ellipse_rotation_angle))
+        y2 = int(k + ellipse_axes[1] * sin(t_y+pi) * cos(ellipse_rotation_angle) + ellipse_axes[0] * cos(t_y+pi) * sin(ellipse_rotation_angle))
         y_max, y_min = (y1, y2) if y1 > y2 else (y2, y1)
 
         # form corners for the axis aligned bouding box of ellipse
@@ -157,19 +160,19 @@ class TrackingManager:
         ellipse_img = cv.rectangle(ellipse_img,
                                    p1,
                                    p2,
-                                   (247, 247, 232),
+                                   (237, 237, 237),
                                    3,
                                    cv.LINE_4)
         ellipse_img = cv.circle(ellipse_img,
                                 p1,
                                 radius=3,
-                                color=(255, 153, 102),
+                                color=(255, 102, 102),
                                 thickness=cv.FILLED,
                                 lineType=cv.LINE_8)
         ellipse_img = cv.circle(ellipse_img,
                                 p2,
                                 radius=3,
-                                color=(102, 153, 255),
+                                color=(102, 102, 255),
                                 thickness=cv.FILLED,
                                 lineType=cv.LINE_8)
 
