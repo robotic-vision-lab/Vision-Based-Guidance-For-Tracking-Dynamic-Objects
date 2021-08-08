@@ -27,6 +27,13 @@ class DroneCamera(pygame.sprite.Sprite):
         self.vel_limit = DRONE_VELOCITY_LIMIT
         self.acc_limit = DRONE_ACCELERATION_LIMIT
 
+    def reset_kinematics(self):
+        """helper function to reset kinematics
+        """
+        self.position = pygame.Vector2(DRONE_POSITION)
+        self.velocity = pygame.Vector2(DRONE_INITIAL_VELOCITY)
+        self.acceleration = pygame.Vector2(0, 0)
+
     def update(self):
         """helper function update kinematics
         """
@@ -47,13 +54,6 @@ class DroneCamera(pygame.sprite.Sprite):
 
         # translate center to screen center
         self.rect.center += pygame.Vector2(SCREEN_CENTER).elementwise() * (1, -1)
-
-    def reset_kinematics(self):
-        """helper function to reset kinematics
-        """
-        self.position = pygame.Vector2(DRONE_POSITION)
-        self.velocity = pygame.Vector2(DRONE_INITIAL_VELOCITY)
-        self.acceleration = pygame.Vector2(0, 0)
 
     def update_kinematics(self):
         """helper function to update kinematics of object
