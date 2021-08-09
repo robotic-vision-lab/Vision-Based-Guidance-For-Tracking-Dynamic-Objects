@@ -96,9 +96,9 @@ class DroneCamera(pygame.sprite.Sprite):
             pN += (U*cos(theta)*cos(psi) + V*(-cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi)) + W*(sin(phi)*sin(psi)+cos(phi)*sin(theta)*cos(psi))) / inner_loop_rate
             pE += (U*cos(theta)*sin(psi) + V*(cos(phi)*cos(psi) + sin(phi)*sin(theta)*sin(psi)) + W*(-sin(phi)*cos(psi)+cos(phi)*sin(theta)*sin(psi))) / inner_loop_rate
             pH += (-(U*sin(theta) - V*sin(phi)*cos(theta) - W*cos(phi)*cos(theta))) / inner_loop_rate
-            U += (R*V - Q*W - g*sin(theta)) / inner_loop_rate
-            V += (-R*U + P*W + g*sin(phi)*cos(theta)) / inner_loop_rate
-            W += ((Q*U - P*V + g*cos(phi)*cos(theta) - F_app/DRONE_MASS)) / inner_loop_rate
+            U += (R*V - Q*W - ACC_GRAVITY*sin(theta)) / inner_loop_rate
+            V += (-R*U + P*W + ACC_GRAVITY*sin(phi)*cos(theta)) / inner_loop_rate
+            W += ((Q*U - P*V + ACC_GRAVITY*cos(phi)*cos(theta) - F_app/DRONE_MASS)) / inner_loop_rate
             phi += (P + tan(theta)*(Q*sin(phi)+R*cos(phi))) / inner_loop_rate
             theta += (Q*cos(phi) - R*sin(phi)) / inner_loop_rate
             psi += ((Q*sin(phi) + R*cos(phi))/cos(theta)) / inner_loop_rate
@@ -106,7 +106,7 @@ class DroneCamera(pygame.sprite.Sprite):
             Q += ((DRONE_I_Z-DRONE_I_X)/DRONE_I_Y *P*R + tau_theta/DRONE_I_Y) / inner_loop_rate
             R += ((DRONE_I_X-DRONE_I_Y)/DRONE_I_Z *P*Q + tau_psi/DRONE_I_Z) / inner_loop_rate
 
-            
+
 
 
 
