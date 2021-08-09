@@ -1,6 +1,7 @@
 from copy import deepcopy
 from math import cos, sin, atan
 import pygame
+import numpy as np
 
 from .settings import *
 
@@ -15,8 +16,12 @@ class DroneCamera(pygame.sprite.Sprite):
         self.image.fill((255, 255, 255, DRONE_IMG_ALPHA), None, pygame.BLEND_RGBA_MULT)
         self.reset_kinematics()
         self.origin = self.position
+        self.origin_z = ALTITUDE
         self.prev_origin = self.position
+        self.prev_origin_z = ALTITUDE
+
         self.delta_pos = pygame.Vector2(0.0,0.0)
+        self.delta_pos_z = 0.0
         # self.altitude = ALTITUDE    # same as z (subject to accleratiosns)
         # self.vz = 0.0
         # self.az = 0.0
@@ -50,62 +55,102 @@ class DroneCamera(pygame.sprite.Sprite):
     def update_kinematics(self):
         """helper function to update kinematics of object
         """
-        # # update velocity and position (in the XY plane)
-        # self.velocity += self.acceleration * self.simulator.dt
-        # if abs(self.velocity.length()) > self.vel_limit:
-        #     self.velocity -= self.acceleration * self.simulator.dt
+        OLD_STUFFS = 1
 
-        # self.prev_delta_pos = deepcopy(self.delta_pos)
-        # self.delta_pos = self.velocity * self.simulator.dt #+ 0.5 * self.acceleration * \
-        #     # self.simulator.dt**2      # i know how this looks like but,   pylint: disable=line-too-long
-        # self.position = self.velocity * self.simulator.dt #+ 0.5 * self.acceleration * \
-        #     # self.simulator.dt**2  # donot touch ☠                    pylint: disable=line-too-long
-        # self.prev_origin = deepcopy(self.origin)
-        # self.origin += self.delta_pos
+        if OLD_STUFFS:
+            # update velocity and position (in the XY plane)
+            self.velocity += self.acceleration * self.simulator.dt
+            if abs(self.velocity.length()) > self.vel_limit:
+                self.velocity -= self.acceleration * self.simulator.dt
 
-        # new stuffs
-        F = self.m * (ACC_GRAVITY - self.az) / (cos(self.phi)*cos(self.theta))
-        phi_c = atan(self.acceleration[1] * cos(self.theta)/(ACC_GRAVITY - self.az))
-        theta_c = atan(self.acceleration[0] / (self.az - ACC_GRAVITY))
-        psi_c = 0
+            self.prev_delta_pos = deepcopy(self.delta_pos)
+            self.delta_pos = self.velocity * self.simulator.dt #+ 0.5 * self.acceleration * \
+                # self.simulator.dt**2      # i know how this looks like but,   pylint: disable=line-too-long
+            self.position = self.velocity * self.simulator.dt #+ 0.5 * self.acceleration * \
+                # self.simulator.dt**2  # donot touch ☠                    pylint: disable=line-too-long
+            self.prev_origin = deepcopy(self.origin)
+            self.origin += self.delta_pos
+        else:
+            # new stuffs
+            F = self.m * (ACC_GRAVITY - self.az) / (cos(self.phi)*cos(self.theta))
+            phi_c = atan(self.acceleration[1] * cos(self.theta)/(ACC_GRAVITY - self.az))
+            theta_c = atan(self.acceleration[0] / (self.az - ACC_GRAVITY))
+            psi_c = 0
 
-        tau_theta = DRONE_K_Q*(theta_c - self.theta) + DRONE_K_QD*(0-self.Q)
-        tau_phi = DRONE_K_Q*(phi_c - self.phi) + DRONE_K_QD*(0-self.P)
-        tau_psi = DRONE_K_Q*(psi_c - self.psi) + DRONE_K_QD*(0-self.R)
+            tau_theta = DRONE_K_Q*(theta_c - self.theta) + DRONE_K_QD*(0-self.Q)
+            tau_phi = DRONE_K_Q*(phi_c - self.phi) + DRONE_K_QD*(0-self.P)
+            tau_psi = DRONE_K_Q*(psi_c - self.psi) + DRONE_K_QD*(0-self.R)
 
-        num_inner_loop = 10
-        outer_loop_rate = 1/self.simulator.dt
-        inner_loop_rate = outer_loop_rate * num_inner_loop
+            num_inner_loop = 10
+            outer_loop_rate = 1/DELTA_TIME
+            inner_loop_rate = outer_loop_rate * num_inner_loop
 
-        for i in range(num_inner_loop):
-            pN = self.position[0]
-            pE = self.position[1]
-            pH = self.altitude
-            U = self.velocity[0]
-            V = self.velocity[1]
-            W = self.vz
-            phi = self.phi
-            theta = self.theta
-            psi = self.psi
-            P = self.P
-            Q = self.Q
-            R = self.R
+            for i in range(num_inner_loop):
+                pN = self.position[0]
+                pE = self.position[1]
+                pH = self.altitude
+                U = self.velocity[0]
+                V = self.velocity[1]
+                W = self.vz
+                phi = self.phi
+                theta = self.theta
+                psi = self.psi
+                P = self.P
+                Q = self.Q
+                R = self.R
 
-            F_app = F * ((i+1) / num_inner_loop)**2
+                F_app = F * ((i+1) / num_inner_loop)**2
 
-            pN += (U*cos(theta)*cos(psi) + V*(-cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi)) + W*(sin(phi)*sin(psi)+cos(phi)*sin(theta)*cos(psi))) / inner_loop_rate
-            pE += (U*cos(theta)*sin(psi) + V*(cos(phi)*cos(psi) + sin(phi)*sin(theta)*sin(psi)) + W*(-sin(phi)*cos(psi)+cos(phi)*sin(theta)*sin(psi))) / inner_loop_rate
-            pH += (-(U*sin(theta) - V*sin(phi)*cos(theta) - W*cos(phi)*cos(theta))) / inner_loop_rate
-            U += (R*V - Q*W - ACC_GRAVITY*sin(theta)) / inner_loop_rate
-            V += (-R*U + P*W + ACC_GRAVITY*sin(phi)*cos(theta)) / inner_loop_rate
-            W += ((Q*U - P*V + ACC_GRAVITY*cos(phi)*cos(theta) - F_app/DRONE_MASS)) / inner_loop_rate
-            phi += (P + tan(theta)*(Q*sin(phi)+R*cos(phi))) / inner_loop_rate
-            theta += (Q*cos(phi) - R*sin(phi)) / inner_loop_rate
-            psi += ((Q*sin(phi) + R*cos(phi))/cos(theta)) / inner_loop_rate
-            P += (DRONE_I_Y-DRONE_I_Z)/DRONE_I_X *Q*R + tau_phi/DRONE_I_X / inner_loop_rate
-            Q += ((DRONE_I_Z-DRONE_I_X)/DRONE_I_Y *P*R + tau_theta/DRONE_I_Y) / inner_loop_rate
-            R += ((DRONE_I_X-DRONE_I_Y)/DRONE_I_Z *P*Q + tau_psi/DRONE_I_Z) / inner_loop_rate
+                dpN = U*cos(theta)*cos(psi) + V*(-cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi)) + W*(sin(phi)*sin(psi)+cos(phi)*sin(theta)*cos(psi))
+                dpE = U*cos(theta)*sin(psi) + V*(cos(phi)*cos(psi) + sin(phi)*sin(theta)*sin(psi)) + W*(-sin(phi)*cos(psi)+cos(phi)*sin(theta)*sin(psi))
+                dpH = -(U*sin(theta) - V*sin(phi)*cos(theta) - W*cos(phi)*cos(theta))
+                dU = R*V - Q*W - ACC_GRAVITY*sin(theta)
+                dV = -R*U + P*W + ACC_GRAVITY*sin(phi)*cos(theta)
+                dW = (Q*U - P*V + ACC_GRAVITY*cos(phi)*cos(theta) - F_app/self.m)
+                dphi = P + tan(theta)*(Q*sin(phi)+R*cos(phi))
+                dtheta = Q*cos(phi) - R*sin(phi)
+                dpsi = (Q*sin(phi) + R*cos(phi))/cos(theta)
+                dP = (DRONE_I_Y-DRONE_I_Z)/DRONE_I_X *Q*R + tau_phi/DRONE_I_X
+                dQ = (DRONE_I_Z-DRONE_I_X)/DRONE_I_Y *P*R + tau_theta/DRONE_I_Y
+                dR = (DRONE_I_X-DRONE_I_Y)/DRONE_I_Z *P*Q + tau_psi/DRONE_I_Z
 
+                pN += (dpN) / inner_loop_rate
+                pE += (dpE) / inner_loop_rate
+                pH += (dpH) / inner_loop_rate
+                U += (dU) / inner_loop_rate
+                V += (dV) / inner_loop_rate
+                W += (dW) / inner_loop_rate
+                phi += (dphi) / inner_loop_rate
+                theta += (dtheta) / inner_loop_rate
+                psi += (dpsi) / inner_loop_rate
+                P += (dP) / inner_loop_rate
+                Q += (dQ) / inner_loop_rate
+                R += (dR) / inner_loop_rate
+
+                self.position = pygame.Vector2(pN, pE)
+                self.altitude = pH
+                self.velocity = pygame.Vector2(U, V)
+                self.vz = W
+                self.phi = phi
+                self.theta = theta
+                self.psi = psi
+                self.P = P
+                self.Q = Q
+                self.R = R
+
+            
+            print(self.position, self.altitude)
+
+            RotMat = np.array([[cos(self.theta)*cos(self.psi), cos(self.theta)*sin(self.psi),  -sin(self.theta)],
+                               [sin(self.phi)*sin(self.theta)*cos(self.psi)-cos(self.phi)*sin(self.psi), sin(self.phi)*sin(self.theta)*sin(self.psi)+cos(self.phi)*cos(self.psi), sin(self.phi)*cos(self.theta)],
+                               [cos(self.phi)*sin(self.theta)*cos(self.psi)+sin(self.phi)*sin(self.psi), cos(self.phi)*sin(self.theta)*sin(self.psi)-sin(self.phi)*cos(self.psi), cos(self.phi)*cos(self.theta)]])
+
+            vel_inertial = RotMat.T @ np.array([[self.velocity[0]], 
+                                                [self.velocity[1]],
+                                                [self.vz]])
+            
+            self.velocity = pygame.Vector2(vel_inertial.flatten()[0], vel_inertial.flatten()[1])
+            self.vz = vel_inertial.flatten()[2]
 
 
 
