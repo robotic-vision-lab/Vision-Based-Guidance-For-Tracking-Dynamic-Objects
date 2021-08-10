@@ -5,12 +5,12 @@ from scipy.spatial.transform import Rotation as R
 from .ellipse_ekf import EllipseEKF
 
 class Ellipse2D:
-	def __init__(self, exp_manager=None, tracking_manager=None, major_axis_len=1, minor_axis_len=1, center_coords=(0,0), rotation_angle=0):
+	def __init__(self, exp_manager=None, tracking_manager=None, semi_major_axis=1, semi_minor_axis=1, center_coords=(0,0), rotation_angle=0):
 		self.exp_manager = exp_manager
 		self.tracking_manager = tracking_manager
 		
-		self.major_axis_len = major_axis_len
-		self.minor_axis_len = minor_axis_len
+		self.semi_major_axis = semi_major_axis
+		self.semi_minor_axis = semi_minor_axis
 		self.center_coords = center_coords
 		self.rotation_angle = rotation_angle	# rads
 
@@ -28,10 +28,10 @@ class Ellipse2D:
 		Returns:
 			tuple: tuple of ellipse params including focal points
 		"""
-		return (self.major_axis_len,
-				self.minor_axis_len,
+		return (self.semi_major_axis,
+				self.semi_minor_axis,
 				self.center_coords,
-				-self.rotation_angle,
+				self.rotation_angle,
 				self.focal_length,
 				self.focal_point_1,
 				self.focal_point_2)
@@ -39,7 +39,7 @@ class Ellipse2D:
 	def update_focal_length(self):
 		""" helper function updates focal length
 		"""
-		self.focal_length = (self.major_axis_len**2 - self.minor_axis_len**2)**0.5
+		self.focal_length = (self.semi_major_axis**2 - self.semi_minor_axis**2)**0.5
 
 	def update_focal_points(self):
 		""" helper function updates focal points 
@@ -111,8 +111,8 @@ class Ellipse2D:
 		rotation = R.from_matrix(rot_aug3_V)
 
 		# update ellipse params
-		self.minor_axis_len = 1 / (Q[0])**0.5
-		self.major_axis_len = 1 / (Q[1])**0.5
+		self.semi_minor_axis = 1 / (Q[0])**0.5
+		self.semi_major_axis = 1 / (Q[1])**0.5
 		self.center_coords = tuple(np.matmul(points, u).flatten())
 		self.rotation_angle = rotation.as_euler('ZYX')[0]
 
