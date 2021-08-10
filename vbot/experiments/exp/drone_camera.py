@@ -53,7 +53,7 @@ class DroneCamera(pygame.sprite.Sprite):
 
 
     def update_kinematics(self):
-        """helper function to update kinematics of object
+        """helper function to update dynamics of object
         """
         OLD_STUFFS = 1
 
@@ -151,13 +151,6 @@ class DroneCamera(pygame.sprite.Sprite):
             
             self.velocity = pygame.Vector2(vel_inertial.flatten()[0], vel_inertial.flatten()[1])
             self.vz = vel_inertial.flatten()[2]
-
-
-
-
-
-
-
 
 
 
