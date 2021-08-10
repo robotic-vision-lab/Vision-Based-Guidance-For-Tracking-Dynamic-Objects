@@ -26,7 +26,6 @@ from .my_imports import (load_image_rect,
 
 class Simulator:
     """
-    
     A class to represent a Pygame simulation object
     ...
         
