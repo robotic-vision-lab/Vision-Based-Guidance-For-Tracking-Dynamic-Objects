@@ -1,4 +1,4 @@
-from math import degrees, cos, sin, atan, tan, pi
+from math import degrees, cos, sin, atan, tan, pi, tau
 
 import numpy as np
 import pygame
@@ -91,11 +91,11 @@ class TrackingManager:
             ellipse_center = self.convert(ellipse_params[2])
             ellipse_focal_point_1 = self.convert(ellipse_params[5])
             ellipse_focal_point_2 = self.convert(ellipse_params[6])
-            ellipse_axes = [int(axis/self.exp_manager.simulator.pxm_fac) for axis in ellipse_params[:2]]
+            ellipse_semi_axes = [int(axis/self.exp_manager.simulator.pxm_fac) for axis in ellipse_params[:2]]
             ellipse_rotation_angle = degrees(ellipse_params[3])
 
-            return (ellipse_axes[0], 
-                    ellipse_axes[1], 
+            return (ellipse_semi_axes[0], 
+                    ellipse_semi_axes[1], 
                     ellipse_center, 
                     ellipse_rotation_angle, 
                     ellipse_focal_point_1,
@@ -105,7 +105,7 @@ class TrackingManager:
     def display(self):
         # collect all params
         ellipse_params = self.get_ellipse_params(IMAGE_REF_FRAME)
-        ellipse_axes = tuple(map(int, ellipse_params[:2]))
+        ellipse_semi_axes = tuple(map(int, ellipse_params[:2]))
         ellipse_center = tuple(map(int, ellipse_params[2]))
         ellipse_rotation_angle = ellipse_params[3]
         ellipse_focal_point_1 = tuple(map(int, ellipse_params[4]))
@@ -133,25 +133,24 @@ class TrackingManager:
         k = (ellipse_focal_point_1_est[1] + ellipse_focal_point_2_est[1])//2
         
         # extremum of x w.r.t t => dx/dt=0
-        t_x = atan((-ellipse_axes[1] / ellipse_axes[0]) * tan(ellipse_rotation_angle))
+        t_x = atan((-ellipse_semi_axes[1] / ellipse_semi_axes[0]) * tan(radians(ellipse_rotation_angle)))
 
         # extremum of y w.r.t t => dy/dt=0
-        t_y = atan((ellipse_axes[1] / ellipse_axes[0])/tan(ellipse_rotation_angle))
+        t_y = atan((ellipse_semi_axes[1] / ellipse_semi_axes[0]) / tan(radians(ellipse_rotation_angle)))
 
         # compute xmax, xmin
-        x1 = int(h + ellipse_axes[0] * cos(t_x) * cos(ellipse_rotation_angle) - ellipse_axes[1] * sin(t_x) * sin(ellipse_rotation_angle))
-        x2 = int(h + ellipse_axes[0] * cos(t_x+pi) * cos(ellipse_rotation_angle) - ellipse_axes[1] * sin(t_x+pi) * sin(ellipse_rotation_angle))
+        x1 = int(h + ellipse_semi_axes[0] * cos(radians(ellipse_rotation_angle)) * cos(t_x%tau)    - ellipse_semi_axes[1] * sin(radians(ellipse_rotation_angle)) * sin(t_x%tau))
+        x2 = int(h + ellipse_semi_axes[0] * cos(radians(ellipse_rotation_angle)) * cos((t_x+pi)%tau) - ellipse_semi_axes[1] * sin(radians(ellipse_rotation_angle)) * sin((t_x+pi)%tau))
         x_max, x_min = (x1, x2) if x1 > x2 else (x2, x1)
 
         # compute ymax, ymin
-        y1 = int(k + ellipse_axes[1] * sin(t_y) * cos(ellipse_rotation_angle) + ellipse_axes[0] * cos(t_y) * sin(ellipse_rotation_angle))
-        y2 = int(k + ellipse_axes[1] * sin(t_y+pi) * cos(ellipse_rotation_angle) + ellipse_axes[0] * cos(t_y+pi) * sin(ellipse_rotation_angle))
+        y1 = int(k + ellipse_semi_axes[0] * sin(radians(ellipse_rotation_angle)) * cos(t_y%tau)    + ellipse_semi_axes[1] * cos(radians(ellipse_rotation_angle)) * sin(t_y%tau))
+        y2 = int(k + ellipse_semi_axes[0] * sin(radians(ellipse_rotation_angle)) * cos((t_y+pi)%tau) + ellipse_semi_axes[1] * cos(radians(ellipse_rotation_angle)) * sin((t_y+pi)%tau))
         y_max, y_min = (y1, y2) if y1 > y2 else (y2, y1)
 
-        # form corners for the axis aligned bouding box of ellipse
+        # form corners for the axis aligned bounding box of ellipse
         p1 = (x_min, y_min)
         p2 = (x_max, y_max)
-
 
         # draw over color edited frame and show it
         ellipse_img = np.zeros_like(self.exp_manager.multi_tracker.frame_color_edited, np.uint8)
@@ -160,9 +159,10 @@ class TrackingManager:
         ellipse_img = cv.rectangle(ellipse_img,
                                    p1,
                                    p2,
-                                   (227, 242, 222),
-                                   3,
+                                   (217, 232, 212),
+                                   2,
                                    cv.LINE_4)
+        # draw axis aligned bounding box min max points
         ellipse_img = cv.circle(ellipse_img,
                                 p1,
                                 radius=3,
@@ -179,8 +179,8 @@ class TrackingManager:
         # draw filled ellipse
         ellipse_img = cv.ellipse(img=ellipse_img,
                                  center=ellipse_center,
-                                 axes=ellipse_axes,
-                                 angle=ellipse_rotation_angle,
+                                 axes=ellipse_semi_axes,
+                                 angle=-ellipse_rotation_angle,
                                  startAngle=0,
                                  endAngle=360,
                                  color=ELLIPSE_COLOR,
