@@ -102,6 +102,8 @@ K_P_PHI = 100
 K_D_PHI = 10
 K_P_PSI = 100
 K_D_PSI = 10
+K_P_Z = 1
+K_D_Z = 10
 
 # gravity
 ACC_GRAVITY = 9.81
@@ -237,6 +239,6 @@ CAR_INITIAL_POSITION_3  = (10.0, -10.0)
 CAR_INITIAL_VELOCITY_3  = (5.32 , 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (5.31, 0.0)
-K_1                     = 0.8
+K_1                     = 2 #0.8
 K_2                     = 0.08
 K_W                     = -1000
