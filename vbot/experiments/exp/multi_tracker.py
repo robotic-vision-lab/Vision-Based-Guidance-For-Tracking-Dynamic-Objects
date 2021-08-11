@@ -1064,7 +1064,7 @@ class MultiTracker:
             img = put_text(img, id_str, text_bottom_left_pos, font=cv.FONT_HERSHEY_SIMPLEX, font_scale=0.35, color=(255,255,255), thickness=1)
 
             # draw centroid track - circle for centroid_new and line between centroid_old and centroid_new
-            img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TURQUOISE_GREEN_LIGHT_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
+            # img, mask = draw_tracks(img, target.centroid_old, target.centroid_new, [TURQUOISE_GREEN_LIGHT_BGR], mask, track_thickness=int(1*TRACK_SCALE), radius=int(self.patch_size/(2**0.5)+1), circle_thickness=int(1*TRACK_SCALE))
             # cv.imshow('cosmetics', img);cv.waitKey(1)
 
             # draw keypoint tracks - circle for keypoint_new and line between keypoint_old and keypoint_new
