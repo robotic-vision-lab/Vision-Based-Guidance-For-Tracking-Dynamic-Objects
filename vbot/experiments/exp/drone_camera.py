@@ -12,35 +12,52 @@ class DroneCamera(pygame.sprite.Sprite):
         # call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self, self.groups)
 
+        # set simulator reference
+        self.simulator = simulator
+
+        # set image and rect
         self.image, self.rect = simulator.drone_img_rect
         self.image.fill((255, 255, 255, DRONE_IMG_ALPHA), None, pygame.BLEND_RGBA_MULT)
+
+        # set inertia parameters
+        self.m = DRONE_MASS
+        self.I_XX = DRONE_I_XX
+        self.I_YY = DRONE_I_YY
+        self.I_ZZ = DRONE_I_ZZ
+
+        # set acceleration due to gravity
+        self.g = ACC_GRAVITY
+
+        # set gains
+        self.gains = {
+            'K_P_THETA': K_P_THETA,
+            'K_D_THETA': K_D_THETA,
+            'K_P_PHI': K_P_PHI,
+            'K_D_PHI': K_D_PHI,
+            'K_P_PSI': K_P_PSI,
+            'K_D_PSI': K_D_PSI
+            }
+
+        # reset kinematics and dynamics
         self.reset_kinematics()
-        self.origin = self.position
-        self.origin_z = ALTITUDE
-        self.prev_origin = self.position
-        self.prev_origin_z = ALTITUDE
 
-        self.delta_pos = pygame.Vector2(0.0,0.0)
-        self.delta_pos_z = 0.0
-        # self.altitude = ALTITUDE    # same as z (subject to accleratiosns)
-        # self.vz = 0.0
-        # self.az = 0.0
-
-        # self.rect.center = self.position + SCREEN_CENTER
-        self.simulator = simulator
+        # update sprite rect 
         self.update_rect()
 
+        # set accelerations and velocity clips
         self.vel_limit = DRONE_VELOCITY_LIMIT
         self.acc_limit = DRONE_ACCELERATION_LIMIT
-        self.m = DRONE_MASS
 
     def reset_kinematics(self):
-        """helper function to reset kinematics
+        """helper function to reset initial kinematic states
         """
+        # linear position and velocity
         self.position = pygame.Vector2(DRONE_POSITION)
         self.altitude = ALTITUDE
         self.velocity = pygame.Vector2(DRONE_INITIAL_VELOCITY)
         self.vz = 0.0
+
+        # angular position and velocity
         self.phi = 0.0
         self.theta = 0.0
         self.psi = 0.0
@@ -48,39 +65,62 @@ class DroneCamera(pygame.sprite.Sprite):
         self.Q = 0.0
         self.R = 0.0
 
+        # set initial acceleration
         self.acceleration = pygame.Vector2(0, 0)
         self.az = 0.0
 
+        # set camera origin 
+        self.origin = self.position
+        self.origin_z = ALTITUDE
+        self.prev_origin = self.position
+        self.prev_origin_z = ALTITUDE
+
+        self.delta_pos = pygame.Vector2(0.0,0.0)
+        self.delta_pos_z = 0.0
+
 
     def update_kinematics(self):
-        """helper function to update dynamics of object
+        """helper function to update kinematics of object subject to dynamics
         """
-        OLD_STUFFS = 1
+        OLD_STUFFS = 0
 
         if OLD_STUFFS:
-            # update velocity and position (in the XY plane)
+            print(f'{self.acceleration[0]:.2f}, {self.acceleration[1]:.2f}, {self.az:.2f}')
+            self.prev_delta_pos = deepcopy(self.delta_pos)
+            self.prev_origin = deepcopy(self.origin)
+
+            # update velocity (clip if over limit)
             self.velocity += self.acceleration * self.simulator.dt
             if abs(self.velocity.length()) > self.vel_limit:
                 self.velocity -= self.acceleration * self.simulator.dt
 
-            self.prev_delta_pos = deepcopy(self.delta_pos)
-            self.delta_pos = self.velocity * self.simulator.dt #+ 0.5 * self.acceleration * \
-                # self.simulator.dt**2      # i know how this looks like but,   pylint: disable=line-too-long
-            self.position = self.velocity * self.simulator.dt #+ 0.5 * self.acceleration * \
-                # self.simulator.dt**2  # donot touch ☠                    pylint: disable=line-too-long
-            self.prev_origin = deepcopy(self.origin)
+            # update position
+            self.delta_pos = self.velocity * self.simulator.dt 
+            self.position = self.velocity * self.simulator.dt 
+            
+            # update camera origin (world frame)
             self.origin += self.delta_pos
         else:
             # new stuffs
-            F = self.m * (ACC_GRAVITY - self.az) / (cos(self.phi)*cos(self.theta))
-            phi_c = atan(self.acceleration[1] * cos(self.theta)/(ACC_GRAVITY - self.az))
-            theta_c = atan(self.acceleration[0] / (self.az - ACC_GRAVITY))
-            psi_c = 0
+            # self.acceleration = pygame.Vector2(0.02, 0.0)
+            # self.az = 0.0
+            self.prev_delta_pos = deepcopy(self.delta_pos)
+            self.prev_origin = deepcopy(self.origin)
 
-            tau_theta = DRONE_K_Q*(theta_c - self.theta) + DRONE_K_QD*(0-self.Q)
-            tau_phi = DRONE_K_Q*(phi_c - self.phi) + DRONE_K_QD*(0-self.P)
-            tau_psi = DRONE_K_Q*(psi_c - self.psi) + DRONE_K_QD*(0-self.R)
+            # compute force
+            F = self.m * (self.g - self.az) / (cos(self.phi)*cos(self.theta))
 
+            # compute desired attitude
+            phi_des = atan(self.acceleration[1] * cos(self.theta)/(self.g - self.az))
+            theta_des = atan(self.acceleration[0] / (self.az - self.g))
+            psi_des = 0
+
+            # compute required
+            tau_theta = self.gains['K_P_THETA']*(theta_des - self.theta) + self.gains['K_D_THETA']*(0-self.Q)
+            tau_phi = self.gains['K_P_PHI']*(phi_des - self.phi) + self.gains['K_D_PHI']*(0-self.P)
+            tau_psi = self.gains['K_P_PSI']*(psi_des - self.psi) + self.gains['K_D_PSI']*(0-self.R)
+
+            # update state
             num_inner_loop = 10
             outer_loop_rate = 1/DELTA_TIME
             inner_loop_rate = outer_loop_rate * num_inner_loop
@@ -99,20 +139,20 @@ class DroneCamera(pygame.sprite.Sprite):
                 Q = self.Q
                 R = self.R
 
-                F_app = F * ((i+1) / num_inner_loop)**2
+                F_app = F * ((i+1) / num_inner_loop)**-2
 
                 dpN = U*cos(theta)*cos(psi) + V*(-cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi)) + W*(sin(phi)*sin(psi)+cos(phi)*sin(theta)*cos(psi))
                 dpE = U*cos(theta)*sin(psi) + V*(cos(phi)*cos(psi) + sin(phi)*sin(theta)*sin(psi)) + W*(-sin(phi)*cos(psi)+cos(phi)*sin(theta)*sin(psi))
                 dpH = -(U*sin(theta) - V*sin(phi)*cos(theta) - W*cos(phi)*cos(theta))
-                dU = R*V - Q*W - ACC_GRAVITY*sin(theta)
-                dV = -R*U + P*W + ACC_GRAVITY*sin(phi)*cos(theta)
-                dW = (Q*U - P*V + ACC_GRAVITY*cos(phi)*cos(theta) - F_app/self.m)
+                dU = R*V - Q*W - self.g*sin(theta)
+                dV = -R*U + P*W + self.g*sin(phi)*cos(theta)
+                dW = (Q*U - P*V + self.g*cos(phi)*cos(theta) - F_app/self.m)
                 dphi = P + tan(theta)*(Q*sin(phi)+R*cos(phi))
                 dtheta = Q*cos(phi) - R*sin(phi)
                 dpsi = (Q*sin(phi) + R*cos(phi))/cos(theta)
-                dP = (DRONE_I_Y-DRONE_I_Z)/DRONE_I_X *Q*R + tau_phi/DRONE_I_X
-                dQ = (DRONE_I_Z-DRONE_I_X)/DRONE_I_Y *P*R + tau_theta/DRONE_I_Y
-                dR = (DRONE_I_X-DRONE_I_Y)/DRONE_I_Z *P*Q + tau_psi/DRONE_I_Z
+                dP = (self.I_YY - self.I_ZZ) / self.I_XX *Q*R + tau_phi/self.I_XX
+                dQ = (self.I_ZZ - self.I_XX) / self.I_YY *P*R + tau_theta/self.I_YY
+                dR = (self.I_XX - self.I_YY) / self.I_ZZ *P*Q + tau_psi/self.I_ZZ
 
                 pN += (dpN) / inner_loop_rate
                 pE += (dpE) / inner_loop_rate
@@ -138,24 +178,50 @@ class DroneCamera(pygame.sprite.Sprite):
                 self.Q = Q
                 self.R = R
 
-            
-            print(self.position, self.altitude)
+            print(f'{self.acceleration[0]:.2f}, {self.acceleration[1]:.2f}, {self.az:.2f}')
+            self.print_states()
 
-            RotMat = np.array([[cos(self.theta)*cos(self.psi), cos(self.theta)*sin(self.psi),  -sin(self.theta)],
+            # construct Rotation matrix for Drone attached frame
+            W_R_A = np.array([[cos(self.theta)*cos(self.psi), cos(self.theta)*sin(self.psi),  -sin(self.theta)],
                                [sin(self.phi)*sin(self.theta)*cos(self.psi)-cos(self.phi)*sin(self.psi), sin(self.phi)*sin(self.theta)*sin(self.psi)+cos(self.phi)*cos(self.psi), sin(self.phi)*cos(self.theta)],
                                [cos(self.phi)*sin(self.theta)*cos(self.psi)+sin(self.phi)*sin(self.psi), cos(self.phi)*sin(self.theta)*sin(self.psi)-sin(self.phi)*cos(self.psi), cos(self.phi)*cos(self.theta)]])
 
-            vel_inertial = RotMat.T @ np.array([[self.velocity[0]], 
+            # compute transformed position and velocity in inertial world frame
+            pos_inertial = W_R_A.T @ np.array([[self.position[0]],
+                                               [self.position[1]],
+                                               [self.altitude]])
+
+            vel_inertial = W_R_A.T @ np.array([[self.velocity[0]], 
                                                 [self.velocity[1]],
                                                 [self.vz]])
-            
+
+            # update position and velocity
+            # self.position = pygame.Vector2(pos_inertial.flatten()[0], pos_inertial.flatten()[1])
+            # self.altitude = pos_inertial.flatten()[2]
             self.velocity = pygame.Vector2(vel_inertial.flatten()[0], vel_inertial.flatten()[1])
             self.vz = vel_inertial.flatten()[2]
 
+            self.origin += self.position
+            self.origin_z = self.altitude
 
 
 
-
+    def print_states(self):
+        print(f'{self.origin[0]:.1f}, ' + 
+        f'{self.origin[1]:.1f} | , ' +
+        f'{self.position[0]:.1f}, ' +
+        f'{self.position[1]:.1f}, ' +
+        f'{self.altitude:.1f}, ' +
+        f'{self.velocity[0]:.1f}, ' +
+        f'{self.velocity[1]:.1f}, ' +
+        f'{self.vz:.1f}, ' +
+        f'{self.phi:.1f}, ' +
+        f'{self.theta:.1f}, ' +
+        f'{self.psi:.1f}, ' +
+        f'{self.P:.1f}, ' +
+        f'{self.Q:.1f}, ' +
+        f'{self.R:.1f}'
+        )
 
 
 
