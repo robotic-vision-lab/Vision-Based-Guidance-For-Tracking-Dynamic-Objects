@@ -55,25 +55,33 @@ class Simulator:
         os.environ['SDL_VIDEO_WINDOW_POS'] = "2,30"
         pygame.init()
 
-        # set screen size, bg color and display title
+        # set screen size
         self.SCREEN_SURFACE = pygame.display.set_mode(SCREEN_SIZE, flags=pygame.DOUBLEBUF)
-        sim_icon, _ = load_image_rect(SIMULATOR_ICON_IMG, colorkey=-1, alpha=True)
+
+        # set icon
+        sim_icon, _ = load_image_rect(SIMULATOR_ICON_IMG, colorkey=None, alpha=True)
         sim_icon = pygame.transform.smoothscale(sim_icon, (32, 32))
         pygame.display.set_icon(sim_icon)
 
-
+        # set background fill color
         self.SCREEN_SURFACE.fill(SCREEN_BG_COLOR)
+
+        # set display caption
         pygame.display.set_caption(SCREEN_DISPLAY_TITLE)
+
+        # set event restrictions, and no alpha for speed
         pygame.event.set_allowed([GAME_GLOBALS.QUIT, pygame.KEYDOWN])
         self.SCREEN_SURFACE.set_alpha(None)
 
         # initialize clock
         self.clock = HighPrecisionClock()
 
-        # load image and rect for each car and drone sprite
+        # load image and rect for each car sprite
         self.car_img_rect = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         self.car_img_rect_2 = load_image_rect(CAR_IMG_2, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
         self.car_img_rect_3 = load_image_rect(CAR_IMG_3, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+
+        # load image and rect for each drone sprite
         self.drone_img_rect = load_image_rect(DRONE_IMG, colorkey=BLACK, alpha=True, scale=DRONE_SCALE)
 
         # set screen saving to False
