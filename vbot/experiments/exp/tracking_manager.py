@@ -1,4 +1,4 @@
-from math import degrees, cos, sin, atan, tan, pi, tau
+from math import degrees, radians, cos, sin, atan, tan, pi, tau
 
 import numpy as np
 import pygame
@@ -92,12 +92,12 @@ class TrackingManager:
             ellipse_focal_point_1 = self.convert(ellipse_params[5])
             ellipse_focal_point_2 = self.convert(ellipse_params[6])
             ellipse_semi_axes = [int(axis/self.exp_manager.simulator.pxm_fac) for axis in ellipse_params[:2]]
-            ellipse_rotation_angle = degrees(ellipse_params[3])
+            ellipse_rotation_angle = ellipse_params[3]
 
             return (ellipse_semi_axes[0], 
                     ellipse_semi_axes[1], 
                     ellipse_center, 
-                    ellipse_rotation_angle, 
+                    ellipse_rotation_angle, # radians
                     ellipse_focal_point_1,
                     ellipse_focal_point_2)
 
@@ -107,7 +107,7 @@ class TrackingManager:
         ellipse_params = self.get_ellipse_params(IMAGE_REF_FRAME)
         ellipse_semi_axes = tuple(map(int, ellipse_params[:2]))
         ellipse_center = tuple(map(int, ellipse_params[2]))
-        ellipse_rotation_angle = ellipse_params[3]
+        ellipse_rotation_angle = ellipse_params[3]  # radians
         ellipse_focal_point_1 = tuple(map(int, ellipse_params[4]))
         ellipse_focal_point_2 = tuple(map(int, ellipse_params[5]))
 
@@ -133,19 +133,19 @@ class TrackingManager:
         k = (ellipse_focal_point_1_est[1] + ellipse_focal_point_2_est[1])//2
         
         # extremum of x w.r.t t => dx/dt=0
-        t_x = atan((-ellipse_semi_axes[1] / ellipse_semi_axes[0]) * tan(radians(ellipse_rotation_angle)))
+        t_x = atan((-ellipse_semi_axes[1] / ellipse_semi_axes[0]) * tan(ellipse_rotation_angle))
 
         # extremum of y w.r.t t => dy/dt=0
-        t_y = atan((ellipse_semi_axes[1] / ellipse_semi_axes[0]) / tan(radians(ellipse_rotation_angle)))
+        t_y = atan((ellipse_semi_axes[1] / ellipse_semi_axes[0]) / tan(ellipse_rotation_angle))
 
         # compute xmax, xmin
-        x1 = int(h + ellipse_semi_axes[0] * cos(radians(ellipse_rotation_angle)) * cos(t_x%tau)    - ellipse_semi_axes[1] * sin(radians(ellipse_rotation_angle)) * sin(t_x%tau))
-        x2 = int(h + ellipse_semi_axes[0] * cos(radians(ellipse_rotation_angle)) * cos((t_x+pi)%tau) - ellipse_semi_axes[1] * sin(radians(ellipse_rotation_angle)) * sin((t_x+pi)%tau))
+        x1 = int(h + ellipse_semi_axes[0] * cos(ellipse_rotation_angle) * cos(t_x%tau)    - ellipse_semi_axes[1] * sin(ellipse_rotation_angle) * sin(t_x%tau))
+        x2 = int(h + ellipse_semi_axes[0] * cos(ellipse_rotation_angle) * cos((t_x+pi)%tau) - ellipse_semi_axes[1] * sin(ellipse_rotation_angle) * sin((t_x+pi)%tau))
         x_max, x_min = (x1, x2) if x1 > x2 else (x2, x1)
 
         # compute ymax, ymin
-        y1 = int(k + ellipse_semi_axes[0] * sin(radians(ellipse_rotation_angle)) * cos(t_y%tau)    + ellipse_semi_axes[1] * cos(radians(ellipse_rotation_angle)) * sin(t_y%tau))
-        y2 = int(k + ellipse_semi_axes[0] * sin(radians(ellipse_rotation_angle)) * cos((t_y+pi)%tau) + ellipse_semi_axes[1] * cos(radians(ellipse_rotation_angle)) * sin((t_y+pi)%tau))
+        y1 = int(k + ellipse_semi_axes[0] * sin(ellipse_rotation_angle) * cos(t_y%tau)    + ellipse_semi_axes[1] * cos(ellipse_rotation_angle) * sin(t_y%tau))
+        y2 = int(k + ellipse_semi_axes[0] * sin(ellipse_rotation_angle) * cos((t_y+pi)%tau) + ellipse_semi_axes[1] * cos(ellipse_rotation_angle) * sin((t_y+pi)%tau))
         y_max, y_min = (y1, y2) if y1 > y2 else (y2, y1)
 
         # form corners for the axis aligned bounding box of ellipse
@@ -180,7 +180,7 @@ class TrackingManager:
         ellipse_img = cv.ellipse(img=ellipse_img,
                                  center=ellipse_center,
                                  axes=ellipse_semi_axes,
-                                 angle=-ellipse_rotation_angle,
+                                 angle=-degrees(ellipse_rotation_angle),
                                  startAngle=0,
                                  endAngle=360,
                                  color=ELLIPSE_COLOR,
