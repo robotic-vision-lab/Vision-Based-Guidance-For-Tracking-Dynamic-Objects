@@ -35,7 +35,9 @@ class DroneCamera(pygame.sprite.Sprite):
             'K_P_PHI': K_P_PHI,
             'K_D_PHI': K_D_PHI,
             'K_P_PSI': K_P_PSI,
-            'K_D_PSI': K_D_PSI
+            'K_D_PSI': K_D_PSI,
+            'K_P_Z': K_P_Z,
+            'K_D_Z': K_D_Z
             }
 
         # reset kinematics and dynamics
@@ -207,6 +209,7 @@ class DroneCamera(pygame.sprite.Sprite):
 
 
     def print_states(self):
+        """helper function to print states"""
         print(f'{self.origin[0]:.1f}, ' + 
         f'{self.origin[1]:.1f} | , ' +
         f'{self.position[0]:.1f}, ' +
@@ -259,6 +262,7 @@ class DroneCamera(pygame.sprite.Sprite):
 
     def apply_accleration_command(self, ax, ay, az=0):
         self.acceleration = pygame.Vector2((ax, ay))
+        self.az = self.gains['K_P_Z']* (100 - self.altitude) + self.gains['K_D_Z'] * (0 - self.vz)
 
 
     def convert_px_to_m(self, p):
