@@ -69,6 +69,10 @@ class ExperimentManager:
         self.tracking_manager = TrackingManager(self)
         self.controller = Controller(self)
 
+        # open tracker display next to simulator 
+        cv.namedWindow(self.multi_tracker.win_name)
+        cv.moveWindow(self.multi_tracker.win_name, WIDTH, 0)
+
         # initialize simulation delta time
         self.sim_dt = 0
 
