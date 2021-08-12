@@ -1,5 +1,6 @@
 from copy import deepcopy
 from math import cos, sin, atan
+from collections import namedtuple
 import pygame
 import numpy as np
 
@@ -20,25 +21,13 @@ class DroneCamera(pygame.sprite.Sprite):
         self.image.fill((255, 255, 255, DRONE_IMG_ALPHA), None, pygame.BLEND_RGBA_MULT)
 
         # set inertia parameters
-        self.m = DRONE_MASS
-        self.I_XX = DRONE_I_XX
-        self.I_YY = DRONE_I_YY
-        self.I_ZZ = DRONE_I_ZZ
+        self.set_inertia_params()
 
         # set acceleration due to gravity
         self.g = ACC_GRAVITY
 
         # set gains
-        self.gains = {
-            'K_P_THETA': K_P_THETA,
-            'K_D_THETA': K_D_THETA,
-            'K_P_PHI': K_P_PHI,
-            'K_D_PHI': K_D_PHI,
-            'K_P_PSI': K_P_PSI,
-            'K_D_PSI': K_D_PSI,
-            'K_P_Z': K_P_Z,
-            'K_D_Z': K_D_Z
-            }
+        self.set_gains()
 
         # reset kinematics and dynamics
         self.reset_kinematics()
@@ -49,6 +38,14 @@ class DroneCamera(pygame.sprite.Sprite):
         # set accelerations and velocity clips
         self.vel_limit = DRONE_VELOCITY_LIMIT
         self.acc_limit = DRONE_ACCELERATION_LIMIT
+
+    def set_inertia_params(self):
+        InertiaParams = namedtuple('InertiaParams', 'm Ixx Iyy Izz')
+        self.INERTIA = InertiaParams(DRONE_MASS, DRONE_I_XX, DRONE_I_YY, DRONE_I_ZZ)
+
+    def set_gains(self):
+        Gains = namedtuple('Gains', 'KP_phi KD_phi KP_theta KD_theta KP_psi KD_psi KP_zdot KD_zdot')
+        self.GAINS = Gains(K_P_PHI, K_D_PHI, K_P_THETA, K_D_THETA, K_P_PSI, K_D_PSI, K_P_ZDOT, K_D_ZDOT)
 
     def reset_kinematics(self):
         """helper function to reset initial kinematic states
@@ -110,17 +107,17 @@ class DroneCamera(pygame.sprite.Sprite):
             self.prev_origin = deepcopy(self.origin)
 
             # compute force
-            F = self.m * (self.g - self.az) / (cos(self.phi)*cos(self.theta))
+            F = self.INERTIA.m * (self.g - self.az) / (cos(self.phi)*cos(self.theta))
 
             # compute desired attitude
-            phi_des = atan(self.acceleration[1] * cos(self.theta)/(self.g - self.az))
-            theta_des = atan(self.acceleration[0] / (self.az - self.g))
-            psi_des = 0
+            phi_c = atan(self.acceleration[1] * cos(self.theta)/(self.g - self.az))
+            theta_c = atan(self.acceleration[0] / (self.az - self.g))
+            psi_c = 0
 
             # compute required
-            tau_theta = self.gains['K_P_THETA']*(theta_des - self.theta) + self.gains['K_D_THETA']*(0-self.Q)
-            tau_phi = self.gains['K_P_PHI']*(phi_des - self.phi) + self.gains['K_D_PHI']*(0-self.P)
-            tau_psi = self.gains['K_P_PSI']*(psi_des - self.psi) + self.gains['K_D_PSI']*(0-self.R)
+            tau_theta = self.GAINS.KP_theta*(theta_c - self.theta) + self.GAINS.KD_theta*(0-self.Q)
+            tau_phi = self.GAINS.KP_phi*(phi_c - self.phi) + self.GAINS.KD_phi*(0-self.P)
+            tau_psi = self.GAINS.KP_psi*(psi_c - self.psi) + self.GAINS.KD_psi*(0-self.R)
 
             # update state
             num_inner_loop = 10
@@ -148,13 +145,13 @@ class DroneCamera(pygame.sprite.Sprite):
                 dpH = -(U*sin(theta) - V*sin(phi)*cos(theta) - W*cos(phi)*cos(theta))
                 dU = R*V - Q*W - self.g*sin(theta)
                 dV = -R*U + P*W + self.g*sin(phi)*cos(theta)
-                dW = (Q*U - P*V + self.g*cos(phi)*cos(theta) - F_app/self.m)
+                dW = (Q*U - P*V + self.g*cos(phi)*cos(theta) - F_app/self.INERTIA.m)
                 dphi = P + tan(theta)*(Q*sin(phi)+R*cos(phi))
                 dtheta = Q*cos(phi) - R*sin(phi)
                 dpsi = (Q*sin(phi) + R*cos(phi))/cos(theta)
-                dP = (self.I_YY - self.I_ZZ) / self.I_XX *Q*R + tau_phi/self.I_XX
-                dQ = (self.I_ZZ - self.I_XX) / self.I_YY *P*R + tau_theta/self.I_YY
-                dR = (self.I_XX - self.I_YY) / self.I_ZZ *P*Q + tau_psi/self.I_ZZ
+                dP = (self.INERTIA.Iyy - self.INERTIA.Izz) / self.INERTIA.Ixx *Q*R + tau_phi/self.INERTIA.Ixx
+                dQ = (self.INERTIA.Izz - self.INERTIA.Ixx) / self.INERTIA.Iyy *P*R + tau_theta/self.INERTIA.Iyy
+                dR = (self.INERTIA.Ixx - self.INERTIA.Iyy) / self.INERTIA.Izz *P*Q + tau_psi/self.INERTIA.Izz
 
                 pN += (dpN) / inner_loop_rate
                 pE += (dpE) / inner_loop_rate
@@ -180,7 +177,6 @@ class DroneCamera(pygame.sprite.Sprite):
                 self.Q = Q
                 self.R = R
 
-            print(f'{self.acceleration[0]:.2f}, {self.acceleration[1]:.2f}, {self.az:.2f}')
             self.print_states()
 
             # construct Rotation matrix for Drone attached frame
@@ -210,20 +206,22 @@ class DroneCamera(pygame.sprite.Sprite):
 
     def print_states(self):
         """helper function to print states"""
-        print(f'{self.origin[0]:.1f}, ' + 
-        f'{self.origin[1]:.1f} | , ' +
+        print(f'{self.simulator.time:.2f}secs: cam_origin=(' + 
+            f'{self.origin[0]:.1f}, ' + 
+        f'{self.origin[1]:.1f})  pos=(' +
         f'{self.position[0]:.1f}, ' +
         f'{self.position[1]:.1f}, ' +
-        f'{self.altitude:.1f}, ' +
+        f'{self.altitude:.1f})  vel=(' +
         f'{self.velocity[0]:.1f}, ' +
         f'{self.velocity[1]:.1f}, ' +
-        f'{self.vz:.1f}, ' +
+        f'{self.vz:.1f})  ang_pos=(' +
         f'{self.phi:.1f}, ' +
         f'{self.theta:.1f}, ' +
-        f'{self.psi:.1f}, ' +
+        f'{self.psi:.1f})  ang_vel=(' +
         f'{self.P:.1f}, ' +
         f'{self.Q:.1f}, ' +
-        f'{self.R:.1f}'
+        f'{self.R:.1f})' + 
+        f'  acc_command=({self.acceleration[0]:.2f}, {self.acceleration[1]:.2f}, {self.az:.2f})'
         )
 
 
@@ -262,7 +260,7 @@ class DroneCamera(pygame.sprite.Sprite):
 
     def apply_accleration_command(self, ax, ay, az=0):
         self.acceleration = pygame.Vector2((ax, ay))
-        self.az = self.gains['K_P_Z']* (100 - self.altitude) + self.gains['K_D_Z'] * (0 - self.vz)
+        self.az = self.GAINS.KP_zdot* (100 - self.altitude) + self.GAINS.KD_zdot * (0 - self.vz)
 
 
     def convert_px_to_m(self, p):
