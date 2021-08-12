@@ -40,10 +40,14 @@ class DroneCamera(pygame.sprite.Sprite):
         self.acc_limit = DRONE_ACCELERATION_LIMIT
 
     def set_inertia_params(self):
+        """Set inertia params - mass and moments of inertia Ixx, Iyy and Izz (diagonal elements of inertia tensor) - for drone. 
+        """
         InertiaParams = namedtuple('InertiaParams', 'm Ixx Iyy Izz')
         self.INERTIA = InertiaParams(DRONE_MASS, DRONE_I_XX, DRONE_I_YY, DRONE_I_ZZ)
 
     def set_gains(self):
+        """set proportional and derivative gains for euler angles roll(φ), pitch(θ), yaw(ψ) and altitude
+        """
         Gains = namedtuple('Gains', 'KP_phi KD_phi KP_theta KD_theta KP_psi KD_psi KP_zdot KD_zdot')
         self.GAINS = Gains(K_P_PHI, K_D_PHI, K_P_THETA, K_D_THETA, K_P_PSI, K_D_PSI, K_P_ZDOT, K_D_ZDOT)
 
@@ -60,9 +64,9 @@ class DroneCamera(pygame.sprite.Sprite):
         self.phi = 0.0
         self.theta = 0.0
         self.psi = 0.0
-        self.P = 0.0
-        self.Q = 0.0
-        self.R = 0.0
+        self.p = 0.0
+        self.q = 0.0
+        self.r = 0.0
 
         # set initial acceleration
         self.acceleration = pygame.Vector2(0, 0)
@@ -115,9 +119,9 @@ class DroneCamera(pygame.sprite.Sprite):
             psi_c = 0
 
             # compute required
-            tau_theta = self.GAINS.KP_theta*(theta_c - self.theta) + self.GAINS.KD_theta*(0-self.Q)
-            tau_phi = self.GAINS.KP_phi*(phi_c - self.phi) + self.GAINS.KD_phi*(0-self.P)
-            tau_psi = self.GAINS.KP_psi*(psi_c - self.psi) + self.GAINS.KD_psi*(0-self.R)
+            tau_theta = self.GAINS.KP_theta*(theta_c - self.theta) + self.GAINS.KD_theta*(0-self.q)
+            tau_phi = self.GAINS.KP_phi*(phi_c - self.phi) + self.GAINS.KD_phi*(0-self.p)
+            tau_psi = self.GAINS.KP_psi*(psi_c - self.psi) + self.GAINS.KD_psi*(0-self.r)
 
             # update state
             num_inner_loop = 10
@@ -128,54 +132,54 @@ class DroneCamera(pygame.sprite.Sprite):
                 pN = self.position[0]
                 pE = self.position[1]
                 pH = self.altitude
-                U = self.velocity[0]
-                V = self.velocity[1]
-                W = self.vz
+                u = self.velocity[0]
+                v = self.velocity[1]
+                w = self.vz
                 phi = self.phi
                 theta = self.theta
                 psi = self.psi
-                P = self.P
-                Q = self.Q
-                R = self.R
+                p = self.p
+                q = self.q
+                r = self.r
 
                 F_app = F * ((i+1) / num_inner_loop)**-2
 
-                dpN = U*cos(theta)*cos(psi) + V*(-cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi)) + W*(sin(phi)*sin(psi)+cos(phi)*sin(theta)*cos(psi))
-                dpE = U*cos(theta)*sin(psi) + V*(cos(phi)*cos(psi) + sin(phi)*sin(theta)*sin(psi)) + W*(-sin(phi)*cos(psi)+cos(phi)*sin(theta)*sin(psi))
-                dpH = -(U*sin(theta) - V*sin(phi)*cos(theta) - W*cos(phi)*cos(theta))
-                dU = R*V - Q*W - self.g*sin(theta)
-                dV = -R*U + P*W + self.g*sin(phi)*cos(theta)
-                dW = (Q*U - P*V + self.g*cos(phi)*cos(theta) - F_app/self.INERTIA.m)
-                dphi = P + tan(theta)*(Q*sin(phi)+R*cos(phi))
-                dtheta = Q*cos(phi) - R*sin(phi)
-                dpsi = (Q*sin(phi) + R*cos(phi))/cos(theta)
-                dP = (self.INERTIA.Iyy - self.INERTIA.Izz) / self.INERTIA.Ixx *Q*R + tau_phi/self.INERTIA.Ixx
-                dQ = (self.INERTIA.Izz - self.INERTIA.Ixx) / self.INERTIA.Iyy *P*R + tau_theta/self.INERTIA.Iyy
-                dR = (self.INERTIA.Ixx - self.INERTIA.Iyy) / self.INERTIA.Izz *P*Q + tau_psi/self.INERTIA.Izz
+                dpN = u*cos(theta)*cos(psi) + v*(-cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi)) + w*(sin(phi)*sin(psi)+cos(phi)*sin(theta)*cos(psi))
+                dpE = u*cos(theta)*sin(psi) + v*(cos(phi)*cos(psi) + sin(phi)*sin(theta)*sin(psi)) + w*(-sin(phi)*cos(psi)+cos(phi)*sin(theta)*sin(psi))
+                dpH = -(u*sin(theta) - v*sin(phi)*cos(theta) - w*cos(phi)*cos(theta))
+                dU = r*v - q*w - self.g*sin(theta)
+                dV = -r*u + p*w + self.g*sin(phi)*cos(theta)
+                dW = (q*u - p*v + self.g*cos(phi)*cos(theta) - F_app/self.INERTIA.m)
+                dphi = p + tan(theta)*(q*sin(phi)+r*cos(phi))
+                dtheta = q*cos(phi) - r*sin(phi)
+                dpsi = (q*sin(phi) + r*cos(phi))/cos(theta)
+                dP = (self.INERTIA.Iyy - self.INERTIA.Izz) / self.INERTIA.Ixx *q*r + tau_phi/self.INERTIA.Ixx
+                dQ = (self.INERTIA.Izz - self.INERTIA.Ixx) / self.INERTIA.Iyy *p*r + tau_theta/self.INERTIA.Iyy
+                dR = (self.INERTIA.Ixx - self.INERTIA.Iyy) / self.INERTIA.Izz *p*q + tau_psi/self.INERTIA.Izz
 
                 pN += (dpN) / inner_loop_rate
                 pE += (dpE) / inner_loop_rate
                 pH += (dpH) / inner_loop_rate
-                U += (dU) / inner_loop_rate
-                V += (dV) / inner_loop_rate
-                W += (dW) / inner_loop_rate
+                u += (dU) / inner_loop_rate
+                v += (dV) / inner_loop_rate
+                w += (dW) / inner_loop_rate
                 phi += (dphi) / inner_loop_rate
                 theta += (dtheta) / inner_loop_rate
                 psi += (dpsi) / inner_loop_rate
-                P += (dP) / inner_loop_rate
-                Q += (dQ) / inner_loop_rate
-                R += (dR) / inner_loop_rate
+                p += (dP) / inner_loop_rate
+                q += (dQ) / inner_loop_rate
+                r += (dR) / inner_loop_rate
 
                 self.position = pygame.Vector2(pN, pE)
                 self.altitude = pH
-                self.velocity = pygame.Vector2(U, V)
-                self.vz = W
+                self.velocity = pygame.Vector2(u, v)
+                self.vz = w
                 self.phi = phi
                 self.theta = theta
                 self.psi = psi
-                self.P = P
-                self.Q = Q
-                self.R = R
+                self.p = p
+                self.q = q
+                self.r = r
 
             self.print_states()
 
@@ -218,9 +222,9 @@ class DroneCamera(pygame.sprite.Sprite):
         f'{self.phi:.1f}, ' +
         f'{self.theta:.1f}, ' +
         f'{self.psi:.1f})  ang_vel=(' +
-        f'{self.P:.1f}, ' +
-        f'{self.Q:.1f}, ' +
-        f'{self.R:.1f})' + 
+        f'{self.p:.1f}, ' +
+        f'{self.q:.1f}, ' +
+        f'{self.r:.1f})' + 
         f'  acc_command=({self.acceleration[0]:.2f}, {self.acceleration[1]:.2f}, {self.az:.2f})'
         )
 
