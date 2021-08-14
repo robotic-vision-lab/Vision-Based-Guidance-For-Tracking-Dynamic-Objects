@@ -48,8 +48,8 @@ class DroneCamera(pygame.sprite.Sprite):
     def set_gains(self):
         """set proportional and derivative gains for euler angles roll(φ), pitch(θ), yaw(ψ) and altitude
         """
-        Gains = namedtuple('Gains', 'KP_phi KD_phi KP_theta KD_theta KP_psi KD_psi KP_zdot KD_zdot')
-        self.GAINS = Gains(K_P_PHI, K_D_PHI, K_P_THETA, K_D_THETA, K_P_PSI, K_D_PSI, K_P_ZDOT, K_D_ZDOT)
+        Gains = namedtuple('Gains', 'KP_phi KD_phi KP_theta KD_theta KP_psi KD_psi KP_z KD_z')
+        self.GAINS = Gains(K_P_PHI, K_D_PHI, K_P_THETA, K_D_THETA, K_P_PSI, K_D_PSI, K_P_Z, K_D_Z)
 
     def reset_kinematics(self):
         """helper function to reset initial kinematic states
@@ -105,22 +105,20 @@ class DroneCamera(pygame.sprite.Sprite):
             self.origin += self.delta_pos
         else:
             # new stuffs
-            # self.acceleration = pygame.Vector2(0.02, 0.0)
-            # self.az = 0.0
             self.prev_delta_pos = deepcopy(self.delta_pos)
             self.prev_origin = deepcopy(self.origin)
 
-            # compute force
-            F = self.INERTIA.m * (self.g - self.az) / (cos(self.phi)*cos(self.theta))
+            # compute required force
+            F = (self.g - self.az) * (self.INERTIA.m / (cos(self.phi)*cos(self.theta)))
 
-            # compute desired attitude
+            # compute commanded attitude using commanded accelerations
             phi_c = atan(self.acceleration[1] * cos(self.theta)/(self.g - self.az))
             theta_c = atan(self.acceleration[0] / (self.az - self.g))
             psi_c = 0
 
-            # compute required
-            tau_theta = self.GAINS.KP_theta*(theta_c - self.theta) + self.GAINS.KD_theta*(0-self.q)
+            # compute required torque
             tau_phi = self.GAINS.KP_phi*(phi_c - self.phi) + self.GAINS.KD_phi*(0-self.p)
+            tau_theta = self.GAINS.KP_theta*(theta_c - self.theta) + self.GAINS.KD_theta*(0-self.q)
             tau_psi = self.GAINS.KP_psi*(psi_c - self.psi) + self.GAINS.KD_psi*(0-self.r)
 
             # update state
@@ -129,47 +127,44 @@ class DroneCamera(pygame.sprite.Sprite):
             inner_loop_rate = outer_loop_rate * num_inner_loop
 
             for i in range(num_inner_loop):
-                pN = self.position[0]
-                pE = self.position[1]
-                pH = self.altitude
-                u = self.velocity[0]
-                v = self.velocity[1]
-                w = self.vz
-                phi = self.phi
-                theta = self.theta
-                psi = self.psi
-                p = self.p
-                q = self.q
-                r = self.r
+                # collect state
+                pN = self.position[0]       # inertial (north) position of quadrotor along i_W in world inertial frame W
+                pE = self.position[1]       # inertial (east) position of quadrotor along j_W in world inertial frame W
+                pH = self.altitude          # altitude of quadrotor measured along k_W in world inertial frame W
+                u = self.velocity[0]        # body frame velocity measured along i_A in body frame A
+                v = self.velocity[1]        # body frame velocity measured along j_A in body frame A
+                w = self.vz                 # body frame velocity measured along k_A in body frame A
+                phi = self.phi              # roll angle defined with respect to frame N2 (local NED) about i_N2 axis (N2 → A)
+                theta = self.theta          # pitch angle defined with respect to frame N1 (local NED) about j_N1 axis (N1 → N2)
+                psi = self.psi              # yaw angle defined with respect to frame N (local NED) about k_N axis (N → N1)
+                p = self.p                  # roll rate measured along i_A in body frame A
+                q = self.q                  # pitch rate measured along j_A in body frame A
+                r = self.r                  # yaw rate measured along k_A in body frame A
 
-                F_app = F * ((i+1) / num_inner_loop)**-2
+                # compute total thrust 
+                F_app = F * ((i+1) / num_inner_loop)**2
 
-                dpN = u*cos(theta)*cos(psi) + v*(-cos(phi)*sin(psi) + sin(phi)*sin(theta)*cos(psi)) + w*(sin(phi)*sin(psi)+cos(phi)*sin(theta)*cos(psi))
-                dpE = u*cos(theta)*sin(psi) + v*(cos(phi)*cos(psi) + sin(phi)*sin(theta)*sin(psi)) + w*(-sin(phi)*cos(psi)+cos(phi)*sin(theta)*sin(psi))
-                dpH = -(u*sin(theta) - v*sin(phi)*cos(theta) - w*cos(phi)*cos(theta))
-                dU = r*v - q*w - self.g*sin(theta)
-                dV = -r*u + p*w + self.g*sin(phi)*cos(theta)
-                dW = (q*u - p*v + self.g*cos(phi)*cos(theta) - F_app/self.INERTIA.m)
-                dphi = p + tan(theta)*(q*sin(phi)+r*cos(phi))
-                dtheta = q*cos(phi) - r*sin(phi)
-                dpsi = (q*sin(phi) + r*cos(phi))/cos(theta)
-                dP = (self.INERTIA.Iyy - self.INERTIA.Izz) / self.INERTIA.Ixx *q*r + tau_phi/self.INERTIA.Ixx
-                dQ = (self.INERTIA.Izz - self.INERTIA.Ixx) / self.INERTIA.Iyy *p*r + tau_theta/self.INERTIA.Iyy
-                dR = (self.INERTIA.Ixx - self.INERTIA.Iyy) / self.INERTIA.Izz *p*q + tau_psi/self.INERTIA.Izz
+                # evaluate dynamics
+                dpN,  dpE,    dpH   = self.evaluate_position_dynamics(phi, theta, psi, u, v, w)
+                du,   dv,     dw    = self.evaluate_velocity_dynamics(u, v, w, p, q, r, phi, theta, F_app)
+                dphi, dtheta, dpsi  = self.evaluate_attitude_dynamics(p, q, r, phi, theta)
+                dp,   dq,     dr    = self.evaluate_angular_rate_dynamics(tau_phi, tau_theta, tau_psi, p, q, r)
 
+                # euler integration
                 pN += (dpN) / inner_loop_rate
                 pE += (dpE) / inner_loop_rate
                 pH += (dpH) / inner_loop_rate
-                u += (dU) / inner_loop_rate
-                v += (dV) / inner_loop_rate
-                w += (dW) / inner_loop_rate
+                u += (du) / inner_loop_rate
+                v += (dv) / inner_loop_rate
+                w += (dw) / inner_loop_rate
                 phi += (dphi) / inner_loop_rate
                 theta += (dtheta) / inner_loop_rate
                 psi += (dpsi) / inner_loop_rate
-                p += (dP) / inner_loop_rate
-                q += (dQ) / inner_loop_rate
-                r += (dR) / inner_loop_rate
+                p += (dp) / inner_loop_rate
+                q += (dq) / inner_loop_rate
+                r += (dr) / inner_loop_rate
 
+                # update state
                 self.position = pygame.Vector2(pN, pE)
                 self.altitude = pH
                 self.velocity = pygame.Vector2(u, v)
@@ -183,30 +178,138 @@ class DroneCamera(pygame.sprite.Sprite):
 
             self.print_states()
 
-            # construct Rotation matrix for Drone attached frame
-            W_R_A = np.array([[cos(self.theta)*cos(self.psi), cos(self.theta)*sin(self.psi),  -sin(self.theta)],
-                               [sin(self.phi)*sin(self.theta)*cos(self.psi)-cos(self.phi)*sin(self.psi), sin(self.phi)*sin(self.theta)*sin(self.psi)+cos(self.phi)*cos(self.psi), sin(self.phi)*cos(self.theta)],
-                               [cos(self.phi)*sin(self.theta)*cos(self.psi)+sin(self.phi)*sin(self.psi), cos(self.phi)*sin(self.theta)*sin(self.psi)-sin(self.phi)*cos(self.psi), cos(self.phi)*cos(self.theta)]])
+            # construct Rotation matrix from Drone local NED to Drone body attached frame
+            N_R_A = np.array([[cos(self.theta)*cos(self.psi),                                           cos(self.theta)*sin(self.psi),                                           -sin(self.theta)],
+                              [sin(self.phi)*sin(self.theta)*cos(self.psi)-cos(self.phi)*sin(self.psi), sin(self.phi)*sin(self.theta)*sin(self.psi)+cos(self.phi)*cos(self.psi), sin(self.phi)*cos(self.theta)],
+                              [cos(self.phi)*sin(self.theta)*cos(self.psi)+sin(self.phi)*sin(self.psi), cos(self.phi)*sin(self.theta)*sin(self.psi)-sin(self.phi)*cos(self.psi), cos(self.phi)*cos(self.theta)]])
 
-            # compute transformed position and velocity in inertial world frame
-            pos_inertial = W_R_A.T @ np.array([[self.position[0]],
-                                               [self.position[1]],
-                                               [self.altitude]])
-
-            vel_inertial = W_R_A.T @ np.array([[self.velocity[0]], 
+            # compute transformed velocity in inertial world frame
+            vel_inertial = N_R_A.T @ np.array([[self.velocity[0]], 
                                                 [self.velocity[1]],
                                                 [self.vz]])
 
-            # update position and velocity
-            # self.position = pygame.Vector2(pos_inertial.flatten()[0], pos_inertial.flatten()[1])
-            # self.altitude = pos_inertial.flatten()[2]
+            # update velocity
             self.velocity = pygame.Vector2(vel_inertial.flatten()[0], vel_inertial.flatten()[1])
             self.vz = vel_inertial.flatten()[2]
 
+            # save camera origin
             self.origin += self.position
             self.origin_z = self.altitude
 
 
+    def evaluate_position_dynamics(self, phi, theta, psi, u, v, w):
+        """Evaluates dynamics of quadrotor inertial (local NED) position components in inertial world frame
+
+        Args:
+            φ (float): Roll angle with respect to frame N2 (local NED) about i_N2 axis (N2 → A)
+            θ (float): Pitch angle with respect to frame N1 (local NED) about j_N1 axis (N1 → N2 )
+            ψ (float): Yaw angle with respect to frame N (local NED) about k_N axis (N → N1)
+            u (float): velocity along i_A in body frame A
+            v (float): velocity along j_A in body frame A
+            w (float): velocity along k_A in body frame A
+
+        Returns:
+            (1D np.ndarray): pN_dot, pE_dot, h_dot
+        """
+        # construct rotation matrix transforming body frame (A) to local NED (N)
+        A_R_N = np.array([[cos(theta)*cos(psi), sin(phi)*sin(theta)*cos(psi)-cos(phi)*sin(psi), cos(phi)*sin(theta)*cos(psi)+sin(phi)*sin(psi)],
+                          [cos(theta)*sin(psi), sin(phi)*sin(theta)*sin(psi)+cos(phi)*cos(psi), cos(phi)*sin(theta)*sin(psi)-sin(phi)*cos(psi)],
+                          [-sin(theta),         sin(phi)*cos(theta),                            cos(phi)*cos(theta)]])
+        
+        # transform and compute velocities of inertial frame quantities pN, pE and h
+        vel_NED = A_R_N @ np.array([[u],
+                                    [v],
+                                    [w]])
+
+        # return pN_dot, pE_dot, h_dot
+        return vel_NED.flatten()
+
+
+    def evaluate_velocity_dynamics(self, u, v, w, p, q, r, phi, theta, F):
+        """Evaluate dynamics of quadrotor velocity components u, v, w (body frame A)
+
+        Args:
+            u (float): velocity along i_A in body frame A
+            v (float): velocity along j_A in body frame A
+            w (float): velocity along k_A in body frame A
+            p (float): Roll rate measured along i_A in body frame A
+            q (float): Pitch rate measured along j_A in body frame A
+            r (float): Yaw rate measured along k_A in body frame A
+            φ (float): Roll angle with respect to frame N2 (local NED) about i_N2 axis (N2 → A)
+            θ (float): Pitch angle with respect to frame N1 (local NED) about j_N1 axis (N1 → N2 )
+            F (float): Total thrust produced by four motors 
+
+        Returns:
+            (1D np.ndarray): u_dot, v_dot, w_dot
+        """
+        # computer velocity rates
+        vel_dot = np.array([[r*v - q*w],
+                            [p*w - r*u],
+                            [q*u - p*v]]) \
+                + np.array([[-self.g*sin(theta)],
+                            [self.g*cos(theta)*sin(phi)],
+                            [self.g*cos(theta)*cos(phi)]]) \
+                + np.array([[0],
+                            [0],
+                            [-F/self.INERTIA.m]])
+        
+        # return u_dot, v_dot, w_dot
+        return vel_dot.flatten()
+        
+    def evaluate_attitude_dynamics(self, p, q, r, phi, theta):
+        """Evaluate dynamics of quadrotor attitude 
+
+        Args:
+            p (float): Roll rate measured along i_A in body frame A
+            q (float): Pitch rate measured along j_A in body frame A
+            r (float): Yaw rate measured along k_A in body frame A
+            φ (float): Roll angle with respect to frame N2 (local NED) about i_N2 axis (N2 → A)
+            θ (float): Pitch angle with respect to frame N1 (local NED) about j_N1 axis (N1 → N2 )
+
+        Returns:
+            (1D np.ndarray): phi_dot, theta_dot, psi_dot
+        """
+        # compute the transform matrix
+        transform_mat = np.array([[1, sin(phi)*tan(theta), cos(phi)*tan(theta)],
+                                  [0, cos(phi),            -sin(phi)],
+                                  [0, sin(phi)/cos(theta), cos(phi)/cos(theta)]])
+
+        # compute attitude rate dynamics
+        attitude_dot = transform_mat @ np.array([[p],
+                                                 [q],
+                                                 [r]])
+        # return phi_dot, theta_dot, psi_dot
+        return attitude_dot.flatten()
+
+    def evaluate_angular_rate_dynamics(self, tau_phi, tau_theta, tau_psi, p, q, r):
+        """Evaluate dynamics of quadrotor angular rates (body frame A)
+
+        Args:
+            tau_phi (float): Rolling torque
+            tau_theta (float): Pitching torque
+            tau_psi (float): Yawing torque
+            p (float): Roll rate measured along i_A in body frame A
+            q (float): Pitch rate measured along j_A in body frame A
+            r (float): Yaw rate measured along k_A in body frame A
+
+        Returns:
+            (1D np.ndarray): p_dot, q_dot, r_dot
+        """
+        # compute coriolis term
+        coriolis = np.array([[((self.INERTIA.Iyy - self.INERTIA.Izz)/self.INERTIA.Ixx)*q*r],
+                             [((self.INERTIA.Izz - self.INERTIA.Ixx)/self.INERTIA.Iyy)*p*r],
+                             [((self.INERTIA.Ixx - self.INERTIA.Iyy)/self.INERTIA.Izz)*p*q]])
+
+        # compute F/m analog in Euler equations - τ/I
+        angular_accel = np.array([[(1/self.INERTIA.Ixx)*tau_phi],
+                                  [(1/self.INERTIA.Iyy)*tau_theta],
+                                  [(1/self.INERTIA.Izz)*tau_psi]])
+
+        # compute angular velocity rate dynamics
+        ang_vel_dot = coriolis + angular_accel
+
+        # return p_dot, q_dot, r_dot
+        return ang_vel_dot.flatten()
 
     def print_states(self):
         """helper function to print states"""
@@ -264,7 +367,7 @@ class DroneCamera(pygame.sprite.Sprite):
 
     def apply_accleration_command(self, ax, ay, az=0):
         self.acceleration = pygame.Vector2((ax, ay))
-        self.az = self.GAINS.KP_zdot* (100 - self.altitude) + self.GAINS.KD_zdot * (0 - self.vz)
+        self.az = self.GAINS.KP_z* (100 - self.altitude) + self.GAINS.KD_z * (0 - self.vz)
 
 
     def convert_px_to_m(self, p):
