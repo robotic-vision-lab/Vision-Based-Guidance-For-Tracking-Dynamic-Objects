@@ -102,8 +102,8 @@ K_P_PHI = 100
 K_D_PHI = 10
 K_P_PSI = 100
 K_D_PSI = 10
-K_P_ZDOT = 1
-K_D_ZDOT = 10.0
+K_P_Z = 1
+K_D_Z = 10.0
 
 # gravity
 ACC_GRAVITY = 9.81
