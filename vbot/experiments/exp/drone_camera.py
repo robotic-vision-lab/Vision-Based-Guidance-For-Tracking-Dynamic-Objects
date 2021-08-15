@@ -1,5 +1,5 @@
 from copy import deepcopy
-from math import cos, sin, atan
+from math import cos, sin, atan, tau
 from collections import namedtuple
 import pygame
 import numpy as np
@@ -82,6 +82,28 @@ class DroneCamera(pygame.sprite.Sprite):
         self.delta_pos_z = 0.0
 
 
+    def get_quadrotor_state(self):
+        # construct current state
+        state = np.array([self.position[0],       # 0  (pN) inertial (north) position of quadrotor along i_W in world inertial frame W
+                          self.position[1],       # 1  (pE) inertial (east) position of quadrotor along j_W in world inertial frame W
+                          self.altitude,          # 2  (pH) altitude of quadrotor measured along k_W in world inertial frame W
+                          self.velocity[0],       # 3  (u) body frame velocity measured along i_A in body frame A
+                          self.velocity[1],       # 4  (v) body frame velocity measured along j_A in body frame A
+                          self.vz,                # 5  (w) body frame velocity measured along k_A in body frame A
+                          self.phi,               # 6  (φ) roll angle defined with respect to frame N2 (local NED) about i_N2 axis (N2 → A)
+                          self.theta,             # 7  (θ) pitch angle defined with respect to frame N1 (local NED) about j_N1 axis (N1 → N2)
+                          self.psi,               # 8  (ψ) yaw angle defined with respect to frame N (local NED) about k_N axis (N → N1)
+                          self.p,                 # 9  (p) roll rate measured along i_A in body frame A
+                          self.q,                 # 10 (q) pitch rate measured along j_A in body frame A
+                          self.r])                # 11 (r) yaw rate measured along k_A in body frame A
+
+        return state
+
+    @staticmethod
+    def norm_ang(ang):
+        return np.sign(ang) * (abs(ang)%tau)
+
+
     def update_kinematics(self):
         """helper function to update kinematics of object subject to dynamics
         """
@@ -117,9 +139,9 @@ class DroneCamera(pygame.sprite.Sprite):
             psi_c = 0
 
             # compute required torque
-            tau_phi = self.GAINS.KP_phi*(phi_c - self.phi) + self.GAINS.KD_phi*(0-self.p)
-            tau_theta = self.GAINS.KP_theta*(theta_c - self.theta) + self.GAINS.KD_theta*(0-self.q)
-            tau_psi = self.GAINS.KP_psi*(psi_c - self.psi) + self.GAINS.KD_psi*(0-self.r)
+            tau_phi = self.GAINS.KP_phi*self.norm_ang(phi_c - self.phi) + self.GAINS.KD_phi*(0-self.p)
+            tau_theta = self.GAINS.KP_theta*self.norm_ang(theta_c - self.theta) + self.GAINS.KD_theta*(0-self.q)
+            tau_psi = self.GAINS.KP_psi*self.norm_ang(psi_c - self.psi) + self.GAINS.KD_psi*(0-self.r)
 
             # update state
             num_inner_loop = 10
@@ -128,55 +150,22 @@ class DroneCamera(pygame.sprite.Sprite):
 
             for i in range(num_inner_loop):
                 # collect state
-                pN = self.position[0]       # inertial (north) position of quadrotor along i_W in world inertial frame W
-                pE = self.position[1]       # inertial (east) position of quadrotor along j_W in world inertial frame W
-                pH = self.altitude          # altitude of quadrotor measured along k_W in world inertial frame W
-                u = self.velocity[0]        # body frame velocity measured along i_A in body frame A
-                v = self.velocity[1]        # body frame velocity measured along j_A in body frame A
-                w = self.vz                 # body frame velocity measured along k_A in body frame A
-                phi = self.phi              # roll angle defined with respect to frame N2 (local NED) about i_N2 axis (N2 → A)
-                theta = self.theta          # pitch angle defined with respect to frame N1 (local NED) about j_N1 axis (N1 → N2)
-                psi = self.psi              # yaw angle defined with respect to frame N (local NED) about k_N axis (N → N1)
-                p = self.p                  # roll rate measured along i_A in body frame A
-                q = self.q                  # pitch rate measured along j_A in body frame A
-                r = self.r                  # yaw rate measured along k_A in body frame A
+                state = self.get_quadrotor_state()
 
                 # compute total thrust 
                 F_app = F * ((i+1) / num_inner_loop)**2
 
-                # evaluate dynamics
-                dpN,  dpE,    dpH   = self.evaluate_position_dynamics(phi, theta, psi, u, v, w)
-                du,   dv,     dw    = self.evaluate_velocity_dynamics(u, v, w, p, q, r, phi, theta, F_app)
-                dphi, dtheta, dpsi  = self.evaluate_attitude_dynamics(p, q, r, phi, theta)
-                dp,   dq,     dr    = self.evaluate_angular_rate_dynamics(tau_phi, tau_theta, tau_psi, p, q, r)
+                # evaluate dynamics and compute state dot
+                state_dot = self.get_quadrotor_state_dot(state, F_app, tau_phi, tau_theta, tau_psi)
 
                 # euler integration
-                pN += (dpN) / inner_loop_rate
-                pE += (dpE) / inner_loop_rate
-                pH += (dpH) / inner_loop_rate
-                u += (du) / inner_loop_rate
-                v += (dv) / inner_loop_rate
-                w += (dw) / inner_loop_rate
-                phi += (dphi) / inner_loop_rate
-                theta += (dtheta) / inner_loop_rate
-                psi += (dpsi) / inner_loop_rate
-                p += (dp) / inner_loop_rate
-                q += (dq) / inner_loop_rate
-                r += (dr) / inner_loop_rate
+                state += state_dot/inner_loop_rate
 
                 # update state
-                self.position = pygame.Vector2(pN, pE)
-                self.altitude = pH
-                self.velocity = pygame.Vector2(u, v)
-                self.vz = w
-                self.phi = phi
-                self.theta = theta
-                self.psi = psi
-                self.p = p
-                self.q = q
-                self.r = r
+                self.update_quadrotor_state(state)
 
             self.print_states()
+            print(f'           comm_sig=(F={F} τφ={tau_phi} τθ={tau_theta} τψ={tau_psi})')
 
             # construct Rotation matrix from Drone local NED to Drone body attached frame
             N_R_A = np.array([[cos(self.theta)*cos(self.psi),                                           cos(self.theta)*sin(self.psi),                                           -sin(self.theta)],
@@ -195,6 +184,43 @@ class DroneCamera(pygame.sprite.Sprite):
             # save camera origin
             self.origin += self.position
             self.origin_z = self.altitude
+
+
+    def get_quadrotor_state_dot(self, state, F, tau_phi, tau_theta, tau_psi):
+        # evaluate dynamics
+        dpN,  dpE,    dpH   = self.evaluate_position_dynamics(phi=state[6], theta=state[7], psi=state[8], u=state[3], v=state[4], w=state[5])
+        du,   dv,     dw    = self.evaluate_velocity_dynamics(u=state[3], v=state[4], w=state[5], p=state[9], q=state[10], r=state[11], phi=state[6], theta=state[7], F=F)
+        dphi, dtheta, dpsi  = self.evaluate_attitude_dynamics(p=state[9], q=state[10], r=state[11], phi=state[6], theta=state[7])
+        dp,   dq,     dr    = self.evaluate_angular_rate_dynamics(tau_phi, tau_theta, tau_psi, p=state[9], q=state[10], r=state[11])
+
+        # collect state dot
+        state_dot = np.array([dpN,
+                                dpE,
+                                dpH,
+                                du,
+                                dv,
+                                dw,
+                                dphi,
+                                dtheta,
+                                dpsi,
+                                dp,
+                                dq,
+                                dr])
+
+        return state_dot
+
+
+    def update_quadrotor_state(self, state):
+        self.position = pygame.Vector2(state[0], state[1])
+        self.altitude = state[2]
+        self.velocity = pygame.Vector2(state[3], state[4])
+        self.vz = state[5]
+        self.phi = state[6]
+        self.theta = state[7]
+        self.psi = state[8]
+        self.p = state[9]
+        self.q = state[10]
+        self.r = state[11]
 
 
     def evaluate_position_dynamics(self, phi, theta, psi, u, v, w):
@@ -310,6 +336,7 @@ class DroneCamera(pygame.sprite.Sprite):
 
         # return p_dot, q_dot, r_dot
         return ang_vel_dot.flatten()
+
 
     def print_states(self):
         """helper function to print states"""
