@@ -351,7 +351,7 @@ class Controller:
 
 
     @staticmethod
-    def compute_objective_functions(r1,r2,Vr1,Vr2,Vtheta1,Vtheta2,a):
+    def compute_objective_functions(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, a):
         V1 = pow((Vtheta1**2 + Vr1**2),0.5)
         V2 = pow((Vtheta2**2 + Vr2**2),0.5)
         A1 = r1*Vtheta1/V1
@@ -367,7 +367,7 @@ class Controller:
         return y1, y2
 
     @staticmethod
-    def compute_y1_y2_derivative(r1,r2,Vr1,Vr2,Vtheta1,Vtheta2):
+    def compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2):
         def sqrt(x):
             return pow(x, 0.5)
 
@@ -414,6 +414,6 @@ class Controller:
         dy2dVr1 = 2*Vr1
         dy2dVtheta1 = 2*Vtheta1
 
-        return dy1dVr1,dy1dVtheta1,dy1dVr2,dy1dVtheta2,dy2dVr1,dy2dVtheta1
+        return dy1dVr1, dy1dVtheta1, dy1dVr2, dy1dVtheta2, dy2dVr1, dy2dVtheta1
 
 
