@@ -94,15 +94,15 @@ DRONE_VELOCITY_LIMIT = 500      # +/-
 DRONE_ACCELERATION_LIMIT = 20   # +/-
 DRONE_MASS = 4.3259
 DRONE_I_XX = 0.082
-DRONE_I_YY = 0.0845
+DRONE_I_YY = 0.082
 DRONE_I_ZZ = 0.1377
-K_P_THETA = 100
-K_D_THETA = 10
-K_P_PHI = 100
-K_D_PHI = 10
-K_P_PSI = 100
-K_D_PSI = 10
+K_P_PHI = 5
+K_P_THETA = 5
+K_P_PSI = 5
 K_P_Z = 1
+K_D_PHI = 2
+K_D_THETA = 2
+K_D_PSI = 2
 K_D_Z = 10.0
 
 # gravity
@@ -112,7 +112,7 @@ ACC_GRAVITY = 9.81
 TIME_FONT = 'consolas'
 TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY_2   # used for all simulator texts
-DELTA_TIME = 0.01           # used in full blocking mode
+DELTA_TIME = 0.05           # used in full blocking mode
 
 # Bounding box settings
 BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
@@ -120,8 +120,8 @@ BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
 # Ellipse settings
 ELLIPSE_TOLERANCE = 0.1
 ELLIPSE_COLOR = (222, 222, 222)#(66, 61, 78)
-ELLIPSE_MEAS_FP_COLOR = (51, 51, 51)
-ELLIPSE_ESTD_FP_COLOR = (51, 51, 255)
+ELLIPSE_MEAS_FP_COLOR = (1, 1, 1)#(51, 51, 51)
+ELLIPSE_ESTD_FP_COLOR = (255, 112, 100)#(51, 51, 255)
 ELLIPSE_OPACITY = 0.36
 ELLIPSE_MEAS_FP_RADIUS = 6
 ELLIPSE_ESTD_FP_RADIUS = 5
