@@ -136,7 +136,7 @@ class TrackingManager:
         t_x = atan((-ellipse_semi_axes[1] / ellipse_semi_axes[0]) * tan(ellipse_rotation_angle))
 
         # extremum of y w.r.t t => dy/dt=0
-        t_y = atan((ellipse_semi_axes[1] / ellipse_semi_axes[0]) / tan(ellipse_rotation_angle))
+        t_y = atan((ellipse_semi_axes[1] / ellipse_semi_axes[0]) / (tan(ellipse_rotation_angle)+1e-16))
 
         # compute xmax, xmin
         x1 = int(h + ellipse_semi_axes[0] * cos(ellipse_rotation_angle) * cos(t_x%tau)    - ellipse_semi_axes[1] * sin(ellipse_rotation_angle) * sin(t_x%tau))
@@ -149,28 +149,28 @@ class TrackingManager:
         y_max, y_min = (y1, y2) if y1 > y2 else (y2, y1)
 
         # form corners for the axis aligned bounding box of ellipse
-        p1 = (x_min, y_min)
-        p2 = (x_max, y_max)
+        self.p1 = (x_min, y_min)
+        self.p2 = (x_max, y_max)
 
         # draw over color edited frame and show it
         ellipse_img = np.zeros_like(self.exp_manager.multi_tracker.frame_color_edited, np.uint8)
 
         # draw axis aligned bounding box
         ellipse_img = cv.rectangle(ellipse_img,
-                                   p1,
-                                   p2,
+                                   self.p1,
+                                   self.p2,
                                    (217, 232, 212),
                                    2,
                                    cv.LINE_4)
         # draw axis aligned bounding box min max points
         ellipse_img = cv.circle(ellipse_img,
-                                p1,
+                                self.p1,
                                 radius=3,
                                 color=(255, 51, 51),
                                 thickness=cv.FILLED,
                                 lineType=cv.LINE_8)
         ellipse_img = cv.circle(ellipse_img,
-                                p2,
+                                self.p2,
                                 radius=3,
                                 color=(51, 51, 255),
                                 thickness=cv.FILLED,
