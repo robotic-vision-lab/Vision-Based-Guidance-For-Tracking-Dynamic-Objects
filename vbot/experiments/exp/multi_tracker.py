@@ -127,10 +127,10 @@ class MultiTracker:
         target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.initial_patches_color]
 
     def update_patches(self, target):
-        # pass
-        self.patch_size = round(1.5 / self.manager.simulator.pxm_fac)
-        target.patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.keypoints_new_good]
-        target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.patches_color]
+        pass
+        # self.patch_size = round(1.5 / self.manager.simulator.pxm_fac)
+        # target.patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.keypoints_new_good]
+        # target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.patches_color]
 
     def update_template(self):
         for target in self.targets:
@@ -190,10 +190,10 @@ class MultiTracker:
             numpy.ndarray: Image after patch is put with it's center aligned with the given point
         """
         # assumption: patch size is fixed by tracker
-        x_1 = point[0] - self.patch_size//2
-        y_1 = point[1] - self.patch_size//2
-        x_2 = x_1 + self.patch_size
-        y_2 = y_1 + self.patch_size
+        x_1 = int(point[0] - patch.shape[0]//2)
+        y_1 = int(point[1] - patch.shape[1]//2)
+        x_2 = int(x_1 + patch.shape[0])
+        y_2 = int(y_1 + patch.shape[1])
         img[y_1:y_2, x_1:x_2] = patch
 
         return img
@@ -224,10 +224,13 @@ class MultiTracker:
         Returns:
             numpy.ndaray: Patch
         """
-        size = (size, size) if isinstance(size, int) else size
-        x = center[0] - size[0]//2
-        y = center[1] - size[1]//2
-        w, h = size
+        size = (size, size) if not isinstance(size, tuple) else size
+        x = int(center[0] - size[0]//2)
+        y = int(center[1] - size[1]//2)
+        w = int(size[0])
+        h = int(size[1])
+
+
 
         return img[y:y+h, x:x+w] # same for color or gray
 
