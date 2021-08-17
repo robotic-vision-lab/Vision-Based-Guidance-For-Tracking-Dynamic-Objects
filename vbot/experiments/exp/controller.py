@@ -346,7 +346,35 @@ class Controller:
         ax = a_lat * cos(delta) + a_long * cos(drone_alpha)
         ay = a_lat * sin(delta) + a_long * sin(drone_alpha)
 
-        return ax, ay
+        # compute az
+        x_min, y_min = self.manager.tracking_manager.p1
+        x_max, y_max = self.manager.tracking_manager.p2
+        X = x_max - x_min
+        Y = y_max - y_min
+        C = ((WIDTH - x_min - x_max)**2 + (HEIGHT - y_min - y_max)**2)**0.5
+        SIZE_X = X*self.manager.simulator.pxm_fac
+        SIZE_Y = Y*self.manager.simulator.pxm_fac
+        SIZE_C = C*self.manager.simulator.pxm_fac
+        KP_x = 20
+        KP_y = 20
+        KP_c = 0.5
+        KD_x = 5
+        KD_y = 5
+        KD_c = 0.2
+        X_d = WIDTH/3
+        Y_d = HEIGHT/3
+        C_d = 0
+
+        az = -(FOCAL_LENGTH * SIZE_X / X**2) * KP_x*(X_d - X) + KD_x*self.manager.simulator.camera.w \
+            - (FOCAL_LENGTH * SIZE_Y / Y**2) * KP_y*(Y_d - Y) + KD_y*self.manager.simulator.camera.w \
+            # - (FOCAL_LENGTH * SIZE_C / C**2) * KP_c*(C_d - C) + KD_c*self.manager.simulator.camera.w
+
+        print(-(FOCAL_LENGTH * SIZE_X / X**2) * KP_x*(X_d - X) + KD_x*self.manager.simulator.camera.w, end=' ')
+        print(-(FOCAL_LENGTH * SIZE_Y / Y**2) * KP_y*(Y_d - Y) + KD_y*self.manager.simulator.camera.w, end=' ')
+        print(-(FOCAL_LENGTH * SIZE_C / C**2) * KP_c*(C_d - C) + KD_c*self.manager.simulator.camera.w, end=' ')
+        print(f'des XYC {X_d}, {Y_d}, {C_d}, meas_XYC {X}, {Y}, {C} comm_az {az} w {self.manager.simulator.camera.w}')
+
+        return ax, ay, az
 
 
 
