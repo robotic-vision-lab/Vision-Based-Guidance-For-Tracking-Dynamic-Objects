@@ -25,7 +25,7 @@ SCREEN_CENTER = (WIDTH//2, HEIGHT//2)
 SCREEN_DISPLAY_TITLE = "Car Simulation"
 SCREEN_BG_COLOR = DARK_GRAY
 SIMULATOR_ICON_IMG = 'seaprism.ico'
-SIMULATOR_TITLE = 'Simulator'
+SIMULATOR_TITLE = 'Simple'
 
 # camera image formation settings
 FOV = 47.0                                      # degrees
@@ -94,15 +94,15 @@ DRONE_VELOCITY_LIMIT = 500      # +/-
 DRONE_ACCELERATION_LIMIT = 20   # +/-
 DRONE_MASS = 4.3259
 DRONE_I_XX = 0.082
-DRONE_I_YY = 0.082
+DRONE_I_YY = 0.0845
 DRONE_I_ZZ = 0.1377
-K_P_PHI = 5
-K_P_THETA = 5
-K_P_PSI = 5
+K_P_PHI = 100
+K_P_THETA = 100
+K_P_PSI = 100
 K_P_Z = 1
-K_D_PHI = 2
-K_D_THETA = 2
-K_D_PSI = 2
+K_D_PHI = 10
+K_D_THETA = 10
+K_D_PSI = 10
 K_D_Z = 10.0
 
 # gravity
@@ -112,7 +112,7 @@ ACC_GRAVITY = 9.81
 TIME_FONT = 'consolas'
 TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY_2   # used for all simulator texts
-DELTA_TIME = 0.05           # used in full blocking mode
+DELTA_TIME = 0.01           # used in full blocking mode
 
 # Bounding box settings
 BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
