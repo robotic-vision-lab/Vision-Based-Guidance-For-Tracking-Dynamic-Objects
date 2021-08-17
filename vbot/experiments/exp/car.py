@@ -5,13 +5,13 @@ import pygame
 
 from .settings import *
 
-from .my_imports import load_image_rect
+from .my_imports import load_image_rect, scale_img
 
 class Car(pygame.sprite.Sprite):
     """Defines a car sprite.
     """
 
-    def __init__(self, simulator, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0, loaded_image_rect=None, traj=DEFAULT_TRAJECTORY):
+    def __init__(self, simulator, x, y, vx=0.0, vy=0.0, ax=0.0, ay=0.0, loaded_image_rect=None, img=CAR_IMG,traj=DEFAULT_TRAJECTORY):
         # assign itself to the all_sprites group
         self.groups = [simulator.all_sprites, simulator.car_sprites]
 
@@ -20,6 +20,7 @@ class Car(pygame.sprite.Sprite):
 
         # assign Sprite.image and Sprite.rect attributes for this Sprite
         self.image, self.rect = loaded_image_rect
+        self.img = img
 
         # set kinematics
         self.position = pygame.Vector2(x, y)
@@ -206,7 +207,8 @@ class Car(pygame.sprite.Sprite):
                 self.traj == TWO_HOLE_TRAJECTORY or 
                 self.traj == SQUIRCLE_TRAJECTORY):
             # load the unrotated image and rect
-            self.car_img_rect = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+            car_scale = (CAR_LENGTH / (CAR_LENGTH_PX * self.simulator.pxm_fac))
+            self.car_img_rect = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=car_scale)
             prev_center = self.car_img_rect[0].get_rect(center = self.car_img_rect[0].get_rect().center).center
             rot_img = pygame.transform.rotate(self.car_img_rect[0], degrees(self.angle))
             rot_img = rot_img.convert_alpha()
@@ -214,6 +216,12 @@ class Car(pygame.sprite.Sprite):
             self.car_img_rect = (rot_img, rot_rect)
             self.image, self.rect = self.car_img_rect
             self.update_rect()
+        else:
+            car_scale = (CAR_LENGTH / (CAR_LENGTH_PX * self.simulator.pxm_fac))
+            self.car_img_rect = load_image_rect(self.img, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+            self.image, self.rect = self.car_img_rect
+            self.update_rect()
+
 
     def update(self):
         """ update sprite attributes.
