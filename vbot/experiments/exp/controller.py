@@ -355,24 +355,24 @@ class Controller:
         SIZE_X = X*self.manager.simulator.pxm_fac
         SIZE_Y = Y*self.manager.simulator.pxm_fac
         SIZE_C = C*self.manager.simulator.pxm_fac
-        KP_x = 20
-        KP_y = 20
-        KP_c = 0.5
-        KD_x = 5
-        KD_y = 5
-        KD_c = 0.2
+        KP_x = 100
+        KP_y = 100
+        KP_c = 100
+        KD_x = 10
+        KD_y = 10
+        KD_c = 10
         X_d = WIDTH/3
         Y_d = HEIGHT/3
-        C_d = 0
+        C_d = HEIGHT/3
 
         az = -(FOCAL_LENGTH * SIZE_X / X**2) * KP_x*(X_d - X) + KD_x*self.manager.simulator.camera.w \
             - (FOCAL_LENGTH * SIZE_Y / Y**2) * KP_y*(Y_d - Y) + KD_y*self.manager.simulator.camera.w \
-            # - (FOCAL_LENGTH * SIZE_C / C**2) * KP_c*(C_d - C) + KD_c*self.manager.simulator.camera.w
+            - (FOCAL_LENGTH * SIZE_C / C**2) * KP_c*(min(0, C_d - C)) + KD_c*self.manager.simulator.camera.w
 
-        print(-(FOCAL_LENGTH * SIZE_X / X**2) * KP_x*(X_d - X) + KD_x*self.manager.simulator.camera.w, end=' ')
-        print(-(FOCAL_LENGTH * SIZE_Y / Y**2) * KP_y*(Y_d - Y) + KD_y*self.manager.simulator.camera.w, end=' ')
-        print(-(FOCAL_LENGTH * SIZE_C / C**2) * KP_c*(C_d - C) + KD_c*self.manager.simulator.camera.w, end=' ')
-        print(f'des XYC {X_d}, {Y_d}, {C_d}, meas_XYC {X}, {Y}, {C} comm_az {az} w {self.manager.simulator.camera.w}')
+        print(f'           des XYC-[{X_d:.2f}, {Y_d:.2f}, {C_d:.2f}], meas_XYC-[{X:.2f}, {Y:.2f}, {C:.2f}], comm_az={az:.4f}, w={self.manager.simulator.camera.w:.2f}', end=' ')
+        print(f'az_x={(FOCAL_LENGTH * SIZE_X / X**2) * KP_x*(X_d - X) + KD_x*self.manager.simulator.camera.w:.4f}, ', end=' ')
+        print(f'az_y={-(FOCAL_LENGTH * SIZE_Y / Y**2) * KP_y*(Y_d - Y) + KD_y*self.manager.simulator.camera.w:.4f}, ', end=' ')
+        print(f'az_c={-(FOCAL_LENGTH * SIZE_C / C**2) * KP_c*(min(0, C_d - C)) + KD_c*self.manager.simulator.camera.w:.4f}, ')
 
         return ax, ay, az
 

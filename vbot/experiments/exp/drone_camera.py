@@ -158,27 +158,27 @@ class DroneCamera(pygame.sprite.Sprite):
                 state = self.get_quadrotor_state()
 
                 # compute total thrust 
-                F_app = F #* ((i+1) / num_inner_loop)**2
+                F_app = F
 
-                # # evaluate dynamics and compute state dot
-                # state_dot = self.get_quadrotor_state_dot(state, F_app, tau_phi, tau_theta, tau_psi)
+                # evaluate dynamics and compute state dot
+                state_dot = self.get_quadrotor_state_dot(state, F_app, tau_phi, tau_theta, tau_psi)
 
-                # # euler integration
-                # state += state_dot/inner_loop_rate
+                # euler integration
+                state += state_dot/inner_loop_rate
 
-                # runge-kutta
-                k1 = self.get_quadrotor_state_dot(state, F_app, tau_phi, tau_theta, tau_psi)
-                k2 = self.get_quadrotor_state_dot(state + k1*(1/(2*inner_loop_rate)), F_app, tau_phi, tau_theta, tau_psi)
-                k3 = self.get_quadrotor_state_dot(state + k2*(1/(2*inner_loop_rate)), F_app, tau_phi, tau_theta, tau_psi)
-                k4 = self.get_quadrotor_state_dot(state + k3*(1/(inner_loop_rate)), F_app, tau_phi, tau_theta, tau_psi)
+                # # runge-kutta
+                # k1 = self.get_quadrotor_state_dot(state, F_app, tau_phi, tau_theta, tau_psi)
+                # k2 = self.get_quadrotor_state_dot(state + k1*(1/(2*inner_loop_rate)), F_app, tau_phi, tau_theta, tau_psi)
+                # k3 = self.get_quadrotor_state_dot(state + k2*(1/(2*inner_loop_rate)), F_app, tau_phi, tau_theta, tau_psi)
+                # k4 = self.get_quadrotor_state_dot(state + k3*(1/(inner_loop_rate)), F_app, tau_phi, tau_theta, tau_psi)
 
-                state += (k1 + 2*k2 + 2*k3 + k4) * (1/(6*inner_loop_rate))
+                # state += (k1 + 2*k2 + 2*k3 + k4) * (1/(6*inner_loop_rate))
 
                 # update state
                 self.update_quadrotor_state(state)
 
             self.print_states()
-            print(f'           {bf("comm_sig")}=({bf("F")}={F} {bf("τφ")}={tau_phi} {bf("τθ")}={tau_theta} {bf("τψ")}={tau_psi})')
+            print(f'           {bf("comm_sig")}=({bf("F")}={F:.4f} {bf("τφ")}={tau_phi:.4f} {bf("τθ")}={tau_theta:.4f} {bf("τψ")}={tau_psi:.4f})')
 
             # # construct Rotation matrix from Drone local NED to Drone body attached frame
             # N_R_A = np.array([[cos(self.theta)*cos(self.psi),                                           cos(self.theta)*sin(self.psi),                                           -sin(self.theta)],
@@ -200,6 +200,18 @@ class DroneCamera(pygame.sprite.Sprite):
 
 
     def get_quadrotor_state_dot(self, state, F, tau_phi, tau_theta, tau_psi):
+        """Given the state and actuation wrench, computes and returns state_dot
+
+        Args:
+            state (tuple): Tuple with 12 components of quadrotor state
+            F (float): Thrust force along k_A in body frame A
+            tau_phi (float): Rolling torque
+            tau_theta (float): Pitching torque
+            tau_psi (float): Yawing torque
+
+        Returns:
+            tuple: Tuple of with 12 components of quadrotor state dynamics
+        """
         # evaluate dynamics
         dpN,  dpE,    dpH   = self.evaluate_position_dynamics(phi=state[6], theta=state[7], psi=state[8], u=state[3], v=state[4], w=state[5])
         du,   dv,     dw    = self.evaluate_velocity_dynamics(u=state[3], v=state[4], w=state[5], p=state[9], q=state[10], r=state[11], phi=state[6], theta=state[7], F=F)
@@ -265,7 +277,7 @@ class DroneCamera(pygame.sprite.Sprite):
 
 
     def evaluate_velocity_dynamics(self, u, v, w, p, q, r, phi, theta, F):
-        """Evaluate dynamics of quadrotor velocity components u, v, w (body frame A)
+        """Evaluate dynamics of quadrotor body frame velocities u, v, w (body frame A)
 
         Args:
             u (float): velocity along i_A in body frame A
