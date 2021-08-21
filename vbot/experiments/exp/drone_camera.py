@@ -5,6 +5,7 @@ import pygame
 import numpy as np
 
 from .settings import *
+from .my_imports import bf
 
 class DroneCamera(pygame.sprite.Sprite):
     def __init__(self, simulator):
@@ -177,7 +178,7 @@ class DroneCamera(pygame.sprite.Sprite):
                 self.update_quadrotor_state(state)
 
             self.print_states()
-            print(f'           comm_sig=(F={F} τφ={tau_phi} τθ={tau_theta} τψ={tau_psi})')
+            print(f'           {bf("comm_sig")}=({bf("F")}={F} {bf("τφ")}={tau_phi} {bf("τθ")}={tau_theta} {bf("τψ")}={tau_psi})')
 
             # # construct Rotation matrix from Drone local NED to Drone body attached frame
             # N_R_A = np.array([[cos(self.theta)*cos(self.psi),                                           cos(self.theta)*sin(self.psi),                                           -sin(self.theta)],
@@ -339,12 +340,12 @@ class DroneCamera(pygame.sprite.Sprite):
                              [((self.INERTIA.Ixx - self.INERTIA.Iyy)/self.INERTIA.Izz)*p*q]])
 
         # compute F/m analog in Euler equations - τ/I
-        angular_accel = np.array([[(1/self.INERTIA.Ixx)*tau_phi],
+        euler_eom = np.array([[(1/self.INERTIA.Ixx)*tau_phi],
                                   [(1/self.INERTIA.Iyy)*tau_theta],
                                   [(1/self.INERTIA.Izz)*tau_psi]])
 
         # compute angular velocity rate dynamics
-        ang_vel_dot = coriolis + angular_accel
+        ang_vel_dot = euler_eom + coriolis
 
         # return p_dot, q_dot, r_dot
         return ang_vel_dot.flatten()
