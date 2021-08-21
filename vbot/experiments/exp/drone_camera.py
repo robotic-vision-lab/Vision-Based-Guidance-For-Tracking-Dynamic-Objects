@@ -199,6 +199,18 @@ class DroneCamera(pygame.sprite.Sprite):
 
 
     def get_quadrotor_state_dot(self, state, F, tau_phi, tau_theta, tau_psi):
+        """Given the state and actuation wrench, computes and returns state_dot
+
+        Args:
+            state (tuple): Tuple with 12 components of quadrotor state
+            F (float): Thrust force along k_A in body frame A
+            tau_phi (float): Rolling torque
+            tau_theta (float): Pitching torque
+            tau_psi (float): Yawing torque
+
+        Returns:
+            tuple: Tuple of with 12 components of quadrotor state dynamics
+        """
         # evaluate dynamics
         dpN,  dpE,    dpH   = self.evaluate_position_dynamics(phi=state[6], theta=state[7], psi=state[8], u=state[3], v=state[4], w=state[5])
         du,   dv,     dw    = self.evaluate_velocity_dynamics(u=state[3], v=state[4], w=state[5], p=state[9], q=state[10], r=state[11], phi=state[6], theta=state[7], F=F)
@@ -264,7 +276,7 @@ class DroneCamera(pygame.sprite.Sprite):
 
 
     def evaluate_velocity_dynamics(self, u, v, w, p, q, r, phi, theta, F):
-        """Evaluate dynamics of quadrotor velocity components u, v, w (body frame A)
+        """Evaluate dynamics of quadrotor body frame velocities u, v, w (body frame A)
 
         Args:
             u (float): velocity along i_A in body frame A
