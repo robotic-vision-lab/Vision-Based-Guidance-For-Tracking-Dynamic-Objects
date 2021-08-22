@@ -9,7 +9,7 @@ import numpy as np
 from .exp_manager import ExperimentManager
 from .settings import *
 
-from .my_imports import _prep_temp_folder
+from .my_imports import _prep_temp_folder, bf
 
 
 if __name__ == '__main__':
@@ -37,10 +37,10 @@ if __name__ == '__main__':
                                                use_true_kin=USE_TRUE_KINEMATICS,
                                                use_real_clock=USE_REAL_CLOCK,
                                                draw_occlusion_bars=DRAW_OCCLUSION_BARS)
-        print(f'\nExperiment started. [{time.strftime("%H:%M:%S")}]\n')
+        print(bf(f'\nExperiment started. [{time.strftime("%H:%M:%S")}]\n'))
         EXPERIMENT_MANAGER.run()
 
-        print(f'\n\nExperiment finished. [{time.strftime("%H:%M:%S")}]\n')
+        print(bf(f'\n\nExperiment finished. [{time.strftime("%H:%M:%S")}]\n'))
 
     if RUN_TRACK_PLOT:
         FILE = open('plot_info.csv', 'r')
