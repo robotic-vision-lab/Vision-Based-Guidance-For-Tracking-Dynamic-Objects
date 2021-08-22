@@ -5,7 +5,7 @@ import pygame
 import numpy as np
 
 from .settings import *
-from .my_imports import bf
+from .my_imports import bf, rb, mb, gb, yb, bb, cb, r, m, g, y, b, c, colored, cprint
 
 class DroneCamera(pygame.sprite.Sprite):
     def __init__(self, simulator):
@@ -178,7 +178,7 @@ class DroneCamera(pygame.sprite.Sprite):
                 self.update_quadrotor_state(state)
 
             self.print_states()
-            print(f'           {bf("comm_sig")}=({bf("F")}={F:.4f} {bf("τφ")}={tau_phi:.4f} {bf("τθ")}={tau_theta:.4f} {bf("τψ")}={tau_psi:.4f})')
+            print(f'            {g("comm_sig: F=")}{gb(f"{F:.4f}")}{g(", τφ=")}{gb(f"{tau_phi:.4f}")}{g(", τθ=")}{gb(f"{tau_theta:.4f}")}{g(", τψ=")}{gb(f"{tau_psi:.4f}")}')
 
             # # construct Rotation matrix from Drone local NED to Drone body attached frame
             # N_R_A = np.array([[cos(self.theta)*cos(self.psi),                                           cos(self.theta)*sin(self.psi),                                           -sin(self.theta)],
@@ -365,23 +365,20 @@ class DroneCamera(pygame.sprite.Sprite):
 
     def print_states(self):
         """helper function to print states"""
-        print(f'{self.simulator.time:.2f}secs: cam_origin=(' + 
-            f'{self.origin[0]:.1f}, ' + 
-        f'{self.origin[1]:.1f})  pos=(' +
-        f'{self.position[0]:.1f}, ' +
-        f'{self.position[1]:.1f}, ' +
-        f'{self.altitude:.1f})  vel=(' +
-        f'{self.velocity[0]:.1f}, ' +
-        f'{self.velocity[1]:.1f}, ' +
-        f'{self.vz:.1f})  ang_pos=(' +
-        f'{self.phi:.1f}, ' +
-        f'{self.theta:.1f}, ' +
-        f'{self.psi:.1f})  ang_vel=(' +
-        f'{self.p:.1f}, ' +
-        f'{self.q:.1f}, ' +
-        f'{self.r:.1f})' + 
-        f'  acc_command=({self.acceleration[0]:.2f}, {self.acceleration[1]:.2f}, {self.az:.2f})'
-        )
+        print(f'{cb(f"{self.simulator.time:.2f}")}{c(" secs: ")}' + 
+              f'{y("cam_origin=")}' + 
+              f'{yb(f"({self.origin[0]:.1f}, {self.origin[1]:.1f})  ")}' + 
+              f'{y("pos=")}' + 
+              f'{yb(f"({self.position[0]:.1f}, {self.position[1]:.1f}, {self.altitude:.1f})  ")}' +  
+              f'{y("vel=")}' + 
+              f'{yb(f"({self.velocity[0]:.1f}, {self.velocity[1]:.1f}, {self.vz:.1f})  ")}' +  
+              f'{y("ang_pos=")}' + 
+              f'{yb(f"({self.phi:.1f}, {self.theta:.1f}, {self.psi:.1f})  ")}' + 
+              f'{y("ang_vel=")}' + 
+              f'{yb(f"({self.p:.1f}, {self.q:.1f}, {self.r:.1f})  ")}' + 
+              f'{y("acc_command=")}' + 
+              f'{yb(f"({self.acceleration[0]:.2f}, {self.acceleration[1]:.2f}, {self.az:.2f})")}'
+            )
 
 
 
