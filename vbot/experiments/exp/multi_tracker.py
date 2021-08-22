@@ -1098,7 +1098,7 @@ class MultiTracker:
         img = cv.circle(img, SCREEN_CENTER, radius=1, color=DOT_COLOR, thickness=2)
 
         # put metrics text
-        # img = self.put_metrics(img, kin)
+        img = self.put_metrics(img)
 
         return img, mask
 
@@ -1114,7 +1114,7 @@ class MultiTracker:
         cv.imshow(self.win_name, img);cv.waitKey(1)
 
 
-    def put_metrics(self, img, k):
+    def put_metrics(self, img, k=None):
         """Helper function, put metrics and stuffs on opencv image.
 
         Args:
@@ -1192,16 +1192,16 @@ class MultiTracker:
             img = put_text(img, kin_str_15, (15, HEIGHT - 15),
                            font_scale=0.45, color=METRICS_COLOR, thickness=1)
 
-        occ_str_dict = {self._NO_OCC:'NO OCCLUSION', self._PARTIAL_OCC:'PARTIAL OCCLUSION', self._TOTAL_OCC:'TOTAL OCCLUSION'}
-        occ_color_dict = {self._NO_OCC:EMERALD_BGR, self._PARTIAL_OCC:MARIGOLD_BGR, self._TOTAL_OCC:VERMILION_BGR}
-        occ_str = occ_str_dict[self.target_occlusion_case_new]
-        occ_str_old = occ_str_dict[self.target_occlusion_case_old]
-        occ_color = occ_color_dict[self.target_occlusion_case_new]
-        occ_color_old = occ_color_dict[self.target_occlusion_case_old]
-        img = put_text(img, occ_str, (WIDTH//2 - 50, HEIGHT - 40),
-                           font_scale=0.55, color=occ_color, thickness=1)
-        img = put_text(img, occ_str_old, (WIDTH//2 - 30, HEIGHT - 15),
-                           font_scale=0.35, color=occ_color_old, thickness=1)
+            occ_str_dict = {self._NO_OCC:'NO OCCLUSION', self._PARTIAL_OCC:'PARTIAL OCCLUSION', self._TOTAL_OCC:'TOTAL OCCLUSION'}
+            occ_color_dict = {self._NO_OCC:EMERALD_BGR, self._PARTIAL_OCC:MARIGOLD_BGR, self._TOTAL_OCC:VERMILION_BGR}
+            occ_str = occ_str_dict[self.target_occlusion_case_new]
+            occ_str_old = occ_str_dict[self.target_occlusion_case_old]
+            occ_color = occ_color_dict[self.target_occlusion_case_new]
+            occ_color_old = occ_color_dict[self.target_occlusion_case_old]
+            img = put_text(img, occ_str, (WIDTH//2 - 50, HEIGHT - 40),
+                            font_scale=0.55, color=occ_color, thickness=1)
+            img = put_text(img, occ_str_old, (WIDTH//2 - 30, HEIGHT - 15),
+                            font_scale=0.35, color=occ_color_old, thickness=1)
         # if self.target_occlusion_case_new==self._TOTAL_OCC:
             # print(f"Total at {self.manager.simulator.time}")
         return img
