@@ -15,7 +15,21 @@ from .game_utils import (load_image_rect,                         #pylint: disab
                         scale_img,
                         ImageDumper)
 
-from .console_utils import bf
+from .console_utils import (bf,
+                            rb,
+                            mb,
+                            gb,
+                            yb,
+                            bb,
+                            cb,
+                            r,
+                            m,
+                            g,
+                            y,
+                            b,
+                            c,
+                            colored,
+                            cprint)
 
 # add vbot\ to sys.path
 vbot_path = os.path.abspath(os.path.join('..'))
