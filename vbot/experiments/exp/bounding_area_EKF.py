@@ -70,7 +70,7 @@ class BoundingAreaEKF:
 
         Args:
             width (float32): width of bounding area
-            heigth (float32): height of bounding area
+            height (float32): height of bounding area
             dist (float32): dist of bounding area
         """
         # make sure filter is initialized
@@ -88,8 +88,9 @@ class BoundingAreaEKF:
 
         # perform predictor and filter step
         self.preprocess()
-        self.estimate_x()
-        self.estimate_y()
+        self.estimate_width()
+        self.estimate_height()
+        self.estimate_dist()
 
         # remember state estimations
         self.old_width = self.prev_width
