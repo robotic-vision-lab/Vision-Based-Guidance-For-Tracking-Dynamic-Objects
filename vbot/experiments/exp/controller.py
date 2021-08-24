@@ -12,6 +12,13 @@ class Controller:
         self.R = CAR_RADIUS
         self.f = None
 
+        self.e_x_prev = 0.0
+        self.e_y_prev = 0.0
+        self.e_c_prev = 0.0
+        self.e_x_sum = 0.0
+        self.e_y_sum = 0.0
+        self.e_c_sum = 0.0
+
 
     @staticmethod
     def sat(x, bound):
@@ -352,30 +359,48 @@ class Controller:
         x_max, y_max = self.manager.tracking_manager.p2
         X = x_max - x_min
         Y = y_max - y_min
-        C = ((WIDTH - x_min - x_max)**2 + (HEIGHT - y_min - y_max)**2)**0.5
-        SIZE_X = X*self.manager.simulator.pxm_fac
-        SIZE_Y = Y*self.manager.simulator.pxm_fac
-        SIZE_C = C*self.manager.simulator.pxm_fac
+        C = (((WIDTH - x_min - x_max)**2 + (HEIGHT - y_min - y_max)**2)**0.5)/2
+        X_W = X*self.manager.simulator.pxm_fac
+        Y_W = Y*self.manager.simulator.pxm_fac
+        C_W = C*self.manager.simulator.pxm_fac
+
         KP_x = 100
         KP_y = 100
-        KP_c = 100
-        KD_x = 10
-        KD_y = 10
-        KD_c = 10
+        KP_c = 50
+        KD_x = 5
+        KD_y = 5
+        KD_c = 1
         X_d = WIDTH/3
         Y_d = HEIGHT/3
-        C_d = HEIGHT/3
+        C_d = HEIGHT*(1/8)
 
-        az = -(FOCAL_LENGTH * SIZE_X / X**2) * KP_x*(X_d - X) + KD_x*self.manager.simulator.camera.w \
-            - (FOCAL_LENGTH * SIZE_Y / Y**2) * KP_y*(Y_d - Y) + KD_y*self.manager.simulator.camera.w \
-            - (FOCAL_LENGTH * SIZE_C / C**2) * KP_c*(min(0, C_d - C)) + KD_c*self.manager.simulator.camera.w
+        e_x = X_d - X
+        e_y = Y_d - Y
+        e_c = C_d - C
 
-        print(f'{m("            des XYC-")}{mb(f"[{X_d:.2f}, {Y_d:.2f}, {C_d:.2f}]")}{m(", meas_XYC-")}{mb(f"[{X:.2f}, {Y:.2f}, {C:.2f}]")}{m(", comm_az=")}{mb(f"{az:.4f}")}{m(", w=")}{mb(f"{self.manager.simulator.camera.w:.2f}")}', end=' ')
-        print(f'{m("az_x=")}{mb(f"{(FOCAL_LENGTH * SIZE_X / X**2) * KP_x*(X_d - X) + KD_x*self.manager.simulator.camera.w:.4f}, ")}', end=' ')
-        print(f'{m("az_y=")}{mb(f"{-(FOCAL_LENGTH * SIZE_Y / Y**2) * KP_y*(Y_d - Y) + KD_y*self.manager.simulator.camera.w:.4f}, ")}', end=' ')
-        print(f'{m("az_c=")}{mb(f"{-(FOCAL_LENGTH * SIZE_C / C**2) * KP_c*(min(0, C_d - C)) + KD_c*self.manager.simulator.camera.w:.4f}, ")}')
+        vz = self.manager.simulator.camera.vz
+        vz_2 = vz**2 * np.sign(vz)
+        az_x = -(FOCAL_LENGTH * X_W / X**2) * KP_x*(X_d - X) - (FOCAL_LENGTH * X_W / X**2) * KD_x*(self.e_x_prev - e_x) #- 2*(((vz*X)**2)/(FOCAL_LENGTH*X_W))*np.sign(vz)
+        az_y = -(FOCAL_LENGTH * X_W / Y**2) * KP_y*(Y_d - Y) - (FOCAL_LENGTH * X_W / Y**2) * KD_y*(self.e_y_prev - e_y) #- 2*(((vz*Y)**2)/(FOCAL_LENGTH*Y_W))*np.sign(vz)
+        az_c = -(FOCAL_LENGTH * X_W / C**2) * KP_c*(C_d - C) - (FOCAL_LENGTH * X_W / C**2) * KD_c*(self.e_c_prev - e_c) #- 2*(((vz*C)**2)/(FOCAL_LENGTH*C_W))*np.sign(vz)
+
+        self.e_x_prev = e_x
+        self.e_y_prev = e_y
+        self.e_c_prev = e_c
+
+
+
+        az = az_x + az_y + az_c
+
+        az = self.sat(az, 10)
+
+        print(f'{g("            XYC_des-")}{gb(f"[{X_d:.2f}, {Y_d:.2f}, {C_d:.2f}]")}{g(", XYC_meas-")}{gb(f"[{X:.2f}, {Y:.2f}, {C:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
+        print(f'{g(", az_x=")}{gb(f"{az_x:.4f}")}', end=' ')
+        print(f'{g("+ az_y=")}{gb(f"{az_y:.4f}")}', end=' ')
+        print(f'{g("+ az_c=")}{gb(f"{az_c:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
 
         return ax, ay, az
+        # return 0, 0, 0
 
 
 
