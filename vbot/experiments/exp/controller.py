@@ -369,10 +369,10 @@ class Controller:
 
         KP_x = 100
         KP_y = 100
-        KP_c = 50
-        KD_x = 5
-        KD_y = 5
-        KD_c = 1
+        KP_c = 100
+        KD_x = 10
+        KD_y = 10
+        KD_c = 10
         X_d = WIDTH/3
         Y_d = HEIGHT/3
         C_d = HEIGHT*(1/8)
@@ -399,8 +399,10 @@ class Controller:
         az_y = -FY * KP_y * (Y_d - Y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y
         az_c = -FX * KP_c * (C_d - C) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C
 
+        a = np.array([az_x, az_y, az_c])
+        az = a[np.argmax(abs(a))]
 
-        az = az_x + az_y + az_c
+        # az = az_x + az_y + 0
 
         az = self.sat(az, 10)
 
