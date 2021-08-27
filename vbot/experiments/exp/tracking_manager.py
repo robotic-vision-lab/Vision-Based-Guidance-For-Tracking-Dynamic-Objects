@@ -6,6 +6,7 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 from pygame.locals import *
 from .ellipse import Ellipse2D
+from .bounding_area_EKF import BoundingAreaEKF
 from .settings import *
 
 
@@ -17,6 +18,7 @@ class TrackingManager:
         self.exp_manager = exp_manager
         self.targets = None
         self.ellipse = Ellipse2D(exp_manager, self)
+        self.bounding_area_EKF = BoundingAreaEKF(self.exp_manager)
 
         self.ellipse_params_meas = None
         self.ellipse_params_est = None

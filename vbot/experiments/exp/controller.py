@@ -364,6 +364,9 @@ class Controller:
         Y_W = Y*self.manager.simulator.pxm_fac
         C_W = C*self.manager.simulator.pxm_fac
 
+        self.manager.tracking_manager.bounding_area_EKF.add(X, Y, C)
+        X, Y, C, X_dot, Y_dot, C_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
+
         KP_x = 100
         KP_y = 100
         KP_c = 50
@@ -399,7 +402,7 @@ class Controller:
         print(f'{g("+ az_y=")}{gb(f"{az_y:.4f}")}', end=' ')
         print(f'{g("+ az_c=")}{gb(f"{az_c:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
 
-        return ax, ay, 0
+        return ax, ay, az
         # return 0, 0, 0
 
 
