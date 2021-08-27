@@ -256,7 +256,7 @@ class DroneCamera(pygame.sprite.Sprite):
                                [cos(theta)*sin(psi), sin(phi)*sin(theta)*sin(psi)+cos(phi)*cos(psi), cos(phi)*sin(theta)*sin(psi)-sin(phi)*cos(psi)],
                                [-sin(theta),         sin(phi)*cos(theta),                            cos(phi)*cos(theta)]])
         
-        # transform and compute velocities of inertial frame quantities pN, pE and h
+        # transform and compute velocities of inertial frame quantities pN, pE and h (vx, vy, vz)
         vel_NEU = self.A_R_N @ np.array([[u],
                                          [v],
                                          [w]])

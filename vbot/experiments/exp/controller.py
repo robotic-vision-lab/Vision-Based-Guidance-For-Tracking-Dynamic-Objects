@@ -399,7 +399,7 @@ class Controller:
         print(f'{g("+ az_y=")}{gb(f"{az_y:.4f}")}', end=' ')
         print(f'{g("+ az_c=")}{gb(f"{az_c:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
 
-        return ax, ay, az
+        return ax, ay, 0
         # return 0, 0, 0
 
 
