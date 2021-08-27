@@ -352,30 +352,31 @@ class Controller:
         x_max, y_max = self.manager.tracking_manager.p2
         X = x_max - x_min
         Y = y_max - y_min
-        C = ((WIDTH - x_min - x_max)**2 + (HEIGHT - y_min - y_max)**2)**0.5
+        C = (((WIDTH - x_min - x_max)**2 + (HEIGHT - y_min - y_max)**2)**0.5)/2
         SIZE_X = X*self.manager.simulator.pxm_fac
         SIZE_Y = Y*self.manager.simulator.pxm_fac
         SIZE_C = C*self.manager.simulator.pxm_fac
         KP_x = 100
         KP_y = 100
-        KP_c = 100
+        KP_c = 250
         KD_x = 10
         KD_y = 10
         KD_c = 10
         X_d = WIDTH/3
         Y_d = HEIGHT/3
-        C_d = HEIGHT/3
+        C_d = HEIGHT*(1/6)
 
         az = -(FOCAL_LENGTH * SIZE_X / X**2) * KP_x*(X_d - X) + KD_x*self.manager.simulator.camera.w \
             - (FOCAL_LENGTH * SIZE_Y / Y**2) * KP_y*(Y_d - Y) + KD_y*self.manager.simulator.camera.w \
             - (FOCAL_LENGTH * SIZE_C / C**2) * KP_c*(min(0, C_d - C)) + KD_c*self.manager.simulator.camera.w
 
         print(f'{m("            des XYC-")}{mb(f"[{X_d:.2f}, {Y_d:.2f}, {C_d:.2f}]")}{m(", meas_XYC-")}{mb(f"[{X:.2f}, {Y:.2f}, {C:.2f}]")}{m(", comm_az=")}{mb(f"{az:.4f}")}{m(", w=")}{mb(f"{self.manager.simulator.camera.w:.2f}")}', end=' ')
-        print(f'{m("az_x=")}{mb(f"{(FOCAL_LENGTH * SIZE_X / X**2) * KP_x*(X_d - X) + KD_x*self.manager.simulator.camera.w:.4f}, ")}', end=' ')
+        print(f'{m("az_x=")}{mb(f"{-(FOCAL_LENGTH * SIZE_X / X**2) * KP_x*(X_d - X) + KD_x*self.manager.simulator.camera.w:.4f}, ")}', end=' ')
         print(f'{m("az_y=")}{mb(f"{-(FOCAL_LENGTH * SIZE_Y / Y**2) * KP_y*(Y_d - Y) + KD_y*self.manager.simulator.camera.w:.4f}, ")}', end=' ')
-        print(f'{m("az_c=")}{mb(f"{-(FOCAL_LENGTH * SIZE_C / C**2) * KP_c*(min(0, C_d - C)) + KD_c*self.manager.simulator.camera.w:.4f}, ")}')
+        print(f'{m("az_c=")}{mb(f"{-(FOCAL_LENGTH * SIZE_C / C**2) * KP_c*(C_d - C) + KD_c*self.manager.simulator.camera.w:.4f}, ")}')
 
-        return ax, ay, az
+        # return ax, ay, az
+        return 0,0,0
 
 
 

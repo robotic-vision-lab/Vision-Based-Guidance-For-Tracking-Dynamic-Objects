@@ -160,19 +160,19 @@ class DroneCamera(pygame.sprite.Sprite):
                 # compute total thrust 
                 F_app = F
 
-                # evaluate dynamics and compute state dot
-                state_dot = self.get_quadrotor_state_dot(state, F_app, tau_phi, tau_theta, tau_psi)
+                # # evaluate dynamics and compute state dot
+                # state_dot = self.get_quadrotor_state_dot(state, F_app, tau_phi, tau_theta, tau_psi)
 
-                # euler integration
-                state += state_dot/inner_loop_rate
+                # # euler integration
+                # state += state_dot/inner_loop_rate
 
-                # # runge-kutta
-                # k1 = self.get_quadrotor_state_dot(state, F_app, tau_phi, tau_theta, tau_psi)
-                # k2 = self.get_quadrotor_state_dot(state + k1*(1/(2*inner_loop_rate)), F_app, tau_phi, tau_theta, tau_psi)
-                # k3 = self.get_quadrotor_state_dot(state + k2*(1/(2*inner_loop_rate)), F_app, tau_phi, tau_theta, tau_psi)
-                # k4 = self.get_quadrotor_state_dot(state + k3*(1/(inner_loop_rate)), F_app, tau_phi, tau_theta, tau_psi)
+                # runge-kutta
+                k1 = self.get_quadrotor_state_dot(state, F_app, tau_phi, tau_theta, tau_psi)
+                k2 = self.get_quadrotor_state_dot(state + k1*(1/(2*inner_loop_rate)), F_app, tau_phi, tau_theta, tau_psi)
+                k3 = self.get_quadrotor_state_dot(state + k2*(1/(2*inner_loop_rate)), F_app, tau_phi, tau_theta, tau_psi)
+                k4 = self.get_quadrotor_state_dot(state + k3*(1/(inner_loop_rate)), F_app, tau_phi, tau_theta, tau_psi)
 
-                # state += (k1 + 2*k2 + 2*k3 + k4) * (1/(6*inner_loop_rate))
+                state += (k1 + 2*k2 + 2*k3 + k4) * (1/(6*inner_loop_rate))
 
                 # update state
                 self.update_quadrotor_state(state)
