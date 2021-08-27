@@ -377,20 +377,27 @@ class Controller:
         Y_d = HEIGHT/3
         C_d = HEIGHT*(1/8)
 
-        e_x = X_d - X
-        e_y = Y_d - Y
-        e_c = C_d - C
+        # e_x = X_d - X
+        # e_y = Y_d - Y
+        # e_c = C_d - C
 
         vz = self.manager.simulator.camera.vz
         vz_2 = vz**2 * np.sign(vz)
-        az_x = -(FOCAL_LENGTH * X_W / X**2) * KP_x*(X_d - X) - (FOCAL_LENGTH * X_W / X**2) * KD_x*(self.e_x_prev - e_x) #- 2*(((vz*X)**2)/(FOCAL_LENGTH*X_W))*np.sign(vz)
-        az_y = -(FOCAL_LENGTH * X_W / Y**2) * KP_y*(Y_d - Y) - (FOCAL_LENGTH * X_W / Y**2) * KD_y*(self.e_y_prev - e_y) #- 2*(((vz*Y)**2)/(FOCAL_LENGTH*Y_W))*np.sign(vz)
-        az_c = -(FOCAL_LENGTH * X_W / C**2) * KP_c*(C_d - C) - (FOCAL_LENGTH * X_W / C**2) * KD_c*(self.e_c_prev - e_c) #- 2*(((vz*C)**2)/(FOCAL_LENGTH*C_W))*np.sign(vz)
+        # az_x = -(FOCAL_LENGTH * X_W / X**2) * KP_x*(X_d - X) - (FOCAL_LENGTH * X_W / X**2) * KD_x*(self.e_x_prev - e_x) #- 2*(((vz*X)**2)/(FOCAL_LENGTH*X_W))*np.sign(vz)
+        # az_y = -(FOCAL_LENGTH * X_W / Y**2) * KP_y*(Y_d - Y) - (FOCAL_LENGTH * X_W / Y**2) * KD_y*(self.e_y_prev - e_y) #- 2*(((vz*Y)**2)/(FOCAL_LENGTH*Y_W))*np.sign(vz)
+        # az_c = -(FOCAL_LENGTH * X_W / C**2) * KP_c*(C_d - C) - (FOCAL_LENGTH * X_W / C**2) * KD_c*(self.e_c_prev - e_c) #- 2*(((vz*C)**2)/(FOCAL_LENGTH*C_W))*np.sign(vz)
 
-        self.e_x_prev = e_x
-        self.e_y_prev = e_y
-        self.e_c_prev = e_c
+        # self.e_x_prev = e_x
+        # self.e_y_prev = e_y
+        # self.e_c_prev = e_c
+        
+        FX = ((FOCAL_LENGTH * X_W) / X**2)
+        FY = ((FOCAL_LENGTH * Y_W) / Y**2)
+        FC = ((FOCAL_LENGTH * C_W) / C**2)
 
+        az_x = -FX * KP_x * (X_d - X) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X
+        az_y = -FY * KP_y * (Y_d - Y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y
+        az_c = -FX * KP_c * (C_d - C) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C
 
 
         az = az_x + az_y + az_c
