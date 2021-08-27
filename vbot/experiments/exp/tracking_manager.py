@@ -111,7 +111,7 @@ class TrackingManager:
         ellipse_focal_point_1 = tuple(map(int, ellipse_params[4]))
         ellipse_focal_point_2 = tuple(map(int, ellipse_params[5]))
 
-        # focal point estimations must be called before calling display
+        # note: focal point estimations must be called before calling display
         ellipse_focal_point_1_est = (self.ellipse_params_est[0],
                                     self.ellipse_params_est[3])
         ellipse_focal_point_2_est = (self.ellipse_params_est[6],
