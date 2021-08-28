@@ -19,6 +19,7 @@ class Controller:
         self.e_y_sum = 0.0
         self.e_c_sum = 0.0
 
+        self.xyc_ind_prev = 0
 
     @staticmethod
     def sat(x, bound):
@@ -367,19 +368,22 @@ class Controller:
         self.manager.tracking_manager.bounding_area_EKF.add(X, Y, C)
         X, Y, C, X_dot, Y_dot, C_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
 
-        KP_x = 100
-        KP_y = 100
-        KP_c = 100
-        KD_x = 10
-        KD_y = 10
-        KD_c = 10
+        KP_x = 150
+        KP_y = 150
+        KP_c = 150
+        KD_x = 15
+        KD_y = 15
+        KD_c = 15
+        KI_x = 0.5
+        KI_y = 0.5
+        KI_c = 0.5
         X_d = WIDTH/3
-        Y_d = HEIGHT/3
-        C_d = HEIGHT*(1/8)
+        Y_d = WIDTH/3
+        C_d = HEIGHT*(1/4)
 
-        # e_x = X_d - X
-        # e_y = Y_d - Y
-        # e_c = C_d - C
+        e_x = X_d - X
+        e_y = Y_d - Y
+        e_c = C_d - C
 
         vz = self.manager.simulator.camera.vz
         vz_2 = vz**2 * np.sign(vz)
@@ -387,20 +391,35 @@ class Controller:
         # az_y = -(FOCAL_LENGTH * X_W / Y**2) * KP_y*(Y_d - Y) - (FOCAL_LENGTH * X_W / Y**2) * KD_y*(self.e_y_prev - e_y) #- 2*(((vz*Y)**2)/(FOCAL_LENGTH*Y_W))*np.sign(vz)
         # az_c = -(FOCAL_LENGTH * X_W / C**2) * KP_c*(C_d - C) - (FOCAL_LENGTH * X_W / C**2) * KD_c*(self.e_c_prev - e_c) #- 2*(((vz*C)**2)/(FOCAL_LENGTH*C_W))*np.sign(vz)
 
-        # self.e_x_prev = e_x
-        # self.e_y_prev = e_y
-        # self.e_c_prev = e_c
+
         
         FX = ((FOCAL_LENGTH * X_W) / X**2)
         FY = ((FOCAL_LENGTH * Y_W) / Y**2)
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
-        az_x = -FX * KP_x * (X_d - X) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X
-        az_y = -FY * KP_y * (Y_d - Y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y
-        az_c = -FX * KP_c * (C_d - C) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C
+        az_x = -FX * KP_x * (X_d - X) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X - FX * KI_x * self.e_x_sum
+        az_y = -FY * KP_y * (Y_d - Y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y - FY * KI_y * self.e_y_sum
+        az_c = -FX * KP_c * (C_d - C) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C - FC * KI_c * self.e_c_sum
+
+        self.e_x_prev = e_x
+        self.e_y_prev = e_y
+        self.e_c_prev = e_c
+        self.e_x_sum += e_x
+        self.e_y_sum += e_y
+        self.e_c_sum += e_c
 
         a = np.array([az_x, az_y, az_c])
-        az = a[np.argmax(abs(a))]
+        xyc_ind = np.argmax(abs(a))
+        az = a[xyc_ind]
+        if not self.xyc_ind_prev==xyc_ind:
+            if xyc_ind == 0:
+                self.e_x_sum = 0.0
+            elif xyc_ind == 1:
+                self.e_y_sum = 0.0
+            else:
+                self.e_c_sum = 0.0
+
+        self.xyc_ind_prev = xyc_ind
 
         # az = az_x + az_y + 0
 
