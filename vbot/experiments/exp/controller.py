@@ -368,15 +368,15 @@ class Controller:
         self.manager.tracking_manager.bounding_area_EKF.add(X, Y, C)
         X, Y, C, X_dot, Y_dot, C_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
 
-        KP_x = 150
-        KP_y = 150
-        KP_c = 150
+        KP_x = 250
+        KP_y = 250
+        KP_c = 400
         KD_x = 15
         KD_y = 15
         KD_c = 15
-        KI_x = 0.5
-        KI_y = 0.5
-        KI_c = 0.5
+        KI_x = 5
+        KI_y = 5
+        KI_c = 5
         X_d = WIDTH/3
         Y_d = WIDTH/3
         C_d = HEIGHT*(1/4)
@@ -407,18 +407,24 @@ class Controller:
         self.e_x_sum += e_x
         self.e_y_sum += e_y
         self.e_c_sum += e_c
+        self.e_x_sum = self.sat(self.e_x_sum, 1000)
+        self.e_y_sum = self.sat(self.e_y_sum, 1000)
+        self.e_c_sum = self.sat(self.e_c_sum, 1000)
 
         a = np.array([az_x, az_y, az_c])
         xyc_ind = np.argmax(abs(a))
         az = a[xyc_ind]
         if not self.xyc_ind_prev==xyc_ind:
-            if xyc_ind == 0:
-                self.e_x_sum = 0.0
-            elif xyc_ind == 1:
-                self.e_y_sum = 0.0
-            else:
-                self.e_c_sum = 0.0
-
+            self.e_x_sum = 0.0
+            self.e_y_sum = 0.0
+            self.e_c_sum = 0.0
+            # if xyc_ind == 0:
+            #     self.e_x_sum = 0.0
+            # elif xyc_ind == 1:
+            #     self.e_y_sum = 0.0
+            # else:
+            #     self.e_c_sum = 0.0
+        print(f'            previous index-{self.xyc_ind_prev}, current index-{xyc_ind}')
         self.xyc_ind_prev = xyc_ind
 
         # az = az_x + az_y + 0
@@ -428,7 +434,9 @@ class Controller:
         print(f'{g("            XYC_des-")}{gb(f"[{X_d:.2f}, {Y_d:.2f}, {C_d:.2f}]")}{g(", XYC_meas-")}{gb(f"[{X:.2f}, {Y:.2f}, {C:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
         print(f'{g(", az_x=")}{gb(f"{az_x:.4f}")}', end=' ')
         print(f'{g("+ az_y=")}{gb(f"{az_y:.4f}")}', end=' ')
-        print(f'{g("+ az_c=")}{gb(f"{az_c:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
+        print(f'{g("+ az_c=")}{gb(f"{az_c:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}', end='')
+        print(f'{g(", err_X=")}{gb(f"{e_x:0.2f}")}{g(", err_Y=")}{gb(f"{e_y:0.2f}")}{g(", err_C=")}{gb(f"{e_c:0.2f}")}', end='')
+        print(f'{g(", err_X_sum=")}{gb(f"{self.e_x_sum:0.2f}")}{g(", err_Y_sum=")}{gb(f"{self.e_y_sum:0.2f}")}{g(", err_C_sum=")}{gb(f"{self.e_c_sum:0.2f}")}')
 
         return ax, ay, az
         # return 0, 0, 0
