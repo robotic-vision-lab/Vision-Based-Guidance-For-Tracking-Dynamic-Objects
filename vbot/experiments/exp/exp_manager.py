@@ -18,7 +18,8 @@ from .target import Target
 
 from .settings import *
 from .my_imports import create_video_from_images
-
+from .plot_manager import PlotManager
+import matplotlib.pyplot as plt
 
 class ExperimentManager:
     """
@@ -68,6 +69,7 @@ class ExperimentManager:
         self.multi_tracker = MultiTracker(self)
         self.tracking_manager = TrackingManager(self)
         self.controller = Controller(self)
+        self.plot_manager = PlotManager(self)
 
         # move tracker display next to simulator 
         cv.namedWindow(self.multi_tracker.win_name)
@@ -81,6 +83,9 @@ class ExperimentManager:
 
         if self.save_on:
             self.simulator.save_screen = True
+
+        plt.ion()
+        self.ax = []
 
     def get_drone_cam_field_of_view(self):
         """helper function returns field of view (width, height) in meters
@@ -332,6 +337,7 @@ class ExperimentManager:
                                                                            self.tracking_manager.ellipse_params_meas[0])
 
                         self.simulator.camera.apply_accleration_command(ax, ay, az)
+                        # self.plot_manager.plot_fp()
 
             self.simulator.draw_extra()
             self.simulator.show_drawing()
