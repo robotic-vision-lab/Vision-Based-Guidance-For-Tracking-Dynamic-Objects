@@ -28,7 +28,7 @@ SIMULATOR_ICON_IMG = 'seaprism.ico'
 SIMULATOR_TITLE = 'Simple'
 
 # camera image formation settings
-FOV = 47.0                                      # degrees
+FOV = 50.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
 ALTITUDE = 150.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH

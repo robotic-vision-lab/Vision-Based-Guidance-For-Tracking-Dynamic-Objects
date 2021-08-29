@@ -397,9 +397,15 @@ class Controller:
         FY = ((FOCAL_LENGTH * Y_W) / Y**2)
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
-        az_x = -FX * KP_x * (X_d - X) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X #- FX * KI_x * self.e_x_sum
-        az_y = -FY * KP_y * (Y_d - Y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y #- FY * KI_y * self.e_y_sum
-        az_c = -FX * KP_c * (C_d - C) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
+        az_x = -FX * KP_x * (e_x) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X #- FX * KI_x * self.e_x_sum
+        az_y = -FY * KP_y * (e_y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y #- FY * KI_y * self.e_y_sum
+        az_c = -FX * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
+
+        az_x = -FX * KP_x * (e_x) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X #- FX * KI_x * self.e_x_sum
+        az_y = -FY * KP_y * (e_y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y #- FY * KI_y * self.e_y_sum
+        az_c = -FX * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
+
+
 
         self.e_x_prev = e_x
         self.e_y_prev = e_y
