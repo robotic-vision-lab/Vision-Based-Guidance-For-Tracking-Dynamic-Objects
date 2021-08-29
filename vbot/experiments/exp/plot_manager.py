@@ -21,8 +21,8 @@ class PlotManager:
         fp2x = self.exp_manager.tracking_manager.ellipse_params_est[6]
         fp2y = self.exp_manager.tracking_manager.ellipse_params_est[9]
 
-        self.axs_fp.plot(fp1x, fp1y, 'b.')
-        self.axs_fp.plot(fp2x, fp2y, 'r.')
+        self.axs_fp.plot(fp1x, fp1y, color='blue', marker='.', markersize=3)
+        self.axs_fp.plot(fp2x, fp2y, color='red', marker='.', markersize=3)
         plt.pause(0.00001)
 
 
