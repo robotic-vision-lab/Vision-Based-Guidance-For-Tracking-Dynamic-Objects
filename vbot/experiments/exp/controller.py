@@ -397,9 +397,9 @@ class Controller:
         FY = ((FOCAL_LENGTH * Y_W) / Y**2)
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
-        az_x = -FX * KP_x * (X_d - X) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X - FX * KI_x * self.e_x_sum
-        az_y = -FY * KP_y * (Y_d - Y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y - FY * KI_y * self.e_y_sum
-        az_c = -FX * KP_c * (C_d - C) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C - FC * KI_c * self.e_c_sum
+        az_x = -FX * KP_x * (X_d - X) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X #- FX * KI_x * self.e_x_sum
+        az_y = -FY * KP_y * (Y_d - Y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y #- FY * KI_y * self.e_y_sum
+        az_c = -FX * KP_c * (C_d - C) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
 
         self.e_x_prev = e_x
         self.e_y_prev = e_y
@@ -413,9 +413,11 @@ class Controller:
         az = a[xyc_ind]
         if not self.xyc_ind_prev==xyc_ind:
             if xyc_ind == 0:
-                self.e_x_sum = 0.0
+                # self.e_x_sum = 0.0
+                pass
             elif xyc_ind == 1:
-                self.e_y_sum = 0.0
+                # self.e_y_sum = 0.0
+                pass
             else:
                 self.e_c_sum = 0.0
 
@@ -423,15 +425,14 @@ class Controller:
 
         # az = az_x + az_y + 0
 
-        az = self.sat(az, 10)
+        az = self.sat(az, 12)
 
-        print(f'{g("            XYC_des-")}{gb(f"[{X_d:.2f}, {Y_d:.2f}, {C_d:.2f}]")}{g(", XYC_meas-")}{gb(f"[{X:.2f}, {Y:.2f}, {C:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
-        print(f'{g(", az_x=")}{gb(f"{az_x:.4f}")}', end=' ')
-        print(f'{g("+ az_y=")}{gb(f"{az_y:.4f}")}', end=' ')
-        print(f'{g("+ az_c=")}{gb(f"{az_c:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
+        # print(f'{g("            XYC_des-")}{gb(f"[{X_d:.2f}, {Y_d:.2f}, {C_d:.2f}]")}{g(", XYC_meas-")}{gb(f"[{X:.2f}, {Y:.2f}, {C:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
+        # print(f'{g(", az_x=")}{gb(f"{az_x:.4f}")}', end=' ')
+        # print(f'{g("+ az_y=")}{gb(f"{az_y:.4f}")}', end=' ')
+        # print(f'{g("+ az_c=")}{gb(f"{az_c:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
 
         return ax, ay, az
-        # return 0, 0, 0
 
 
 
