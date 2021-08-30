@@ -411,17 +411,6 @@ class Controller:
         self.e_z_prev = e_Z_W
         self.e_s_sum += e_s
         self.e_c_sum += e_c
-<<<<<<< HEAD
-
-        a = np.array([az_x, az_y, az_c])
-        xyc_ind = np.argmax(abs(a))
-        az = a[xyc_ind]
-        if not self.xyc_ind_prev==xyc_ind:
-            if xyc_ind == 0:
-                self.e_x_sum = 0.0
-                # pass
-            elif xyc_ind == 1:
-=======
         self.e_z_sum += e_Z_W
 
         a = np.array([az_s, az_c, az_z])
@@ -432,7 +421,6 @@ class Controller:
                 self.e_x_sum = 0.0
                 # pass
             elif scz_ind == 1:
->>>>>>> 729df82f0d3cafaab7f07f7261a134f877a4ef6d
                 self.e_y_sum = 0.0
                 # pass
             else:
@@ -444,17 +432,10 @@ class Controller:
 
         az = self.sat(az, 12)
 
-<<<<<<< HEAD
-        print(f'{g("            XYC_des-")}{gb(f"[{X_d:.2f}, {Y_d:.2f}, {C_d:.2f}]")}{g(", XYC_meas-")}{gb(f"[{X:.2f}, {Y:.2f}, {C:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
-        print(f'{g(", az_x=")}{gb(f"{az_x:.4f}")}', end=' ')
-        print(f'{g("+ az_y=")}{gb(f"{az_y:.4f}")}', end=' ')
-        print(f'{g("+ az_c=")}{gb(f"{az_c:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
-=======
         # print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
         # print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
         # print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
         # print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
->>>>>>> 729df82f0d3cafaab7f07f7261a134f877a4ef6d
 
         return ax, ay, az
 
