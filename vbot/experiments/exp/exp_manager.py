@@ -337,7 +337,7 @@ class ExperimentManager:
                                                                            self.tracking_manager.ellipse_params_meas[0])
 
                         self.simulator.camera.apply_accleration_command(ax, ay, az)
-                        # self.plot_manager.plot_fp()
+                        self.plot_manager.plot()
 
             self.simulator.draw_extra()
             self.simulator.show_drawing()
