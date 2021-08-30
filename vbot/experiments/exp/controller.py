@@ -360,25 +360,30 @@ class Controller:
         x_max, y_max = self.manager.tracking_manager.p2
         X = x_max - x_min
         Y = y_max - y_min
+        S = np.linalg.norm((X, Y))
         C = (((WIDTH - x_min - x_max)**2 + (HEIGHT - y_min - y_max)**2)**0.5)/2
         X_W = X*self.manager.simulator.pxm_fac
         Y_W = Y*self.manager.simulator.pxm_fac
+        S_W = S*self.manager.simulator.pxm_fac
+        Y_W = S_W
         C_W = C*self.manager.simulator.pxm_fac
 
-        self.manager.tracking_manager.bounding_area_EKF.add(X, Y, C)
+        self.manager.tracking_manager.bounding_area_EKF.add(X, S, C)    # <-- experimenting replaced Y by S. (Y is S now)
         X, Y, C, X_dot, Y_dot, C_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
 
         KP_x = 150
-        KP_y = 150
-        KP_c = 150
+        KP_y = 200
+        KP_c = 200
         KD_x = 15
         KD_y = 15
         KD_c = 15
         KI_x = 0.5
         KI_y = 0.5
         KI_c = 0.5
-        X_d = WIDTH/3
-        Y_d = WIDTH/3
+        X_d = WIDTH*0.3
+        Y_d = WIDTH*0.3
+        S_d = np.linalg.norm((X_d, Y_d))
+        Y_d = S_d
         C_d = HEIGHT*(1/4)
 
         e_x = X_d - X
@@ -395,17 +400,20 @@ class Controller:
         
         FX = ((FOCAL_LENGTH * X_W) / X**2)
         FY = ((FOCAL_LENGTH * Y_W) / Y**2)
+        FS = ((FOCAL_LENGTH * S_W) / S**2)
+        FY = FS
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
-        az_x = -FX * KP_x * (e_x) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X #- FX * KI_x * self.e_x_sum
-        az_y = -FY * KP_y * (e_y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y #- FY * KI_y * self.e_y_sum
-        az_c = -FX * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
+        # az_x = -FX * KP_x * (e_x) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X #- FX * KI_x * self.e_x_sum
+        # az_y = -FY * KP_y * (e_y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y #- FY * KI_y * self.e_y_sum
+        # az_c = -FX * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
 
         az_x = -FX * KP_x * (e_x) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X #- FX * KI_x * self.e_x_sum
         az_y = -FY * KP_y * (e_y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y #- FY * KI_y * self.e_y_sum
-        az_c = -FX * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
+        az_c = -FX * KP_c * (min(0,e_c)) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
 
-
+        az_x = 0.0
+        if e_c>0: az_c =0
 
         self.e_x_prev = e_x
         self.e_y_prev = e_y
@@ -419,11 +427,11 @@ class Controller:
         az = a[xyc_ind]
         if not self.xyc_ind_prev==xyc_ind:
             if xyc_ind == 0:
-                # self.e_x_sum = 0.0
-                pass
+                self.e_x_sum = 0.0
+                # pass
             elif xyc_ind == 1:
-                # self.e_y_sum = 0.0
-                pass
+                self.e_y_sum = 0.0
+                # pass
             else:
                 self.e_c_sum = 0.0
 
@@ -433,10 +441,10 @@ class Controller:
 
         az = self.sat(az, 12)
 
-        # print(f'{g("            XYC_des-")}{gb(f"[{X_d:.2f}, {Y_d:.2f}, {C_d:.2f}]")}{g(", XYC_meas-")}{gb(f"[{X:.2f}, {Y:.2f}, {C:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
-        # print(f'{g(", az_x=")}{gb(f"{az_x:.4f}")}', end=' ')
-        # print(f'{g("+ az_y=")}{gb(f"{az_y:.4f}")}', end=' ')
-        # print(f'{g("+ az_c=")}{gb(f"{az_c:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
+        print(f'{g("            XYC_des-")}{gb(f"[{X_d:.2f}, {Y_d:.2f}, {C_d:.2f}]")}{g(", XYC_meas-")}{gb(f"[{X:.2f}, {Y:.2f}, {C:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
+        print(f'{g(", az_x=")}{gb(f"{az_x:.4f}")}', end=' ')
+        print(f'{g("+ az_y=")}{gb(f"{az_y:.4f}")}', end=' ')
+        print(f'{g("+ az_c=")}{gb(f"{az_c:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
 
         return ax, ay, az
 
