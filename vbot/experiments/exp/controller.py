@@ -397,24 +397,6 @@ class Controller:
         vz_2 = vz**2 * np.sign(vz)
 
         
-<<<<<<< HEAD
-        FX = ((FOCAL_LENGTH * X_W) / X**2)
-        FY = ((FOCAL_LENGTH * Y_W) / Y**2)
-        FS = ((FOCAL_LENGTH * S_W) / S**2)
-        FY = FS
-        FC = ((FOCAL_LENGTH * C_W) / C**2)
-
-        # az_x = -FX * KP_x * (e_x) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X #- FX * KI_x * self.e_x_sum
-        # az_y = -FY * KP_y * (e_y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y #- FY * KI_y * self.e_y_sum
-        # az_c = -FX * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
-
-        az_x = -FX * KP_x * (e_x) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X #- FX * KI_x * self.e_x_sum
-        az_y = -FY * KP_y * (e_y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y #- FY * KI_y * self.e_y_sum
-        az_c = -FX * KP_c * (min(0,e_c)) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
-
-        az_x = 0.0
-        if e_c>0: az_c =0
-=======
         FS = ((FOCAL_LENGTH * S_W) / S**2)
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
@@ -423,7 +405,6 @@ class Controller:
         az_z = KP_z * e_Z_W - KD_z * Z_W_dot
 
         
->>>>>>> 729df82f0d3cafaab7f07f7261a134f877a4ef6d
 
         self.e_s_prev = e_s
         self.e_c_prev = e_c
