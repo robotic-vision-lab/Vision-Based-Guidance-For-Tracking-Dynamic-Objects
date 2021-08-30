@@ -401,7 +401,7 @@ class Controller:
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
         az_s = -FS * KP_s * (e_s) + FS * KD_s * S_dot + 2 * FS * S_dot**2 / S 
-        az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
+        az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C - FC * KI_c * self.e_c_sum
         az_z = KP_z * e_Z_W - KD_z * Z_W_dot
 
         
@@ -418,13 +418,13 @@ class Controller:
         az = a[scz_ind]
         if not self.scz_ind_prev==scz_ind:
             if scz_ind == 0:
-                self.e_x_sum = 0.0
+                self.e_s_sum = 0.0
                 # pass
             elif scz_ind == 1:
-                self.e_y_sum = 0.0
+                self.e_c_sum = 0.0
                 # pass
             else:
-                self.e_c_sum = 0.0
+                self.e_z_sum = 0.0
 
         self.scz_ind_prev = scz_ind
 
