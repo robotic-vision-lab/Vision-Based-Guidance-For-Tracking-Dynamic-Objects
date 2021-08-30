@@ -372,7 +372,7 @@ class Controller:
         S, C, Z_W, S_dot, C_dot, Z_W_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
 
         KP_s = 150
-        KP_c = 200
+        KP_c = 250
         KP_z = 200
 
         KD_s = 15
@@ -380,13 +380,13 @@ class Controller:
         KD_z = 15
         
         KI_s = 0.5
-        KI_c = 0.5
+        KI_c = 2
         KI_z = 0.5
 
         X_d = WIDTH*0.3
         Y_d = WIDTH*0.3
         S_d = np.linalg.norm((X_d, Y_d))
-        C_d = HEIGHT*(1/4)
+        C_d = HEIGHT*0.23
         Z_d = 150
 
         e_s = S_d - S

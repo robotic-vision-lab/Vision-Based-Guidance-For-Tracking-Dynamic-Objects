@@ -81,6 +81,8 @@ class ExperimentManager:
         # initialize offset of centroid from car rect center
         self.car_rect_center_centroid_offset = [0, 0]
 
+        self._prev_pause_flag = False
+
         if self.save_on:
             self.simulator.save_screen = True
 
@@ -298,6 +300,7 @@ class ExperimentManager:
             # handle events on simulator
             self.simulator.handle_events()
 
+
             # if quit event occurs, running will be updated; respond to it
             if not self.simulator.running:
                 break
@@ -337,10 +340,14 @@ class ExperimentManager:
                                                                            self.tracking_manager.ellipse_params_meas[0])
 
                         self.simulator.camera.apply_accleration_command(ax, ay, az)
-                        # self.plot_manager.plot()
+
+                        # self.plot_manager.uas_focal_points_plotter.collect_data()
+                        self.plot_manager.plot()
+                        
 
             self.simulator.draw_extra()
             self.simulator.show_drawing()
+
 
             if self.simulator.save_screen:
                 next(self.simulator.screen_shot)

@@ -8,7 +8,7 @@ class PlotManager:
     def __init__(self, exp_manager):
         self.exp_manager = exp_manager
         self.skip_count = 0
-        self.skip_step = 20
+        self.skip_step = 50
         plt.ion()
 
         # self.focal_points_plotter = FocalPointsPlotter(self, exp_manager, 'Focal points')
@@ -28,7 +28,7 @@ class PlotManager:
         if self.skip_count==self.skip_step:
             self.plot_uas_focal_points()
             self.skip_count = 0
-        
+
         plt.pause(0.000001)
         self.skip_count += 1
 
@@ -96,6 +96,7 @@ class UASFocalPointsPlotter:
         self.drone_y = self.exp_manager.simulator.camera.origin[1]
         self.drone_z = self.exp_manager.simulator.camera.altitude
 
+
     def plot3D(self):
         self.axs.scatter3D(self.fp1x, self.fp1y, 0, color='blue', marker='.', s=5, alpha=0.6)
         self.axs.scatter3D(self.fp2x, self.fp2y, 0, color='red', marker='.', s=5, alpha=0.6)
@@ -107,7 +108,6 @@ class UASFocalPointsPlotter:
         self.axs.plot(self.fp2x, self.fp2y, color='red', marker='.', markersize=1, alpha=0.8)
         self.axs.plot(self.drone_x, self.drone_y, color='darkgray', marker='x', markersize=2, alpha=0.8)
         self.fig.suptitle(f'{self.title}\n altitude={self.drone_z:0.2f}m')
-
 
 
 
