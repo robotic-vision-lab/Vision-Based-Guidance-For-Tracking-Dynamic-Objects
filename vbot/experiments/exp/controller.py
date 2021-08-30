@@ -12,14 +12,14 @@ class Controller:
         self.R = CAR_RADIUS
         self.f = None
 
-        self.e_x_prev = 0.0
-        self.e_y_prev = 0.0
+        self.e_s_prev = 0.0
         self.e_c_prev = 0.0
-        self.e_x_sum = 0.0
-        self.e_y_sum = 0.0
+        self.e_z_prev = 0.0
+        self.e_s_sum = 0.0
         self.e_c_sum = 0.0
+        self.e_z_sum = 0.0
 
-        self.xyc_ind_prev = 0
+        self.scz_ind_prev = 0
 
     @staticmethod
     def sat(x, bound):
@@ -360,83 +360,82 @@ class Controller:
         x_max, y_max = self.manager.tracking_manager.p2
         X = x_max - x_min
         Y = y_max - y_min
+
+        S = np.linalg.norm((X,Y))
         C = (((WIDTH - x_min - x_max)**2 + (HEIGHT - y_min - y_max)**2)**0.5)/2
-        X_W = X*self.manager.simulator.pxm_fac
-        Y_W = Y*self.manager.simulator.pxm_fac
+        Z_W = self.manager.simulator.camera.altitude
+
+        S_W = S*self.manager.simulator.pxm_fac
         C_W = C*self.manager.simulator.pxm_fac
 
-        self.manager.tracking_manager.bounding_area_EKF.add(X, Y, C)
-        X, Y, C, X_dot, Y_dot, C_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
+        self.manager.tracking_manager.bounding_area_EKF.add(S, C, Z_W)
+        S, C, Z_W, S_dot, C_dot, Z_W_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
 
-        KP_x = 150
-        KP_y = 150
-        KP_c = 150
-        KD_x = 15
-        KD_y = 15
+        KP_s = 150
+        KP_c = 200
+        KP_z = 200
+
+        KD_s = 15
         KD_c = 15
-        KI_x = 0.5
-        KI_y = 0.5
+        KD_z = 15
+        
+        KI_s = 0.5
         KI_c = 0.5
-        X_d = WIDTH/3
-        Y_d = WIDTH/3
-        C_d = HEIGHT*(1/4)
+        KI_z = 0.5
 
-        e_x = X_d - X
-        e_y = Y_d - Y
-        e_c = C_d - C
+        X_d = WIDTH*0.3
+        Y_d = WIDTH*0.3
+        S_d = np.linalg.norm((X_d, Y_d))
+        C_d = HEIGHT*(1/4)
+        Z_d = 150
+
+        e_s = S_d - S
+        e_c = min(0, C_d - C)
+        e_Z_W = Z_d - Z_W if abs(Z_d - Z_W) > 30 else 0.0
 
         vz = self.manager.simulator.camera.vz
         vz_2 = vz**2 * np.sign(vz)
-        # az_x = -(FOCAL_LENGTH * X_W / X**2) * KP_x*(X_d - X) - (FOCAL_LENGTH * X_W / X**2) * KD_x*(self.e_x_prev - e_x) #- 2*(((vz*X)**2)/(FOCAL_LENGTH*X_W))*np.sign(vz)
-        # az_y = -(FOCAL_LENGTH * X_W / Y**2) * KP_y*(Y_d - Y) - (FOCAL_LENGTH * X_W / Y**2) * KD_y*(self.e_y_prev - e_y) #- 2*(((vz*Y)**2)/(FOCAL_LENGTH*Y_W))*np.sign(vz)
-        # az_c = -(FOCAL_LENGTH * X_W / C**2) * KP_c*(C_d - C) - (FOCAL_LENGTH * X_W / C**2) * KD_c*(self.e_c_prev - e_c) #- 2*(((vz*C)**2)/(FOCAL_LENGTH*C_W))*np.sign(vz)
-
 
         
-        FX = ((FOCAL_LENGTH * X_W) / X**2)
-        FY = ((FOCAL_LENGTH * Y_W) / Y**2)
+        FS = ((FOCAL_LENGTH * S_W) / S**2)
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
-        az_x = -FX * KP_x * (e_x) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X #- FX * KI_x * self.e_x_sum
-        az_y = -FY * KP_y * (e_y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y #- FY * KI_y * self.e_y_sum
-        az_c = -FX * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
+        az_s = -FS * KP_s * (e_s) + FS * KD_s * S_dot + 2 * FS * S_dot**2 / S 
+        az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
+        az_z = KP_z * e_Z_W - KD_z * Z_W_dot
 
-        az_x = -FX * KP_x * (e_x) + FX * KD_x * X_dot + 2 * FX * X_dot**2 / X #- FX * KI_x * self.e_x_sum
-        az_y = -FY * KP_y * (e_y) + FY * KD_y * Y_dot + 2 * FY * Y_dot**2 / Y #- FY * KI_y * self.e_y_sum
-        az_c = -FX * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
+        
 
-
-
-        self.e_x_prev = e_x
-        self.e_y_prev = e_y
+        self.e_s_prev = e_s
         self.e_c_prev = e_c
-        self.e_x_sum += e_x
-        self.e_y_sum += e_y
+        self.e_z_prev = e_Z_W
+        self.e_s_sum += e_s
         self.e_c_sum += e_c
+        self.e_z_sum += e_Z_W
 
-        a = np.array([az_x, az_y, az_c])
-        xyc_ind = np.argmax(abs(a))
-        az = a[xyc_ind]
-        if not self.xyc_ind_prev==xyc_ind:
-            if xyc_ind == 0:
-                # self.e_x_sum = 0.0
-                pass
-            elif xyc_ind == 1:
-                # self.e_y_sum = 0.0
-                pass
+        a = np.array([az_s, az_c, az_z])
+        scz_ind = np.argmax(abs(a))
+        az = a[scz_ind]
+        if not self.scz_ind_prev==scz_ind:
+            if scz_ind == 0:
+                self.e_x_sum = 0.0
+                # pass
+            elif scz_ind == 1:
+                self.e_y_sum = 0.0
+                # pass
             else:
                 self.e_c_sum = 0.0
 
-        self.xyc_ind_prev = xyc_ind
+        self.scz_ind_prev = scz_ind
 
         # az = az_x + az_y + 0
 
         az = self.sat(az, 12)
 
-        # print(f'{g("            XYC_des-")}{gb(f"[{X_d:.2f}, {Y_d:.2f}, {C_d:.2f}]")}{g(", XYC_meas-")}{gb(f"[{X:.2f}, {Y:.2f}, {C:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
-        # print(f'{g(", az_x=")}{gb(f"{az_x:.4f}")}', end=' ')
-        # print(f'{g("+ az_y=")}{gb(f"{az_y:.4f}")}', end=' ')
-        # print(f'{g("+ az_c=")}{gb(f"{az_c:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
+        # print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
+        # print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
+        # print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
+        # print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
 
         return ax, ay, az
 
