@@ -21,7 +21,7 @@ class PlotManager:
 
     def plot_uas_focal_points(self):
         self.uas_focal_points_plotter.get_data()
-        self.uas_focal_points_plotter.plot2D()
+        self.uas_focal_points_plotter.plot3D()
 
     
     def plot(self):
@@ -73,11 +73,11 @@ class UASFocalPointsPlotter:
 
     def init_plot(self):
         # create figure, axis etc
-        # self.fig = plt.figure()
-        # self.axs = self.fig.add_subplot(111, projection='3d')
-        # self.axs.set(xlabel='X (m)', ylabel='Y (m)', zlabel='Z (m)')
-        self.fig, self.axs = plt.subplots()
-        self.axs.set(xlabel='X (m)', ylabel='Y (m)')
+        self.fig = plt.figure()
+        self.axs = self.fig.add_subplot(111, projection='3d')
+        self.axs.set(xlabel='X (m)', ylabel='Y (m)', zlabel='Z (m)')
+        # self.fig, self.axs = plt.subplots()
+        # self.axs.set(xlabel='X (m)', ylabel='Y (m)')
         self.fig.suptitle(self.title)
         self.axs.grid(True)
 

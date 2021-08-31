@@ -258,7 +258,7 @@ class Simulator:
         while True:
             # construct full path string with incremental next image name
             frame_num += 1
-            image_name = f'frame_{str(frame_num).zfill(4)}.png'
+            image_name = f'frame_{str(frame_num).zfill(5)}.png'
             file_path = os.path.join(path, image_name)
 
             # collect screen capture from simulator
