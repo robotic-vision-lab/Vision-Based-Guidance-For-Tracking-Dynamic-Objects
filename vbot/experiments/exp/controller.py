@@ -362,7 +362,8 @@ class Controller:
         Y = y_max - y_min
 
         S = np.linalg.norm((X,Y))
-        C = (((WIDTH - x_min - x_max)**2 + (HEIGHT - y_min - y_max)**2)**0.5)/2
+        # C = (((WIDTH - x_min - x_max)**2 + (HEIGHT - y_min - y_max)**2)**0.5)/2
+        C = (((WIDTH - x_min - x_max) + (HEIGHT - y_min - y_max)))/2
         Z_W = self.manager.simulator.camera.altitude
 
         S_W = S*self.manager.simulator.pxm_fac
@@ -377,7 +378,7 @@ class Controller:
 
         KD_s = 15
         KD_c = 15
-        KD_z = 15
+        KD_z = 20
         
         KI_s = 0.5
         KI_c = 2
@@ -386,7 +387,7 @@ class Controller:
         X_d = WIDTH*0.3
         Y_d = WIDTH*0.3
         S_d = np.linalg.norm((X_d, Y_d))
-        C_d = HEIGHT*0.23
+        C_d = HEIGHT*0.25
         Z_d = 150
 
         e_s = S_d - S
