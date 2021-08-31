@@ -377,16 +377,16 @@ class Controller:
 
         KD_s = 15
         KD_c = 15
-        KD_z = 15
+        KD_z = 20
         
         KI_s = 0.5
-        KI_c = 2
+        KI_c = 3
         KI_z = 0.5
 
         X_d = WIDTH*0.3
         Y_d = WIDTH*0.3
         S_d = np.linalg.norm((X_d, Y_d))
-        C_d = HEIGHT*0.23
+        C_d = HEIGHT*0.25
         Z_d = 150
 
         e_s = S_d - S
@@ -432,10 +432,10 @@ class Controller:
 
         az = self.sat(az, 12)
 
-        # print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
-        # print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
-        # print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
-        # print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
+        print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
+        print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
+        print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
+        print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
 
         return ax, ay, az
 
