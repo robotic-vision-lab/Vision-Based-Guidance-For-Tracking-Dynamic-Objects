@@ -23,6 +23,8 @@ class TrackingManager:
         self.ellipse_params_meas = None
         self.ellipse_params_est = None
 
+        self.stored_data = None
+
         # # for debugging 
         # self.temp = False
         # self.x = None
@@ -250,6 +252,10 @@ class TrackingManager:
 
         # collect estimated state of focal points
         self.ellipse_params_est = self.ellipse.EKF.get_estimated_state()
+
+        # update stored tracking data 
+        if self.exp_manager.write_plot:
+            self.stored_data = np.array([])
 
 
 
