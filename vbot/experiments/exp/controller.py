@@ -438,6 +438,9 @@ class Controller:
         print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
         print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
 
+        if self.manager.write_plot:
+            self.save_info()
+
         return ax, ay, az
 
 
@@ -508,4 +511,7 @@ class Controller:
 
         return dy1dVr1, dy1dVtheta1, dy1dVr2, dy1dVtheta2, dy2dVr1, dy2dVtheta1
 
+
+    def save_info(self):
+        pass
 
