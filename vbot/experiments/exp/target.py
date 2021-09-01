@@ -191,6 +191,29 @@ class Target:
         return points
 
 
-        
+    def get_data(self):
+        data = np.array([
+            self.occlusion_case_new,
+            self.measured_pos_x,
+            self.measured_pos_y,
+            self.r_meas,
+            self.theta_meas,
+            self.x_est,
+            self.y_est,
+            self.vx_est,
+            self.vy_est,
+            self.ax_est,
+            self.ay_est,
+            self.r_est,
+            self.theta_est,
+            self.Vr_est,
+            self.Vtheta_est,
+            self.speed_est,
+            self.beta_est,
+            self.acc_est,
+            self.deltaB_est,
+            ])
+
+        return data
 
 
