@@ -440,49 +440,50 @@ class Controller:
         print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
 
         if self.manager.write_plot:
+            # store vairables if manager needs to write to file
             self.stored_data = np.array([
-                fp1_x,          #  0 Focal point 1 position x component
-                fp1_y,          #  1 Focal point 1 position y component
-                fp1_vx,         #  2 Focal point 1 velocity x component
-                fp1_vy,         #  3 Focal point 1 velocity y component
-                fp1_ax,         #  4 Focal point 1 acceleration x component
-                fp1_ay,         #  5 Focal point 1 acceleration y component
-                r1,             #  6 Focal point 1 r (LOS)
-                theta1,         #  7 Focal point 1 theta (LOS)
-                Vr1,            #  8 Focal point 1 Vr (LOS)
-                Vtheta1,        #  9 Focal point 1 Vtheta (LOS)
-                fp1_speed,      # 10 Focal point 1 speed
-                fp1_heading,    # 11 Focal point 1 heading
-                fp1_acc,        # 12 Focal point 1 acceleration magnitude
-                fp1_delta,      # 13 Focal point 1 acceleration angle (delta)
-                fp2_x,          # 14 Focal point 2 position x component
-                fp2_y,          # 15 Focal point 2 position y component
-                fp2_vx,         # 16 Focal point 2 velocity x component
-                fp2_vy,         # 17 Focal point 2 velocity y component
-                fp2_ax,         # 18 Focal point 2 acceleration x component
-                fp2_ay,         # 19 Focal point 2 acceleration y component
-                r2,             # 20 Focal point 2 r (LOS)
-                theta2,         # 21 Focal point 2 theta (LOS)
-                Vr2,            # 22 Focal point 2 Vr (LOS)
-                Vtheta2,        # 23 Focal point 2 Vtheta (LOS)
-                fp2_speed,      # 24 Focal point 2 speed
-                fp2_heading,    # 25 Focal point 2 heading
-                fp2_acc,        # 26 Focal point 2 acceleration magnitude
-                fp2_delta,      # 27 Focal point 2 acceleration angle (delta)
-                y1,             # 28
-                y2,             # 29
-                a_lat,          # 30
-                a_long,         # 31
-                S,              # 32
-                C,              # 33
-                Z_W,            # 34
-                S_dot,          # 35
-                C_dot,          # 36
-                Z_W_dot,        # 37
-                az_s,           # 38
-                az_c,           # 39
-                az_z,           # 40
-                az              # 41
+                fp1_x,          #  0 focal point 1 position x component
+                fp1_y,          #  1 focal point 1 position y component
+                fp1_vx,         #  2 focal point 1 velocity x component
+                fp1_vy,         #  3 focal point 1 velocity y component
+                fp1_ax,         #  4 focal point 1 acceleration x component
+                fp1_ay,         #  5 focal point 1 acceleration y component
+                r1,             #  6 focal point 1 r (LOS)
+                theta1,         #  7 focal point 1 theta (LOS)
+                Vr1,            #  8 focal point 1 Vr (LOS)
+                Vtheta1,        #  9 focal point 1 Vtheta (LOS)
+                fp1_speed,      # 10 focal point 1 speed
+                fp1_heading,    # 11 focal point 1 heading
+                fp1_acc,        # 12 focal point 1 acceleration magnitude
+                fp1_delta,      # 13 focal point 1 acceleration angle (delta)
+                fp2_x,          # 14 focal point 2 position x component
+                fp2_y,          # 15 focal point 2 position y component
+                fp2_vx,         # 16 focal point 2 velocity x component
+                fp2_vy,         # 17 focal point 2 velocity y component
+                fp2_ax,         # 18 focal point 2 acceleration x component
+                fp2_ay,         # 19 focal point 2 acceleration y component
+                r2,             # 20 focal point 2 r (LOS)
+                theta2,         # 21 focal point 2 theta (LOS)
+                Vr2,            # 22 focal point 2 Vr (LOS)
+                Vtheta2,        # 23 focal point 2 Vtheta (LOS)
+                fp2_speed,      # 24 focal point 2 speed
+                fp2_heading,    # 25 focal point 2 heading
+                fp2_acc,        # 26 focal point 2 acceleration magnitude
+                fp2_delta,      # 27 focal point 2 acceleration angle (delta)
+                y1,             # 28 objective function y1
+                y2,             # 29 objective function y2
+                a_lat,          # 30 commanded acceleration a_lat
+                a_long,         # 31 commanded acceleration a_long
+                S,              # 32 size of control area
+                C,              # 33 distance of control area
+                Z_W,            # 34 drone altitude 
+                S_dot,          # 35 rate of change of size of control area
+                C_dot,          # 36 rate of change of distance of control area
+                Z_W_dot,        # 37 rate of change of drone altitude 
+                az_s,           # 38 commanded acceleration on acount of S
+                az_c,           # 39 commanded acceleration on acount of C
+                az_z,           # 40 commanded acceleration on acount of Z_W
+                az              # 41 aggregated commanded accleration az for altitude control
             ])
 
         return ax, ay, az
