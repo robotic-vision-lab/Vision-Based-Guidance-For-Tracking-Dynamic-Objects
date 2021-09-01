@@ -9,8 +9,8 @@ class PlotManager:
         self.exp_manager = exp_manager
         self.skip_count = 0
         self.skip_step = 50
-        plt.ion()
-
+        plt.ion()   # <- sets rcParams['interactive'] = True, makes matplotlib redraw after every plotting command
+        plt.style.use('fast')
         # self.focal_points_plotter = FocalPointsPlotter(self, exp_manager, 'Focal points')
         self.uas_focal_points_plotter = UASFocalPointsPlotter(self, exp_manager, 'UAS and Focal points')
 
@@ -78,7 +78,7 @@ class UASFocalPointsPlotter:
         self.axs.set(xlabel='X (m)', ylabel='Y (m)', zlabel='Z (m)')
         # self.fig, self.axs = plt.subplots()
         # self.axs.set(xlabel='X (m)', ylabel='Y (m)')
-        self.fig.suptitle(self.title)
+        self.fig.suptitle(self.title, verticalalignment='top')
         self.axs.grid(True)
 
 
@@ -98,10 +98,11 @@ class UASFocalPointsPlotter:
 
 
     def plot3D(self):
-        self.axs.scatter3D(self.fp1x, self.fp1y, 0, color='blue', marker='.', s=5, alpha=0.6)
-        self.axs.scatter3D(self.fp2x, self.fp2y, 0, color='red', marker='.', s=5, alpha=0.6)
-        self.axs.scatter3D(self.drone_x, self.drone_y, self.drone_z, color='green', marker='x', s=5, alpha=0.7)
-        self.axs.scatter3D(self.drone_x, self.drone_y, 0, color='gray', marker='x', s=5, alpha=0.5)
+        self.axs.scatter3D(self.fp1x, self.fp1y, 0, color='blue', marker='o', s=5, edgecolor='w', alpha=0.7)
+        self.axs.scatter3D(self.fp2x, self.fp2y, 0, color='red', marker='o', s=5, edgecolor='w', alpha=0.7)
+        self.axs.scatter3D(self.drone_x, self.drone_y, self.drone_z, color='green', marker='x', s=5, edgecolor='w', alpha=0.7)
+        self.axs.scatter3D(self.drone_x, self.drone_y, 0, color='gray', marker='x', s=5, edgecolor='w', alpha=0.3)
+        self.axs.set_title(f'altitude={self.drone_z:0.2f}m')
 
     def plot2D(self):
         self.axs.plot(self.fp1x, self.fp1y, color='blue', marker='.', markersize=1, alpha=0.8)
