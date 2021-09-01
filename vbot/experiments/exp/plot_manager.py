@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.cbook as cbook
 import matplotlib.patches as patches
+import matplotlib as mpl
 from mpl_toolkits import mplot3d
 
 
@@ -10,7 +11,7 @@ class PlotManager:
         self.skip_count = 0
         self.skip_step = 50
         plt.ion()   # <- sets rcParams['interactive'] = True, makes matplotlib redraw after every plotting command
-        plt.style.use('fast')
+        plt.style.use(['ggplot','fast'])
         # self.focal_points_plotter = FocalPointsPlotter(self, exp_manager, 'Focal points')
         self.uas_focal_points_plotter = UASFocalPointsPlotter(self, exp_manager, 'UAS and Focal points')
 
@@ -29,7 +30,7 @@ class PlotManager:
             self.plot_uas_focal_points()
             self.skip_count = 0
 
-        plt.pause(0.000001)
+        plt.pause(0.0001)
         self.skip_count += 1
 
 
