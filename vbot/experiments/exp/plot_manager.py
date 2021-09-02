@@ -11,7 +11,7 @@ class PlotManager:
         self.skip_count = 0
         self.skip_step = 50
         plt.ion()   # <- sets rcParams['interactive'] = True, makes matplotlib redraw after every plotting command
-        plt.style.use(['ggplot','fast'])
+        plt.style.use(['seaborn-paper','fast'])
         # self.focal_points_plotter = FocalPointsPlotter(self, exp_manager, 'Focal points')
         self.uas_focal_points_plotter = UASFocalPointsPlotter(self, exp_manager, 'UAS and Focal points')
 
