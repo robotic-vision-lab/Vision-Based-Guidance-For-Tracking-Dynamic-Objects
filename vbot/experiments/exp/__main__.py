@@ -382,12 +382,22 @@ if __name__ == '__main__':
                                         T_2_TRUE_R,
                                         T_2_R_MEAS,
                                         T_2_R_EST,
+                                        T_3_TRUE_R,
+                                        T_3_R_MEAS,
+                                        T_3_R_EST,
+                                        FP_1_R,
+                                        FP_2_R,
                                         T_1_TRUE_THETA,
                                         T_1_THETA_MEAS,
                                         T_1_THETA_EST,
                                         T_2_TRUE_THETA,
                                         T_2_THETA_MEAS,
-                                        T_2_THETA_EST
+                                        T_2_THETA_EST,
+                                        T_3_TRUE_THETA,
+                                        T_3_THETA_MEAS,
+                                        T_3_THETA_EST,
+                                        FP_1_THETA,
+                                        FP_2_THETA
                                         )
 
         los_1_plotter.plot()
