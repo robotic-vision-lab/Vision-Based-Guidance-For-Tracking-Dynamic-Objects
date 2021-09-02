@@ -149,7 +149,7 @@ if __name__ == '__main__':
         S_DOT = []
         C_DOT = []
         Z_W_DOT = []
-        AZ = []
+        AZ_S = []
         AZ_C = []
         AZ_Z = []
         AZ = []
@@ -278,7 +278,7 @@ if __name__ == '__main__':
             S_DOT.append(data[36])
             C_DOT.append(data[37])
             Z_W_DOT.append(data[38])
-            AZ.append(data[39])
+            AZ_S.append(data[39])
             AZ_C.append(data[40])
             AZ_Z.append(data[41])
             AZ.append(data[42])
@@ -433,7 +433,7 @@ if __name__ == '__main__':
 
         accl_comm_plotter.plot()
 
-        
+
         plt.show()
 
         # # -------------------------------------------------------------------------------- figure 1
