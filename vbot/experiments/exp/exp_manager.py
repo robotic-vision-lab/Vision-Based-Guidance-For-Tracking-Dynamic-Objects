@@ -360,8 +360,74 @@ class ExperimentManager:
 
     def write_info(self):
         controller_data = self.controller.stored_data
+        tracker_data = self.tracking_manager.stored_data
 
         TIME = self.simulator.time
+
+        FP_1_X = controller_data[0]
+        FP_1_Y = controller_data[1]
+        FP_1_VX = controller_data[2]
+        FP_1_VY = controller_data[3]
+        FP_1_AX = controller_data[4]
+        FP_1_AY = controller_data[5]
+        FP_1_R = controller_data[6]
+        FP_1_THETA = controller_data[7]
+        FP_1_V_R = controller_data[8]
+        FP_1_V_THETA = controller_data[9]
+        FP_1_SPEED = controller_data[10]
+        FP_1_HEADING = controller_data[11]
+        FP_1_ACC = controller_data[12]
+        FP_1_DELTA = controller_data[13]
+        FP_2_X = controller_data[14]
+        FP_2_Y = controller_data[15]
+        FP_2_VX = controller_data[16]
+        FP_2_VY = controller_data[17]
+        FP_2_AX = controller_data[18]
+        FP_2_AY = controller_data[19]
+        FP_2_R = controller_data[20]
+        FP_2_THETA = controller_data[21]
+        FP_2_V_R = controller_data[22]
+        FP_2_V_THETA = controller_data[23]
+        FP_2_SPEED = controller_data[24]
+        FP_2_HEADING = controller_data[25]
+        FP_2_ACC = controller_data[26]
+        FP_2_DELTA = controller_data[27]
+        Y_1 = controller_data[28]
+        Y_2 = controller_data[29]
+        A_LAT = controller_data[30]
+        A_LNG = controller_data[31]
+        S = controller_data[32]
+        C = controller_data[33]
+        Z_W = controller_data[34]
+        S_DOT = controller_data[35]
+        C_DOT = controller_data[36]
+        Z_W_DOT = controller_data[37]
+        AZ = controller_data[38]
+        AZ_C = controller_data[39]
+        AZ_Z = controller_data[40]
+        AZ = controller_data[41]
+
+        occlusion_case_new
+        measured_pos_x
+        measured_pos_y
+        r_meas
+        theta_meas
+        x_est
+        y_est
+        vx_est
+        vy_est
+        ax_est
+        ay_est
+        r_est
+        theta_est
+        Vr_est
+        Vtheta_est
+        speed_est
+        beta_est
+        acc_est
+        deltaB_est
+
+
 
         """
         decide who gets to collect true data 
