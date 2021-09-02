@@ -421,7 +421,7 @@ class ExperimentManager:
 
         cv.destroyAllWindows()
         if self.write_plot:
-            self.controller.f.close()
+            self.data_file.close()
 
 
     def write_info(self):
@@ -520,7 +520,7 @@ class ExperimentManager:
         T_2_TRUE_THETA = tracker_data[43]
         T_2_TRUE_V_R = tracker_data[44]
         T_2_TRUE_V_THETA = tracker_data[45]
-        
+
         T_3_OCCLUSION_CASE = tracker_data[46]
         T_3_X_MEAS = tracker_data[47]
         T_3_Y_MEAS = tracker_data[48]
