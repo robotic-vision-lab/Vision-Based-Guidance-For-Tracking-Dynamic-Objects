@@ -19,38 +19,64 @@ class LOS1DataPlotter:
         self.th2_e = th2_e
 
         self.window_title = 'LOS Kinematics - I'
+        self.fig = None
+        self.axs = None
 
         self.set_params()
 
+
     def set_params(self):
         # r1 params
-        self.r1_t_params = dict(color='dimgray',     alpha=0.85, ls='-', lw=2,   label=r'$r$')
+        self.r1_t_params = dict(color='darkorchid',     alpha=0.85, ls='-', lw=2,   label=r'$r$')
         self.r1_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_m$')
         self.r1_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}$')
         
         # r2 params
-        self.r2_t_params = dict(color='dimgray',     alpha=0.85, ls='-', lw=2,   label=r'$r$')
+        self.r2_t_params = dict(color='darkorchid',     alpha=0.85, ls='-', lw=2,   label=r'$r$')
         self.r2_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_m$')
         self.r2_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}$')
 
         # th1 params
-        self.th1_t_params = dict(color='dimgray',     alpha=0.85, ls='-', lw=2,   label=r'$r$')
+        self.th1_t_params = dict(color='darkorchid',     alpha=0.85, ls='-', lw=2,   label=r'$r$')
         self.th1_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_m$')
         self.th1_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}$')
         
         # th2 params
-        self.th2_t_params = dict(color='dimgray',     alpha=0.85, ls='-', lw=2,   label=r'$r$')
+        self.th2_t_params = dict(color='darkorchid',     alpha=0.85, ls='-', lw=2,   label=r'$r$')
         self.th2_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_m$')
         self.th2_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}$')
         
 
 
     def plot(self):
-        fig, axs = plt.subplots(2,1, sharex=True, gridspec_kw={'hspace': 0.25})
-        fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
-        fig.canvas.manager.set_window_title(self.window_title)
+        self.fig, self.axs = plt.subplots(2,1, sharex=True, gridspec_kw={'hspace': 0.25})
+        self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
+        self.fig.canvas.manager.set_window_title(self.window_title)
 
-        axs[0].plot(t, )
+        # r1, r2
+        self.axs[0].plot(self.t, self.r1_t, **self.r1_t_params)
+        self.axs[0].plot(self.t, self.r1_m, **self.r1_m_params)
+        self.axs[0].plot(self.t, self.r1_e, **self.r1_e_params)
+
+        self.axs[0].plot(self.t, self.r2_t, **self.r2_t_params)
+        self.axs[0].plot(self.t, self.r2_m, **self.r2_m_params)
+        self.axs[0].plot(self.t, self.r2_e, **self.r2_e_params)
+
+        # th1, th2
+        self.axs[1].plot(self.t, self.th1_t, **self.th1_t_params)
+        self.axs[1].plot(self.t, self.th1_m, **self.th1_m_params)
+        self.axs[1].plot(self.t, self.th1_e, **self.th1_e_params)
+
+        self.axs[1].plot(self.t, self.th2_t, **self.th2_t_params)
+        self.axs[1].plot(self.t, self.th2_m, **self.th2_m_params)
+        self.axs[1].plot(self.t, self.th2_e, **self.th2_e_params)
+
+        # set axes decorations
+        self.add_axes_decor()
+
+    def add_axes_decor(self):
+        
+        
 
 
     
