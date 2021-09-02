@@ -404,22 +404,22 @@ if __name__ == '__main__':
 
         los_2_plotter = LOS2DataPlotter(_PATH,
                                         TIME,
-                                        T_1_TRUE_R,
-                                        T_1_R_EST,
-                                        T_2_TRUE_R,
-                                        T_2_R_EST,
-                                        T_3_TRUE_R,
-                                        T_3_R_EST,
-                                        FP_1_R,
-                                        FP_2_R,
-                                        T_1_TRUE_THETA,
-                                        T_1_THETA_EST,
-                                        T_2_TRUE_THETA,
-                                        T_2_THETA_EST,
-                                        T_3_TRUE_THETA,
-                                        T_3_THETA_EST,
-                                        FP_1_THETA,
-                                        FP_2_THETA
+                                        T_1_TRUE_V_R,
+                                        T_1_V_R_EST,
+                                        T_2_TRUE_V_R,
+                                        T_2_V_R_EST,
+                                        T_3_TRUE_V_R,
+                                        T_3_V_R_EST,
+                                        FP_1_V_R,
+                                        FP_2_V_R,
+                                        T_1_TRUE_V_THETA,
+                                        T_1_V_THETA_EST,
+                                        T_2_TRUE_V_THETA,
+                                        T_2_V_THETA_EST,
+                                        T_3_TRUE_V_THETA,
+                                        T_3_V_THETA_EST,
+                                        FP_1_V_THETA,
+                                        FP_2_V_THETA
                                         )
 
         los_2_plotter.plot()
