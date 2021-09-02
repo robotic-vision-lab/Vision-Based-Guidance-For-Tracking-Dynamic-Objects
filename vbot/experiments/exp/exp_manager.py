@@ -86,8 +86,9 @@ class ExperimentManager:
         if self.save_on:
             self.simulator.save_screen = True
 
-        plt.ion()
-        self.ax = []
+        if self.write_plot:
+            self.plot_file = 'plot_info.csv'
+
 
     def get_drone_cam_field_of_view(self):
         """helper function returns field of view (width, height) in meters
@@ -236,55 +237,120 @@ class ExperimentManager:
 
         # open plot file if write_plot is indicated
         if self.write_plot:
-            self.controller.f = open(self.controller.plot_info_file, '+w')
-            self.controller.f.write(
-                f'TIME,'+
-                f'R,'+
-                f'THETA,'+
-                f'V_THETA,'+
-                f'V_R,'+
-                f'DRONE_POS_X,'+
-                f'DRONE_POS_Y,'+
-                f'CAR_POS_X,'+
-                f'CAR_POS_Y,'+
-                f'DRONE_ACC_X,'+
-                f'DRONE_ACC_Y,'+
-                f'DRONE_ACC_LAT,'+
-                f'DRONE_ACC_LNG,'+
-                f'CAR_VEL_X,'+
-                f'CAR_VEL_Y,'+
-                f'TRACKED_CAR_POS_X,'+
-                f'TRACKED_CAR_POS_Y,'+
-                f'TRACKED_CAR_VEL_X,'+
-                f'TRACKED_CAR_VEL_Y,'+
-                f'CAM_ORIGIN_X,'+
-                f'CAM_ORIGIN_Y,'+
-                f'DRONE_SPEED,'+
-                f'DRONE_ALPHA,'+
-                f'DRONE_VEL_X,'+
-                f'DRONE_VEL_Y,'+
-                f'MEASURED_CAR_POS_X,'+
-                f'MEASURED_CAR_POS_Y,'+
-                f'MEASURED_CAR_VEL_X,'+
-                f'MEASURED_CAR_VEL_Y,'+
-                f'DRONE_ALTITUDE,'+
-                f'ABS_DEN,'+
-                f'MEASURED_R,'+
-                f'MEASURED_THETA,'+
-                f'MEASURED_V_R,'+
-                f'MEASURED_V_THETA,'+
-                f'TRUE_R,'+
-                f'TRUE_THETA,'+
-                f'TRUE_V_R,'+
-                f'TRUE_V_THETA,'+
-                f'DELTA_TIME,'+
-                f'Y1,'+
-                f'Y2,' +
-                f'CAR_SPEED,' +
-                f'CAR_HEADING,' +
-                f'TRUE_Y1,' + 
-                f'TRUE_Y2,' +
-                f'OCC_CASE\n'
+            self.data_file = open(self.plot_file, '+w')
+            self.data_file.write(
+                f'TIME,' +
+                f'FP_1_X,' +
+                f'FP_1_Y,' +
+                f'FP_1_VX,' +
+                f'FP_1_VY,' +
+                f'FP_1_AX,' +
+                f'FP_1_AY,' +
+                f'FP_1_R,' +
+                f'FP_1_THETA,' +
+                f'FP_1_V_R,' +
+                f'FP_1_V_THETA,' +
+                f'FP_1_SPEED,' +
+                f'FP_1_HEADING,' +
+                f'FP_1_ACC,' +
+                f'FP_1_DELTA,' +
+                f'FP_2_X,' +
+                f'FP_2_Y,' +
+                f'FP_2_VX,' +
+                f'FP_2_VY,' +
+                f'FP_2_AX,' +
+                f'FP_2_AY,' +
+                f'FP_2_R,' +
+                f'FP_2_THETA,' +
+                f'FP_2_V_R,' +
+                f'FP_2_V_THETA,' +
+                f'FP_2_SPEED,' +
+                f'FP_2_HEADING,' +
+                f'FP_2_ACC,' +
+                f'FP_2_DELTA,' +
+                f'Y_1,' +
+                f'Y_2,' +
+                f'A_LAT,' +
+                f'A_LNG,' +
+                f'S,' +
+                f'C,' +
+                f'Z_W,' +
+                f'S_DOT,' +
+                f'C_DOT,' +
+                f'Z_W_DOT,' +
+                f'AZ,' +
+                f'AZ_C,' +
+                f'AZ_Z,' +
+                f'AZ,' +
+                f'T_1_OCCLUSION_CASE,' +
+                f'T_1_X_MEAS,' +
+                f'T_1_Y_MEAS,' +
+                f'T_1_R_MEAS,' +
+                f'T_1_THETA_MEAS,' +
+                f'T_1_X_EST,' +
+                f'T_1_Y_EST,' +
+                f'T_1_VX_EST,' +
+                f'T_1_VY_EST,' +
+                f'T_1_AX_EST,' +
+                f'T_1_AY_EST,' +
+                f'T_1_R_EST,' +
+                f'T_1_THETA_EST,' +
+                f'T_1_V_R_EST,' +
+                f'T_1_V_THETA_EST,' +
+                f'T_1_SPEED_EST,' +
+                f'T_1_BETA_EST,' +
+                f'T_1_ACC_EST,' +
+                f'T_1_DELTA_EST,' +
+                f'T_1_TRUE_R,' +
+                f'T_1_TRUE_THETA,' +
+                f'T_1_TRUE_V_R,' +
+                f'T_1_TRUE_V_THETA,' +
+                f'T_2_OCCLUSION_CASE,' +
+                f'T_2_X_MEAS,' +
+                f'T_2_Y_MEAS,' +
+                f'T_2_R_MEAS,' +
+                f'T_2_THETA_MEAS,' +
+                f'T_2_X_EST,' +
+                f'T_2_Y_EST,' +
+                f'T_2_VX_EST,' +
+                f'T_2_VY_EST,' +
+                f'T_2_AX_EST,' +
+                f'T_2_AY_EST,' +
+                f'T_2_R_EST,' +
+                f'T_2_THETA_EST,' +
+                f'T_2_V_R_EST,' +
+                f'T_2_V_THETA_EST,' +
+                f'T_2_SPEED_EST,' +
+                f'T_2_BETA_EST,' +
+                f'T_2_ACC_EST,' +
+                f'T_2_DELTA_EST,' +
+                f'T_2_TRUE_R,' +
+                f'T_2_TRUE_THETA,' +
+                f'T_2_TRUE_V_R,' +
+                f'T_2_TRUE_V_THETA,' +
+                f'T_3_OCCLUSION_CASE,' +
+                f'T_3_X_MEAS,' +
+                f'T_3_Y_MEAS,' +
+                f'T_3_R_MEAS,' +
+                f'T_3_THETA_MEAS,' +
+                f'T_3_X_EST,' +
+                f'T_3_Y_EST,' +
+                f'T_3_VX_EST,' +
+                f'T_3_VY_EST,' +
+                f'T_3_AX_EST,' +
+                f'T_3_AY_EST,' +
+                f'T_3_R_EST,' +
+                f'T_3_THETA_EST,' +
+                f'T_3_V_R_EST,' +
+                f'T_3_V_THETA_EST,' +
+                f'T_3_SPEED_EST,' +
+                f'T_3_BETA_EST,' +
+                f'T_3_ACC_EST,' +
+                f'T_3_DELTA_EST,' +
+                f'T_3_TRUE_R,' +
+                f'T_3_TRUE_THETA,' +
+                f'T_3_TRUE_V_R,' +
+                f'T_3_TRUE_V_THETA\n'
             )
 
         # run experiment
@@ -363,7 +429,6 @@ class ExperimentManager:
         tracker_data = self.tracking_manager.stored_data
 
         TIME = self.simulator.time
-
         FP_1_X = controller_data[0]
         FP_1_Y = controller_data[1]
         FP_1_VX = controller_data[2]
@@ -406,26 +471,192 @@ class ExperimentManager:
         AZ_C = controller_data[39]
         AZ_Z = controller_data[40]
         AZ = controller_data[41]
+        T_1_OCCLUSION_CASE = tracker_data[0]
+        T_1_X_MEAS = tracker_data[1]
+        T_1_Y_MEAS = tracker_data[2]
+        T_1_R_MEAS = tracker_data[3]
+        T_1_THETA_MEAS = tracker_data[4]
+        T_1_X_EST = tracker_data[5]
+        T_1_Y_EST = tracker_data[6]
+        T_1_VX_EST = tracker_data[7]
+        T_1_VY_EST = tracker_data[8]
+        T_1_AX_EST = tracker_data[9]
+        T_1_AY_EST = tracker_data[10]
+        T_1_R_EST = tracker_data[11]
+        T_1_THETA_EST = tracker_data[12]
+        T_1_V_R_EST = tracker_data[13]
+        T_1_V_THETA_EST = tracker_data[14]
+        T_1_SPEED_EST = tracker_data[15]
+        T_1_BETA_EST = tracker_data[16]
+        T_1_ACC_EST = tracker_data[17]
+        T_1_DELTA_EST = tracker_data[18]
+        T_1_TRUE_R = tracker_data[19]
+        T_1_TRUE_THETA = tracker_data[20]
+        T_1_TRUE_V_R = tracker_data[21]
+        T_1_TRUE_V_THETA = tracker_data[22]
+        T_2_OCCLUSION_CASE = tracker_data[23]
+        T_2_X_MEAS = tracker_data[24]
+        T_2_Y_MEAS = tracker_data[25]
+        T_2_R_MEAS = tracker_data[26]
+        T_2_THETA_MEAS = tracker_data[27]
+        T_2_X_EST = tracker_data[28]
+        T_2_Y_EST = tracker_data[29]
+        T_2_VX_EST = tracker_data[30]
+        T_2_VY_EST = tracker_data[31]
+        T_2_AX_EST = tracker_data[32]
+        T_2_AY_EST = tracker_data[33]
+        T_2_R_EST = tracker_data[34]
+        T_2_THETA_EST = tracker_data[35]
+        T_2_V_R_EST = tracker_data[36]
+        T_2_V_THETA_EST = tracker_data[37]
+        T_2_SPEED_EST = tracker_data[38]
+        T_2_BETA_EST = tracker_data[39]
+        T_2_ACC_EST = tracker_data[40]
+        T_2_DELTA_EST = tracker_data[41]
+        T_2_TRUE_R = tracker_data[42]
+        T_2_TRUE_THETA = tracker_data[43]
+        T_2_TRUE_V_R = tracker_data[44]
+        T_2_TRUE_V_THETA = tracker_data[45]
+        T_3_OCCLUSION_CASE = tracker_data[46]
+        T_3_X_MEAS = tracker_data[47]
+        T_3_Y_MEAS = tracker_data[48]
+        T_3_R_MEAS = tracker_data[49]
+        T_3_THETA_MEAS = tracker_data[50]
+        T_3_X_EST = tracker_data[51]
+        T_3_Y_EST = tracker_data[52]
+        T_3_VX_EST = tracker_data[53]
+        T_3_VY_EST = tracker_data[54]
+        T_3_AX_EST = tracker_data[55]
+        T_3_AY_EST = tracker_data[56]
+        T_3_R_EST = tracker_data[57]
+        T_3_THETA_EST = tracker_data[58]
+        T_3_V_R_EST = tracker_data[59]
+        T_3_V_THETA_EST = tracker_data[60]
+        T_3_SPEED_EST = tracker_data[61]
+        T_3_BETA_EST = tracker_data[62]
+        T_3_ACC_EST = tracker_data[63]
+        T_3_DELTA_EST = tracker_data[64]
+        T_3_TRUE_R = tracker_data[65]
+        T_3_TRUE_THETA = tracker_data[66]
+        T_3_TRUE_V_R = tracker_data[67]
+        T_3_TRUE_V_THETA = tracker_data[68]
 
-        occlusion_case_new
-        measured_pos_x
-        measured_pos_y
-        r_meas
-        theta_meas
-        x_est
-        y_est
-        vx_est
-        vy_est
-        ax_est
-        ay_est
-        r_est
-        theta_est
-        Vr_est
-        Vtheta_est
-        speed_est
-        beta_est
-        acc_est
-        deltaB_est
+        self.data_file.write(
+            f'{TIME},' +
+            f'{FP_1_X},' +
+            f'{FP_1_Y},' +
+            f'{FP_1_VX},' +
+            f'{FP_1_VY},' +
+            f'{FP_1_AX},' +
+            f'{FP_1_AY},' +
+            f'{FP_1_R},' +
+            f'{FP_1_THETA},' +
+            f'{FP_1_V_R},' +
+            f'{FP_1_V_THETA},' +
+            f'{FP_1_SPEED},' +
+            f'{FP_1_HEADING},' +
+            f'{FP_1_ACC},' +
+            f'{FP_1_DELTA},' +
+            f'{FP_2_X},' +
+            f'{FP_2_Y},' +
+            f'{FP_2_VX},' +
+            f'{FP_2_VY},' +
+            f'{FP_2_AX},' +
+            f'{FP_2_AY},' +
+            f'{FP_2_R},' +
+            f'{FP_2_THETA},' +
+            f'{FP_2_V_R},' +
+            f'{FP_2_V_THETA},' +
+            f'{FP_2_SPEED},' +
+            f'{FP_2_HEADING},' +
+            f'{FP_2_ACC},' +
+            f'{FP_2_DELTA},' +
+            f'{Y_1},' +
+            f'{Y_2},' +
+            f'{A_LAT},' +
+            f'{A_LNG},' +
+            f'{S},' +
+            f'{C},' +
+            f'{Z_W},' +
+            f'{S_DOT},' +
+            f'{C_DOT},' +
+            f'{Z_W_DOT},' +
+            f'{AZ},' +
+            f'{AZ_C},' +
+            f'{AZ_Z},' +
+            f'{AZ},' +
+            f'{T_1_OCCLUSION_CASE},' +
+            f'{T_1_X_MEAS},' +
+            f'{T_1_Y_MEAS},' +
+            f'{T_1_R_MEAS},' +
+            f'{T_1_THETA_MEAS},' +
+            f'{T_1_X_EST},' +
+            f'{T_1_Y_EST},' +
+            f'{T_1_VX_EST},' +
+            f'{T_1_VY_EST},' +
+            f'{T_1_AX_EST},' +
+            f'{T_1_AY_EST},' +
+            f'{T_1_R_EST},' +
+            f'{T_1_THETA_EST},' +
+            f'{T_1_V_R_EST},' +
+            f'{T_1_V_THETA_EST},' +
+            f'{T_1_SPEED_EST},' +
+            f'{T_1_BETA_EST},' +
+            f'{T_1_ACC_EST},' +
+            f'{T_1_DELTA_EST},' +
+            f'{T_1_TRUE_R},' +
+            f'{T_1_TRUE_THETA},' +
+            f'{T_1_TRUE_V_R},' +
+            f'{T_1_TRUE_V_THETA},' +
+            f'{T_2_OCCLUSION_CASE},' +
+            f'{T_2_X_MEAS},' +
+            f'{T_2_Y_MEAS},' +
+            f'{T_2_R_MEAS},' +
+            f'{T_2_THETA_MEAS},' +
+            f'{T_2_X_EST},' +
+            f'{T_2_Y_EST},' +
+            f'{T_2_VX_EST},' +
+            f'{T_2_VY_EST},' +
+            f'{T_2_AX_EST},' +
+            f'{T_2_AY_EST},' +
+            f'{T_2_R_EST},' +
+            f'{T_2_THETA_EST},' +
+            f'{T_2_V_R_EST},' +
+            f'{T_2_V_THETA_EST},' +
+            f'{T_2_SPEED_EST},' +
+            f'{T_2_BETA_EST},' +
+            f'{T_2_ACC_EST},' +
+            f'{T_2_DELTA_EST},' +
+            f'{T_2_TRUE_R},' +
+            f'{T_2_TRUE_THETA},' +
+            f'{T_2_TRUE_V_R},' +
+            f'{T_2_TRUE_V_THETA},' +
+            f'{T_3_OCCLUSION_CASE},' +
+            f'{T_3_X_MEAS},' +
+            f'{T_3_Y_MEAS},' +
+            f'{T_3_R_MEAS},' +
+            f'{T_3_THETA_MEAS},' +
+            f'{T_3_X_EST},' +
+            f'{T_3_Y_EST},' +
+            f'{T_3_VX_EST},' +
+            f'{T_3_VY_EST},' +
+            f'{T_3_AX_EST},' +
+            f'{T_3_AY_EST},' +
+            f'{T_3_R_EST},' +
+            f'{T_3_THETA_EST},' +
+            f'{T_3_V_R_EST},' +
+            f'{T_3_V_THETA_EST},' +
+            f'{T_3_SPEED_EST},' +
+            f'{T_3_BETA_EST},' +
+            f'{T_3_ACC_EST},' +
+            f'{T_3_DELTA_EST},' +
+            f'{T_3_TRUE_R},' +
+            f'{T_3_TRUE_THETA},' +
+            f'{T_3_TRUE_V_R},' +
+            f'{T_3_TRUE_V_THETA}\n'
+        )
+
+        
 
 
 
