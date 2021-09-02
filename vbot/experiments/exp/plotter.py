@@ -253,35 +253,35 @@ class LOS2DataPlotter:
     def set_params(self):
         # vr1 params
         self.vr1_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{r_{1}}$')
-        self.vr1_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V_r}_{1}$')
+        self.vr1_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{r_1}$')
         
         # vr2 params
         self.vr2_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{r_{2}}$')
-        self.vr2_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V_r}_{2}$')
+        self.vr2_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{r_2}$')
         
         # vr3 params
         self.vr3_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{r_{3}}$')
-        self.vr3_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V_r}_{3}$')
+        self.vr3_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{r_3}$')
         
         # fp1vr, fp2vr params
-        self.f1_vr_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V_r}_{fp1}$')
-        self.f2_vr_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V_r}_{fp2}$')
+        self.f1_vr_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V}_{r_{fp1}}$')
+        self.f2_vr_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V}_{r_{fp2}}$')
 
         # vth1 params
         self.vth1_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{\theta_{1}}$')
-        self.vth1_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V_\theta}_{1}$')
+        self.vth1_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{\theta_1}$')
         
         # vth2 params
         self.vth2_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{\theta_{2}}$')
-        self.vth2_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V_\theta}_{2}$')
+        self.vth2_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{\theta_2}$')
         
         # vth3 params
         self.vth3_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{\theta_{3}}$')
-        self.vth3_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V_\theta}_{3}$')
+        self.vth3_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{\theta_3}$')
         
         # fp1vtheta, fp2vtheta params
-        self.f1_vth_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V_\theta}_{fp1}$')
-        self.f2_vth_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V_\theta}_{fp2}$')
+        self.f1_vth_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V}_{\theta_{fp1}}$')
+        self.f2_vth_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V}_{\theta_{fp2}}$')
 
         # rcParams
         params = {'xtick.direction'     : 'in',
