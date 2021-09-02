@@ -67,42 +67,42 @@ class LOS1DataPlotter:
 
     def set_params(self):
         # r1 params
-        self.r1_t_params = dict(color='darkorchid',  alpha=0.7,  ls=':', lw=2,   label=r'$r_{1}$')
-        self.r1_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_{1m}$')
-        self.r1_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}_{1}$')
+        self.r1_t_params = dict(color='lightgray',  alpha=0.95,  ls=':', lw=2,   label=r'$r_{1}$')
+        self.r1_m_params = dict(color='gray',       alpha=0.85,  ls='--', lw=1.5, label=r'$r_{1m}$')
+        self.r1_e_params = dict(color='orangered',  alpha=0.85, ls='-', lw=1, label=r'$\hat{r}_{1}$')
         
         # r2 params
-        self.r2_t_params = dict(color='darkorchid',  alpha=0.7,  ls=':', lw=2,   label=r'$r_{2}$')
-        self.r2_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_{2m}$')
-        self.r2_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}_{2}$')
+        self.r2_t_params = dict(color='lightgray',  alpha=0.95,  ls=':', lw=2,   label=r'$r_{2}$')
+        self.r2_m_params = dict(color='gray',       alpha=0.85,  ls='--', lw=1.5, label=r'$r_{2m}$')
+        self.r2_e_params = dict(color='orangered',  alpha=0.85, ls='-', lw=1, label=r'$\hat{r}_{2}$')
         
         # r3 params
-        self.r3_t_params = dict(color='darkorchid',  alpha=0.7,  ls=':', lw=2,   label=r'$r_{3}$')
-        self.r3_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_{3m}$')
-        self.r3_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}_{3}$')
+        self.r3_t_params = dict(color='lightgray',  alpha=0.95,  ls=':', lw=2,   label=r'$r_{3}$')
+        self.r3_m_params = dict(color='gray',       alpha=0.85,  ls='--', lw=1.5, label=r'$r_{3m}$')
+        self.r3_e_params = dict(color='orangered',  alpha=0.85, ls='-', lw=1, label=r'$\hat{r}_{3}$')
         
         # fp1r params
-        self.f1_r_params = dict(color='mediumvioletred',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}_{fp1}$')
-        self.f2_r_params = dict(color='mediumvioletred',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}_{fp2}$')
+        self.f1_r_params = dict(color='darkviolet',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}_{fp1}$')
+        self.f2_r_params = dict(color='darkviolet',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}_{fp2}$')
 
         # th1 params
-        self.th1_t_params = dict(color='darkorchid',  alpha=0.7,  ls=':', lw=2,   label=r'$\theta_{1}$')
-        self.th1_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$\theta_{1m}$')
-        self.th1_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{\theta}_{1}$')
+        self.th1_t_params = dict(color='lightgray',  alpha=0.95,  ls=':', lw=2,   label=r'$\theta_{1}$')
+        self.th1_m_params = dict(color='gray',       alpha=0.85,  ls='--', lw=1.5, label=r'$\theta_{1m}$')
+        self.th1_e_params = dict(color='orangered',  alpha=0.85, ls='-', lw=1, label=r'$\hat{\theta}_{1}$')
         
         # th2 params
-        self.th2_t_params = dict(color='darkorchid',  alpha=0.7,  ls=':', lw=2,   label=r'$\theta_{2}$')
-        self.th2_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$\theta_{2m}$')
-        self.th2_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{\theta}_{2}$')
+        self.th2_t_params = dict(color='lightgray',  alpha=0.95,  ls=':', lw=2,   label=r'$\theta_{2}$')
+        self.th2_m_params = dict(color='gray',       alpha=0.85,  ls='--', lw=1.5, label=r'$\theta_{2m}$')
+        self.th2_e_params = dict(color='orangered',  alpha=0.85, ls='-', lw=1, label=r'$\hat{\theta}_{2}$')
         
         # th3 params
-        self.th3_t_params = dict(color='darkorchid',  alpha=0.7,  ls=':', lw=2,   label=r'$\theta_{3}$')
-        self.th3_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$\theta_{3m}$')
-        self.th3_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{\theta}_{3}$')
+        self.th3_t_params = dict(color='lightgray',  alpha=0.95,  ls=':', lw=2,   label=r'$\theta_{3}$')
+        self.th3_m_params = dict(color='gray',       alpha=0.85,  ls='--', lw=1.5, label=r'$\theta_{3m}$')
+        self.th3_e_params = dict(color='orangered',  alpha=0.85, ls='-', lw=1, label=r'$\hat{\theta}_{3}$')
         
         # fp1r params
-        self.f1_th_params = dict(color='mediumvioletred',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{\theta}_{fp1}$')
-        self.f2_th_params = dict(color='mediumvioletred',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{\theta}_{fp2}$')
+        self.f1_th_params = dict(color='darkviolet',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{\theta}_{fp1}$')
+        self.f2_th_params = dict(color='darkviolet',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{\theta}_{fp2}$')
 
         # rcParams
         params = {'xtick.direction'     : 'in',
@@ -113,10 +113,10 @@ class LOS1DataPlotter:
                   'ytick.right'         : True,
                   'ytick.minor.visible' : True,
                   'ytick.color'         : 'gray',
-                #   'text.usetex'         : True,           # slows rendering significantly
+                  'text.usetex'         : True,           # slows rendering significantly
                 #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
                   'pdf.compression'     : 0,
-                  'legend.fontsize'     : 'x-large',
+                  'legend.fontsize'     : 'large',
                   'axes.labelsize'      : 'x-large',
                   'axes.titlesize'      : 'x-large',
                   'xtick.labelsize'     : 'large',
@@ -129,7 +129,7 @@ class LOS1DataPlotter:
 
 
     def plot(self):
-        self.fig, self.axs = plt.subplots(2,1, dpi=100, figsize=(10,6), sharex=True, gridspec_kw={'hspace': 0.25})
+        self.fig, self.axs = plt.subplots(2,1, dpi=100, figsize=(10,10), sharex=True, gridspec_kw={'hspace': 0.25})
         # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
         self.fig.canvas.manager.set_window_title(self.window_title)
 
