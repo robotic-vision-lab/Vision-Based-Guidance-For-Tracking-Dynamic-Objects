@@ -429,6 +429,7 @@ class ExperimentManager:
         tracker_data = self.tracking_manager.stored_data
 
         TIME = self.simulator.time
+
         FP_1_X = controller_data[0]
         FP_1_Y = controller_data[1]
         FP_1_VX = controller_data[2]
@@ -471,6 +472,7 @@ class ExperimentManager:
         AZ_C = controller_data[39]
         AZ_Z = controller_data[40]
         AZ = controller_data[41]
+
         T_1_OCCLUSION_CASE = tracker_data[0]
         T_1_X_MEAS = tracker_data[1]
         T_1_Y_MEAS = tracker_data[2]
@@ -494,6 +496,7 @@ class ExperimentManager:
         T_1_TRUE_THETA = tracker_data[20]
         T_1_TRUE_V_R = tracker_data[21]
         T_1_TRUE_V_THETA = tracker_data[22]
+
         T_2_OCCLUSION_CASE = tracker_data[23]
         T_2_X_MEAS = tracker_data[24]
         T_2_Y_MEAS = tracker_data[25]
@@ -517,6 +520,7 @@ class ExperimentManager:
         T_2_TRUE_THETA = tracker_data[43]
         T_2_TRUE_V_R = tracker_data[44]
         T_2_TRUE_V_THETA = tracker_data[45]
+        
         T_3_OCCLUSION_CASE = tracker_data[46]
         T_3_X_MEAS = tracker_data[47]
         T_3_Y_MEAS = tracker_data[48]
