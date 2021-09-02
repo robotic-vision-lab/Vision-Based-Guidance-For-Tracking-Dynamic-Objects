@@ -107,58 +107,255 @@ if __name__ == '__main__':
         _TRUE_Y2 = []
         _OCC_CASE = []
 
+
+        TIME = []
+
+        FP_1_X = []
+        FP_1_Y = []
+        FP_1_VX = []
+        FP_1_VY = []
+        FP_1_AX = []
+        FP_1_AY = []
+        FP_1_R = []
+        FP_1_THETA = []
+        FP_1_V_R = []
+        FP_1_V_THETA = []
+        FP_1_SPEED = []
+        FP_1_HEADING = []
+        FP_1_ACC = []
+        FP_1_DELTA = []
+        FP_2_X = []
+        FP_2_Y = []
+        FP_2_VX = []
+        FP_2_VY = []
+        FP_2_AX = []
+        FP_2_AY = []
+        FP_2_R = []
+        FP_2_THETA = []
+        FP_2_V_R = []
+        FP_2_V_THETA = []
+        FP_2_SPEED = []
+        FP_2_HEADING = []
+        FP_2_ACC = []
+        FP_2_DELTA = []
+        Y_1 = []
+        Y_2 = []
+        A_LAT = []
+        A_LNG = []
+        S = []
+        C = []
+        Z_W = []
+        S_DOT = []
+        C_DOT = []
+        Z_W_DOT = []
+        AZ = []
+        AZ_C = []
+        AZ_Z = []
+        AZ = []
+
+        T_1_OCCLUSION_CASE = []
+        T_1_X_MEAS = []
+        T_1_Y_MEAS = []
+        T_1_R_MEAS = []
+        T_1_THETA_MEAS = []
+        T_1_X_EST = []
+        T_1_Y_EST = []
+        T_1_VX_EST = []
+        T_1_VY_EST = []
+        T_1_AX_EST = []
+        T_1_AY_EST = []
+        T_1_R_EST = []
+        T_1_THETA_EST = []
+        T_1_V_R_EST = []
+        T_1_V_THETA_EST = []
+        T_1_SPEED_EST = []
+        T_1_BETA_EST = []
+        T_1_ACC_EST = []
+        T_1_DELTA_EST = []
+        T_1_TRUE_R = []
+        T_1_TRUE_THETA = []
+        T_1_TRUE_V_R = []
+        T_1_TRUE_V_THETA = []
+
+        T_2_OCCLUSION_CASE = []
+        T_2_X_MEAS = []
+        T_2_Y_MEAS = []
+        T_2_R_MEAS = []
+        T_2_THETA_MEAS = []
+        T_2_X_EST = []
+        T_2_Y_EST = []
+        T_2_VX_EST = []
+        T_2_VY_EST = []
+        T_2_AX_EST = []
+        T_2_AY_EST = []
+        T_2_R_EST = []
+        T_2_THETA_EST = []
+        T_2_V_R_EST = []
+        T_2_V_THETA_EST = []
+        T_2_SPEED_EST = []
+        T_2_BETA_EST = []
+        T_2_ACC_EST = []
+        T_2_DELTA_EST = []
+        T_2_TRUE_R = []
+        T_2_TRUE_THETA = []
+        T_2_TRUE_V_R = []
+        T_2_TRUE_V_THETA = []
+
+        T_3_OCCLUSION_CASE = []
+        T_3_X_MEAS = []
+        T_3_Y_MEAS = []
+        T_3_R_MEAS = []
+        T_3_THETA_MEAS = []
+        T_3_X_EST = []
+        T_3_Y_EST = []
+        T_3_VX_EST = []
+        T_3_VY_EST = []
+        T_3_AX_EST = []
+        T_3_AY_EST = []
+        T_3_R_EST = []
+        T_3_THETA_EST = []
+        T_3_V_R_EST = []
+        T_3_V_THETA_EST = []
+        T_3_SPEED_EST = []
+        T_3_BETA_EST = []
+        T_3_ACC_EST = []
+        T_3_DELTA_EST = []
+        T_3_TRUE_R = []
+        T_3_TRUE_THETA = []
+        T_3_TRUE_V_R = []
+        T_3_TRUE_V_THETA = []
+
+        DRONE_POS_X = []
+        DRONE_POS_Y = []
+        DRONE_VEL_X = []
+        DRONE_VEL_Y = []
+        CAM_ORIGIN_X = []
+        CAM_ORIGIN_Y = []
+
         # get all the data in memory
         for line in FILE.readlines():
+            # skip first line (header)
             if line.split(',')[0].strip().lower()=='time':
                 continue
             data = tuple(map(float, list(map(str.strip, line.strip().split(',')))))
-            _TIME.append(data[0])
-            _R.append(data[1])
-            _THETA.append(data[2])      # degrees
-            _V_THETA.append(data[3])
-            _V_R.append(data[4])
-            _DRONE_POS_X.append(data[5])    # true
-            _DRONE_POS_Y.append(data[6])    # true
-            _CAR_POS_X.append(data[7])      # true
-            _CAR_POS_Y.append(data[8])      # true
-            _DRONE_ACC_X.append(data[9])
-            _DRONE_ACC_Y.append(data[10])
-            _DRONE_ACC_LAT.append(data[11])
-            _DRONE_ACC_LNG.append(data[12])
-            _CAR_VEL_X.append(data[13])
-            _CAR_VEL_Y.append(data[14])
-            _TRACKED_CAR_POS_X.append(data[15])
-            _TRACKED_CAR_POS_Y.append(data[16])
-            _TRACKED_CAR_VEL_X.append(data[17])
-            _TRACKED_CAR_VEL_Y.append(data[18])
-            _CAM_ORIGIN_X.append(data[19])
-            _CAM_ORIGIN_Y.append(data[20])
-            _DRONE_SPEED.append(data[21])
-            _DRONE_ALPHA.append(data[22])
-            _DRONE_VEL_X.append(data[23])
-            _DRONE_VEL_Y.append(data[24])
-            _MEASURED_CAR_POS_X.append(data[25])
-            _MEASURED_CAR_POS_Y.append(data[26])
-            _MEASURED_CAR_VEL_X.append(data[27])
-            _MEASURED_CAR_VEL_Y.append(data[28])
-            _DRONE_ALTITUDE.append(data[29])
-            _ABS_DEN.append(data[30])
-            _MEASURED_R.append(data[31])
-            _MEASURED_THETA.append(data[32])
-            _MEASURED_V_R.append(data[33])
-            _MEASURED_V_THETA.append(data[34])
-            _TRUE_R.append(data[35])
-            _TRUE_THETA.append(data[36])
-            _TRUE_V_R.append(data[37])
-            _TRUE_V_THETA.append(data[38])
-            _DELTA_TIME.append(data[39])
-            _Y1.append(data[40])
-            _Y2.append(data[41])
-            _CAR_SPEED.append(data[42])
-            _CAR_HEADING.append(data[43])
-            _TRUE_Y1.append(data[44])
-            _TRUE_Y2.append(data[45])
-            _OCC_CASE.append(data[46])
+            TIME.append(data[0])
+            FP_1_X.append(data[1])
+            FP_1_Y.append(data[2])
+            FP_1_VX.append(data[3])
+            FP_1_VY.append(data[4])
+            FP_1_AX.append(data[5])
+            FP_1_AY.append(data[6])
+            FP_1_R.append(data[7])
+            FP_1_THETA.append(data[8])
+            FP_1_V_R.append(data[9])
+            FP_1_V_THETA.append(data[10])
+            FP_1_SPEED.append(data[11])
+            FP_1_HEADING.append(data[12])
+            FP_1_ACC.append(data[13])
+            FP_1_DELTA.append(data[14])
+            FP_2_X.append(data[15])
+            FP_2_Y.append(data[16])
+            FP_2_VX.append(data[17])
+            FP_2_VY.append(data[18])
+            FP_2_AX.append(data[19])
+            FP_2_AY.append(data[20])
+            FP_2_R.append(data[21])
+            FP_2_THETA.append(data[22])
+            FP_2_V_R.append(data[23])
+            FP_2_V_THETA.append(data[24])
+            FP_2_SPEED.append(data[25])
+            FP_2_HEADING.append(data[26])
+            FP_2_ACC.append(data[27])
+            FP_2_DELTA.append(data[28])
+            Y_1.append(data[29])
+            Y_2.append(data[30])
+            A_LAT.append(data[31])
+            A_LNG.append(data[32])
+            S.append(data[33])
+            C.append(data[34])
+            Z_W.append(data[35])
+            S_DOT.append(data[36])
+            C_DOT.append(data[37])
+            Z_W_DOT.append(data[38])
+            AZ.append(data[39])
+            AZ_C.append(data[40])
+            AZ_Z.append(data[41])
+            AZ.append(data[42])
+            T_1_OCCLUSION_CASE.append(data[43])
+            T_1_X_MEAS.append(data[44])
+            T_1_Y_MEAS.append(data[45])
+            T_1_R_MEAS.append(data[46])
+            T_1_THETA_MEAS.append(data[47])
+            T_1_X_EST.append(data[48])
+            T_1_Y_EST.append(data[49])
+            T_1_VX_EST.append(data[50])
+            T_1_VY_EST.append(data[51])
+            T_1_AX_EST.append(data[52])
+            T_1_AY_EST.append(data[53])
+            T_1_R_EST.append(data[54])
+            T_1_THETA_EST.append(data[55])
+            T_1_V_R_EST.append(data[56])
+            T_1_V_THETA_EST.append(data[57])
+            T_1_SPEED_EST.append(data[58])
+            T_1_BETA_EST.append(data[59])
+            T_1_ACC_EST.append(data[60])
+            T_1_DELTA_EST.append(data[61])
+            T_1_TRUE_R.append(data[62])
+            T_1_TRUE_THETA.append(data[63])
+            T_1_TRUE_V_R.append(data[64])
+            T_1_TRUE_V_THETA.append(data[65])
+            T_2_OCCLUSION_CASE.append(data[66])
+            T_2_X_MEAS.append(data[67])
+            T_2_Y_MEAS.append(data[68])
+            T_2_R_MEAS.append(data[69])
+            T_2_THETA_MEAS.append(data[70])
+            T_2_X_EST.append(data[71])
+            T_2_Y_EST.append(data[72])
+            T_2_VX_EST.append(data[73])
+            T_2_VY_EST.append(data[74])
+            T_2_AX_EST.append(data[75])
+            T_2_AY_EST.append(data[76])
+            T_2_R_EST.append(data[77])
+            T_2_THETA_EST.append(data[78])
+            T_2_V_R_EST.append(data[79])
+            T_2_V_THETA_EST.append(data[80])
+            T_2_SPEED_EST.append(data[81])
+            T_2_BETA_EST.append(data[82])
+            T_2_ACC_EST.append(data[83])
+            T_2_DELTA_EST.append(data[84])
+            T_2_TRUE_R.append(data[85])
+            T_2_TRUE_THETA.append(data[86])
+            T_2_TRUE_V_R.append(data[87])
+            T_2_TRUE_V_THETA.append(data[88])
+            T_3_OCCLUSION_CASE.append(data[89])
+            T_3_X_MEAS.append(data[90])
+            T_3_Y_MEAS.append(data[91])
+            T_3_R_MEAS.append(data[92])
+            T_3_THETA_MEAS.append(data[93])
+            T_3_X_EST.append(data[94])
+            T_3_Y_EST.append(data[95])
+            T_3_VX_EST.append(data[96])
+            T_3_VY_EST.append(data[97])
+            T_3_AX_EST.append(data[98])
+            T_3_AY_EST.append(data[99])
+            T_3_R_EST.append(data[100])
+            T_3_THETA_EST.append(data[101])
+            T_3_V_R_EST.append(data[102])
+            T_3_V_THETA_EST.append(data[103])
+            T_3_SPEED_EST.append(data[104])
+            T_3_BETA_EST.append(data[105])
+            T_3_ACC_EST.append(data[106])
+            T_3_DELTA_EST.append(data[107])
+            T_3_TRUE_R.append(data[108])
+            T_3_TRUE_THETA.append(data[109])
+            T_3_TRUE_V_R.append(data[110])
+            T_3_TRUE_V_THETA.append(data[111])
+            DRONE_POS_X.append(data[112])
+            DRONE_POS_Y.append(data[113])
+            DRONE_VEL_X.append(data[114])
+            DRONE_VEL_Y.append(data[115])
+            CAM_ORIGIN_X.append(data[116])
+            CAM_ORIGIN_Y.append(data[117])
 
         FILE.close()
 
