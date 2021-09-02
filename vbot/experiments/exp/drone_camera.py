@@ -348,7 +348,12 @@ class DroneCamera(pygame.sprite.Sprite):
         return state_dot
 
 
-    def update_quadrotor_state(self, state):        
+    def update_quadrotor_state(self, state):
+        """Update the 12 state component variables
+
+        Args:
+            state (tuple): pN, pE, pH, u, v, w, φ, θ, ψ, p, q, r
+        """
         self.pN = state[0]
         self.pE = state[1]
         self.pH = state[2]
