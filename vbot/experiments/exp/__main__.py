@@ -424,6 +424,16 @@ if __name__ == '__main__':
 
         los_2_plotter.plot()
 
+        accl_comm_plotter = AccelerationCommandDataPlotter(_PATH,
+                                                           TIME,
+                                                           A_LAT,
+                                                           A_LNG,
+                                                           AZ
+                                                           )
+
+        accl_comm_plotter.plot()
+
+        
         plt.show()
 
         # # -------------------------------------------------------------------------------- figure 1
