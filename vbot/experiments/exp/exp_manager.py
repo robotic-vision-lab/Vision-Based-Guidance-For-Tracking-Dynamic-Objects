@@ -515,7 +515,7 @@ class ExperimentManager:
         S_DOT = controller_data[35]
         C_DOT = controller_data[36]
         Z_W_DOT = controller_data[37]
-        AZ = controller_data[38]
+        AZ_S = controller_data[38]
         AZ_C = controller_data[39]
         AZ_Z = controller_data[40]
         AZ = controller_data[41]
