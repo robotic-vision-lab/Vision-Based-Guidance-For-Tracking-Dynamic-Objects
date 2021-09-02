@@ -433,6 +433,14 @@ if __name__ == '__main__':
 
         accl_comm_plotter.plot()
 
+        obj_func_plotter = ObjectiveFunctionDataPlotter(_PATH,
+                                                        TIME,
+                                                        Y_1,
+                                                        Y_2
+                                                        )
+
+        obj_func_plotter.plot()
+
 
         plt.show()
 
