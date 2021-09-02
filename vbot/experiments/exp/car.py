@@ -248,11 +248,11 @@ class Car(pygame.sprite.Sprite):
         car_speed = (vx**2 + vy**2)**0.5
         car_beta = atan2(vy, vx)
 
-        cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
+        cam_origin_x, cam_origin_y = self.simulator.manager.get_cam_origin()
 
         # drone (known)
-        drone_pos_x, drone_pos_y = self.manager.get_true_drone_position()
-        drone_vel_x, drone_vel_y = self.manager.get_true_drone_velocity()
+        drone_pos_x, drone_pos_y = self.simulator.manager.get_true_drone_position()
+        drone_vel_x, drone_vel_y = self.simulator.manager.get_true_drone_velocity()
         drone_pos_x += cam_origin_x
         drone_pos_y += cam_origin_y
 
