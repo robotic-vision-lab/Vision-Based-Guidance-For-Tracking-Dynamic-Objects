@@ -193,25 +193,26 @@ class Target:
 
     def get_data(self):
         data = np.array([
-            self.occlusion_case_new,    #  0 new occlusion case 
-            self.measured_pos_x,        #  1 measured position x component
-            self.measured_pos_y,        #  2 measured position y component
-            self.r_meas,                #  3 measured r
-            self.theta_meas,            #  4 measured theta
-            self.x_est,                 #  5 estimated position x component
-            self.y_est,                 #  6 estimated position y component
-            self.vx_est,                #  7 estimated velocity x component
-            self.vy_est,                #  8 estimated velocity y component
-            self.ax_est,                #  9 estimated acceleration x component
-            self.ay_est,                # 10 estimated acceleration y component
-            self.r_est,                 # 11 estimated r
-            self.theta_est,             # 12 estimated theta
-            self.Vr_est,                # 13 estimated Vr
-            self.Vtheta_est,            # 14 estimated Vtheta
-            self.speed_est,             # 15 estimated speed
-            self.beta_est,              # 16 estimated heading
-            self.acc_est,               # 17 estimated acceleration magnitude
-            self.deltaB_est,            # 18 estimated accelertaion angle
+            self.occlusion_case_new,                    #  0 new occlusion case 
+            self.measured_pos_x,                        #  1 measured position x component
+            self.measured_pos_y,                        #  2 measured position y component
+            self.r_meas,                                #  3 measured r
+            self.theta_meas,                            #  4 measured theta
+            self.x_est,                                 #  5 estimated position x component
+            self.y_est,                                 #  6 estimated position y component
+            self.vx_est,                                #  7 estimated velocity x component
+            self.vy_est,                                #  8 estimated velocity y component
+            self.ax_est,                                #  9 estimated acceleration x component
+            self.ay_est,                                # 10 estimated acceleration y component
+            self.r_est,                                 # 11 estimated r
+            self.theta_est,                             # 12 estimated theta
+            self.Vr_est,                                # 13 estimated Vr
+            self.Vtheta_est,                            # 14 estimated Vtheta
+            self.speed_est,                             # 15 estimated speed
+            self.beta_est,                              # 16 estimated heading
+            self.acc_est,                               # 17 estimated acceleration magnitude
+            self.deltaB_est,                            # 18 estimated accelertaion angle
+            *self.sprite_obj.get_true_LOS_kinematics()  # 19-21 r, theta, Vr, Vtheta
             ])
 
         return data
