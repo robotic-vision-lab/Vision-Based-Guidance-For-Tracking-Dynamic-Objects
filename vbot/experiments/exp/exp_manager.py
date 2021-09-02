@@ -359,7 +359,10 @@ class ExperimentManager:
 
 
     def write_info(self):
+        controller_data = self.controller.stored_data
+
         TIME = self.simulator.time
+
         
 
 
