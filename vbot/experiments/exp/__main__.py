@@ -16,7 +16,7 @@ from .plotter import *
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
@@ -24,8 +24,8 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -372,7 +372,7 @@ if __name__ == '__main__':
 
         # copy the plot_info file to the where plots figured will be saved
         shutil.copyfile('plot_info.csv', f'{_PATH}/plot_info.csv')
-        plt.style.use('seaborn-paper', 'fast')
+        plt.style.use(['seaborn-paper', 'fast'])
 
         los_1_plotter = LOS1DataPlotter(_PATH,
                                         TIME,
@@ -391,6 +391,7 @@ if __name__ == '__main__':
                                         )
 
         los_1_plotter.plot()
+        plt.show()
 
         # # -------------------------------------------------------------------------------- figure 1
         # # line of sight kinematics 1
