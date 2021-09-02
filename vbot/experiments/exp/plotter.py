@@ -389,7 +389,6 @@ class AccelerationCommandDataPlotter:
         self.a_lng = a_lng
         self.a_z = a_z
 
-
         self.window_title = 'Commanded Accelerations'
         self.fig = None
         self.axs = None
@@ -398,7 +397,7 @@ class AccelerationCommandDataPlotter:
 
 
     def set_params(self):
-        # vr1 params
+        # params
         self.a_lat_params = dict(color='forestgreen', alpha=0.8,  ls='-', lw=2,   label=r'$a_{lat}$')
         self.a_lng_params = dict(color='deeppink', alpha=0.8,  ls='-', lw=2,   label=r'$a_{long}$')
         self.a_z_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$a_{alt}$')
@@ -424,8 +423,6 @@ class AccelerationCommandDataPlotter:
 
         mpl.rcParams.update(params)
         
-        
-
 
     def plot(self):
         self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,10))
@@ -461,5 +458,93 @@ class AccelerationCommandDataPlotter:
 
 
     
+class ObjectiveFunctionDataPlotter:
+    def __init__(self, 
+                 save_path, 
+                 t, 
+                 y1,
+                 y2):
 
+        self.save_path = save_path
+        self.t = t
+        self.y1 = y1
+        self.y2 = y2
+
+        self.window_title = 'Objective functions'
+        self.fig = None
+        self.axs = None
+
+        self.set_params()
+
+
+    def set_params(self):
+        # params
+        self.y1_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$y_{1}$')
+        self.y2_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$y_{2}$')
+
+        # rcParams
+        params = {'xtick.direction'     : 'in',
+                  'xtick.top'           : True,
+                  'xtick.minor.visible' : True,
+                  'xtick.color'         : 'gray',
+                  'ytick.direction'     : 'in',
+                  'ytick.right'         : True,
+                  'ytick.minor.visible' : True,
+                  'ytick.color'         : 'gray',
+                #   'text.usetex'         : True,           # slows rendering significantly
+                #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
+                  'pdf.compression'     : 0,
+                  'legend.fontsize'     : 'large',
+                  'axes.labelsize'      : 'x-large',
+                  'axes.titlesize'      : 'x-large',
+                  'xtick.labelsize'     : 'large',
+                  'ytick.labelsize'     : 'large',
+                  'axes.edgecolor'      : 'gray'} 
+
+        mpl.rcParams.update(params)
+        
+
+    def plot(self):
+        self.fig, self.axs = plt.subplots(2,1, dpi=100, figsize=(10,10), sharex=True, gridspec_kw={'hspace': 0.25})
+        # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
+        self.fig.canvas.manager.set_window_title(self.window_title)
+
+        # y1, y2
+        self.axs[0].plot(self.t, self.y1, **self.y1_params)
+        self.axs[0].plot(self.t, self.y2, **self.y2_params)
+
+        # set axes decorations
+        self.add_axes_decor()
+
+        # save and show figure
+        self.fig.tight_layout()
+        self.fig.subplots_adjust(left=0.1, bottom=0.1, right=0.94, top=0.94)
+        self.fig.savefig(f'{self.save_path}/3_objfunc.pdf')
+        self.fig.show()
+
+
+    def add_axes_decor(self):
+        self.axs[0].set_title(r'$y_{1}$')
+        self.axs[0].legend()
+        self.axs[0].set(ylabel=r'$y_1$')
+        self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[0].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[0].grid(True, which='minor', alpha=0.1)
+        self.axs[0].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
+        
+        self.axs[1].set_title(r'$y_{2}$')
+        self.axs[1].legend()
+        self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$y_2$')
+        self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[1].grid(True, which='minor', alpha=0.1)
+        self.axs[1].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[1].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[1].get_yticklabels()]
+        
+
+
+    
     
