@@ -350,7 +350,13 @@ class ExperimentManager:
                 f'T_3_TRUE_R,' +
                 f'T_3_TRUE_THETA,' +
                 f'T_3_TRUE_V_R,' +
-                f'T_3_TRUE_V_THETA\n'
+                f'T_3_TRUE_V_THETA,' +
+                f'DRONE_POS_X,' +
+                f'DRONE_POS_Y,' +
+                f'DRONE_VEL_X,' +
+                f'DRONE_VEL_Y,' +
+                f'CAM_ORIGIN_X,' +
+                f'CAM_ORIGIN_Y\n'
             )
 
         # run experiment
@@ -588,6 +594,10 @@ class ExperimentManager:
         T_3_TRUE_V_R = tracker_data[67]
         T_3_TRUE_V_THETA = tracker_data[68]
 
+        DRONE_POS_X, DRONE_POS_Y = self.get_true_drone_position()
+        DRONE_VEL_X, DRONE_VEL_Y = self.get_true_drone_velocity()
+        CAM_ORIGIN_X, CAM_ORIGIN_Y = self.get_cam_origin()
+
         self.data_file.write(
             f'{TIME},' +
             f'{FP_1_X},' +
@@ -700,7 +710,13 @@ class ExperimentManager:
             f'{T_3_TRUE_R},' +
             f'{T_3_TRUE_THETA},' +
             f'{T_3_TRUE_V_R},' +
-            f'{T_3_TRUE_V_THETA}\n'
+            f'{T_3_TRUE_V_THETA},' +
+            f'{DRONE_POS_X},' +
+            f'{DRONE_POS_Y},' +
+            f'{DRONE_VEL_X},' +
+            f'{DRONE_VEL_Y},' +
+            f'{CAM_ORIGIN_X},' +
+            f'{CAM_ORIGIN_Y}\n'
         )
 
 
