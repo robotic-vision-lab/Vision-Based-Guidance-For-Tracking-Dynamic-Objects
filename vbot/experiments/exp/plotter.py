@@ -146,9 +146,9 @@ class LOS1DataPlotter:
         self.axs[0].plot(self.t, self.r3_m, **self.r3_m_params)
         self.axs[0].plot(self.t, self.r3_e, **self.r3_e_params)
 
+        # fp1_r, fp2_r
         self.axs[0].plot(self.t, self.f1_r, **self.f1_r_params)
         self.axs[0].plot(self.t, self.f2_r, **self.f2_r_params)
-        
 
         # th1, th2
         self.axs[1].plot(self.t, self.th1_t, **self.th1_t_params)
@@ -163,6 +163,7 @@ class LOS1DataPlotter:
         self.axs[1].plot(self.t, self.th3_m, **self.th3_m_params)
         self.axs[1].plot(self.t, self.th3_e, **self.th3_e_params)
 
+        # fp1_theta, fp2_theta
         self.axs[1].plot(self.t, self.f1_th, **self.f1_th_params)
         self.axs[1].plot(self.t, self.f2_th, **self.f2_th_params)
 
@@ -174,6 +175,7 @@ class LOS1DataPlotter:
         self.fig.subplots_adjust(left=0.1, bottom=0.1, right=0.94, top=0.94)
         self.fig.savefig(f'{self.save_path}/1_los1.pdf')
         self.fig.show()
+
 
     def add_axes_decor(self):
         self.axs[0].set_title(r'$\mathbf{r}$')
