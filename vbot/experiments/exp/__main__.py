@@ -360,7 +360,7 @@ if __name__ == '__main__':
         FILE.close()
 
         # plot
-        if len(_TIME) < 5:
+        if len(TIME) < 5:
             print('Not enough data to plot.')
             sys.exit()
         import matplotlib.pyplot as plt
