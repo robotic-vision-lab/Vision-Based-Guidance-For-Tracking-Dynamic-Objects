@@ -236,3 +236,32 @@ class Car(pygame.sprite.Sprite):
         """
         self.image, self.rect = self.simulator.car_img_rect
         self.update_rect()
+
+    def get_position(self):
+        """helper function returns position in world frame"""
+        return pygame.Vector2(self.simulator.camera.origin) + pygame.Vector2(self.position)
+
+    def get_true_LOS_kinematics(self):
+        x, y = self.get_position()
+        vx, vy = self.velocity
+
+        car_speed = (vx**2 + vy**2)**0.5
+        car_beta = atan2(vy, vx)
+
+        cam_origin_x, cam_origin_y = self.manager.get_cam_origin()
+
+        # drone (known)
+        drone_pos_x, drone_pos_y = self.manager.get_true_drone_position()
+        drone_vel_x, drone_vel_y = self.manager.get_true_drone_velocity()
+        drone_pos_x += cam_origin_x
+        drone_pos_y += cam_origin_y
+
+        r = ((x - drone_pos_x)**2 + (y - drone_pos_y)**2)**0.5
+        theta = atan2(y - drone_pos_y, x - drone_pos_x)
+
+        
+
+
+
+
+    
