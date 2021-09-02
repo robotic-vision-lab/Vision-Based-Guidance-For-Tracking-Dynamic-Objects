@@ -31,29 +31,30 @@ class LOS1DataPlotter:
 
     def set_params(self):
         # r1 params
-        self.r1_t_params = dict(color='darkorchid',     alpha=0.85, ls='-', lw=2,   label=r'$r$')
-        self.r1_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_m$')
-        self.r1_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}$')
+        self.r1_t_params = dict(color='darkorchid',  alpha=0.7,  ls='-', lw=2,   label=r'$r_1$')
+        self.r1_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_{1m}$')
+        self.r1_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r_1}$')
         
         # r2 params
-        self.r2_t_params = dict(color='darkorchid',     alpha=0.85, ls='-', lw=2,   label=r'$r$')
-        self.r2_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_m$')
-        self.r2_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}$')
+        self.r2_t_params = dict(color='darkorchid',  alpha=0.7,  ls='-', lw=2,   label=r'$r_2$')
+        self.r2_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_{2m}$')
+        self.r2_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r_2}$')
 
         # th1 params
-        self.th1_t_params = dict(color='darkorchid',     alpha=0.85, ls='-', lw=2,   label=r'$r$')
-        self.th1_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_m$')
-        self.th1_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}$')
+        self.th1_t_params = dict(color='darkorchid',  alpha=0.7,  ls='-', lw=2,   label=r'$\theta_1$')
+        self.th1_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$theta_{1m}$')
+        self.th1_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{\theta_1}$')
         
         # th2 params
-        self.th2_t_params = dict(color='darkorchid',     alpha=0.85, ls='-', lw=2,   label=r'$r$')
-        self.th2_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$r_m$')
-        self.th2_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{r}$')
+        self.th2_t_params = dict(color='darkorchid',  alpha=0.7,  ls='-', lw=2,   label=r'$\theta_2$')
+        self.th2_m_params = dict(color='forestgreen', alpha=0.85, ls='-', lw=1.5, label=r'$\theta_{2m}$')
+        self.th2_e_params = dict(color='darkorange',  alpha=0.85, ls='-', lw=1.5, label=r'$\hat{\theta_2}$')
 
         # rcParams
         mpl.rcParams['xtick.direction'] = 'in'
         mpl.rcParams['ytick.direction'] = 'in'
         mpl.rcParams['text.usetex'] = True
+        mpl.rcParams['toolbar'] = 'None'
         mpl.rcParams['pdf.compression'] = 0
         
         
