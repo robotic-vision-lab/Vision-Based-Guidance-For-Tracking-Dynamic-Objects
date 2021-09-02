@@ -469,6 +469,8 @@ class ObjectiveFunctionDataPlotter:
         self.t = t
         self.y1 = y1
         self.y2 = y2
+        self.y1d = [K_W for _ in t]
+        self.y2d = [0.0 for _ in t]
 
         self.window_title = 'Objective functions'
         self.fig = None
@@ -481,6 +483,8 @@ class ObjectiveFunctionDataPlotter:
         # params
         self.y1_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$y_{1}$')
         self.y2_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$y_{2}$')
+        self.y1d_params = dict(color='darkorange', alpha=0.8,  ls='--', lw=2,   label=r'$y_{1d}$')
+        self.y2d_params = dict(color='darkorange', alpha=0.8,  ls='--', lw=2,   label=r'$y_{2d}$')
 
         # rcParams
         params = {'xtick.direction'     : 'in',
@@ -511,7 +515,9 @@ class ObjectiveFunctionDataPlotter:
 
         # y1, y2
         self.axs[0].plot(self.t, self.y1, **self.y1_params)
-        self.axs[0].plot(self.t, self.y2, **self.y2_params)
+        self.axs[0].plot(self.t, self.y1d, **self.y1d_params)
+        self.axs[1].plot(self.t, self.y2, **self.y2_params)
+        self.axs[1].plot(self.t, self.y2d, **self.y2d_params)
 
         # set axes decorations
         self.add_axes_decor()
