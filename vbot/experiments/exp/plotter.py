@@ -23,10 +23,25 @@ class LOS1DataPlotter:
         self.set_params()
 
     def set_params(self):
-
+        # r1 params
         self.r1_t_params = dict(color='dimgray',     ls='-', lw=2, label=r'$r$')
         self.r1_m_params = dict(color='forestgreen', ls='-', lw=1.5, label=r'$r_m$')
         self.r1_e_params = dict(color='darkorange',     ls='-', lw=1.5, label=r'$\hat{r}$')
+        
+        # r2 params
+        self.r2_t_params = dict(color='dimgray',     ls='-', lw=2, label=r'$r$')
+        self.r2_m_params = dict(color='forestgreen', ls='-', lw=1.5, label=r'$r_m$')
+        self.r2_e_params = dict(color='darkorange',     ls='-', lw=1.5, label=r'$\hat{r}$')
+
+        # th1 params
+        self.th1_t_params = dict(color='dimgray',     ls='-', lw=2, label=r'$r$')
+        self.th1_m_params = dict(color='forestgreen', ls='-', lw=1.5, label=r'$r_m$')
+        self.th1_e_params = dict(color='darkorange',     ls='-', lw=1.5, label=r'$\hat{r}$')
+        
+        # th2 params
+        self.th2_t_params = dict(color='dimgray',     ls='-', lw=2, label=r'$r$')
+        self.th2_m_params = dict(color='forestgreen', ls='-', lw=1.5, label=r'$r_m$')
+        self.th2_e_params = dict(color='darkorange',     ls='-', lw=1.5, label=r'$\hat{r}$')
         
 
 
