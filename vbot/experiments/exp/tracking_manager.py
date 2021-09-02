@@ -255,7 +255,11 @@ class TrackingManager:
 
         # update stored tracking data 
         if self.exp_manager.write_plot:
-            self.stored_data = np.array([])
+            self.stored_data = np.array([
+                *self.targets[0].get_data(),
+                *self.targets[1].get_data(),
+                *self.targets[2].get_data()
+                ])
 
 
 
