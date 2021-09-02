@@ -372,7 +372,7 @@ class ExperimentManager:
         just to make a note ..
         Things to plot 
 
-        LOS (with occlusion cases)
+        LOS (with occlusion cases) (true, meas, est)
         ---
         1. t, r1, r2
         2. t, theta1, theta2
@@ -383,12 +383,12 @@ class ExperimentManager:
         --------
         5. t, a_lat, a_long, a_z
 
-        Objective functions
+        Objective functions (true, est)
         -------------------
         6. t, y1
         7. t, y2
 
-        speeds
+        speeds 
         ------
         8. t, speed_A, speed_f1, speed_f2, speed_B1, .. 
         9. t, diff_speed_A_f1, f2, B1, B2 ..
