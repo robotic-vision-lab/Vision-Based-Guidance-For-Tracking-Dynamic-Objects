@@ -363,7 +363,12 @@ class ExperimentManager:
 
         TIME = self.simulator.time
 
-        
+        """
+        decide who gets to collect true data 
+        it also involves computing LOS components 
+
+        Also quad states need to be written
+        """
 
 
 
