@@ -256,10 +256,17 @@ class Car(pygame.sprite.Sprite):
         drone_pos_x += cam_origin_x
         drone_pos_y += cam_origin_y
 
+        drone_speed = (drone_vel_x**2 + drone_vel_y**2)**0.5
+        drone_alpha = atan2(drone_vel_y, drone_vel_x)
+
         r = ((x - drone_pos_x)**2 + (y - drone_pos_y)**2)**0.5
         theta = atan2(y - drone_pos_y, x - drone_pos_x)
+        Vr = car_speed * cos(car_beta - theta) - drone_speed * cos(drone_alpha - theta)
+        Vtheta = car_speed * sin(car_beta - theta) - drone_speed * sin(drone_alpha - theta)
 
-        
+        return (r, theta, Vr, Vtheta)
+
+
 
 
 
