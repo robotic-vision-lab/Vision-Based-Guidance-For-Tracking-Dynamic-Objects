@@ -432,7 +432,7 @@ class Controller:
 
         # az = az_x + az_y + 0
 
-        az = self.sat(az, 12)
+        az = self.sat(az, 10)
 
         print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
         print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
