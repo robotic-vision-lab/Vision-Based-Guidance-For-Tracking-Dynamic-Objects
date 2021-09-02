@@ -455,8 +455,8 @@ class AccelerationCommandDataPlotter:
         self.axs.yaxis.set_minor_locator(AutoMinorLocator())
         self.axs.grid(True, which='minor', alpha=0.1)
         self.axs.grid(True, which='major', alpha=0.3)
-        [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
-        [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
+        [tl.set_color('black') for tl in self.axs.get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs.get_yticklabels()]
         
 
 
