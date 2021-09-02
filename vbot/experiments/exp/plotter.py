@@ -375,6 +375,91 @@ class LOS2DataPlotter:
     
 
     
+class AccelerationCommandDataPlotter:
+    def __init__(self, 
+                 save_path, 
+                 t, 
+                 a_lat,
+                 a_lng,
+                 a_z):
 
+        self.save_path = save_path
+        self.t = t
+        self.a_lat = a_lat
+        self.a_lng = a_lng
+        self.a_z = a_z
+
+
+        self.window_title = 'Commanded Accelerations'
+        self.fig = None
+        self.axs = None
+
+        self.set_params()
+
+
+    def set_params(self):
+        # vr1 params
+        self.a_lat_params = dict(color='forestgreen', alpha=0.8,  ls='-', lw=2,   label=r'$a_{lat}$')
+        self.a_lng_params = dict(color='deeppink', alpha=0.8,  ls='-', lw=2,   label=r'$a_{long}$')
+        self.a_z_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$a_{alt}$')
+
+        # rcParams
+        params = {'xtick.direction'     : 'in',
+                  'xtick.top'           : True,
+                  'xtick.minor.visible' : True,
+                  'xtick.color'         : 'gray',
+                  'ytick.direction'     : 'in',
+                  'ytick.right'         : True,
+                  'ytick.minor.visible' : True,
+                  'ytick.color'         : 'gray',
+                #   'text.usetex'         : True,           # slows rendering significantly
+                #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
+                  'pdf.compression'     : 0,
+                  'legend.fontsize'     : 'large',
+                  'axes.labelsize'      : 'x-large',
+                  'axes.titlesize'      : 'x-large',
+                  'xtick.labelsize'     : 'large',
+                  'ytick.labelsize'     : 'large',
+                  'axes.edgecolor'      : 'gray'} 
+
+        mpl.rcParams.update(params)
+        
+        
+
+
+    def plot(self):
+        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,10))
+        # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
+        self.fig.canvas.manager.set_window_title(self.window_title)
+
+        # a_lat, a_long, a_z
+        self.axs.plot(self.t, self.a_lat, **self.a_lat_params)
+        self.axs.plot(self.t, self.a_lng, **self.a_lng_params)
+        self.axs.plot(self.t, self.a_z, **self.a_z_params)
+
+        # set axes decorations
+        self.add_axes_decor()
+
+        # save and show figure
+        self.fig.tight_layout()
+        self.fig.subplots_adjust(left=0.1, bottom=0.1, right=0.94, top=0.94)
+        self.fig.savefig(f'{self.save_path}/2_accel.pdf')
+        self.fig.show()
+
+
+    def add_axes_decor(self):
+        self.axs.set_title(r'$a_{lat}, a_{long}, a_{z}$')
+        self.axs.legend()
+        self.axs.set(xlabel=r'$time\ (s)$', ylabel=r'$acceleration\ (\frac{m}{s_{2}})$')
+        self.axs.xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs.yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs.grid(True, which='minor', alpha=0.1)
+        self.axs.grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
+        
+
+
+    
 
     
