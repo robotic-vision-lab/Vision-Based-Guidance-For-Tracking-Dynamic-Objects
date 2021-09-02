@@ -414,7 +414,8 @@ class ExperimentManager:
                         self.simulator.camera.apply_accleration_command(ax, ay, az)
 
                         # self.plot_manager.uas_focal_points_plotter.collect_data()
-                        self.write_info()
+                        if self.write_plot:
+                            self.write_info()
                         self.plot_manager.plot()
                         
 
