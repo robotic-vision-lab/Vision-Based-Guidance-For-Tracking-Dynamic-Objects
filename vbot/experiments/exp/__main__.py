@@ -402,7 +402,7 @@ if __name__ == '__main__':
 
         los_1_plotter.plot()
 
-        los_2_plotter = LOS1DataPlotter(_PATH,
+        los_2_plotter = LOS2DataPlotter(_PATH,
                                         TIME,
                                         T_1_TRUE_R,
                                         T_1_R_EST,
