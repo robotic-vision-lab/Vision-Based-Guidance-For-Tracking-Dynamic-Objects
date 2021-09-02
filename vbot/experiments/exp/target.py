@@ -212,7 +212,7 @@ class Target:
             self.beta_est,                              # 16 estimated heading
             self.acc_est,                               # 17 estimated acceleration magnitude
             self.deltaB_est,                            # 18 estimated accelertaion angle
-            *self.sprite_obj.get_true_LOS_kinematics()  # 19-21 r, theta, Vr, Vtheta
+            *self.sprite_obj.get_true_LOS_kinematics()  # 19-22 r, theta, Vr, Vtheta
             ])
 
         return data
