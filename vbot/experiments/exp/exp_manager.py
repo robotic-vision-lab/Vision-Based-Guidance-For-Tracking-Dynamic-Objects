@@ -425,6 +425,49 @@ class ExperimentManager:
 
 
     def write_info(self):
+              
+        """
+        decide who gets to collect true data 
+        it also involves computing LOS components 
+
+        Also quad states need to be written
+
+        just to make a note ..
+        Things to plot 
+
+        LOS (with occlusion cases) (true, meas, est)
+        ---
+        1. t, r1, r2
+        2. t, theta1, theta2
+        3. t, Vr1, Vr2
+        4. t, Vtheta1, Vtheta2
+
+        commands
+        --------
+        5. t, a_lat, a_long, a_z
+
+        Objective functions (true, est)
+        -------------------
+        6. t, y1
+        7. t, y2
+
+        speeds 
+        ------
+        8. t, speed_A, speed_f1, speed_f2, speed_B1, .. 
+        9. t, diff_speed_A_f1, f2, B1, B2 ..
+
+        headings
+        --------
+        10. t, heading_A, heading_f1, heading_f2, heading_B1, ..
+        11. t, diff_heading_A_f1, f2, B1, B2, ..
+
+        Trajectories
+        ------------
+        12. (cam) drone_x, drone_y, fpx, fpy, .., Bx, By, ..
+        13. (world) drone_x, drone_y, fpx, fpy, .., Bx, By, ..
+
+
+        """
         controller_data = self.controller.stored_data
         tracker_data = self.tracking_manager.stored_data
 
@@ -659,62 +702,6 @@ class ExperimentManager:
             f'{T_3_TRUE_V_R},' +
             f'{T_3_TRUE_V_THETA}\n'
         )
-
-        
-
-
-
-        """
-        decide who gets to collect true data 
-        it also involves computing LOS components 
-
-        Also quad states need to be written
-
-        just to make a note ..
-        Things to plot 
-
-        LOS (with occlusion cases) (true, meas, est)
-        ---
-        1. t, r1, r2
-        2. t, theta1, theta2
-        3. t, Vr1, Vr2
-        4. t, Vtheta1, Vtheta2
-
-        commands
-        --------
-        5. t, a_lat, a_long, a_z
-
-        Objective functions (true, est)
-        -------------------
-        6. t, y1
-        7. t, y2
-
-        speeds 
-        ------
-        8. t, speed_A, speed_f1, speed_f2, speed_B1, .. 
-        9. t, diff_speed_A_f1, f2, B1, B2 ..
-
-        headings
-        --------
-        10. t, heading_A, heading_f1, heading_f2, heading_B1, ..
-        11. t, diff_heading_A_f1, f2, B1, B2, ..
-
-        Trajectories
-        ------------
-        12. (cam) drone_x, drone_y, fpx, fpy, .., Bx, By, ..
-        13. (world) drone_x, drone_y, fpx, fpy, .., Bx, By, ..
-
-
-        """
-
-
-
-
-
-
-
-
-
 
 
 
