@@ -467,6 +467,24 @@ if __name__ == '__main__':
 
         speeds_headings_plotter.plot()
 
+        trajectory_world_plotter = TrajectoryWorldDataPlotter(_PATH,
+                                                              TIME,
+                                                              T_1_X_EST,
+                                                              T_1_Y_EST,
+                                                              T_2_X_EST,
+                                                              T_2_Y_EST,
+                                                              T_3_X_EST,
+                                                              T_3_Y_EST,
+                                                              FP_1_X,
+                                                              FP_1_Y,
+                                                              FP_2_X,
+                                                              FP_2_Y,
+                                                              DRONE_POS_X_W,
+                                                              DRONE_POS_Y_W,
+                                                              )
+
+        trajectory_world_plotter.plot()
+
         plt.show()
 
         # # -------------------------------------------------------------------------------- figure 1
