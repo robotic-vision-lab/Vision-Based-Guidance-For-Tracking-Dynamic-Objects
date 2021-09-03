@@ -449,6 +449,23 @@ if __name__ == '__main__':
 
         obj_func_plotter.plot()
 
+        speeds_headings_plotter = SpeedsHeadingsDataPlotter(_PATH,
+                                                            TIME,
+                                                            T_1_SPEED_EST,
+                                                            T_2_SPEED_EST,
+                                                            T_3_SPEED_EST,
+                                                            FP_1_SPEED,
+                                                            FP_2_SPEED,
+                                                            DRONE_SPEED,
+                                                            T_1_BETA_EST,
+                                                            T_2_BETA_EST,
+                                                            T_3_BETA_EST,
+                                                            FP_1_HEADING,
+                                                            FP_2_HEADING,
+                                                            DRONE_ALPHA
+                                                            )
+
+        speeds_headings_plotter.plot()
 
         plt.show()
 
