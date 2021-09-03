@@ -232,6 +232,10 @@ if __name__ == '__main__':
         DRONE_VEL_Y = []
         CAM_ORIGIN_X = []
         CAM_ORIGIN_Y = []
+        DRONE_POS_X_W = []
+        DRONE_POS_Y_W = []
+        DRONE_SPEED = []
+        DRONE_ALPHA = []
 
         # get all the data in memory
         for line in FILE.readlines():
@@ -357,6 +361,10 @@ if __name__ == '__main__':
             DRONE_VEL_Y.append(data[115])
             CAM_ORIGIN_X.append(data[116])
             CAM_ORIGIN_Y.append(data[117])
+            DRONE_POS_X_W.append(data[118])
+            DRONE_POS_Y_W.append(data[119])
+            DRONE_SPEED.append(data[120])
+            DRONE_ALPHA.append(data[121])
 
         FILE.close()
 
