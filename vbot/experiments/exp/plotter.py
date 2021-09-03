@@ -878,4 +878,128 @@ class TrajectoryWorldDataPlotter:
         
         
 
+class TrajectoryCameraDataPlotter:
+    def __init__(self, 
+                 save_path, 
+                 t, 
+                 t1_x,
+                 t1_y,
+                 t2_x,
+                 t2_y,
+                 t3_x,
+                 t3_y,
+                 fp1_x,
+                 fp1_y,
+                 fp2_x,
+                 fp2_y,
+                 d_x,
+                 d_y
+                 ):
+
+        self.save_path = save_path
+        self.t = t
+        self.t1_x = t1_x
+        self.t1_y = t1_y
+        self.t2_x = t2_x
+        self.t2_y = t2_y
+        self.t3_x = t3_x
+        self.t3_y = t3_y
+        self.fp1_x = fp1_x
+        self.fp1_y = fp1_y
+        self.fp2_x = fp2_x
+        self.fp2_y = fp2_y
+        self.d_x = d_x
+        self.d_y = d_y
+
+        self.window_title = 'Trajectory (World)'
+        self.fig = None
+        self.axs = None
+
+        self.set_params()
+
+
+    def set_params(self):
+        # target traj params
+        self.t1_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{1}$')
+        self.t2_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{2}$')
+        self.t3_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{3}$')
+
+        # focal point traj params
+        self.fp1_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp1}$')
+        self.fp2_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp2}$')
+
+        # drone params
+        self.d_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2.5,   label=r'$A$')
+        
+
+
+        # rcParams
+        params = {'xtick.direction'     : 'in',
+                  'xtick.top'           : True,
+                  'xtick.minor.visible' : True,
+                  'xtick.color'         : 'gray',
+                  'ytick.direction'     : 'in',
+                  'ytick.right'         : True,
+                  'ytick.minor.visible' : True,
+                  'ytick.color'         : 'gray',
+                #   'text.usetex'         : True,           # slows rendering significantly
+                #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
+                  'pdf.compression'     : 0,
+                  'legend.fontsize'     : 'xx-large',
+                  'axes.labelsize'      : 'xx-large',
+                  'axes.titlesize'      : 'xx-large',
+                  'xtick.labelsize'     : 'x-large',
+                  'ytick.labelsize'     : 'x-large',
+                  'axes.edgecolor'      : 'gray'} 
+
+        mpl.rcParams.update(params)
+
+
+    def make_handles(self, params_list):
+        return [Line2D([0], [0], **params) for params in params_list]
+
+
+    def plot(self):
+        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,5))
+        # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
+        self.fig.canvas.manager.set_window_title(self.window_title)
+
+        # targets speeds
+        self.axs.plot(self.t1_x, self.t1_y, **self.t1_params)
+        self.axs.plot(self.t2_x, self.t2_y, **self.t2_params)
+        self.axs.plot(self.t3_x, self.t3_y, **self.t3_params)
+
+        # focal points speeds
+        self.axs.plot(self.fp1_x, self.fp1_y, **self.fp1_params)
+        self.axs.plot(self.fp2_x, self.fp2_y, **self.fp2_params)
+
+        # drone speed
+        self.axs.plot(self.d_x, self.d_y, **self.d_params)
+
+        # set axes decorations
+        self.add_axes_decor()
+
+        # save and show figure
+        self.fig.tight_layout()
+        self.fig.subplots_adjust(left=0.1, bottom=0.12, right=0.94, top=0.94)
+        self.fig.savefig(f'{self.save_path}/5_traj_world.pdf')
+        self.fig.show()
+
+
+    def add_axes_decor(self):
+        legend_handles = self.make_handles([self.t1_params, self.fp1_params, self.d_params])
+        self.axs.set_title(r'Trajectories (world frame)')
+        self.axs.legend(handles=legend_handles,
+                        labels=[r'$B_{i}$', r'$B_{fpi}$', r'$A$'],
+                        loc='upper right')
+        self.axs.set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$')
+        self.axs.xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs.yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs.grid(True, which='minor', alpha=0.1)
+        self.axs.grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs.get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs.get_yticklabels()]
+        
+        
+
     
