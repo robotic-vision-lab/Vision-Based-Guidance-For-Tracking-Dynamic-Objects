@@ -898,18 +898,31 @@ class TrajectoryCameraDataPlotter:
 
         self.save_path = save_path
         self.t = t
-        self.t1_x = t1_x
-        self.t1_y = t1_y
-        self.t2_x = t2_x
-        self.t2_y = t2_y
-        self.t3_x = t3_x
-        self.t3_y = t3_y
-        self.fp1_x = fp1_x
-        self.fp1_y = fp1_y
-        self.fp2_x = fp2_x
-        self.fp2_y = fp2_y
-        self.d_x = d_x
-        self.d_y = d_y
+        self.t1_x = np.array(t1_x)
+        self.t1_y = np.array(t1_y)
+        self.t2_x = np.array(t2_x)
+        self.t2_y = np.array(t2_y)
+        self.t3_x = np.array(t3_x)
+        self.t3_y = np.array(t3_y)
+        self.fp1_x = np.array(fp1_x)
+        self.fp1_y = np.array(fp1_y)
+        self.fp2_x = np.array(fp2_x)
+        self.fp2_y = np.array(fp2_y)
+        self.d_x = np.array(d_x)
+        self.d_y = np.array(d_y)
+
+        self.t1_x -= self.d_x
+        self.t1_y -= self.d_y
+        self.t2_x -= self.d_x
+        self.t2_y -= self.d_y
+        self.t3_x -= self.d_x
+        self.t3_y -= self.d_y
+        self.fp1_x -= self.d_x
+        self.fp1_y -= self.d_y
+        self.fp2_x -= self.d_x
+        self.fp2_y -= self.d_y
+        self.d_x -= self.d_x
+        self.d_y -= self.d_y
 
         self.window_title = 'Trajectory (World)'
         self.fig = None
