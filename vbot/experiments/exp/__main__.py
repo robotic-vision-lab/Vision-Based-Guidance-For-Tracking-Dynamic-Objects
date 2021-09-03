@@ -503,6 +503,15 @@ if __name__ == '__main__':
 
         trajectory_camera_plotter.plot()
 
+        altitude_control_plotter = AltitudeControlDataPlotter(_PATH,
+                                                              TIME,
+                                                              S,
+                                                              C,
+                                                              Z_W
+                                                              )
+
+        altitude_control_plotter.plot()
+
         plt.show()
 
         # # -------------------------------------------------------------------------------- figure 1
