@@ -189,7 +189,7 @@ class LOS1DataPlotter:
 
         self.axs[0].set_title(r'$\mathbf{r}$')
         self.axs[0].legend(handles=legend_handles_r, 
-                           labels=[r'$r_{B_{i}}$', r'$r_{B_{i},m}$', r'$\hat{r}_{B_{i}}$', r'$r_{fp_{i}}$'],
+                           labels=[r'$r_{B_{i}}$', r'$r_{B_{i},m}$', r'$\hat{r}_{B_{i}}$', r'$\hat{r}_{fp_{i}}$'],
                            loc='upper right')
         self.axs[0].set(ylabel=r'$r\ (m)$')
         self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
@@ -206,7 +206,7 @@ class LOS1DataPlotter:
                                                self.f1_th_params])
         self.axs[1].set_title(r'$\mathbf{\theta}$')
         self.axs[1].legend(handles=legend_handles_th,
-                           labels=[r'${\theta}_{B_{i}}$', r'${\theta}_{B_{i},m}$', r'$\hat{\theta}_{B_{i}}$', r'${\theta}_{fp_{i}}$'],
+                           labels=[r'${\theta}_{B_{i}}$', r'${\theta}_{B_{i},m}$', r'$\hat{\theta}_{B_{i}}$', r'$\hat{\theta}_{fp_{i}}$'],
                            loc='upper right')
         self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$\theta\ (^{\circ})$')
         self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
@@ -378,7 +378,7 @@ class LOS2DataPlotter:
                                                self.f1_vr_params])
         self.axs[0].set_title(r'$\mathbf{V_{r}}$')
         self.axs[0].legend(handles=legend_handles_vr,
-                           labels=[r'$V_{rB_{i}}$', r'$V_{rB_{i},m}$', r'$\hat{V}_{rB_{i}}$', r'$V_{rfp_{i}}$'],
+                           labels=[r'$V_{rB_{i}}$', r'$\hat{V}_{rB_{i}}$', r'$\hat{V}_{rfp_{i}}$'],
                            loc='upper right')
         self.axs[0].set(ylabel=r'$V_{r}\ (\frac{m}{s})$')
         self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
@@ -394,7 +394,7 @@ class LOS2DataPlotter:
                                                 self.f1_vth_params])
         self.axs[1].set_title(r'$\mathbf{V_{\theta}}$')
         self.axs[1].legend(handles=legend_handles_vth,
-                           labels=[r'$V_{\theta B_{i}}$', r'$V_{\theta B_{i},m}$', r'$\hat{V}_{\theta B_{i}}$', r'$V_{\theta fp_{i}}$'],
+                           labels=[r'$V_{\theta B_{i}}$', r'$\hat{V}_{\theta B_{i}}$', r'$\hat{V}_{\theta fp_{i}}$'],
                            loc='upper right')
         self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_{\theta}\ (\frac{m}{s})$')
         self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
@@ -475,7 +475,7 @@ class AccelerationCommandDataPlotter:
 
         # save and show figure
         self.fig.tight_layout()
-        self.fig.subplots_adjust(left=0.1, bottom=0.1, right=0.94, top=0.94)
+        self.fig.subplots_adjust(left=0.12, bottom=0.12, right=0.94, top=0.94)
         self.fig.savefig(f'{self.save_path}/2_accel.pdf')
         self.fig.show()
 
@@ -556,6 +556,7 @@ class ObjectiveFunctionDataPlotter:
         # y1, y2
         self.axs[0].plot(self.t, self.y1, **self.y1_params)
         self.axs[0].plot(self.t, self.y1d, **self.y1d_params)
+        self.axs[0].ticklabel_format(axis='y', style='sci', scilimits=(0,0), useMathText=True)
         self.axs[1].plot(self.t, self.y2, **self.y2_params)
         self.axs[1].plot(self.t, self.y2d, **self.y2d_params)
 
@@ -571,7 +572,7 @@ class ObjectiveFunctionDataPlotter:
 
     def add_axes_decor(self):
         self.axs[0].set_title(r'$y_{1}$')
-        self.axs[0].legend()
+        self.axs[0].legend(loc='upper right')
         self.axs[0].set(ylabel=r'$y_1$')
         self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
         self.axs[0].yaxis.set_minor_locator(AutoMinorLocator())
@@ -581,7 +582,7 @@ class ObjectiveFunctionDataPlotter:
         [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
         
         self.axs[1].set_title(r'$y_{2}$')
-        self.axs[1].legend()
+        self.axs[1].legend(loc='upper right')
         self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$y_2$')
         self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
         self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
@@ -729,7 +730,8 @@ class SpeedsHeadingsDataPlotter:
         legends_handles_s = self.make_handles([self.t1_s_params, self.fp1_s_params, self.d_s_params])
         self.axs[0].set_title(r'speeds')
         self.axs[0].legend(handles=legends_handles_s,
-                           labels=[r'\vert V_{B_{i}} \vert', r'$\vert V_{B_{fpi}} \vert$', r'\vert V_{A} \vert'])
+                           labels=[r'$\vert V_{B_{i}} \vert$', r'$\vert V_{B_{fpi}} \vert$', r'$\vert V_{A} \vert$'],
+                           loc='upper right')
         self.axs[0].set(ylabel=r'$\vert V \vert\ (\frac{m}{s})$')
         self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
         self.axs[0].yaxis.set_minor_locator(AutoMinorLocator())
@@ -741,7 +743,8 @@ class SpeedsHeadingsDataPlotter:
         legends_handles_h = self.make_handles([self.t1_h_params, self.fp1_h_params, self.d_h_params])
         self.axs[1].set_title(r'headings')
         self.axs[1].legend(handles=legends_handles_s,
-                           labels=[r'\angle V_{B_{i}}', r'$\angle V_{B_{fpi}} $', r'\angle V_{A} '])
+                           labels=[r'$\angle V_{B_{i}}$', r'$\angle V_{B_{fpi}} $', r'$\angle V_{A}$'],
+                           loc='upper right')
         self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$\angle V\ (^{\circ})$')
         self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
         self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
@@ -854,7 +857,7 @@ class TrajectoryWorldDataPlotter:
 
         # save and show figure
         self.fig.tight_layout()
-        self.fig.subplots_adjust(left=0.1, bottom=0.1, right=0.94, top=0.94)
+        self.fig.subplots_adjust(left=0.1, bottom=0.12, right=0.94, top=0.94)
         self.fig.savefig(f'{self.save_path}/5_traj_world.pdf')
         self.fig.show()
 
@@ -863,7 +866,8 @@ class TrajectoryWorldDataPlotter:
         legend_handles = self.make_handles([self.t1_params, self.fp1_params, self.d_params])
         self.axs.set_title(r'Trajectories (world frame)')
         self.axs.legend(handles=legend_handles,
-                        labels=[r'$B_{i}$', r'$B_{fpi}$', r'$A$'])
+                        labels=[r'$B_{i}$', r'$B_{fpi}$', r'$A$'],
+                        loc='upper right')
         self.axs.set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$')
         self.axs.xaxis.set_minor_locator(AutoMinorLocator())
         self.axs.yaxis.set_minor_locator(AutoMinorLocator())
