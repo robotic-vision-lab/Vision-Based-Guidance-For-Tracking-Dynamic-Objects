@@ -481,8 +481,8 @@ class ObjectiveFunctionDataPlotter:
 
     def set_params(self):
         # params
-        self.y1_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$y_{1}$')
-        self.y2_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$y_{2}$')
+        self.y1_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\hat{y}_{1}$')
+        self.y2_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\hat{y}_{2}$')
         self.y1d_params = dict(color='darkorange', alpha=0.8,  ls='--', lw=2,   label=r'$y_{1d}$')
         self.y2d_params = dict(color='darkorange', alpha=0.8,  ls='--', lw=2,   label=r'$y_{2d}$')
 
