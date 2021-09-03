@@ -1014,5 +1014,144 @@ class TrajectoryCameraDataPlotter:
         [tl.set_color('black') for tl in self.axs.get_yticklabels()]
         
         
+        
+        
+
+class AltitudeControlDataPlotter:
+    def __init__(self, 
+                 save_path, 
+                 t, 
+                 s,
+                 c,
+                 zw,
+                 ):
+
+        self.save_path = save_path
+        self.t = t
+        self.s = s
+        self.c = c
+        self.zw = zw
+
+        self.sd = [S_DES for _ in self.t]
+        self.cd = [C_DES for _ in self.t]
+        self.zwd = [Z_DES for _ in self.t]
+        self.zwd1 = [Z_DES+Z_DELTA for _ in self.t]
+        self.zwd2 = [Z_DES-Z_DELTA for _ in self.t]
+
+        self.window_title = 'Altitude Control variables'
+        self.fig = None
+        self.axs = None
+
+        self.set_params()
+
+
+    def set_params(self):
+        # control variable S params
+        self.s_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$S$')
+        self.sd_params = dict(color='darkorange', alpha=0.8,  ls='-', lw=2,   label=r'$S_{d}$')
+
+        # control variable C params
+        self.c_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$C$')
+        self.cd_params = dict(color='darkorange', alpha=0.8,  ls='-', lw=2,   label=r'$C_{d}$')
+
+        # control variable Z_W params
+        self.zw_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\bm{z}_{A}$')
+        self.zwd_params = dict(color='darkorange', alpha=0.8,  ls='--', lw=2,   label=r'$\bm{z}_{A}^{des}$')
+        self.zwd_del_params = dict(color='orangered', alpha=0.7,  ls='--', lw=1,   label=r'${}^{+}\bm{z}_{A}^{des}$, ${}^{i}\bm{z}_{A}^{des}$')
+        self.zwd_fill_params = dict(color='darkorange', alpha=0.1)
+        
+
+
+        # rcParams
+        params = {'xtick.direction'     : 'in',
+                  'xtick.top'           : True,
+                  'xtick.minor.visible' : True,
+                  'xtick.color'         : 'gray',
+                  'ytick.direction'     : 'in',
+                  'ytick.right'         : True,
+                  'ytick.minor.visible' : True,
+                  'ytick.color'         : 'gray',
+                #   'text.usetex'         : True,           # slows rendering significantly
+                #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
+                  'pdf.compression'     : 0,
+                  'legend.fontsize'     : 'xx-large',
+                  'axes.labelsize'      : 'xx-large',
+                  'axes.titlesize'      : 'xx-large',
+                  'xtick.labelsize'     : 'x-large',
+                  'ytick.labelsize'     : 'x-large',
+                  'axes.edgecolor'      : 'gray'} 
+
+        mpl.rcParams.update(params)
+
+
+    def make_handles(self, params_list):
+        return [Line2D([0], [0], **params) for params in params_list]
+
+
+    def plot(self):
+        self.fig, self.axs = plt.subplots(3, 1, dpi=100, figsize=(10,10), sharex=True, gridspec_kw={'hspace': 0.25})
+        # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
+        self.fig.canvas.manager.set_window_title(self.window_title)
+
+        # S
+        self.axs[0].plot(self.t, self.s, **self.s_params)
+        self.axs[0].plot(self.t, self.sd, **self.sd_params)
+
+        # C
+        self.axs[1].plot(self.t, self.c, **self.c_params)
+        self.axs[1].plot(self.t, self.cd, **self.cd_params)
+
+        # Z_W
+        self.axs[2].fill_between(self.t, self.zwd1, self.zwd2, **self.zwd_fill_params)
+        self.axs[2].plot(self.t, self.zwd, **self.zwd_params)
+        self.axs[2].plot(self.t, self.zwd1, **self.zwd_del_params)
+        self.axs[2].plot(self.t, self.zwd2, **self.zwd_del_params)
+        self.axs[2].plot(self.t, self.zw, **self.zw_params)
+
+        # set axes decorations
+        self.add_axes_decor()
+
+        # save and show figure
+        self.fig.tight_layout()
+        self.fig.subplots_adjust(left=0.1, bottom=0.12, right=0.94, top=0.94)
+        self.fig.savefig(f'{self.save_path}/7_altitude_control.pdf')
+        self.fig.show()
+
+
+    def add_axes_decor(self):
+        self.axs[0].set_title(r'S')
+        self.axs[0].legend(loc='upper right')
+        self.axs[0].set(ylabel=r'$S\ (px)$')
+        self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[0].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[0].grid(True, which='minor', alpha=0.1)
+        self.axs[0].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
+        
+        self.axs[1].set_title(r'S')
+        self.axs[1].legend(loc='upper right')
+        self.axs[1].set(ylabel=r'$S\ (px)$')
+        self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[1].grid(True, which='minor', alpha=0.1)
+        self.axs[1].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[1].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[1].get_yticklabels()]
+        
+        legend_handles = self.make_handles([self.zw_params, self.zwd_params, self.zwd_del_params])
+        self.axs[2].set_title(r'$z_{A}$')
+        self.axs[2].legend(handles=legend_handles,
+                        labels=[r'$z_{A}$', r'$\bm{z}_{A}^{des}$', r'${}^{+}\bm{z}_{A}^{des}$, ${}^{i}\bm{z}_{A}^{des}$'],
+                        loc='upper right')
+        self.axs[2].set(xlabel=r'$time\ (s)$', ylabel=r'$z_{A}\ (m)$')
+        self.axs[2].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[2].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[2].grid(True, which='minor', alpha=0.1)
+        self.axs[2].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[2].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[2].get_yticklabels()]
+        
+        
 
     
