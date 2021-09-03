@@ -400,7 +400,7 @@ class AccelerationCommandDataPlotter:
         # params
         self.a_lat_params = dict(color='forestgreen', alpha=0.7,  ls='-', lw=2,   label=r'$a_{lat}$')
         self.a_lng_params = dict(color='deeppink', alpha=0.7,  ls='-', lw=2,   label=r'$a_{long}$')
-        self.a_z_params = dict(color='royalblue', alpha=0.7,  ls='-', lw=2,   label=r'$a_{alt}$')
+        self.a_z_params = dict(color='royalblue', alpha=0.7,  ls='-', lw=2,   label=r'$a_{z}$')
 
         # rcParams
         params = {'xtick.direction'     : 'in',
@@ -552,5 +552,154 @@ class ObjectiveFunctionDataPlotter:
         
 
 
-    
+class SpeedsHeadingsDataPlotter:
+    def __init__(self, 
+                 save_path, 
+                 t, 
+                 t1_s,
+                 t2_s,
+                 t3_s,
+                 fp1_s,
+                 fp2_s,
+                 d_s,
+                 t1_h,
+                 t2_h,
+                 t3_h,
+                 fp1_h,
+                 fp2_h,
+                 d_h):
+
+        self.save_path = save_path
+        self.t = t
+        self.t1_s = t1_s
+        self.t2_s = t2_s
+        self.t3_s = t3_s
+        self.fp1_s = fp1_s
+        self.fp2_s = fp2_s
+        self.d_s = d_s
+        self.t1_h = t1_h
+        self.t2_h = t2_h
+        self.t3_h = t3_h
+        self.fp1_h = fp1_h
+        self.fp2_h = fp2_h
+        self.d_h = d_h
+
+
+        self.window_title = 'Speeds'
+        self.fig = None
+        self.axs = None
+
+        self.set_params()
+
+
+    def set_params(self):
+        # target speed params
+        self.t1_s_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\vert V_{B_{1}} \vert$')
+        self.t2_s_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\vert V_{B_{2}} \vert$')
+        self.t3_s_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\vert V_{B_{3}} \vert$')
+
+        # fp speed params
+        self.fp1_s_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$\vert V_{B_{fp1}} \vert$')
+        self.fp2_s_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$\vert V_{B_{fp2}} \vert$')
+
+        # drone speed params
+        self.d_s_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2,   label=r'$\vert V_{A} \vert$')
+
+
+        # target speed params
+        self.t1_h_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{1}}$')
+        self.t2_h_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{2}}$')
+        self.t3_h_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{3}}$')
+
+        # fp speed params
+        self.fp1_h_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{fp1}}$')
+        self.fp2_h_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{fp2}}$')
+        
+        # drone heading params
+        self.d_h_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2,   label=r'$\angle V_{A}$')
+
+        # rcParams
+        params = {'xtick.direction'     : 'in',
+                  'xtick.top'           : True,
+                  'xtick.minor.visible' : True,
+                  'xtick.color'         : 'gray',
+                  'ytick.direction'     : 'in',
+                  'ytick.right'         : True,
+                  'ytick.minor.visible' : True,
+                  'ytick.color'         : 'gray',
+                #   'text.usetex'         : True,           # slows rendering significantly
+                #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
+                  'pdf.compression'     : 0,
+                  'legend.fontsize'     : 'large',
+                  'axes.labelsize'      : 'x-large',
+                  'axes.titlesize'      : 'x-large',
+                  'xtick.labelsize'     : 'large',
+                  'ytick.labelsize'     : 'large',
+                  'axes.edgecolor'      : 'gray'} 
+
+        mpl.rcParams.update(params)
+        
+
+    def plot(self):
+        self.fig, self.axs = plt.subplots(2,1, dpi=100, figsize=(10,10), sharex=True, gridspec_kw={'hspace': 0.25})
+        # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
+        self.fig.canvas.manager.set_window_title(self.window_title)
+
+        # targets speeds
+        self.axs[0].plot(self.t, self.t1_s, **self.t1_s_params)
+        self.axs[0].plot(self.t, self.t2_s, **self.t2_s_params)
+        self.axs[0].plot(self.t, self.t3_s, **self.t3_s_params)
+
+        # focal points speeds
+        self.axs[0].plot(self.t, self.fp1_s, **self.fp1_s_params)
+        self.axs[0].plot(self.t, self.fp2_s, **self.fp2_s_params)
+
+        # drone speed
+        self.axs[0].plot(self.t, self.d_s, **self.d_s_params)
+
+        # targets speeds
+        self.axs[1].plot(self.t, self.t1_h, **self.t1_h_params)
+        self.axs[1].plot(self.t, self.t2_h, **self.t2_h_params)
+        self.axs[1].plot(self.t, self.t3_h, **self.t3_h_params)
+
+        # focal points speeds
+        self.axs[1].plot(self.t, self.fp1_h, **self.fp1_h_params)
+        self.axs[1].plot(self.t, self.fp2_h, **self.fp2_h_params)
+
+        # drone speed
+        self.axs[1].plot(self.t, self.d_h, **self.d_h_params)
+
+
+        # set axes decorations
+        self.add_axes_decor()
+
+        # save and show figure
+        self.fig.tight_layout()
+        self.fig.subplots_adjust(left=0.1, bottom=0.1, right=0.94, top=0.94)
+        self.fig.savefig(f'{self.save_path}/4_speeds_headings.pdf')
+        self.fig.show()
+
+
+    def add_axes_decor(self):
+        self.axs[0].set_title(r'speeds')
+        self.axs[0].legend()
+        self.axs[0].set(ylabel=r'$\vert V \vert\ (\frac{m}{s})$')
+        self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[0].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[0].grid(True, which='minor', alpha=0.1)
+        self.axs[0].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
+        
+        self.axs[1].set_title(r'headings')
+        self.axs[1].legend()
+        self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$\angle V\ (^{\circ})$')
+        self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[1].grid(True, which='minor', alpha=0.1)
+        self.axs[1].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[1].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[1].get_yticklabels()]
+        
+
     
