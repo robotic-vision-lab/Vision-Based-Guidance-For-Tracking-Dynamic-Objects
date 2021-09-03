@@ -356,7 +356,11 @@ class ExperimentManager:
                 f'DRONE_VEL_X,' +
                 f'DRONE_VEL_Y,' +
                 f'CAM_ORIGIN_X,' +
-                f'CAM_ORIGIN_Y\n'
+                f'CAM_ORIGIN_Y,' +
+                f'DRONE_POS_X_W,' + 
+                f'DRONE_POS_Y_W,' +
+                f'DRONE_SPEED,' +
+                f'DRONE_ALPHA\n'
             )
 
         # run experiment
@@ -596,6 +600,12 @@ class ExperimentManager:
         DRONE_VEL_X, DRONE_VEL_Y = self.get_true_drone_velocity()
         CAM_ORIGIN_X, CAM_ORIGIN_Y = self.get_cam_origin()
 
+        DRONE_POS_X_W = DRONE_POS_X + CAM_ORIGIN_X
+        DRONE_POS_Y_W = DRONE_POS_Y + CAM_ORIGIN_Y
+
+        DRONE_SPEED = (DRONE_VEL_X**2 + DRONE_VEL_Y**2)**0.5
+        DRONE_ALPHA = atan2(DRONE_VEL_Y, DRONE_VEL_X)
+
         self.data_file.write(
             f'{TIME},' +
             f'{FP_1_X},' +
@@ -714,7 +724,11 @@ class ExperimentManager:
             f'{DRONE_VEL_X},' +
             f'{DRONE_VEL_Y},' +
             f'{CAM_ORIGIN_X},' +
-            f'{CAM_ORIGIN_Y}\n'
+            f'{CAM_ORIGIN_Y},' +
+            f'{DRONE_POS_X_W},' + 
+            f'{DRONE_POS_Y_W},' +
+            f'{DRONE_SPEED},' +
+            f'{DRONE_ALPHA}\n'
         )
 
 
