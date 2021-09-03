@@ -68,18 +68,18 @@ class LOS1DataPlotter:
     def set_params(self):
         # r1 params
         self.r1_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$r_{1}$')
-        self.r1_m_params = dict(color='limegreen',  alpha=0.75,  ls='--', lw=1.5, label=r'$r_{1m}$')
-        self.r1_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{r}_{1}$')
+        self.r1_m_params = dict(color='dodgerblue',  alpha=0.75,  ls='--', lw=1.5, label=r'$r_{1m}$')
+        self.r1_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{r}_{1}$')
         
         # r2 params
         self.r2_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$r_{2}$')
-        self.r2_m_params = dict(color='limegreen',  alpha=0.75,  ls='--', lw=1.5, label=r'$r_{2m}$')
-        self.r2_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{r}_{2}$')
+        self.r2_m_params = dict(color='dodgerblue',  alpha=0.75,  ls='--', lw=1.5, label=r'$r_{2m}$')
+        self.r2_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{r}_{2}$')
         
         # r3 params
         self.r3_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$r_{3}$')
-        self.r3_m_params = dict(color='limegreen',  alpha=0.75,  ls='--', lw=1.5, label=r'$r_{3m}$')
-        self.r3_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{r}_{3}$')
+        self.r3_m_params = dict(color='dodgerblue',  alpha=0.75,  ls='--', lw=1.5, label=r'$r_{3m}$')
+        self.r3_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{r}_{3}$')
         
         # fp1r params
         self.f1_r_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{r}_{fp1}$')
@@ -87,18 +87,18 @@ class LOS1DataPlotter:
 
         # th1 params
         self.th1_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$\theta_{1}$')
-        self.th1_m_params = dict(color='limegreen',  alpha=0.75,  ls='--', lw=1.5, label=r'$\theta_{1m}$')
-        self.th1_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{\theta}_{1}$')
+        self.th1_m_params = dict(color='dodgerblue',  alpha=0.75,  ls='--', lw=1.5, label=r'$\theta_{1m}$')
+        self.th1_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{\theta}_{1}$')
         
         # th2 params
         self.th2_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$\theta_{2}$')
-        self.th2_m_params = dict(color='limegreen',  alpha=0.75,  ls='--', lw=1.5, label=r'$\theta_{2m}$')
-        self.th2_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{\theta}_{2}$')
+        self.th2_m_params = dict(color='dodgerblue',  alpha=0.75,  ls='--', lw=1.5, label=r'$\theta_{2m}$')
+        self.th2_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{\theta}_{2}$')
         
         # th3 params
         self.th3_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$\theta_{3}$')
-        self.th3_m_params = dict(color='limegreen',  alpha=0.75,  ls='--', lw=1.5, label=r'$\theta_{3m}$')
-        self.th3_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{\theta}_{3}$')
+        self.th3_m_params = dict(color='dodgerblue',  alpha=0.75,  ls='--', lw=1.5, label=r'$\theta_{3m}$')
+        self.th3_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{\theta}_{3}$')
         
         # fp1r params
         self.f1_th_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{\theta}_{fp1}$')
@@ -253,15 +253,15 @@ class LOS2DataPlotter:
     def set_params(self):
         # vr1 params
         self.vr1_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{r_{1}}$')
-        self.vr1_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{r_1}$')
+        self.vr1_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{r_1}$')
         
         # vr2 params
         self.vr2_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{r_{2}}$')
-        self.vr2_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{r_2}$')
+        self.vr2_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{r_2}$')
         
         # vr3 params
         self.vr3_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{r_{3}}$')
-        self.vr3_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{r_3}$')
+        self.vr3_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{r_3}$')
         
         # fp1vr, fp2vr params
         self.f1_vr_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V}_{r_{fp1}}$')
@@ -269,15 +269,15 @@ class LOS2DataPlotter:
 
         # vth1 params
         self.vth1_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{\theta_{1}}$')
-        self.vth1_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{\theta_1}$')
+        self.vth1_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{\theta_1}$')
         
         # vth2 params
         self.vth2_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{\theta_{2}}$')
-        self.vth2_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{\theta_2}$')
+        self.vth2_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{\theta_2}$')
         
         # vth3 params
         self.vth3_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{\theta_{3}}$')
-        self.vth3_e_params = dict(color='limegreen',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{\theta_3}$')
+        self.vth3_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{\theta_3}$')
         
         # fp1vtheta, fp2vtheta params
         self.f1_vth_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V}_{\theta_{fp1}}$')
@@ -398,9 +398,9 @@ class AccelerationCommandDataPlotter:
 
     def set_params(self):
         # params
-        self.a_lat_params = dict(color='forestgreen', alpha=0.8,  ls='-', lw=2,   label=r'$a_{lat}$')
-        self.a_lng_params = dict(color='deeppink', alpha=0.8,  ls='-', lw=2,   label=r'$a_{long}$')
-        self.a_z_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$a_{alt}$')
+        self.a_lat_params = dict(color='forestgreen', alpha=0.7,  ls='-', lw=2,   label=r'$a_{lat}$')
+        self.a_lng_params = dict(color='deeppink', alpha=0.7,  ls='-', lw=2,   label=r'$a_{long}$')
+        self.a_z_params = dict(color='royalblue', alpha=0.7,  ls='-', lw=2,   label=r'$a_{alt}$')
 
         # rcParams
         params = {'xtick.direction'     : 'in',
