@@ -485,7 +485,7 @@ if __name__ == '__main__':
 
         trajectory_world_plotter.plot()
 
-        trajectory_camera_plotter = TrajectoryWorldDataPlotter(_PATH,
+        trajectory_camera_plotter = TrajectoryCameraDataPlotter(_PATH,
                                                                TIME,
                                                                T_1_X_EST,
                                                                T_1_Y_EST,
