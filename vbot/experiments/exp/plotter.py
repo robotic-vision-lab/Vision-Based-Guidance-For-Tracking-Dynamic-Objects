@@ -706,36 +706,36 @@ class TrajectoryWorldDataPlotter:
     def __init__(self, 
                  save_path, 
                  t, 
-                 t1_s,
-                 t2_s,
-                 t3_s,
-                 fp1_s,
-                 fp2_s,
-                 d_s,
-                 t1_h,
-                 t2_h,
-                 t3_h,
-                 fp1_h,
-                 fp2_h,
-                 d_h):
+                 t1_x,
+                 t1_y,
+                 t2_x,
+                 t2_y,
+                 t3_x,
+                 t3_y,
+                 fp1_x,
+                 fp1_y,
+                 fp2_x,
+                 fp2_y,
+                 d_x,
+                 d_y
+                 ):
 
         self.save_path = save_path
         self.t = t
-        self.t1_s = t1_s
-        self.t2_s = t2_s
-        self.t3_s = t3_s
-        self.fp1_s = fp1_s
-        self.fp2_s = fp2_s
-        self.d_s = d_s
-        self.t1_h = t1_h
-        self.t2_h = t2_h
-        self.t3_h = t3_h
-        self.fp1_h = fp1_h
-        self.fp2_h = fp2_h
-        self.d_h = d_h
+        self.t1_x = t1_x
+        self.t1_y = t1_y
+        self.t2_x = t2_x
+        self.t2_y = t2_y
+        self.t3_x = t3_x
+        self.t3_y = t3_y
+        self.fp1_x = fp1_x
+        self.fp1_y = fp1_y
+        self.fp2_x = fp2_x
+        self.fp2_y = fp2_y
+        self.d_x = d_x
+        self.d_y = d_y
 
-
-        self.window_title = 'Speeds'
+        self.window_title = 'Trajectory (World)'
         self.fig = None
         self.axs = None
 
@@ -743,30 +743,19 @@ class TrajectoryWorldDataPlotter:
 
 
     def set_params(self):
-        # target speed params
-        self.t1_s_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\vert V_{B_{1}} \vert$')
-        self.t2_s_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\vert V_{B_{2}} \vert$')
-        self.t3_s_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\vert V_{B_{3}} \vert$')
+        # target traj params
+        self.t1_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$B_{1}$')
+        self.t2_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$B_{2}$')
+        self.t3_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$B_{3}$')
 
-        # fp speed params
-        self.fp1_s_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$\vert V_{B_{fp1}} \vert$')
-        self.fp2_s_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$\vert V_{B_{fp2}} \vert$')
+        # focal point traj params
+        self.fp1_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=1.5,   label=r'$B_{fp1}$')
+        self.fp2_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=1.5,   label=r'$B_{fp2}$')
 
-        # drone speed params
-        self.d_s_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2,   label=r'$\vert V_{A} \vert$')
-
-
-        # target speed params
-        self.t1_h_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{1}}$')
-        self.t2_h_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{2}}$')
-        self.t3_h_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{3}}$')
-
-        # fp speed params
-        self.fp1_h_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{fp1}}$')
-        self.fp2_h_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{fp2}}$')
+        # drone params
+        self.d_params = dict(color='orangered', alpha=0.8,  ls='-', lw=1.5,   label=r'$A$')
         
-        # drone heading params
-        self.d_h_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2,   label=r'$\angle V_{A}$')
+
 
         # rcParams
         params = {'xtick.direction'     : 'in',
@@ -791,34 +780,21 @@ class TrajectoryWorldDataPlotter:
         
 
     def plot(self):
-        self.fig, self.axs = plt.subplots(2,1, dpi=100, figsize=(10,10), sharex=True, gridspec_kw={'hspace': 0.25})
+        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,10))
         # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
         self.fig.canvas.manager.set_window_title(self.window_title)
 
         # targets speeds
-        self.axs[0].plot(self.t, self.t1_s, **self.t1_s_params)
-        self.axs[0].plot(self.t, self.t2_s, **self.t2_s_params)
-        self.axs[0].plot(self.t, self.t3_s, **self.t3_s_params)
+        self.axs.plot(self.t1_x, self.t1_y, **self.t1_params)
+        self.axs.plot(self.t2_x, self.t2_y, **self.t2_params)
+        self.axs.plot(self.t3_x, self.t3_y, **self.t3_params)
 
         # focal points speeds
-        self.axs[0].plot(self.t, self.fp1_s, **self.fp1_s_params)
-        self.axs[0].plot(self.t, self.fp2_s, **self.fp2_s_params)
+        self.axs.plot(self.fp1_x, self.fp1_y, **self.fp1_params)
+        self.axs.plot(self.fp2_x, self.fp2_y, **self.fp2_params)
 
         # drone speed
-        self.axs[0].plot(self.t, self.d_s, **self.d_s_params)
-
-        # targets speeds
-        self.axs[1].plot(self.t, self.t1_h, **self.t1_h_params)
-        self.axs[1].plot(self.t, self.t2_h, **self.t2_h_params)
-        self.axs[1].plot(self.t, self.t3_h, **self.t3_h_params)
-
-        # focal points speeds
-        self.axs[1].plot(self.t, self.fp1_h, **self.fp1_h_params)
-        self.axs[1].plot(self.t, self.fp2_h, **self.fp2_h_params)
-
-        # drone speed
-        self.axs[1].plot(self.t, self.d_h, **self.d_h_params)
-
+        self.axs.plot(self.d_x, self.d_y, **self.d_params)
 
         # set axes decorations
         self.add_axes_decor()
@@ -826,30 +802,21 @@ class TrajectoryWorldDataPlotter:
         # save and show figure
         self.fig.tight_layout()
         self.fig.subplots_adjust(left=0.1, bottom=0.1, right=0.94, top=0.94)
-        self.fig.savefig(f'{self.save_path}/4_speeds_headings.pdf')
+        self.fig.savefig(f'{self.save_path}/5_traj_world.pdf')
         self.fig.show()
 
 
     def add_axes_decor(self):
-        self.axs[0].set_title(r'speeds')
-        self.axs[0].legend()
-        self.axs[0].set(ylabel=r'$\vert V \vert\ (\frac{m}{s})$')
-        self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
-        self.axs[0].yaxis.set_minor_locator(AutoMinorLocator())
-        self.axs[0].grid(True, which='minor', alpha=0.1)
-        self.axs[0].grid(True, which='major', alpha=0.3)
-        [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
-        [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
+        self.axs.set_title(r'Trajectories (world frame)')
+        self.axs.legend()
+        self.axs.set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$')
+        self.axs.xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs.yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs.grid(True, which='minor', alpha=0.1)
+        self.axs.grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs.get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs.get_yticklabels()]
         
-        self.axs[1].set_title(r'headings')
-        self.axs[1].legend()
-        self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$\angle V\ (^{\circ})$')
-        self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
-        self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
-        self.axs[1].grid(True, which='minor', alpha=0.1)
-        self.axs[1].grid(True, which='major', alpha=0.3)
-        [tl.set_color('black') for tl in self.axs[1].get_xticklabels()]
-        [tl.set_color('black') for tl in self.axs[1].get_yticklabels()]
         
 
     
