@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
+from matplotlib.lines import Line2D
 
 from .settings import *
 
@@ -116,16 +117,18 @@ class LOS1DataPlotter:
                 #   'text.usetex'         : True,           # slows rendering significantly
                 #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
                   'pdf.compression'     : 0,
-                  'legend.fontsize'     : 'large',
-                  'axes.labelsize'      : 'x-large',
-                  'axes.titlesize'      : 'x-large',
-                  'xtick.labelsize'     : 'large',
-                  'ytick.labelsize'     : 'large',
+                  'legend.fontsize'     : 'xx-large',
+                  'axes.labelsize'      : 'xx-large',
+                  'axes.titlesize'      : 'xx-large',
+                  'xtick.labelsize'     : 'x-large',
+                  'ytick.labelsize'     : 'x-large',
                   'axes.edgecolor'      : 'gray'} 
 
         mpl.rcParams.update(params)
         
         
+    def make_handles(self, params_list):
+        return [Line2D([0], [0], **params) for params in params_list]
 
 
     def plot(self):
@@ -178,8 +181,16 @@ class LOS1DataPlotter:
 
 
     def add_axes_decor(self):
+        # subplot 0
+        legend_handles_r = self.make_handles([self.r1_t_params,
+                                              self.r1_m_params,
+                                              self.r1_e_params,
+                                              self.f1_r_params])
+
         self.axs[0].set_title(r'$\mathbf{r}$')
-        self.axs[0].legend(loc='upper right')
+        self.axs[0].legend(handles=legend_handles_r, 
+                           labels=[r'$r_{B_{i}}$', r'$r_{B_{i},m}$', r'$\hat{r}_{B_{i}}$', r'$r_{fp_{i}}$'],
+                           loc='upper right')
         self.axs[0].set(ylabel=r'$r\ (m)$')
         self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
         self.axs[0].yaxis.set_minor_locator(AutoMinorLocator())
@@ -188,8 +199,15 @@ class LOS1DataPlotter:
         [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
         [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
         
+        # subplot 1
+        legend_handles_th = self.make_handles([self.th1_t_params,
+                                               self.th1_m_params,
+                                               self.th1_e_params,
+                                               self.f1_th_params])
         self.axs[1].set_title(r'$\mathbf{\theta}$')
-        self.axs[1].legend(loc='upper right')
+        self.axs[1].legend(handles=legend_handles_th,
+                           labels=[r'${\theta}_{B_{i}}$', r'${\theta}_{B_{i},m}$', r'$\hat{\theta}_{B_{i}}$', r'${\theta}_{fp_{i}}$'],
+                           loc='upper right')
         self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$\theta\ (^{\circ})$')
         self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
         self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
@@ -295,16 +313,19 @@ class LOS2DataPlotter:
                 #   'text.usetex'         : True,           # slows rendering significantly
                 #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
                   'pdf.compression'     : 0,
-                  'legend.fontsize'     : 'large',
-                  'axes.labelsize'      : 'x-large',
-                  'axes.titlesize'      : 'x-large',
-                  'xtick.labelsize'     : 'large',
-                  'ytick.labelsize'     : 'large',
+                  'legend.fontsize'     : 'xx-large',
+                  'axes.labelsize'      : 'xx-large',
+                  'axes.titlesize'      : 'xx-large',
+                  'xtick.labelsize'     : 'x-large',
+                  'ytick.labelsize'     : 'x-large',
                   'axes.edgecolor'      : 'gray'} 
 
         mpl.rcParams.update(params)
         
         
+            
+    def make_handles(self, params_list):
+        return [Line2D([0], [0], **params) for params in params_list]
 
 
     def plot(self):
@@ -351,8 +372,14 @@ class LOS2DataPlotter:
 
 
     def add_axes_decor(self):
+        # subplot 0
+        legend_handles_vr = self.make_handles([self.vr1_t_params, 
+                                               self.vr1_e_params,
+                                               self.f1_vr_params])
         self.axs[0].set_title(r'$\mathbf{V_{r}}$')
-        self.axs[0].legend(loc='upper right')
+        self.axs[0].legend(handles=legend_handles_vr,
+                           labels=[r'$V_{rB_{i}}$', r'$V_{rB_{i},m}$', r'$\hat{V}_{rB_{i}}$', r'$V_{rfp_{i}}$'],
+                           loc='upper right')
         self.axs[0].set(ylabel=r'$V_{r}\ (\frac{m}{s})$')
         self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
         self.axs[0].yaxis.set_minor_locator(AutoMinorLocator())
@@ -361,8 +388,14 @@ class LOS2DataPlotter:
         [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
         [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
         
+        # subplot 1
+        legend_handles_vth = self.make_handles([self.vth1_t_params,
+                                                self.vth1_e_params,
+                                                self.f1_vth_params])
         self.axs[1].set_title(r'$\mathbf{V_{\theta}}$')
-        self.axs[1].legend(loc='upper right')
+        self.axs[1].legend(handles=legend_handles_vth,
+                           labels=[r'$V_{\theta B_{i}}$', r'$V_{\theta B_{i},m}$', r'$\hat{V}_{\theta B_{i}}$', r'$V_{\theta fp_{i}}$'],
+                           loc='upper right')
         self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_{\theta}\ (\frac{m}{s})$')
         self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
         self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
@@ -414,18 +447,21 @@ class AccelerationCommandDataPlotter:
                 #   'text.usetex'         : True,           # slows rendering significantly
                 #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
                   'pdf.compression'     : 0,
-                  'legend.fontsize'     : 'large',
-                  'axes.labelsize'      : 'x-large',
-                  'axes.titlesize'      : 'x-large',
-                  'xtick.labelsize'     : 'large',
-                  'ytick.labelsize'     : 'large',
+                  'legend.fontsize'     : 'xx-large',
+                  'axes.labelsize'      : 'xx-large',
+                  'axes.titlesize'      : 'xx-large',
+                  'xtick.labelsize'     : 'x-large',
+                  'ytick.labelsize'     : 'x-large',
                   'axes.edgecolor'      : 'gray'} 
 
         mpl.rcParams.update(params)
         
+            
+    def make_handles(self, params_list):
+        return [Line2D([0], [0], **params) for params in params_list]
 
     def plot(self):
-        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,10))
+        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,5))
         # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
         self.fig.canvas.manager.set_window_title(self.window_title)
 
@@ -508,6 +544,10 @@ class ObjectiveFunctionDataPlotter:
         mpl.rcParams.update(params)
         
 
+                
+    def make_handles(self, params_list):
+        return [Line2D([0], [0], **params) for params in params_list]
+    
     def plot(self):
         self.fig, self.axs = plt.subplots(2,1, dpi=100, figsize=(10,10), sharex=True, gridspec_kw={'hspace': 0.25})
         # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
@@ -612,8 +652,8 @@ class SpeedsHeadingsDataPlotter:
         self.t3_h_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{3}}$')
 
         # fp speed params
-        self.fp1_h_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{fp1}}$')
-        self.fp2_h_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{fp2}}$')
+        self.fp1_h_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$\angle V_{B_{fp1}}$')
+        self.fp2_h_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$\angle V_{B_{fp2}}$')
         
         # drone heading params
         self.d_h_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2,   label=r'$\angle V_{A}$')
@@ -639,6 +679,11 @@ class SpeedsHeadingsDataPlotter:
 
         mpl.rcParams.update(params)
         
+
+                
+    def make_handles(self, params_list):
+        return [Line2D([0], [0], **params) for params in params_list]
+
 
     def plot(self):
         self.fig, self.axs = plt.subplots(2,1, dpi=100, figsize=(10,10), sharex=True, gridspec_kw={'hspace': 0.25})
@@ -681,8 +726,10 @@ class SpeedsHeadingsDataPlotter:
 
 
     def add_axes_decor(self):
+        legends_handles_s = self.make_handles([self.t1_s_params, self.fp1_s_params, self.d_s_params])
         self.axs[0].set_title(r'speeds')
-        self.axs[0].legend()
+        self.axs[0].legend(handles=legends_handles_s,
+                           labels=[r'\vert V_{B_{i}} \vert', r'$\vert V_{B_{fpi}} \vert$', r'\vert V_{A} \vert'])
         self.axs[0].set(ylabel=r'$\vert V \vert\ (\frac{m}{s})$')
         self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
         self.axs[0].yaxis.set_minor_locator(AutoMinorLocator())
@@ -691,8 +738,10 @@ class SpeedsHeadingsDataPlotter:
         [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
         [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
         
+        legends_handles_h = self.make_handles([self.t1_h_params, self.fp1_h_params, self.d_h_params])
         self.axs[1].set_title(r'headings')
-        self.axs[1].legend()
+        self.axs[1].legend(handles=legends_handles_s,
+                           labels=[r'\angle V_{B_{i}}', r'$\angle V_{B_{fpi}} $', r'\angle V_{A} '])
         self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$\angle V\ (^{\circ})$')
         self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
         self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
@@ -744,16 +793,16 @@ class TrajectoryWorldDataPlotter:
 
     def set_params(self):
         # target traj params
-        self.t1_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$B_{1}$')
-        self.t2_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$B_{2}$')
-        self.t3_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$B_{3}$')
+        self.t1_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{1}$')
+        self.t2_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{2}$')
+        self.t3_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{3}$')
 
         # focal point traj params
-        self.fp1_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=1.5,   label=r'$B_{fp1}$')
-        self.fp2_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=1.5,   label=r'$B_{fp2}$')
+        self.fp1_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp1}$')
+        self.fp2_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp2}$')
 
         # drone params
-        self.d_params = dict(color='orangered', alpha=0.8,  ls='-', lw=1.5,   label=r'$A$')
+        self.d_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2.5,   label=r'$A$')
         
 
 
@@ -777,10 +826,14 @@ class TrajectoryWorldDataPlotter:
                   'axes.edgecolor'      : 'gray'} 
 
         mpl.rcParams.update(params)
-        
+
+
+    def make_handles(self, params_list):
+        return [Line2D([0], [0], **params) for params in params_list]
+
 
     def plot(self):
-        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,10))
+        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,5))
         # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
         self.fig.canvas.manager.set_window_title(self.window_title)
 
@@ -807,8 +860,10 @@ class TrajectoryWorldDataPlotter:
 
 
     def add_axes_decor(self):
+        legend_handles = self.make_handles([self.t1_params, self.fp1_params, self.d_params])
         self.axs.set_title(r'Trajectories (world frame)')
-        self.axs.legend()
+        self.axs.legend(handles=legend_handles,
+                        labels=[r'$B_{i}$', r'$B_{fpi}$', r'$A$'])
         self.axs.set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$')
         self.axs.xaxis.set_minor_locator(AutoMinorLocator())
         self.axs.yaxis.set_minor_locator(AutoMinorLocator())
