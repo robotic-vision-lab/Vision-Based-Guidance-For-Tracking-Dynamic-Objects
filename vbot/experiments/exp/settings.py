@@ -105,6 +105,13 @@ K_D_THETA = 10
 K_D_PSI = 10
 K_D_Z = 10.0
 
+# altitude control 
+X_DES = WIDTH*0.3
+Y_DES = WIDTH*0.3
+S_DES = (X_DES**2 + Y_DES**2)**0.5
+C_DES = HEIGHT*0.25
+Z_DES = 150
+
 # gravity
 ACC_GRAVITY = 9.81
 
