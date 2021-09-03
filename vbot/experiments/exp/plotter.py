@@ -1055,9 +1055,9 @@ class AltitudeControlDataPlotter:
         self.cd_params = dict(color='darkorange', alpha=0.8,  ls='-', lw=2,   label=r'$C_{d}$')
 
         # control variable Z_W params
-        self.zw_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\bm{z}_{A}$')
-        self.zwd_params = dict(color='darkorange', alpha=0.8,  ls='--', lw=2,   label=r'$\bm{z}_{A}^{des}$')
-        self.zwd_del_params = dict(color='orangered', alpha=0.7,  ls='--', lw=1,   label=r'${}^{+}\bm{z}_{A}^{des}$, ${}^{i}\bm{z}_{A}^{des}$')
+        self.zw_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\mathbf{z}_{A}$')
+        self.zwd_params = dict(color='darkorange', alpha=0.8,  ls='--', lw=2,   label=r'$\mathbf{z}_{A}^{des}$')
+        self.zwd_del_params = dict(color='orangered', alpha=0.7,  ls='--', lw=1,   label=r'${}^{+}\mathbf{z}_{A}^{des}$, ${}^{-}\mathbf{z}_{A}^{des}$')
         self.zwd_fill_params = dict(color='darkorange', alpha=0.1)
         
 
@@ -1142,7 +1142,7 @@ class AltitudeControlDataPlotter:
         legend_handles = self.make_handles([self.zw_params, self.zwd_params, self.zwd_del_params])
         self.axs[2].set_title(r'$z_{A}$')
         self.axs[2].legend(handles=legend_handles,
-                        labels=[r'$z_{A}$', r'$\bm{z}_{A}^{des}$', r'${}^{+}\bm{z}_{A}^{des}$, ${}^{i}\bm{z}_{A}^{des}$'],
+                        labels=[r'$z_{A}$', r'$\mathbf{z}_{A}^{des}$', r'${}^{+}\mathbf{z}_{A}^{des}$, ${}^{-}\mathbf{z}_{A}^{des}$'],
                         loc='upper right')
         self.axs[2].set(xlabel=r'$time\ (s)$', ylabel=r'$z_{A}\ (m)$')
         self.axs[2].xaxis.set_minor_locator(AutoMinorLocator())
