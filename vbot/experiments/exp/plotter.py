@@ -534,11 +534,11 @@ class ObjectiveFunctionDataPlotter:
                 #   'text.usetex'         : True,           # slows rendering significantly
                 #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
                   'pdf.compression'     : 0,
-                  'legend.fontsize'     : 'large',
-                  'axes.labelsize'      : 'x-large',
-                  'axes.titlesize'      : 'x-large',
-                  'xtick.labelsize'     : 'large',
-                  'ytick.labelsize'     : 'large',
+                  'legend.fontsize'     : 'xx-large',
+                  'axes.labelsize'      : 'xx-large',
+                  'axes.titlesize'      : 'xx-large',
+                  'xtick.labelsize'     : 'x-large',
+                  'ytick.labelsize'     : 'x-large',
                   'axes.edgecolor'      : 'gray'} 
 
         mpl.rcParams.update(params)
@@ -670,11 +670,11 @@ class SpeedsHeadingsDataPlotter:
                 #   'text.usetex'         : True,           # slows rendering significantly
                 #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
                   'pdf.compression'     : 0,
-                  'legend.fontsize'     : 'large',
-                  'axes.labelsize'      : 'x-large',
-                  'axes.titlesize'      : 'x-large',
-                  'xtick.labelsize'     : 'large',
-                  'ytick.labelsize'     : 'large',
+                  'legend.fontsize'     : 'xx-large',
+                  'axes.labelsize'      : 'xx-large',
+                  'axes.titlesize'      : 'xx-large',
+                  'xtick.labelsize'     : 'x-large',
+                  'ytick.labelsize'     : 'x-large',
                   'axes.edgecolor'      : 'gray'} 
 
         mpl.rcParams.update(params)
@@ -818,11 +818,11 @@ class TrajectoryWorldDataPlotter:
                 #   'text.usetex'         : True,           # slows rendering significantly
                 #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
                   'pdf.compression'     : 0,
-                  'legend.fontsize'     : 'large',
-                  'axes.labelsize'      : 'x-large',
-                  'axes.titlesize'      : 'x-large',
-                  'xtick.labelsize'     : 'large',
-                  'ytick.labelsize'     : 'large',
+                  'legend.fontsize'     : 'xx-large',
+                  'axes.labelsize'      : 'xx-large',
+                  'axes.titlesize'      : 'xx-large',
+                  'xtick.labelsize'     : 'x-large',
+                  'ytick.labelsize'     : 'x-large',
                   'axes.edgecolor'      : 'gray'} 
 
         mpl.rcParams.update(params)
