@@ -385,15 +385,15 @@ class Controller:
         KI_c = 3
         KI_z = 0.5
 
-        X_d = WIDTH*0.3
-        Y_d = WIDTH*0.3
-        S_d = np.linalg.norm((X_d, Y_d))
-        C_d = HEIGHT*0.25
-        Z_d = 150
+        # X_d = WIDTH*0.3
+        # Y_d = WIDTH*0.3
+        S_d = S_DES
+        C_d = C_DES
+        Z_d = Z_DES
 
         e_s = S_d - S
         e_c = min(0, C_d - C)
-        e_Z_W = Z_d - Z_W if abs(Z_d - Z_W) > 30 else 0.0
+        e_Z_W = Z_d - Z_W if abs(Z_d - Z_W) > Z_DELTA else 0.0
 
         vz = self.manager.simulator.camera.vz
         vz_2 = vz**2 * np.sign(vz)
