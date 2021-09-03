@@ -787,7 +787,7 @@ class TrajectoryWorldDataPlotter:
         self.d_x = d_x
         self.d_y = d_y
 
-        self.window_title = 'Trajectory (World)'
+        self.window_title = 'Trajectories (World)'
         self.fig = None
         self.axs = None
 
@@ -924,7 +924,7 @@ class TrajectoryCameraDataPlotter:
         self.d_x -= self.d_x
         self.d_y -= self.d_y
 
-        self.window_title = 'Trajectory (World)'
+        self.window_title = 'Trajectories (Camera)'
         self.fig = None
         self.axs = None
 
@@ -942,7 +942,7 @@ class TrajectoryCameraDataPlotter:
         self.fp2_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp2}$')
 
         # drone params
-        self.d_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2.5,   label=r'$A$')
+        self.d_params = dict(color='orangered', alpha=0.8,  marker='*', markersize=15,   label=r'$A$')
         
 
 
@@ -995,13 +995,13 @@ class TrajectoryCameraDataPlotter:
         # save and show figure
         self.fig.tight_layout()
         self.fig.subplots_adjust(left=0.1, bottom=0.12, right=0.94, top=0.94)
-        self.fig.savefig(f'{self.save_path}/5_traj_world.pdf')
+        self.fig.savefig(f'{self.save_path}/6_traj_camera.pdf')
         self.fig.show()
 
 
     def add_axes_decor(self):
         legend_handles = self.make_handles([self.t1_params, self.fp1_params, self.d_params])
-        self.axs.set_title(r'Trajectories (world frame)')
+        self.axs.set_title(r'Trajectories (camera frame)')
         self.axs.legend(handles=legend_handles,
                         labels=[r'$B_{i}$', r'$B_{fpi}$', r'$A$'],
                         loc='upper right')
