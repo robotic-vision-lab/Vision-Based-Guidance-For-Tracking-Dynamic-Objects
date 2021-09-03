@@ -6,7 +6,7 @@ import cv2 as cv
 import numpy as np
 import pygame
 from pygame.locals import *
-from math import degrees
+from math import degrees, atan2
 
 from .simulator import Simulator
 from .multi_tracker import MultiTracker
@@ -488,11 +488,11 @@ class ExperimentManager:
         FP_1_AX = controller_data[4]
         FP_1_AY = controller_data[5]
         FP_1_R = controller_data[6]
-        FP_1_THETA = controller_data[7]
+        FP_1_THETA = degrees(controller_data[7])
         FP_1_V_R = controller_data[8]
         FP_1_V_THETA = controller_data[9]
         FP_1_SPEED = controller_data[10]
-        FP_1_HEADING = controller_data[11]
+        FP_1_HEADING = degrees(controller_data[11])
         FP_1_ACC = controller_data[12]
         FP_1_DELTA = controller_data[13]
         FP_2_X = controller_data[14]
@@ -502,11 +502,11 @@ class ExperimentManager:
         FP_2_AX = controller_data[18]
         FP_2_AY = controller_data[19]
         FP_2_R = controller_data[20]
-        FP_2_THETA = controller_data[21]
+        FP_2_THETA = degrees(controller_data[21])
         FP_2_V_R = controller_data[22]
         FP_2_V_THETA = controller_data[23]
         FP_2_SPEED = controller_data[24]
-        FP_2_HEADING = controller_data[25]
+        FP_2_HEADING = degrees(controller_data[25])
         FP_2_ACC = controller_data[26]
         FP_2_DELTA = controller_data[27]
         Y_1 = controller_data[28]
@@ -528,7 +528,7 @@ class ExperimentManager:
         T_1_X_MEAS = tracker_data[1]
         T_1_Y_MEAS = tracker_data[2]
         T_1_R_MEAS = tracker_data[3]
-        T_1_THETA_MEAS = tracker_data[4]
+        T_1_THETA_MEAS = degrees(tracker_data[4])
         T_1_X_EST = tracker_data[5]
         T_1_Y_EST = tracker_data[6]
         T_1_VX_EST = tracker_data[7]
@@ -536,15 +536,15 @@ class ExperimentManager:
         T_1_AX_EST = tracker_data[9]
         T_1_AY_EST = tracker_data[10]
         T_1_R_EST = tracker_data[11]
-        T_1_THETA_EST = tracker_data[12]
+        T_1_THETA_EST = degrees(tracker_data[12])
         T_1_V_R_EST = tracker_data[13]
         T_1_V_THETA_EST = tracker_data[14]
         T_1_SPEED_EST = tracker_data[15]
-        T_1_BETA_EST = tracker_data[16]
+        T_1_BETA_EST = degrees(tracker_data[16])
         T_1_ACC_EST = tracker_data[17]
         T_1_DELTA_EST = tracker_data[18]
         T_1_TRUE_R = tracker_data[19]
-        T_1_TRUE_THETA = tracker_data[20]
+        T_1_TRUE_THETA = degrees(tracker_data[20])
         T_1_TRUE_V_R = tracker_data[21]
         T_1_TRUE_V_THETA = tracker_data[22]
 
@@ -552,7 +552,7 @@ class ExperimentManager:
         T_2_X_MEAS = tracker_data[24]
         T_2_Y_MEAS = tracker_data[25]
         T_2_R_MEAS = tracker_data[26]
-        T_2_THETA_MEAS = tracker_data[27]
+        T_2_THETA_MEAS = degrees(tracker_data[27])
         T_2_X_EST = tracker_data[28]
         T_2_Y_EST = tracker_data[29]
         T_2_VX_EST = tracker_data[30]
@@ -560,15 +560,15 @@ class ExperimentManager:
         T_2_AX_EST = tracker_data[32]
         T_2_AY_EST = tracker_data[33]
         T_2_R_EST = tracker_data[34]
-        T_2_THETA_EST = tracker_data[35]
+        T_2_THETA_EST = degrees(tracker_data[35])
         T_2_V_R_EST = tracker_data[36]
         T_2_V_THETA_EST = tracker_data[37]
         T_2_SPEED_EST = tracker_data[38]
-        T_2_BETA_EST = tracker_data[39]
+        T_2_BETA_EST = degrees(tracker_data[39])
         T_2_ACC_EST = tracker_data[40]
         T_2_DELTA_EST = tracker_data[41]
         T_2_TRUE_R = tracker_data[42]
-        T_2_TRUE_THETA = tracker_data[43]
+        T_2_TRUE_THETA = degrees(tracker_data[43])
         T_2_TRUE_V_R = tracker_data[44]
         T_2_TRUE_V_THETA = tracker_data[45]
 
@@ -576,7 +576,7 @@ class ExperimentManager:
         T_3_X_MEAS = tracker_data[47]
         T_3_Y_MEAS = tracker_data[48]
         T_3_R_MEAS = tracker_data[49]
-        T_3_THETA_MEAS = tracker_data[50]
+        T_3_THETA_MEAS = degrees(tracker_data[50])
         T_3_X_EST = tracker_data[51]
         T_3_Y_EST = tracker_data[52]
         T_3_VX_EST = tracker_data[53]
@@ -584,15 +584,15 @@ class ExperimentManager:
         T_3_AX_EST = tracker_data[55]
         T_3_AY_EST = tracker_data[56]
         T_3_R_EST = tracker_data[57]
-        T_3_THETA_EST = tracker_data[58]
+        T_3_THETA_EST = degrees(tracker_data[58])
         T_3_V_R_EST = tracker_data[59]
         T_3_V_THETA_EST = tracker_data[60]
         T_3_SPEED_EST = tracker_data[61]
-        T_3_BETA_EST = tracker_data[62]
+        T_3_BETA_EST = degrees(tracker_data[62])
         T_3_ACC_EST = tracker_data[63]
         T_3_DELTA_EST = tracker_data[64]
         T_3_TRUE_R = tracker_data[65]
-        T_3_TRUE_THETA = tracker_data[66]
+        T_3_TRUE_THETA = degrees(tracker_data[66])
         T_3_TRUE_V_R = tracker_data[67]
         T_3_TRUE_V_THETA = tracker_data[68]
 
@@ -604,7 +604,7 @@ class ExperimentManager:
         DRONE_POS_Y_W = DRONE_POS_Y + CAM_ORIGIN_Y
 
         DRONE_SPEED = (DRONE_VEL_X**2 + DRONE_VEL_Y**2)**0.5
-        DRONE_ALPHA = atan2(DRONE_VEL_Y, DRONE_VEL_X)
+        DRONE_ALPHA = degrees(atan2(DRONE_VEL_Y, DRONE_VEL_X))
 
         self.data_file.write(
             f'{TIME},' +
