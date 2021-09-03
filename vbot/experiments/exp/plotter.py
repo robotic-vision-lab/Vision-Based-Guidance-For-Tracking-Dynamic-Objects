@@ -1129,9 +1129,9 @@ class AltitudeControlDataPlotter:
         [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
         [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
         
-        self.axs[1].set_title(r'S')
+        self.axs[1].set_title(r'C')
         self.axs[1].legend(loc='upper right')
-        self.axs[1].set(ylabel=r'$S\ (px)$')
+        self.axs[1].set(ylabel=r'$C\ (px)$')
         self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
         self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
         self.axs[1].grid(True, which='minor', alpha=0.1)
