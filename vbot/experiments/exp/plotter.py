@@ -1057,8 +1057,8 @@ class AltitudeControlDataPlotter:
         # control variable Z_W params
         self.zw_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\mathbf{z}_{A}$')
         self.zwd_params = dict(color='darkorange', alpha=0.8,  ls='--', lw=2,   label=r'$\mathbf{z}_{A}^{des}$')
-        self.zwd_del_params = dict(color='orangered', alpha=0.7,  ls='--', lw=1,   label=r'${}^{+}\mathbf{z}_{A}^{des}$, ${}^{-}\mathbf{z}_{A}^{des}$')
-        self.zwd_fill_params = dict(color='darkorange', alpha=0.1)
+        self.zwd_del_params = dict(color='orangered', alpha=0.6,  ls='--', lw=1,   label=r'${}^{+}\mathbf{z}_{A}^{des}$, ${}^{-}\mathbf{z}_{A}^{des}$')
+        self.zwd_fill_params = dict(color='darkorange', alpha=0.05)
         
 
 
