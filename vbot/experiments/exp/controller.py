@@ -374,12 +374,12 @@ class Controller:
         S, C, Z_W, S_dot, C_dot, Z_W_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
 
         KP_s = 150
-        KP_c = 250
+        KP_c = 300
         KP_z = 200
 
         KD_s = 15
-        KD_c = 15
-        KD_z = 20
+        KD_c = 10
+        KD_z = 10
         
         KI_s = 0.5
         KI_c = 3
@@ -403,8 +403,8 @@ class Controller:
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
         az_s = -FS * KP_s * (e_s) + FS * KD_s * S_dot + 2 * FS * S_dot**2 / S 
-        az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C - FC * KI_c * self.e_c_sum
-        az_z = KP_z * e_Z_W - KD_z * Z_W_dot
+        az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
+        az_z = KP_z * e_Z_W - KD_z * Z_W_dot if not e_Z_W==0.0 else 0.0
 
         
 
