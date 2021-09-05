@@ -364,7 +364,7 @@ class Controller:
 
         S = np.linalg.norm((X,Y))
         # C = (((WIDTH - x_min - x_max)**2 + (HEIGHT - y_min - y_max)**2)**0.5)/2
-        C = abs((((WIDTH - x_min - x_max) + (HEIGHT - y_min - y_max)))/2)
+        C = max(abs((WIDTH - x_min - x_max)/2), abs(HEIGHT - y_min - y_max)/2)
         Z_W = self.manager.simulator.camera.altitude
 
         S_W = S*self.manager.simulator.pxm_fac
@@ -373,9 +373,9 @@ class Controller:
         self.manager.tracking_manager.bounding_area_EKF.add(S, C, Z_W)
         S, C, Z_W, S_dot, C_dot, Z_W_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
 
-        KP_s = 150
-        KP_c = 300
-        KP_z = 200
+        KP_s = 150*3
+        KP_c = 300*3
+        KP_z = 200*2
 
         KD_s = 15
         KD_c = 10
@@ -403,7 +403,8 @@ class Controller:
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
         az_s = -FS * KP_s * (e_s) + FS * KD_s * S_dot + 2 * FS * S_dot**2 / S 
-        az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum
+        # az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum 
+        az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C if not e_c==0.0 else 0.0
         az_z = KP_z * e_Z_W - KD_z * Z_W_dot if not e_Z_W==0.0 else 0.0
 
         
@@ -430,6 +431,8 @@ class Controller:
 
         self.scz_ind_prev = scz_ind
 
+        scz_dict = {0:'S', 1:'C', 2:'Z'}
+
         # az = az_x + az_y + 0
 
         az = self.sat(az, 10)
@@ -437,7 +440,7 @@ class Controller:
         print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
         print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
         print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
-        print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}')
+        print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}, xmin,xmax=({x_min:0.2f},{x_max:0.2f}), ymin,ymax=({y_min:0.2f},{y_max:0.2f}),SCZ => {scz_dict[scz_ind]}')
 
         if self.manager.write_plot:
             # store vairables if manager needs to write to file
