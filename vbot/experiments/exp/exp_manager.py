@@ -373,6 +373,10 @@ class ExperimentManager:
                 self.simulator.dt = 0.0
             self.simulator.time += self.simulator.dt
 
+            # check for final time
+            if self.simulator.time > FINAL_TIME:
+                self.simulator.running = False
+
             # handle events on simulator
             self.simulator.handle_events()
 
@@ -525,10 +529,10 @@ class ExperimentManager:
         AZ = controller_data[41]
 
         T_1_OCCLUSION_CASE = tracker_data[0]
-        T_1_X_MEAS = tracker_data[1]
-        T_1_Y_MEAS = tracker_data[2]
-        T_1_R_MEAS = tracker_data[3]
-        T_1_THETA_MEAS = degrees(tracker_data[4])
+        T_1_X_MEAS = tracker_data[1] if tracker_data[1] is not None else NAN
+        T_1_Y_MEAS = tracker_data[2] if tracker_data[2] is not None else NAN
+        T_1_R_MEAS = tracker_data[3] if tracker_data[3] is not None else NAN
+        T_1_THETA_MEAS = degrees(tracker_data[4]) if tracker_data[4] is not None else NAN
         T_1_X_EST = tracker_data[5]
         T_1_Y_EST = tracker_data[6]
         T_1_VX_EST = tracker_data[7]
@@ -549,10 +553,10 @@ class ExperimentManager:
         T_1_TRUE_V_THETA = tracker_data[22]
 
         T_2_OCCLUSION_CASE = tracker_data[23]
-        T_2_X_MEAS = tracker_data[24]
-        T_2_Y_MEAS = tracker_data[25]
-        T_2_R_MEAS = tracker_data[26]
-        T_2_THETA_MEAS = degrees(tracker_data[27])
+        T_2_X_MEAS = tracker_data[24] if tracker_data[24] is not None else NAN
+        T_2_Y_MEAS = tracker_data[25] if tracker_data[25] is not None else NAN
+        T_2_R_MEAS = tracker_data[26] if tracker_data[26] is not None else NAN
+        T_2_THETA_MEAS = degrees(tracker_data[27]) if tracker_data[27] is not None else NAN
         T_2_X_EST = tracker_data[28]
         T_2_Y_EST = tracker_data[29]
         T_2_VX_EST = tracker_data[30]
@@ -573,10 +577,10 @@ class ExperimentManager:
         T_2_TRUE_V_THETA = tracker_data[45]
 
         T_3_OCCLUSION_CASE = tracker_data[46]
-        T_3_X_MEAS = tracker_data[47]
-        T_3_Y_MEAS = tracker_data[48]
-        T_3_R_MEAS = tracker_data[49]
-        T_3_THETA_MEAS = degrees(tracker_data[50])
+        T_3_X_MEAS = tracker_data[47] if tracker_data[47] is not None else NAN
+        T_3_Y_MEAS = tracker_data[48] if tracker_data[48] is not None else NAN
+        T_3_R_MEAS = tracker_data[49] if tracker_data[49] is not None else NAN
+        T_3_THETA_MEAS = degrees(tracker_data[50]) if tracker_data[50] is not None else NAN
         T_3_X_EST = tracker_data[51]
         T_3_Y_EST = tracker_data[52]
         T_3_VX_EST = tracker_data[53]
