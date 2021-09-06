@@ -437,10 +437,10 @@ class Controller:
 
         az = self.sat(az, 10)
 
-        print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
-        print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
-        print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
-        print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}, xmin,xmax=({x_min:0.2f},{x_max:0.2f}), ymin,ymax=({y_min:0.2f},{y_max:0.2f}),SCZ => {scz_dict[scz_ind]}')
+        # print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
+        # print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
+        # print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
+        # print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}, xmin,xmax=({x_min:0.2f},{x_max:0.2f}), ymin,ymax=({y_min:0.2f},{y_max:0.2f}),SCZ => {scz_dict[scz_ind]}')
 
         if self.manager.write_plot:
             # store vairables if manager needs to write to file
