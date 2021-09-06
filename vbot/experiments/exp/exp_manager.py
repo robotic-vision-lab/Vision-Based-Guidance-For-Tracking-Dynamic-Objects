@@ -424,7 +424,7 @@ class ExperimentManager:
                         # self.plot_manager.uas_focal_points_plotter.collect_data()
                         if self.write_plot:
                             self.write_info()
-                        self.plot_manager.plot()
+                        # self.plot_manager.plot()
                         
 
             self.simulator.draw_extra()
