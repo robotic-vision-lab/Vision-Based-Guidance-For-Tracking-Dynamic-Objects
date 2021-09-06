@@ -212,8 +212,8 @@ class DroneCamera(pygame.sprite.Sprite):
             self.vz = vel_inertial.flatten()[2]
 
             # print states and wrench
-            self.print_states()
-            print(f'            {b("comm_wrench: F=")}{bb(f"{F:.4f}")}{b(", τφ=")}{bb(f"{tau_phi:.4f}")}{b(", τθ=")}{bb(f"{tau_theta:.4f}")}{b(", τψ=")}{bb(f"{tau_psi:.4f}")}')
+            # self.print_states()
+            # print(f'            {b("comm_wrench: F=")}{bb(f"{F:.4f}")}{b(", τφ=")}{bb(f"{tau_phi:.4f}")}{b(", τθ=")}{bb(f"{tau_theta:.4f}")}{b(", τψ=")}{bb(f"{tau_psi:.4f}")}')
 
             # save camera origin
             self.origin += self.position
