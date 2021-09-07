@@ -375,7 +375,7 @@ class Controller:
 
         KP_s = 150*3
         KP_c = 300*3
-        KP_z = 200*2
+        KP_z = 200*4
 
         KD_s = 15
         KD_c = 10
