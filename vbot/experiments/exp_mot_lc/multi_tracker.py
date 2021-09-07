@@ -127,10 +127,10 @@ class MultiTracker:
         target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.initial_patches_color]
 
     def update_patches(self, target):
-        pass
-        # self.patch_size = round(1.5 / self.manager.simulator.pxm_fac)
-        # target.patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.keypoints_new_good]
-        # target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.patches_color]
+        # pass
+        self.patch_size = round(1.5 / self.manager.simulator.pxm_fac)
+        target.patches_color = [self.get_neighborhood_patch(self.frame_new_color, tuple(map(int,kp.flatten())), self.patch_size) for kp in target.keypoints_new_good]
+        target.template_matchers = [TemplateMatcher(patch, self.template_matcher) for patch in target.patches_color]
 
     def update_template(self):
         for target in self.targets:
@@ -189,6 +189,12 @@ class MultiTracker:
         Returns:
             numpy.ndarray: Image after patch is put with it's center aligned with the given point
         """
+        # validate point
+        if not (patch.shape[0]//2 <= point[0] < WIDTH-patch.shape[0]//2 
+                and patch.shape[1]//2 <= point[1] < HEIGHT-patch.shape[1]//2):
+            return img
+            
+
         # assumption: patch size is fixed by tracker
         x_1 = int(point[0] - patch.shape[0]//2)
         y_1 = int(point[1] - patch.shape[1]//2)
@@ -542,7 +548,7 @@ class MultiTracker:
             # ---------------------------------------------------------------------
             # |PARTIAL_OCC, NO_OCC>
             elif ((target.keypoints_new_good.shape[0] > 0) and
-                    len(target.good_distances) == MAX_NUM_CORNERS and
+                    (len(target.good_distances) == MAX_NUM_CORNERS or target.keypoints_new_good.shape[0]>=MAX_NUM_CORNERS) and
                     (target.template_scores > self.TEMP_MATCH_THRESH).sum() == MAX_NUM_CORNERS):
                 target.occlusion_case_new = NO_OCC
 
