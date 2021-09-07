@@ -24,8 +24,8 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -59,54 +59,6 @@ if __name__ == '__main__':
         SHOW_3D_TRAJECTORIES = 1
         SHOW_DELTA_TIME_PROFILE = 0
         SHOW_Y1_Y2 = 0
-
-        # _TIME = []
-        # _R = []
-        # _THETA = []
-        # _V_THETA = []
-        # _V_R = []
-        # _DRONE_POS_X = []
-        # _DRONE_POS_Y = []
-        # _CAR_POS_X = []
-        # _CAR_POS_Y = []
-        # _DRONE_ACC_X = []
-        # _DRONE_ACC_Y = []
-        # _DRONE_ACC_LAT = []
-        # _DRONE_ACC_LNG = []
-        # _CAR_VEL_X = []
-        # _CAR_VEL_Y = []
-        # _TRACKED_CAR_POS_X = []
-        # _TRACKED_CAR_POS_Y = []
-        # _TRACKED_CAR_VEL_X = []
-        # _TRACKED_CAR_VEL_Y = []
-        # _CAM_ORIGIN_X = []
-        # _CAM_ORIGIN_Y = []
-        # _DRONE_SPEED = []
-        # _DRONE_ALPHA = []
-        # _DRONE_VEL_X = []
-        # _DRONE_VEL_Y = []
-        # _MEASURED_CAR_POS_X = []
-        # _MEASURED_CAR_POS_Y = []
-        # _MEASURED_CAR_VEL_X = []
-        # _MEASURED_CAR_VEL_Y = []
-        # _DRONE_ALTITUDE = []
-        # _ABS_DEN = []
-        # _MEASURED_R = []
-        # _MEASURED_THETA = []
-        # _MEASURED_V_R = []
-        # _MEASURED_V_THETA = []
-        # _TRUE_R = []
-        # _TRUE_THETA = []
-        # _TRUE_V_R = []
-        # _TRUE_V_THETA = []
-        # _DELTA_TIME = []
-        # _Y1 = []
-        # _Y2 = []
-        # _CAR_SPEED = []
-        # _CAR_HEADING = []
-        # _TRUE_Y1 = []
-        # _TRUE_Y2 = []
-        # _OCC_CASE = []
 
 
         TIME = []
