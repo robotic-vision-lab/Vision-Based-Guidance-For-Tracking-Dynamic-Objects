@@ -110,8 +110,8 @@ X_DES = WIDTH*0.1155
 Y_DES = WIDTH*0.1155
 S_DES = (X_DES**2 + Y_DES**2)**0.5
 C_DES = HEIGHT*0.25
-Z_DES = 325
-Z_DELTA = 50
+Z_DES = 300
+Z_DELTA = 75
 
 # gravity
 ACC_GRAVITY = 9.81
@@ -121,7 +121,7 @@ TIME_FONT = 'consolas'
 TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY_2   # used for all simulator texts
 DELTA_TIME = 0.01           # used in full blocking mode
-FINAL_TIME = 72
+FINAL_TIME = 390
 
 # Bounding box settings
 BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
