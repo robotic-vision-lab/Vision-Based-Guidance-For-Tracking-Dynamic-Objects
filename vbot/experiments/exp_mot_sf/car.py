@@ -208,7 +208,7 @@ class Car(pygame.sprite.Sprite):
                 self.traj == SQUIRCLE_TRAJECTORY):
             # load the unrotated image and rect
             car_scale = (CAR_LENGTH / (CAR_LENGTH_PX * self.simulator.pxm_fac))
-            self.car_img_rect = load_image_rect(CAR_IMG, colorkey=BLACK, alpha=True, scale=car_scale)
+            self.car_img_rect = load_image_rect(self.img, colorkey=BLACK, alpha=True, scale=car_scale)
             prev_center = self.car_img_rect[0].get_rect(center = self.car_img_rect[0].get_rect().center).center
             rot_img = pygame.transform.rotate(self.car_img_rect[0], degrees(self.angle))
             rot_img = rot_img.convert_alpha()
