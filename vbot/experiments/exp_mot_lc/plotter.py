@@ -973,7 +973,7 @@ class TrajectoryCameraDataPlotter:
 
 
     def plot(self):
-        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,5))
+        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,10))
         # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
         self.fig.canvas.manager.set_window_title(self.window_title)
 
