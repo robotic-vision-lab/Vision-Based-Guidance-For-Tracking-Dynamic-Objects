@@ -1,4 +1,4 @@
-from math import pi, tau
+from math import pi, tau, sin, cos, atan2
 from copy import deepcopy
 
 import pygame
