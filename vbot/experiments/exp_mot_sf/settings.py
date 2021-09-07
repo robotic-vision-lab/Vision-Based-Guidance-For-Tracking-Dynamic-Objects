@@ -106,12 +106,12 @@ K_D_PSI = 10
 K_D_Z = 10.0
 
 # altitude control 
-X_DES = WIDTH*0.27
-Y_DES = WIDTH*0.27
+X_DES = WIDTH*0.1155
+Y_DES = WIDTH*0.1155
 S_DES = (X_DES**2 + Y_DES**2)**0.5
 C_DES = HEIGHT*0.25
-Z_DES = 150
-Z_DELTA = 30
+Z_DES = 3000
+Z_DELTA = 75
 
 # gravity
 ACC_GRAVITY = 9.81
