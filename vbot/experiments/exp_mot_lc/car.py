@@ -218,7 +218,7 @@ class Car(pygame.sprite.Sprite):
             self.update_rect()
         else:
             car_scale = (CAR_LENGTH / (CAR_LENGTH_PX * self.simulator.pxm_fac))
-            self.car_img_rect = load_image_rect(self.img, colorkey=BLACK, alpha=True, scale=CAR_SCALE)
+            self.car_img_rect = load_image_rect(self.img, colorkey=BLACK, alpha=True, scale=car_scale)
             self.image, self.rect = self.car_img_rect
             self.update_rect()
 

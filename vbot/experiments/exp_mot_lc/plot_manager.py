@@ -103,6 +103,7 @@ class UASFocalPointsPlotter:
         self.axs.scatter3D(self.fp2x, self.fp2y, 0, color='red', marker='o', s=5, edgecolor='w', alpha=0.7)
         self.axs.scatter3D(self.drone_x, self.drone_y, self.drone_z, color='green', marker='x', s=5, edgecolor='w', alpha=0.7)
         self.axs.scatter3D(self.drone_x, self.drone_y, 0, color='gray', marker='x', s=5, edgecolor='w', alpha=0.3)
+        self.axs.plot3D([self.drone_x]*2, [self.drone_y]*2, [self.drone_z,0], color='limegreen', alpha=0.1)
         self.axs.set_title(f'altitude={self.drone_z:0.2f}m')
 
     def plot2D(self):

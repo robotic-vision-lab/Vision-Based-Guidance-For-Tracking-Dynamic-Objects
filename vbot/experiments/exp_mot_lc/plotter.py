@@ -366,7 +366,7 @@ class LOS2DataPlotter:
 
         # save and show figure
         self.fig.tight_layout()
-        self.fig.subplots_adjust(left=0.1, bottom=0.1, right=0.94, top=0.94)
+        self.fig.subplots_adjust(left=0.12, bottom=0.1, right=0.94, top=0.94)
         self.fig.savefig(f'{self.save_path}/1_los2.pdf')
         self.fig.show()
 
@@ -431,9 +431,9 @@ class AccelerationCommandDataPlotter:
 
     def set_params(self):
         # params
-        self.a_lat_params = dict(color='forestgreen', alpha=0.7,  ls='-', lw=2,   label=r'$a_{lat}$')
-        self.a_lng_params = dict(color='deeppink', alpha=0.7,  ls='-', lw=2,   label=r'$a_{long}$')
-        self.a_z_params = dict(color='royalblue', alpha=0.7,  ls='-', lw=2,   label=r'$a_{z}$')
+        self.a_lat_params = dict(color='forestgreen', alpha=0.7,  ls='-', lw=1,   label=r'$a_{lat}$')
+        self.a_lng_params = dict(color='deeppink', alpha=0.7,  ls='-', lw=1,   label=r'$a_{long}$')
+        self.a_z_params = dict(color='royalblue', alpha=0.7,  ls='-', lw=1,   label=r'$a_{z}$')
 
         # rcParams
         params = {'xtick.direction'     : 'in',
@@ -973,7 +973,7 @@ class TrajectoryCameraDataPlotter:
 
 
     def plot(self):
-        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,5))
+        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,10))
         # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
         self.fig.canvas.manager.set_window_title(self.window_title)
 

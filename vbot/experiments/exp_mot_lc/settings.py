@@ -82,7 +82,7 @@ BAR_COLOR = DARK_GRAY_3
 BAR_COLOR_DELTA = (8, 8, 8)
 # BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 15.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
 BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 10.0, 15.0 #(HEIGHT-1) * PIXEL_TO_METERS_FACTOR
-NUM_BARS = 9
+NUM_BARS = 6
 
 # drone camera settings
 DRONE_IMG = 'cross_hair.png'
@@ -121,6 +121,7 @@ TIME_FONT = 'consolas'
 TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY_2   # used for all simulator texts
 DELTA_TIME = 0.01           # used in full blocking mode
+FINAL_TIME = 72
 
 # Bounding box settings
 BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
