@@ -16,7 +16,7 @@ from .plotter import *
 if __name__ == '__main__':
 
     EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
-    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
+    WRITE_PLOT = 0  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
@@ -1139,4 +1139,5 @@ if __name__ == '__main__':
         _prep_temp_folder(os.path.realpath(_PATH))
         VID_PATH = f'{_PATH}/sim_track_control.avi'
         print('Making video.')
-        EXPERIMENT_MANAGER.make_video(VID_PATH, SIMULATOR_TEMP_FOLDER)
+        _FPS = FPS if USE_REAL_CLOCK else int(1/DELTA_TIME)
+        EXPERIMENT_MANAGER.make_video(VID_PATH, SIMULATOR_TEMP_FOLDER, _FPS)
