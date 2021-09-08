@@ -278,7 +278,7 @@ class ExperimentManager:
                 f'S_DOT,' +
                 f'C_DOT,' +
                 f'Z_W_DOT,' +
-                f'AZ,' +
+                f'AZ_S,' +
                 f'AZ_C,' +
                 f'AZ_Z,' +
                 f'AZ,' +
@@ -656,7 +656,7 @@ class ExperimentManager:
             f'{S_DOT},' +
             f'{C_DOT},' +
             f'{Z_W_DOT},' +
-            f'{AZ},' +
+            f'{AZ_S},' +
             f'{AZ_C},' +
             f'{AZ_Z},' +
             f'{AZ},' +
