@@ -362,6 +362,8 @@ class ExperimentManager:
                 f'DRONE_SPEED,' +
                 f'DRONE_ALPHA\n'
             )
+            self.write_count = 0
+            self.write_skip = 5
 
         # run experiment
         while self.simulator.running:
@@ -423,7 +425,11 @@ class ExperimentManager:
 
                         # self.plot_manager.uas_focal_points_plotter.collect_data()
                         if self.write_plot:
-                            self.write_info()
+                            if self.write_count==0:
+                                self.write_info()
+                            self.write_count += 1
+                            if self.write_count == self.write_skip:
+                                self.write_count = 0
                         # self.plot_manager.plot()
                         
 
@@ -740,13 +746,13 @@ class ExperimentManager:
 
 
     @staticmethod
-    def make_video(video_name, folder_path):
+    def make_video(video_name, folder_path, fps=FPS):
         """Helper function, looks for frames in given folder,
         writes them into a video file, with the given name.
         Also removes the folder after creating the video.
         """
         if os.path.isdir(folder_path):
-            create_video_from_images(folder_path, 'png', video_name, FPS)
+            create_video_from_images(folder_path, 'png', video_name, fps)
 
             # delete folder
             shutil.rmtree(folder_path)
