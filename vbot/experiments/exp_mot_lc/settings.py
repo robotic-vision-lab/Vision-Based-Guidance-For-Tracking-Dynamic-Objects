@@ -93,7 +93,7 @@ DRONE_SCALE = 1.0
 DRONE_VELOCITY_LIMIT = 500      # +/-
 DRONE_ACCELERATION_LIMIT = 20   # +/-
 DRONE_MASS = 4.3259
-DRONE_I_XX = 0.082
+DRONE_I_XX = 0.0845
 DRONE_I_YY = 0.0845
 DRONE_I_ZZ = 0.1377
 K_P_PHI = 100
@@ -121,7 +121,7 @@ TIME_FONT = 'consolas'
 TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY_2   # used for all simulator texts
 DELTA_TIME = 0.01           # used in full blocking mode
-FINAL_TIME = 72
+FINAL_TIME = 150
 
 # Bounding box settings
 BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
@@ -248,6 +248,6 @@ CAR_INITIAL_VELOCITY_2  = (22.66, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_3  = (22.66, 0.0)#(5.32 , 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (31.11, 0.0)#(5.31, 0.0)
-K_1                     = 2 #2
+K_1                     = 1.4 #2
 K_2                     = 0.082 #0.08
 K_W                     = -1000
