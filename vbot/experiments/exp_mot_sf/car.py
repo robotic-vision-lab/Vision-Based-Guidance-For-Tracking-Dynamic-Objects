@@ -203,7 +203,7 @@ class Car(pygame.sprite.Sprite):
     def update_image_rect(self):
         """Update car image and rect for changes in orientations
         """
-        if (self.traj == ONE_HOLE_TRAJECTORY or
+        if 0 and (self.traj == ONE_HOLE_TRAJECTORY or
                 self.traj == TWO_HOLE_TRAJECTORY or 
                 self.traj == SQUIRCLE_TRAJECTORY):
             # load the unrotated image and rect
