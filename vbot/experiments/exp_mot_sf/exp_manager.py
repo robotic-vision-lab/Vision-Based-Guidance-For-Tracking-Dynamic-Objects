@@ -363,7 +363,7 @@ class ExperimentManager:
                 f'DRONE_ALPHA\n'
             )
             self.write_count = 0
-            self.write_skip = 5
+            self.write_skip = 3
 
         # run experiment
         while self.simulator.running:
