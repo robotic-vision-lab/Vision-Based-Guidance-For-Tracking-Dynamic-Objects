@@ -63,9 +63,9 @@ class MultiTracker:
         self.tracker_info_mask = None   # mask over which tracker information is drawn persistently
         self.win_name = 'Multi-tracker'
         # self.img_dumper = ImageDumper(TRACKER_TEMP_FOLDER)
-        self.DES_MATCH_DISTANCE_THRESH = 250 #450
+        self.DES_MATCH_DISTANCE_THRESH = 230 #450
         self.DES_MATCH_DEV_THRESH = 0.50 # float('inf') to get every match
-        self.TEMP_MATCH_THRESH = 0.9849
+        self.TEMP_MATCH_THRESH = 0.97
 
         self._FAILURE = False
         self._SUCCESS = True
@@ -1033,7 +1033,7 @@ class MultiTracker:
             # draw bounding box say 10x10 m^2 (5x5 to SW and NE)
             if target.kinematics == NONE_KINEMATICS:
                 xc,yc = tuple(map(int,target.centroid_new_est.flatten()))
-                d = (CAR_LENGTH - 1) + target.EKF.cov_x.flatten()[0] / 0.133    # approx 0.133 is what cov stabilizes when measurements are available
+                d = (CAR_LENGTH - 1) + target.EKF.cov_x.flatten()[0] / 0.1133    # approx 0.133 is what cov stabilizes when measurements are available
                 size = int(d/self.manager.simulator.pxm_fac)
             else:
                 xc,yc = tuple(map(int,target.centroid_new.flatten()))
