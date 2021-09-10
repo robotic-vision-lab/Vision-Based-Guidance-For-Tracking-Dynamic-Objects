@@ -30,7 +30,7 @@ SIMULATOR_TITLE = 'Simple'
 # camera image formation settings
 FOV = 50.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 150.0                                  # meters
+ALTITUDE = 170.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -93,7 +93,7 @@ DRONE_SCALE = 1.0
 DRONE_VELOCITY_LIMIT = 500      # +/-
 DRONE_ACCELERATION_LIMIT = 20   # +/-
 DRONE_MASS = 4.3259
-DRONE_I_XX = 0.082
+DRONE_I_XX = 0.0845
 DRONE_I_YY = 0.0845
 DRONE_I_ZZ = 0.1377
 K_P_PHI = 100
@@ -121,7 +121,7 @@ TIME_FONT = 'consolas'
 TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY_2   # used for all simulator texts
 DELTA_TIME = 0.01           # used in full blocking mode
-FINAL_TIME = 72
+FINAL_TIME = 150
 
 # Bounding box settings
 BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
@@ -240,14 +240,14 @@ CAR_RADIUS = 0.1
 # K_W                     = -1000
 
 # open
-CAR_INITIAL_POSITION    = (40.0, -50.0)
-CAR_INITIAL_POSITION_2  = (40.0, -20.0)
-CAR_INITIAL_POSITION_3  = (20.0, -35.0)
+CAR_INITIAL_POSITION    = (70.0, -55.0)
+CAR_INITIAL_POSITION_2  = (70.0, -25.0)
+CAR_INITIAL_POSITION_3  = (50.0, -40.0)
 CAR_INITIAL_VELOCITY    = (22.66, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_2  = (22.66, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_3  = (22.66, 0.0)#(5.32 , 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (31.11, 0.0)#(5.31, 0.0)
-K_1                     = 2 #2
-K_2                     = 0.082 #0.08
+K_1                     = 1.35 #2
+K_2                     = 0.085 #0.08
 K_W                     = -1000
