@@ -82,7 +82,7 @@ BAR_COLOR = DARK_GRAY_3
 BAR_COLOR_DELTA = (8, 8, 8)
 # BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 15.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
 BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 10.0, 15.0 #(HEIGHT-1) * PIXEL_TO_METERS_FACTOR
-NUM_BARS = 6
+NUM_BARS = 5
 
 # drone camera settings
 DRONE_IMG = 'cross_hair.png'
@@ -248,6 +248,6 @@ CAR_INITIAL_VELOCITY_2  = (22.66, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_3  = (22.66, 0.0)#(5.32 , 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (31.11, 0.0)#(5.31, 0.0)
-K_1                     = 1.35 #2
-K_2                     = 0.085 #0.08
+K_1                     = 1.4 #2
+K_2                     = 0.082 #0.08
 K_W                     = -1000
