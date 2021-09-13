@@ -362,6 +362,8 @@ class ExperimentManager:
                 f'DRONE_SPEED,' +
                 f'DRONE_ALPHA\n'
             )
+            self.write_count = 0
+            self.write_skip = 5
 
         # run experiment
         while self.simulator.running:
@@ -423,7 +425,11 @@ class ExperimentManager:
 
                         # self.plot_manager.uas_focal_points_plotter.collect_data()
                         if self.write_plot:
-                            self.write_info()
+                            if self.write_count==0:
+                                self.write_info()
+                            self.write_count += 1
+                            if self.write_count == self.write_skip:
+                                self.write_count = 0
                         # self.plot_manager.plot()
                         
 
