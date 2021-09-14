@@ -221,7 +221,6 @@ class Controller:
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
         az_s = -FS * KP_s * (e_s) + FS * KD_s * S_dot + 2 * FS * S_dot**2 / S 
-        # az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum 
         az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C if not e_c==0.0 else 0.0
         az_z = KP_z * e_Z_W - KD_z * Z_W_dot if not e_Z_W==0.0 else 0.0
 
@@ -253,7 +252,7 @@ class Controller:
 
         # az = az_x + az_y + 0
 
-        az = self.sat(az, 10)
+        az = self.sat(az, 12)
 
         print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
         print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
