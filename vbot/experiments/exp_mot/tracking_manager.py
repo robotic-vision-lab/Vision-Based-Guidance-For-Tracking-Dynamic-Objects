@@ -159,6 +159,14 @@ class TrackingManager:
         # draw over color edited frame and show it
         ellipse_img = np.zeros_like(self.exp_manager.multi_tracker.frame_color_edited, np.uint8)
 
+        c1 = tuple(map(int,(SCREEN_CENTER[0]-C_DES, SCREEN_CENTER[1]-C_DES)))
+        c2 = tuple(map(int,(SCREEN_CENTER[0]+C_DES, SCREEN_CENTER[1]+C_DES)))
+        ellipse_img = cv.rectangle(ellipse_img,
+                                   c1,
+                                   c2,
+                                   HONEY_YELLOW_BGR,
+                                   2,
+                                   cv.LINE_4)
         # draw axis aligned bounding box
         ellipse_img = cv.rectangle(ellipse_img,
                                    self.p1,
