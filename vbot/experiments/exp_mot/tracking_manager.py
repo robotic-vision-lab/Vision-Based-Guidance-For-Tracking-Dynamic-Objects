@@ -161,10 +161,11 @@ class TrackingManager:
 
         c1 = tuple(map(int,(SCREEN_CENTER[0]-C_DES, SCREEN_CENTER[1]-C_DES)))
         c2 = tuple(map(int,(SCREEN_CENTER[0]+C_DES, SCREEN_CENTER[1]+C_DES)))
+        colr = EMERALD_BGR if self.exp_manager.controller.e_c_prev >= 0 else VERMILION_BGR
         ellipse_img = cv.rectangle(ellipse_img,
                                    c1,
                                    c2,
-                                   HONEY_YELLOW_BGR,
+                                   colr,
                                    2,
                                    cv.LINE_4)
         # draw axis aligned bounding box
