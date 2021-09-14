@@ -430,7 +430,7 @@ class ExperimentManager:
                             self.write_count += 1
                             if self.write_count == self.write_skip:
                                 self.write_count = 0
-                        # self.plot_manager.plot()
+                        self.plot_manager.plot()
                         
 
             self.simulator.draw_extra()
