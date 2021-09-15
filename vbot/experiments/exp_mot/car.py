@@ -112,10 +112,10 @@ class Car(pygame.sprite.Sprite):
                 self.acceleration = pygame.Vector2(0, _FLAG* +1)
                 self.velocity += self.acceleration * self.simulator.dt
 
-            elif 15 <= t < 17:
+            elif 19 <= t < 21:
                 self.acceleration = pygame.Vector2(0, _FLAG* +1)
                 self.velocity += self.acceleration * self.simulator.dt
-            elif 17 <= t < 19:
+            elif 21 <= t < 23:
                 self.acceleration = pygame.Vector2(0, _FLAG* -1)
                 self.velocity += self.acceleration * self.simulator.dt
 
@@ -151,10 +151,10 @@ class Car(pygame.sprite.Sprite):
                 self.acceleration = pygame.Vector2(0, _FLAG* +1)
                 self.velocity += self.acceleration * self.simulator.dt
 
-            elif 105 <= t < 107:
+            elif 115 <= t < 117:
                 self.acceleration = pygame.Vector2(0, _FLAG* +1)
                 self.velocity += self.acceleration * self.simulator.dt
-            elif 107 <= t < 109:
+            elif 117 <= t < 119:
                 self.acceleration = pygame.Vector2(0, _FLAG* -1)
                 self.velocity += self.acceleration * self.simulator.dt
 

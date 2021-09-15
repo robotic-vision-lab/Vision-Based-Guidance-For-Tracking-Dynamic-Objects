@@ -156,18 +156,16 @@ class TrackingManager:
         self.p1 = (x_min, y_min)
         self.p2 = (x_max, y_max)
 
+        # compute midpoint of control area and C boundary coords
+        self.pmid = ((x_min+x_max)//2, (y_min+y_max)//2)
+        c1 = tuple(map(int,(SCREEN_CENTER[0]-C_DES, SCREEN_CENTER[1]-C_DES)))
+        c2 = tuple(map(int,(SCREEN_CENTER[0]+C_DES, SCREEN_CENTER[1]+C_DES)))
+        colr = (204, 204, 204) if self.exp_manager.controller.e_c_prev >= 0 else TOMATO_BGR
+        print(C_DES)
         # draw over color edited frame and show it
         ellipse_img = np.zeros_like(self.exp_manager.multi_tracker.frame_color_edited, np.uint8)
 
-        c1 = tuple(map(int,(SCREEN_CENTER[0]-C_DES, SCREEN_CENTER[1]-C_DES)))
-        c2 = tuple(map(int,(SCREEN_CENTER[0]+C_DES, SCREEN_CENTER[1]+C_DES)))
-        colr = EMERALD_BGR if self.exp_manager.controller.e_c_prev >= 0 else VERMILION_BGR
-        ellipse_img = cv.rectangle(ellipse_img,
-                                   c1,
-                                   c2,
-                                   colr,
-                                   2,
-                                   cv.LINE_4)
+        
         # draw axis aligned bounding box
         ellipse_img = cv.rectangle(ellipse_img,
                                    self.p1,
@@ -199,7 +197,19 @@ class TrackingManager:
                                  color=ELLIPSE_COLOR,
                                  thickness=cv.FILLED,
                                  lineType=cv.LINE_8)
-
+        # draw C boundary
+        ellipse_img = cv.rectangle(ellipse_img,
+                                   c1,
+                                   c2,
+                                   colr,
+                                   2,
+                                   cv.LINE_4)
+        ellipse_img = cv.circle(ellipse_img,
+                                self.pmid,
+                                radius=4,
+                                color=colr,
+                                thickness=cv.FILLED,
+                                lineType=cv.LINE_AA)    
         # draw measured focal points
         ellipse_img = cv.circle(ellipse_img,
                                 ellipse_focal_point_1,

@@ -191,13 +191,13 @@ class Controller:
         self.manager.tracking_manager.bounding_area_EKF.add(S, C, Z_W)
         S, C, Z_W, S_dot, C_dot, Z_W_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
 
-        KP_s = 300*9
-        KP_c = 400*9
-        KP_z = 200*2
+        KP_s = 0.03
+        KP_c = 0.06
+        KP_z = 0.1
 
-        KD_s = 15
-        KD_c = 10
-        KD_z = 10
+        KD_s = 0.006
+        KD_c = 0.03
+        KD_z = 0.05
         
         KI_s = 0.5
         KI_c = 3
@@ -205,6 +205,7 @@ class Controller:
 
         # X_d = WIDTH*0.3
         # Y_d = WIDTH*0.3
+        C_DES = HEIGHT*((100+Z_W)/1000)
         S_d = S_DES
         C_d = C_DES
         Z_d = Z_DES
@@ -220,8 +221,8 @@ class Controller:
         FS = ((FOCAL_LENGTH * S_W) / S**2)
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
-        az_s = -FS * KP_s * (e_s) + FS * KD_s * S_dot + 2 * FS * S_dot**2 / S 
-        az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C if not e_c==0.0 else 0.0
+        az_s = -KP_s * (e_s) + KD_s * S_dot + 2 * FS * S_dot**2 / S 
+        az_c = -KP_c * (e_c) + KD_c * C_dot + 2 * FC * C_dot**2 / C if not e_c==0.0 else 0.0
         az_z = KP_z * e_Z_W - KD_z * Z_W_dot if not e_Z_W==0.0 else 0.0
 
         
@@ -252,9 +253,9 @@ class Controller:
 
         # az = az_x + az_y + 0
 
-        az = self.sat(az, 12)
+        az = self.sat(az, 10)
 
-        print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
+        print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", SCZ_dot_meas-")}{gb(f"[{S_dot:.2f}, {C_dot:.2f}, {Z_W_dot:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
         print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
         print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
         print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}, xmin,xmax=({x_min:0.2f},{x_max:0.2f}), ymin,ymax=({y_min:0.2f},{y_max:0.2f}),SCZ => {scz_dict[scz_ind]}')
