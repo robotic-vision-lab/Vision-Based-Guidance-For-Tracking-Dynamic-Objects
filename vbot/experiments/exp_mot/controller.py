@@ -20,6 +20,8 @@ class Controller:
         self.e_c_sum = 0.0
         self.e_z_sum = 0.0
 
+        self.C_DES = C_DES
+
         self.scz_ind_prev = 0
 
     @staticmethod
@@ -205,9 +207,9 @@ class Controller:
 
         # X_d = WIDTH*0.3
         # Y_d = WIDTH*0.3
-        C_DES = HEIGHT*((100+Z_W)/1000)
+        self.C_DES = HEIGHT*((100+Z_W)/1000)
         S_d = S_DES
-        C_d = C_DES
+        C_d = self.C_DES
         Z_d = Z_DES
 
         e_s = S_d - S
