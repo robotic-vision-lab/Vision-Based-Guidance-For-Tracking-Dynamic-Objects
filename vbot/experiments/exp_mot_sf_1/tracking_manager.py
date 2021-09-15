@@ -162,10 +162,10 @@ class TrackingManager:
         c1 = tuple(map(int,(SCREEN_CENTER[0]-C_DES, SCREEN_CENTER[1]-C_DES)))
         c2 = tuple(map(int,(SCREEN_CENTER[0]+C_DES, SCREEN_CENTER[1]+C_DES)))
         colr = (204, 204, 204) if self.exp_manager.controller.e_c_prev >= 0 else TOMATO_BGR
+
         # draw over color edited frame and show it
         ellipse_img = np.zeros_like(self.exp_manager.multi_tracker.frame_color_edited, np.uint8)
 
-        
         # draw axis aligned bounding box
         ellipse_img = cv.rectangle(ellipse_img,
                                    self.p1,
@@ -209,7 +209,7 @@ class TrackingManager:
                                 radius=4,
                                 color=colr,
                                 thickness=cv.FILLED,
-                                lineType=cv.LINE_AA)    
+                                lineType=cv.LINE_AA)  
         # draw measured focal points
         ellipse_img = cv.circle(ellipse_img,
                                 ellipse_focal_point_1,
