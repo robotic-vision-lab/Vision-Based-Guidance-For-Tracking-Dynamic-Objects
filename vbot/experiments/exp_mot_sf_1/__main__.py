@@ -511,6 +511,25 @@ if __name__ == '__main__':
                                                               )
 
         altitude_control_plotter.plot()
+        
+        traj3d_plotter = Traj3DDataPlotter(_PATH,
+                                                              TIME,
+                                                              T_1_X_EST,
+                                                              T_1_Y_EST,
+                                                              T_2_X_EST,
+                                                              T_2_Y_EST,
+                                                              T_3_X_EST,
+                                                              T_3_Y_EST,
+                                                              FP_1_X,
+                                                              FP_1_Y,
+                                                              FP_2_X,
+                                                              FP_2_Y,
+                                                              DRONE_POS_X_W,
+                                                              DRONE_POS_Y_W,
+                                                              Z_W
+                                                              )
+
+        traj3d_plotter.plot()
 
         plt.show()
 
