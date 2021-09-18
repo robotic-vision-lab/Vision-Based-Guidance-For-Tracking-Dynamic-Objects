@@ -24,7 +24,7 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 1 # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
@@ -188,6 +188,8 @@ if __name__ == '__main__':
         DRONE_POS_Y_W = []
         DRONE_SPEED = []
         DRONE_ALPHA = []
+        C_DESIRED = []
+        SCZ_IND = []
 
         # get all the data in memory
         for line in FILE.readlines():
@@ -317,6 +319,8 @@ if __name__ == '__main__':
             DRONE_POS_Y_W.append(data[119])
             DRONE_SPEED.append(data[120])
             DRONE_ALPHA.append(data[121])
+            C_DESIRED.append(data[122])
+            SCZ_IND.append(data[123])
 
         FILE.close()
 
@@ -459,10 +463,59 @@ if __name__ == '__main__':
                                                               TIME,
                                                               S,
                                                               C,
-                                                              Z_W
+                                                              Z_W,
+                                                              C_DESIRED
                                                               )
 
         altitude_control_plotter.plot()
+
+        traj3d_plotter = Traj3DDataPlotter(_PATH,
+                                                              TIME,
+                                                              T_1_X_EST,
+                                                              T_1_Y_EST,
+                                                              T_2_X_EST,
+                                                              T_2_Y_EST,
+                                                              T_3_X_EST,
+                                                              T_3_Y_EST,
+                                                              FP_1_X,
+                                                              FP_1_Y,
+                                                              FP_2_X,
+                                                              FP_2_Y,
+                                                              DRONE_POS_X_W,
+                                                              DRONE_POS_Y_W,
+                                                              Z_W
+                                                              )
+
+        traj3d_plotter.plot()
+
+
+        f1 ,a1 = plt.subplots()
+        a1.plot(TIME, C_DOT)
+        f1.suptitle(r'$\dot{C}$')
+        f1.savefig(f'{_PATH}/8_cdot.pdf')
+        f1.show()
+
+        f2 ,a2 = plt.subplots()
+        a2.plot(TIME, SCZ_IND)
+        f2.suptitle(f'SCZ - 012')
+        f2.savefig(f'{_PATH}/9_scz_ind.pdf')
+        f2.show()
+
+        f3 ,a3 = plt.subplots()
+        a3.plot(Z_W, S)
+        a3.axis('equal')
+        f3.suptitle(f'z vs S')
+        f3.savefig(f'{_PATH}/10_zs.pdf')
+        f3.show()
+
+        f4 ,a4 = plt.subplots()
+        a4.plot(Z_W, C)
+        a4.axis('equal')
+        f4.suptitle(f'z vs C')
+        f4.savefig(f'{_PATH}/11_zc.pdf')
+        f4.show()
+
+
 
         plt.show()
 
