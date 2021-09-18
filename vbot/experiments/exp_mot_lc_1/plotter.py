@@ -1024,6 +1024,7 @@ class AltitudeControlDataPlotter:
                  s,
                  c,
                  zw,
+                 cd
                  ):
 
         self.save_path = save_path
@@ -1031,9 +1032,12 @@ class AltitudeControlDataPlotter:
         self.s = s
         self.c = c
         self.zw = zw
+        self.cd = cd
 
         self.sd = [S_DES for _ in self.t]
-        self.cd = [C_DES for _ in self.t]
+        self.sd1 = [S_DES+S_DELTA for _ in self.t]
+        self.sd2 = [S_DES-S_DELTA for _ in self.t]
+        # self.cd = [C_DES for _ in self.t]
         self.zwd = [Z_DES for _ in self.t]
         self.zwd1 = [Z_DES+Z_DELTA for _ in self.t]
         self.zwd2 = [Z_DES-Z_DELTA for _ in self.t]
@@ -1049,10 +1053,13 @@ class AltitudeControlDataPlotter:
         # control variable S params
         self.s_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$S$')
         self.sd_params = dict(color='darkorange', alpha=0.8,  ls='-', lw=2,   label=r'$S_{d}$')
+        self.sd_del_params = dict(color='orangered', alpha=0.6,  ls='--', lw=1,   label=r'${}^{+}S_{d}^{des}$, ${}^{-}S_{d}^{des}$')
+        self.sd_fill_params = dict(color='darkorange', alpha=0.05)
 
         # control variable C params
         self.c_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$C$')
         self.cd_params = dict(color='darkorange', alpha=0.8,  ls='-', lw=2,   label=r'$C_{d}$')
+        self.cd_fill_params = dict(color='darkorange', alpha=0.05)
 
         # control variable Z_W params
         self.zw_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\mathbf{z}_{A}$')
@@ -1094,10 +1101,14 @@ class AltitudeControlDataPlotter:
         self.fig.canvas.manager.set_window_title(self.window_title)
 
         # S
-        self.axs[0].plot(self.t, self.s, **self.s_params)
+        self.axs[0].fill_between(self.t, self.sd1, self.sd2, **self.sd_fill_params)
         self.axs[0].plot(self.t, self.sd, **self.sd_params)
+        self.axs[0].plot(self.t, self.sd1, **self.sd_del_params)
+        self.axs[0].plot(self.t, self.sd2, **self.sd_del_params)
+        self.axs[0].plot(self.t, self.s, **self.s_params)
 
         # C
+        self.axs[1].fill_between(self.t, self.cd, 0, **self.zwd_fill_params)
         self.axs[1].plot(self.t, self.c, **self.c_params)
         self.axs[1].plot(self.t, self.cd, **self.cd_params)
 
@@ -1154,4 +1165,138 @@ class AltitudeControlDataPlotter:
         
         
 
+
     
+class Traj3DDataPlotter:
+    def __init__(self, 
+                save_path, 
+                t, 
+                t1_x,
+                t1_y,
+                t2_x,
+                t2_y,
+                t3_x,
+                t3_y,
+                fp1_x,
+                fp1_y,
+                fp2_x,
+                fp2_y,
+                d_x,
+                d_y,
+                d_z
+                ):
+
+        self.save_path = save_path
+        self.t = t
+        self.t1_x = t1_x
+        self.t1_y = t1_y
+        self.t2_x = t2_x
+        self.t2_y = t2_y
+        self.t3_x = t3_x
+        self.t3_y = t3_y
+        self.fp1_x = fp1_x
+        self.fp1_y = fp1_y
+        self.fp2_x = fp2_x
+        self.fp2_y = fp2_y
+        self.d_x = d_x
+        self.d_y = d_y
+        self.d_z = d_z
+
+        self.window_title = 'Trajectories 3D (World)'
+        self.fig = None
+        self.axs = None
+
+        self.set_params()
+
+
+    def set_params(self):
+        # target traj params
+        self.t1_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{1}$')
+        self.t2_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{2}$')
+        self.t3_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{3}$')
+
+        # focal point traj params
+        self.fp1_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp1}$')
+        self.fp2_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp2}$')
+
+        # drone params
+        self.d_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2.5,   label=r'$A$')
+        self.ds_params = dict(color='gray', alpha=0.5,  ls='-', lw=2,   label=r'$A$')
+        
+
+
+        # rcParams
+        params = {'xtick.direction'     : 'in',
+                  'xtick.top'           : True,
+                  'xtick.minor.visible' : True,
+                  'xtick.color'         : 'gray',
+                  'ytick.direction'     : 'in',
+                  'ytick.right'         : True,
+                  'ytick.minor.visible' : True,
+                  'ytick.color'         : 'gray',
+                #   'text.usetex'         : True,           # slows rendering significantly
+                #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
+                  'pdf.compression'     : 0,
+                  'legend.fontsize'     : 'xx-large',
+                  'axes.labelsize'      : 'xx-large',
+                  'axes.titlesize'      : 'xx-large',
+                  'xtick.labelsize'     : 'x-large',
+                  'ytick.labelsize'     : 'x-large',
+                  'axes.edgecolor'      : 'gray'} 
+
+        mpl.rcParams.update(params)
+
+
+    def make_handles(self, params_list):
+        return [Line2D([0], [0], **params) for params in params_list]
+
+
+    def plot(self):
+        self.fig = plt.figure()
+        self.axs = self.fig.add_subplot(111,projection='3d')
+        # self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,5))
+        # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
+        self.fig.canvas.manager.set_window_title(self.window_title)
+        zeros = [0 for _ in self.t]
+        # targets 
+        self.axs.plot3D(self.t1_x, self.t1_y, zeros, **self.t1_params)
+        self.axs.plot3D(self.t2_x, self.t2_y, zeros, **self.t2_params)
+        self.axs.plot3D(self.t3_x, self.t3_y, zeros, **self.t3_params)
+
+        # focal points 
+        self.axs.plot3D(self.fp1_x, self.fp1_y, zeros, **self.fp1_params)
+        self.axs.plot3D(self.fp2_x, self.fp2_y, zeros, **self.fp2_params)
+
+        # drone 
+        self.axs.plot3D(self.d_x, self.d_y, self.d_z, **self.d_params)
+        self.axs.plot3D(self.d_x, self.d_y, zeros, **self.ds_params)
+
+        for i in range(len(self.t)):
+            self.axs.plot3D([self.d_x[i]]*2, [self.d_y[i]]*2, [self.d_z[i], 0], color='lightgray', alpha=0.1)
+
+
+        # set axes decorations
+        self.add_axes_decor()
+
+        # save and show figure
+        self.fig.tight_layout()
+        # self.fig.subplots_adjust(left=0.1, bottom=0.12, right=0.94, top=0.94)
+        # self.fig.savefig(f'{self.save_path}/6_traj_3Dworld.pdf')
+        self.fig.show()
+
+
+    def add_axes_decor(self):
+        legend_handles = self.make_handles([self.t1_params, self.fp1_params, self.d_params])
+        self.axs.set_title(r'Trajectories (world frame)')
+        self.axs.legend(handles=legend_handles,
+                        labels=[r'$B_{i}$', r'$B_{fpi}$', r'$A$'],
+                        loc='upper right')
+        self.axs.set(xlabel=r'$x\ (m)$', ylabel=r'$y\ (m)$')
+        self.axs.xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs.yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs.grid(True, which='minor', alpha=0.1)
+        self.axs.grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs.get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs.get_yticklabels()]
+        
+   
