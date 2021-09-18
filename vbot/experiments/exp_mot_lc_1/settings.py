@@ -30,7 +30,7 @@ SIMULATOR_TITLE = 'Simple'
 # camera image formation settings
 FOV = 50.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 150.0                                  # meters
+ALTITUDE = 250.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -107,12 +107,13 @@ K_D_PSI = 10
 K_D_Z = 10.0
 
 # altitude control 
-X_DES = WIDTH*0.25
-Y_DES = WIDTH*0.25
-S_DES = (X_DES**2 + Y_DES**2)**0.5
+X_DES = WIDTH*0.2
+Y_DES = WIDTH*0.2
+S_DES = 300#(X_DES**2 + Y_DES**2)**0.5
 C_DES = HEIGHT*0.23
-Z_DES = 150
-Z_DELTA = 30
+Z_DES = 180
+Z_DELTA = 40
+S_DELTA = 30
 
 # gravity
 ACC_GRAVITY = 9.81
@@ -128,7 +129,7 @@ FINAL_TIME = 150
 BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
 
 # Ellipse settings
-ELLIPSE_TOLERANCE = 0.1
+ELLIPSE_TOLERANCE = 0.01
 ELLIPSE_COLOR = (222, 222, 222)#(66, 61, 78)
 ELLIPSE_MEAS_FP_COLOR = (1, 1, 1)#(51, 51, 51)
 ELLIPSE_ESTD_FP_COLOR = (255, 112, 100)#(51, 51, 255)
@@ -241,14 +242,14 @@ CAR_RADIUS = 0.1
 # K_W                     = -1000
 
 # open
-CAR_INITIAL_POSITION    = (40.0, 50.0)
-CAR_INITIAL_POSITION_2  = (40.0, 20.0)
-CAR_INITIAL_POSITION_3  = (20.0, 35.0)
+CAR_INITIAL_POSITION    = (100.0, 50.0)
+CAR_INITIAL_POSITION_2  = (100.0, 20.0)
+CAR_INITIAL_POSITION_3  = (80.0, 35.0)
 CAR_INITIAL_VELOCITY    = (22.22, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_2  = (22.22, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_3  = (22.22, 0.0)#(5.32 , 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (31.11, 0.0)#(5.31, 0.0)
-K_1                     = 1.1 #2
-K_2                     = 0.085 #0.08
-K_W                     = -1000
+K_1                     = 1 #2	# affects a_lat more
+K_2                     = 0.2 #0.08	# affects a_long more
+K_W                     = -10
