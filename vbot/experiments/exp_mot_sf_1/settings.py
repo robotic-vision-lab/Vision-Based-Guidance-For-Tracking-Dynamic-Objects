@@ -106,9 +106,9 @@ K_D_PSI = 10
 K_D_Z = 10.0
 
 # altitude control 
-X_DES = WIDTH*0.1155
-Y_DES = WIDTH*0.1155
-S_DES = (X_DES**2 + Y_DES**2)**0.5
+X_DES = WIDTH*(1.0857**0.5)/10
+Y_DES = WIDTH*(1.0857**0.5)/10
+S_DES = 217#(X_DES**2 + Y_DES**2)**0.5
 C_DES = HEIGHT*0.25
 Z_DES = 350
 Z_DELTA = 50
@@ -248,6 +248,6 @@ CAR_INITIAL_VELOCITY_2  = (22.22, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_3  = (22.22, 0.0)#(5.32 , 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (31.11, 0.0)#(5.31, 0.0)
-K_1                     =  1.3 # 2 #2
-K_2                     =  0.1 # 0.082 #0.08
+K_1                     =  2 # 2 #2
+K_2                     =  0.2 # 0.082 #0.08
 K_W                     = -1000
