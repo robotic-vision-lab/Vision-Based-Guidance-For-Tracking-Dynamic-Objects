@@ -1097,6 +1097,44 @@ class MultiTracker:
         # add a drone center
         img = cv.circle(img, SCREEN_CENTER, radius=1, color=DOT_COLOR, thickness=2)
 
+        # collect drone true velocity
+        drone_vel = list(map(int,5*self.manager.simulator.camera.velocity))
+        drone_acc = list(map(int,4.5*self.manager.simulator.camera.acceleration))
+        drone_vel[1] *= -1
+        drone_acc[1] *= -1
+        drone_vel[0] += SCREEN_CENTER[0]
+        drone_vel[1] += SCREEN_CENTER[1]
+        drone_acc[0] += SCREEN_CENTER[0] 
+        drone_acc[1] += SCREEN_CENTER[1] 
+
+        # draw drone velocity and acceleration
+        img = cv.arrowedLine(img=img,
+                             pt1=SCREEN_CENTER,
+                             pt2=tuple(drone_vel),
+                             color=TIFFANY_BLUE_BGR,
+                             thickness=2,
+                             line_type=cv.LINE_AA,
+                             shift=None,
+                             tipLength=0.2)
+        img = cv.arrowedLine(img=img,
+                             pt1=SCREEN_CENTER,
+                             pt2=tuple(drone_acc),
+                             color=(102,153,255),
+                             thickness=2,
+                             line_type=cv.LINE_AA,
+                             shift=None,
+                             tipLength=0.2)
+        # drone_acc[0] += SCREEN_CENTER[0] + drone_vel[0]
+        # drone_acc[1] += SCREEN_CENTER[1] + drone_vel[1]
+        # img = cv.arrowedLine(img=img,
+        #                      pt1=drone_vel,
+        #                      pt2=tuple(drone_acc),
+        #                      color=(215,218,141),
+        #                      thickness=2,
+        #                      line_type=cv.LINE_AA,
+        #                      shift=None,
+        #                      tipLength=0.2)
+
         # put metrics text
         img = self.put_metrics(img)
 
