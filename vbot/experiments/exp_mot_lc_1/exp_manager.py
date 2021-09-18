@@ -69,7 +69,7 @@ class ExperimentManager:
         self.multi_tracker = MultiTracker(self)
         self.tracking_manager = TrackingManager(self)
         self.controller = Controller(self)
-        self.plot_manager = PlotManager(self)
+        # self.plot_manager = PlotManager(self)
 
         # move tracker display next to simulator 
         cv.namedWindow(self.multi_tracker.win_name)
@@ -360,7 +360,9 @@ class ExperimentManager:
                 f'DRONE_POS_X_W,' + 
                 f'DRONE_POS_Y_W,' +
                 f'DRONE_SPEED,' +
-                f'DRONE_ALPHA\n'
+                f'DRONE_ALPHA,' +
+                f'C_DES,' + 
+                f'SCZ_IND\n'
             )
             self.write_count = 0
             self.write_skip = 5
@@ -533,6 +535,8 @@ class ExperimentManager:
         AZ_C = controller_data[39]
         AZ_Z = controller_data[40]
         AZ = controller_data[41]
+        C_DES = controller_data[42]
+        SCZ_IND = controller_data[43]
 
         T_1_OCCLUSION_CASE = tracker_data[0]
         T_1_X_MEAS = tracker_data[1] if tracker_data[1] is not None else NAN
@@ -738,7 +742,9 @@ class ExperimentManager:
             f'{DRONE_POS_X_W},' + 
             f'{DRONE_POS_Y_W},' +
             f'{DRONE_SPEED},' +
-            f'{DRONE_ALPHA}\n'
+            f'{DRONE_ALPHA},' +
+            f'{C_DES},' + 
+            f'{SCZ_IND}\n'
         )
 
 
