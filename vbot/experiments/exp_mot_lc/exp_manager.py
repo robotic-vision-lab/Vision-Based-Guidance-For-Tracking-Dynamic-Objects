@@ -69,7 +69,7 @@ class ExperimentManager:
         self.multi_tracker = MultiTracker(self)
         self.tracking_manager = TrackingManager(self)
         self.controller = Controller(self)
-        self.plot_manager = PlotManager(self)
+        # self.plot_manager = PlotManager(self)
 
         # move tracker display next to simulator 
         cv.namedWindow(self.multi_tracker.win_name)
