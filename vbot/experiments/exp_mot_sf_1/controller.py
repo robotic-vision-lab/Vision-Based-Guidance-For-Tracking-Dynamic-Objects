@@ -20,6 +20,8 @@ class Controller:
         self.e_c_sum = 0.0
         self.e_z_sum = 0.0
 
+        self.C_DES = C_DES
+
         self.scz_ind_prev = 0
 
     @staticmethod
@@ -192,11 +194,11 @@ class Controller:
         self.manager.tracking_manager.bounding_area_EKF.add(S, C, Z_W)
         S, C, Z_W, S_dot, C_dot, Z_W_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
 
-        KP_s = 0.03
+        KP_s = 0.06
         KP_c = 0.06
         KP_z = 0.1
 
-        KD_s = 0.006
+        KD_s = 0.012
         KD_c = 0.03
         KD_z = 0.05
         
@@ -206,7 +208,7 @@ class Controller:
 
         # X_d = WIDTH*0.3
         # Y_d = WIDTH*0.3
-        self.C_DES = HEIGHT*((100+Z_W)/1000)
+        self.C_DES = HEIGHT*((250+Z_W)/2000)
         S_d = S_DES
         C_d = self.C_DES
         Z_d = Z_DES
