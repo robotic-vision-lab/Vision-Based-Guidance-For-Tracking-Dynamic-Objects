@@ -188,8 +188,10 @@ class Controller:
         Y = y_max - y_min
 
         S = np.linalg.norm((X,Y))
+        S_ = np.linalg.norm((X,Y))
         # C = (((WIDTH - x_min - x_max)**2 + (HEIGHT - y_min - y_max)**2)**0.5)/2
         C = max(abs((WIDTH - x_min - x_max)/2), abs(HEIGHT - y_min - y_max)/2)
+        C_ = max(abs((WIDTH - x_min - x_max)/2), abs(HEIGHT - y_min - y_max)/2)
         Z_W = self.manager.simulator.camera.altitude
 
         S_W = S*self.manager.simulator.pxm_fac
@@ -197,6 +199,10 @@ class Controller:
 
         self.manager.tracking_manager.bounding_area_EKF.add(S, C, Z_W)
         S, C, Z_W, S_dot, C_dot, Z_W_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
+
+        S = S_
+        C = C_
+        Z_W = self.manager.simulator.camera.altitude
 
         KP_s = 0.24#0.06
         KP_c = 0.24#0.06
@@ -212,7 +218,7 @@ class Controller:
 
         # X_d = WIDTH*0.3
         # Y_d = WIDTH*0.3
-        self.C_DES = HEIGHT*((100+Z_W)/1000)
+        self.C_DES = HEIGHT*((250+Z_W)/2000)
         # self.C_DES = HEIGHT*0.23
         S_d = S_DES
         C_d = self.C_DES
@@ -287,10 +293,10 @@ class Controller:
 
         az = self.sat(az, 10)
 
-        print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", SCZ_dot_meas-")}{gb(f"[{S_dot:.2f}, {C_dot:.2f}, {Z_W_dot:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
-        print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
-        print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
-        print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}, xmin,xmax=({x_min:0.2f},{x_max:0.2f}), ymin,ymax=({y_min:0.2f},{y_max:0.2f}),SCZ => {scz_dict[scz_ind]}')
+        # print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", SCZ_dot_meas-")}{gb(f"[{S_dot:.2f}, {C_dot:.2f}, {Z_W_dot:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
+        # print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
+        # print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
+        # print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}, xmin,xmax=({x_min:0.2f},{x_max:0.2f}), ymin,ymax=({y_min:0.2f},{y_max:0.2f}),SCZ => {scz_dict[scz_ind]}')
 
         if self.manager.write_plot:
             # store vairables if manager needs to write to file
@@ -356,7 +362,7 @@ class Controller:
 
         y2 = Vtheta1**2 + Vr1**2
 
-        return self.sat(y1), y2
+        return self.sat(y1, 1000), y2
 
     @staticmethod
     def compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2):
