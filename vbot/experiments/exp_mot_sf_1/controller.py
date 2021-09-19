@@ -4,6 +4,7 @@ from datetime import timedelta
 from math import atan2, degrees, cos, sin, pi, pow
 from .settings import *
 from .my_imports import bf, rb, mb, gb, yb, bb, cb,  r, m, g, y, b, c, colored, cprint
+import matplotlib.pyplot as plt
 
 class Controller:
     def __init__(self, manager):
@@ -21,8 +22,11 @@ class Controller:
         self.e_z_sum = 0.0
 
         self.C_DES = C_DES
+        self.S_GOOD_FLAG = False
+        self.current_alt = ALTITUDE
 
         self.scz_ind_prev = 0
+        plt.ion()
 
     @staticmethod
     def sat(x, bound):
@@ -194,28 +198,49 @@ class Controller:
         self.manager.tracking_manager.bounding_area_EKF.add(S, C, Z_W)
         S, C, Z_W, S_dot, C_dot, Z_W_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
 
-        KP_s = 0.06
-        KP_c = 0.06
-        KP_z = 0.1
+        KP_s = 0.24#0.06
+        KP_c = 0.24#0.06
+        KP_z = 0.3#0.1
 
         KD_s = 0.012
         KD_c = 0.03
         KD_z = 0.05
         
-        KI_s = 0.5
-        KI_c = 3
-        KI_z = 0.5
+        KI_s = 0.16#0.5
+        KI_c = 0.16#3
+        KI_z = 0.15#0.5
 
         # X_d = WIDTH*0.3
         # Y_d = WIDTH*0.3
-        self.C_DES = HEIGHT*((250+Z_W)/2000)
+        self.C_DES = HEIGHT*((100+Z_W)/1000)
+        # self.C_DES = HEIGHT*0.23
         S_d = S_DES
         C_d = self.C_DES
         Z_d = Z_DES
 
-        e_s = S_d - S
+        # e_s = S_d - S 
         e_c = min(0, C_d - C)
         e_Z_W = Z_d - Z_W if abs(Z_d - Z_W) > Z_DELTA else 0.0
+
+        if e_c==0.0 and e_Z_W==0.0:
+            if self.S_GOOD_FLAG == True:
+                # flag turns bad only when it is close to bounds
+                if abs(S_d - S) > S_DELTA:
+                    self.S_GOOD_FLAG = False
+                    e_s = S_d - S
+                else:
+                    e_s = 0.0
+            else:
+                # flag turns good only when it is close to set point
+                if abs(S_d - S) < 3 and S_d > S:
+                    self.S_GOOD_FLAG = True
+                    self.current_alt = Z_W
+                    print(f'\n\nStaying at {Z_W}\n')
+                    e_s = 0.0
+                else:
+                    e_s = S_d - S
+        else:
+            e_s = S_d - S
 
         vz = self.manager.simulator.camera.vz
         vz_2 = vz**2 * np.sign(vz)
@@ -224,9 +249,13 @@ class Controller:
         FS = ((FOCAL_LENGTH * S_W) / S**2)
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
-        az_s = -KP_s * (e_s) + KD_s * S_dot + 2 * FS * S_dot**2 / S 
-        az_c = -KP_c * (e_c) + KD_c * C_dot + 2 * FC * C_dot**2 / C if not e_c==0.0 else 0.0
-        az_z = KP_z * e_Z_W - KD_z * Z_W_dot if not e_Z_W==0.0 else 0.0
+        az_s = -KP_s * (e_s) + KD_s * S_dot if e_c==0.0 and e_Z_W==0.0 and not self.S_GOOD_FLAG else 0.0#+ 2 * FS * S_dot**2 / S
+        az_c = -KP_c * (e_c) + KD_c * (C_dot) if (not e_c==0.0) and e_Z_W==0.0 else 0.0
+        az_z = KP_z * e_Z_W - KD_z * vz if not e_Z_W==0.0 else 0.0
+
+        # S is within bound, C is inside, Z is inbounds -> drive vz to 0
+        if self.S_GOOD_FLAG and e_c==0.0 and e_Z_W==0.0:
+            az_z = KP_z*(self.current_alt - Z_W) + KD_z *(-vz)
 
         
 

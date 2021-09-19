@@ -15,7 +15,7 @@ from .plotter import *
 
 if __name__ == '__main__':
 
-    EXPERIMENT_SAVE_MODE_ON = 0  # pylint: disable=bad-whitespace
+    EXPERIMENT_SAVE_MODE_ON = 0 # pylint: disable=bad-whitespace
     WRITE_PLOT = 1  # pylint: disable=bad-whitespace
     CONTROL_ON = 1  # pylint: disable=bad-whitespace
     TRACKER_ON = 1  # pylint: disable=bad-whitespace
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 1 # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
@@ -59,54 +59,6 @@ if __name__ == '__main__':
         SHOW_3D_TRAJECTORIES = 1
         SHOW_DELTA_TIME_PROFILE = 0
         SHOW_Y1_Y2 = 0
-
-        # _TIME = []
-        # _R = []
-        # _THETA = []
-        # _V_THETA = []
-        # _V_R = []
-        # _DRONE_POS_X = []
-        # _DRONE_POS_Y = []
-        # _CAR_POS_X = []
-        # _CAR_POS_Y = []
-        # _DRONE_ACC_X = []
-        # _DRONE_ACC_Y = []
-        # _DRONE_ACC_LAT = []
-        # _DRONE_ACC_LNG = []
-        # _CAR_VEL_X = []
-        # _CAR_VEL_Y = []
-        # _TRACKED_CAR_POS_X = []
-        # _TRACKED_CAR_POS_Y = []
-        # _TRACKED_CAR_VEL_X = []
-        # _TRACKED_CAR_VEL_Y = []
-        # _CAM_ORIGIN_X = []
-        # _CAM_ORIGIN_Y = []
-        # _DRONE_SPEED = []
-        # _DRONE_ALPHA = []
-        # _DRONE_VEL_X = []
-        # _DRONE_VEL_Y = []
-        # _MEASURED_CAR_POS_X = []
-        # _MEASURED_CAR_POS_Y = []
-        # _MEASURED_CAR_VEL_X = []
-        # _MEASURED_CAR_VEL_Y = []
-        # _DRONE_ALTITUDE = []
-        # _ABS_DEN = []
-        # _MEASURED_R = []
-        # _MEASURED_THETA = []
-        # _MEASURED_V_R = []
-        # _MEASURED_V_THETA = []
-        # _TRUE_R = []
-        # _TRUE_THETA = []
-        # _TRUE_V_R = []
-        # _TRUE_V_THETA = []
-        # _DELTA_TIME = []
-        # _Y1 = []
-        # _Y2 = []
-        # _CAR_SPEED = []
-        # _CAR_HEADING = []
-        # _TRUE_Y1 = []
-        # _TRUE_Y2 = []
-        # _OCC_CASE = []
 
 
         TIME = []
@@ -236,6 +188,8 @@ if __name__ == '__main__':
         DRONE_POS_Y_W = []
         DRONE_SPEED = []
         DRONE_ALPHA = []
+        C_DESIRED = []
+        SCZ_IND = []
 
         # get all the data in memory
         for line in FILE.readlines():
@@ -365,6 +319,8 @@ if __name__ == '__main__':
             DRONE_POS_Y_W.append(data[119])
             DRONE_SPEED.append(data[120])
             DRONE_ALPHA.append(data[121])
+            C_DESIRED.append(data[122])
+            SCZ_IND.append(data[123])
 
         FILE.close()
 
@@ -507,11 +463,12 @@ if __name__ == '__main__':
                                                               TIME,
                                                               S,
                                                               C,
-                                                              Z_W
+                                                              Z_W,
+                                                              C_DESIRED
                                                               )
 
         altitude_control_plotter.plot()
-        
+
         traj3d_plotter = Traj3DDataPlotter(_PATH,
                                                               TIME,
                                                               T_1_X_EST,
@@ -530,6 +487,99 @@ if __name__ == '__main__':
                                                               )
 
         traj3d_plotter.plot()
+
+
+        f1 ,a1 = plt.subplots()
+        a1.plot(TIME, C_DOT)
+        f1.suptitle(r'$\dot{C}$')
+        f1.savefig(f'{_PATH}/8_cdot.pdf')
+        f1.show()
+
+        f2 ,a2 = plt.subplots()
+        a2.plot(TIME, SCZ_IND)
+        f2.suptitle(f'SCZ - 012')
+        f2.savefig(f'{_PATH}/9_scz_ind.pdf')
+        f2.show()
+
+        f3 ,a3 = plt.subplots()
+        a3.plot(Z_W, S)
+        a3.axis('equal')
+        f3.suptitle(f'z vs S')
+        f3.savefig(f'{_PATH}/10_zs.pdf')
+        f3.show()
+
+        f4 ,a4 = plt.subplots()
+        a4.plot(Z_W, C)
+        a4.axis('equal')
+        f4.suptitle(f'z vs C')
+        f4.savefig(f'{_PATH}/11_zc.pdf')
+        f4.show()
+
+
+        """ 
+        A1 = r1*Vtheta1/V1
+        A2 = r2*Vtheta2/V2
+        tau_num = r1*Vr1/V1**2 - r2*Vr2/V2**2
+        tau_den = A1+A2
+        tau = (tau_num/tau_den)**2
+        """
+
+
+        # V1 = [(FP_1_V_R[i]**2 + FP_1_V_THETA[i]**2)**0.5 for i in range(len(TIME))]
+        # V2 = [(FP_2_V_R[i]**2 + FP_2_V_THETA[i]**2)**0.5 for i in range(len(TIME))]
+
+        # A1 = [FP_1_R[i]*FP_1_V_THETA[i]/V1[i] for i in range(len(TIME))]
+        # A2 = [FP_2_R[i]*FP_2_V_THETA[i]/V2[i] for i in range(len(TIME))]
+        # A3 = [A1[i] + A2[i] for i in range(len(TIME))]
+
+        # A4 = A3
+        # sat = 20
+        # # abs (A3[i]) > 0.1 ? A3[i] : 0.1 sign(A3[i])
+        # for i in range(len(TIME)):
+        #     if abs(A3[i]) > sat:
+        #         A4[i] = A3[i]
+        #     else:
+        #         A4[i] = sat * np.sign(A3[i])
+
+        
+        # #  y1 = A1**2*(1+tau*V1**2) + A2**2*(1+tau*V2**2) + 2*A1*A2*pow((1+tau*(V1**2+V2**2)+tau**2*V1**2*V2**2),0.5)-4*(a)**2
+        # TAUN = [FP_1_R[i]*FP_1_V_R[i]/V1[i]**2 - FP_2_R[i]*FP_2_V_R[i]/V2[i]**2 for i in range(len(TIME))]
+        # TAU = [(TAUN[i] / (A1[i] + A2[i]))**2 for i in range(len(TIME))]
+        # TAU2 = [(TAUN[i] / (A4[i]))**2 for i in range(len(TIME))]
+
+        # y1 = [0 for _ in TIME]
+        # for i in range(len(TIME)):
+        #     y1[i] = A1[i]**2*(1+TAU2[i]*V1[i]**2) + A2[i]**2*(1+TAU2[i]*V2[i]**2) + 2*A1[i]*A2[i]*pow((1+TAU2[i]*(V1[i]**2+V2[i]**2)+TAU2[i]**2*V1[i]**2*V2[i]**2),0.5) - 4*(45)**2
+
+
+        # f5 ,a5 = plt.subplots()
+        # a5.plot(TIME, V1)
+        # a5.plot(TIME, V2)
+        # f5.suptitle(f'V1 V2')
+        # # f5.savefig(f'{_PATH}/11_zc.pdf')
+        # f5.show()
+
+        # f6 ,a6 = plt.subplots()
+        # # a6.plot(TIME, A1)
+        # # a6.plot(TIME, A2)
+        # a6.plot(TIME, A3, alpha=0.7)
+        # a6.plot(TIME, TAU, alpha=0.7)
+        # a6.plot(TIME, TAU2, alpha=0.7)
+        # f6.suptitle(f'A1 A2')
+        # # f6.savefig(f'{_PATH}/11_zc.pdf')
+        # f6.show()
+
+        # f7 ,a7 = plt.subplots()
+        # a7.plot(TIME, TAU)
+        # f7.suptitle(f'TAU')
+        # # f7.savefig(f'{_PATH}/11_zc.pdf')
+        # f7.show()
+
+        # f8 ,a8 = plt.subplots()
+        # a8.plot(TIME, y1)
+        # f8.suptitle(f'new y1')
+        # # f8.savefig(f'{_PATH}/11_zc.pdf')
+        # f8.show()
 
         plt.show()
 
@@ -1158,5 +1208,4 @@ if __name__ == '__main__':
         _prep_temp_folder(os.path.realpath(_PATH))
         VID_PATH = f'{_PATH}/sim_track_control.avi'
         print('Making video.')
-        _FPS = FPS if USE_REAL_CLOCK else int(1/DELTA_TIME)
-        EXPERIMENT_MANAGER.make_video(VID_PATH, SIMULATOR_TEMP_FOLDER, _FPS)
+        EXPERIMENT_MANAGER.make_video(VID_PATH, SIMULATOR_TEMP_FOLDER)

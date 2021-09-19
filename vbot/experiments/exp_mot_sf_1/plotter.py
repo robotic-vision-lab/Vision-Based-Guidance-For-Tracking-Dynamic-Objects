@@ -973,7 +973,7 @@ class TrajectoryCameraDataPlotter:
 
 
     def plot(self):
-        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,5))
+        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,10))
         # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
         self.fig.canvas.manager.set_window_title(self.window_title)
 
@@ -1024,6 +1024,7 @@ class AltitudeControlDataPlotter:
                  s,
                  c,
                  zw,
+                 cd
                  ):
 
         self.save_path = save_path
@@ -1031,9 +1032,12 @@ class AltitudeControlDataPlotter:
         self.s = s
         self.c = c
         self.zw = zw
+        self.cd = cd
 
         self.sd = [S_DES for _ in self.t]
-        self.cd = [C_DES for _ in self.t]
+        self.sd1 = [S_DES+S_DELTA for _ in self.t]
+        self.sd2 = [S_DES-S_DELTA for _ in self.t]
+        # self.cd = [C_DES for _ in self.t]
         self.zwd = [Z_DES for _ in self.t]
         self.zwd1 = [Z_DES+Z_DELTA for _ in self.t]
         self.zwd2 = [Z_DES-Z_DELTA for _ in self.t]
@@ -1049,10 +1053,13 @@ class AltitudeControlDataPlotter:
         # control variable S params
         self.s_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$S$')
         self.sd_params = dict(color='darkorange', alpha=0.8,  ls='-', lw=2,   label=r'$S_{d}$')
+        self.sd_del_params = dict(color='orangered', alpha=0.6,  ls='--', lw=1,   label=r'${}^{+}S_{d}^{des}$, ${}^{-}S_{d}^{des}$')
+        self.sd_fill_params = dict(color='darkorange', alpha=0.05)
 
         # control variable C params
         self.c_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$C$')
         self.cd_params = dict(color='darkorange', alpha=0.8,  ls='-', lw=2,   label=r'$C_{d}$')
+        self.cd_fill_params = dict(color='darkorange', alpha=0.05)
 
         # control variable Z_W params
         self.zw_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\mathbf{z}_{A}$')
@@ -1094,10 +1101,14 @@ class AltitudeControlDataPlotter:
         self.fig.canvas.manager.set_window_title(self.window_title)
 
         # S
-        self.axs[0].plot(self.t, self.s, **self.s_params)
+        self.axs[0].fill_between(self.t, self.sd1, self.sd2, **self.sd_fill_params)
         self.axs[0].plot(self.t, self.sd, **self.sd_params)
+        self.axs[0].plot(self.t, self.sd1, **self.sd_del_params)
+        self.axs[0].plot(self.t, self.sd2, **self.sd_del_params)
+        self.axs[0].plot(self.t, self.s, **self.s_params)
 
         # C
+        self.axs[1].fill_between(self.t, self.cd, 0, **self.zwd_fill_params)
         self.axs[1].plot(self.t, self.c, **self.c_params)
         self.axs[1].plot(self.t, self.cd, **self.cd_params)
 
@@ -1154,6 +1165,7 @@ class AltitudeControlDataPlotter:
         
         
 
+
     
 class Traj3DDataPlotter:
     def __init__(self, 
@@ -1209,7 +1221,7 @@ class Traj3DDataPlotter:
 
         # drone params
         self.d_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2.5,   label=r'$A$')
-        self.ds_params = dict(color='gray', alpha=0.2,  ls='-', lw=2,   label=r'$A$')
+        self.ds_params = dict(color='gray', alpha=0.5,  ls='-', lw=2,   label=r'$A$')
         
 
 

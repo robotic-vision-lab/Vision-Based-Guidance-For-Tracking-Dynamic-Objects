@@ -112,6 +112,7 @@ S_DES = 217#(X_DES**2 + Y_DES**2)**0.5
 C_DES = HEIGHT*0.25
 Z_DES = 350
 Z_DELTA = 50
+S_DELTA = 20
 
 # gravity
 ACC_GRAVITY = 9.81
