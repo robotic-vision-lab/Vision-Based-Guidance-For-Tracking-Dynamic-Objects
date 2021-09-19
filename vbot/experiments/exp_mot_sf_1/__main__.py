@@ -491,18 +491,24 @@ if __name__ == '__main__':
 
         f1 ,a1 = plt.subplots()
         a1.plot(TIME, C_DOT)
+        a1.grid(True, which='minor', alpha=0.1)
+        a1.grid(True, which='major', alpha=0.3)
         f1.suptitle(r'$\dot{C}$')
         f1.savefig(f'{_PATH}/8_cdot.pdf')
         f1.show()
 
         f2 ,a2 = plt.subplots()
         a2.plot(TIME, SCZ_IND)
+        a2.grid(True, which='minor', alpha=0.1)
+        a2.grid(True, which='major', alpha=0.3)
         f2.suptitle(f'SCZ - 012')
         f2.savefig(f'{_PATH}/9_scz_ind.pdf')
         f2.show()
 
         f3 ,a3 = plt.subplots()
         a3.plot(Z_W, S)
+        a3.grid(True, which='minor', alpha=0.1)
+        a3.grid(True, which='major', alpha=0.3)
         a3.axis('equal')
         f3.suptitle(f'z vs S')
         f3.savefig(f'{_PATH}/10_zs.pdf')
@@ -510,12 +516,35 @@ if __name__ == '__main__':
 
         f4 ,a4 = plt.subplots()
         a4.plot(Z_W, C)
+        a4.grid(True, which='minor', alpha=0.1)
+        a4.grid(True, which='major', alpha=0.3)
         a4.axis('equal')
         f4.suptitle(f'z vs C')
         f4.savefig(f'{_PATH}/11_zc.pdf')
         f4.show()
 
 
+        dist_SC = [0 for _ in TIME]
+        for i in range(len(TIME)):
+            dist_SC[i] = (S_DES - S[i] - min(0,C_DESIRED[i] - C[i]))
+        prod_SC = [0 for _ in TIME]
+        for i in range(len(TIME)):
+            prod_SC[i] = ((S_DES - S[i])*min(0, C_DESIRED[i] - C[i]))
+
+        f5 ,a5 = plt.subplots()
+        a5.plot(TIME, dist_SC)
+        a5.grid(True, which='minor', alpha=0.1)
+        a5.grid(True, which='major', alpha=0.3)
+        f5.suptitle(f'dist_SC_err')
+        # f5.savefig(f'{_PATH}/11_zc.pdf')
+        f5.show()
+        f6 ,a6 = plt.subplots()
+        a6.plot(TIME, prod_SC)
+        a6.grid(True, which='minor', alpha=0.1)
+        a6.grid(True, which='major', alpha=0.3)
+        f6.suptitle(f'prod_SC_err')
+        # f6.savefig(f'{_PATH}/11_zc.pdf')
+        f6.show()
         """ 
         A1 = r1*Vtheta1/V1
         A2 = r2*Vtheta2/V2
