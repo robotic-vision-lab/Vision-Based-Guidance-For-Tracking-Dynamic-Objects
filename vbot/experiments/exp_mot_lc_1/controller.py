@@ -208,11 +208,11 @@ class Controller:
 
         KP_s = 0.3 #0.03
         KP_c = 0.5#1#0.06
-        KP_z = 0.5#0.1
+        KP_z = 0.14#0.1
 
         KD_s = 0.2#0.2 #0.006
         KD_c = 0.40625#0.8125#2/3#0.03
-        KD_z = 0.25#0.05
+        KD_z = 0.07#0.05
 
         # KI_s = 0.5
         # KI_c = 3
@@ -371,8 +371,8 @@ class Controller:
 
 
 
-    @staticmethod
-    def compute_objective_functions(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, a):
+
+    def compute_objective_functions(self, r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, a):
         V1 = pow((Vtheta1**2 + Vr1**2),0.5)
         V2 = pow((Vtheta2**2 + Vr2**2),0.5)
         A1 = r1*Vtheta1/V1
@@ -385,7 +385,7 @@ class Controller:
 
         y2 = Vtheta1**2 + Vr1**2
 
-        return y1, y2
+        return self.sat(y1, 1000), y2
 
     @staticmethod
     def compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2):
