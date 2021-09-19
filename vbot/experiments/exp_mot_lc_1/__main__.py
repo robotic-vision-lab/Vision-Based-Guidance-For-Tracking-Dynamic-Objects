@@ -24,8 +24,8 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1 # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0 # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -516,6 +516,70 @@ if __name__ == '__main__':
         f4.show()
 
 
+        """ 
+        A1 = r1*Vtheta1/V1
+        A2 = r2*Vtheta2/V2
+        tau_num = r1*Vr1/V1**2 - r2*Vr2/V2**2
+        tau_den = A1+A2
+        tau = (tau_num/tau_den)**2
+        """
+
+
+        # V1 = [(FP_1_V_R[i]**2 + FP_1_V_THETA[i]**2)**0.5 for i in range(len(TIME))]
+        # V2 = [(FP_2_V_R[i]**2 + FP_2_V_THETA[i]**2)**0.5 for i in range(len(TIME))]
+
+        # A1 = [FP_1_R[i]*FP_1_V_THETA[i]/V1[i] for i in range(len(TIME))]
+        # A2 = [FP_2_R[i]*FP_2_V_THETA[i]/V2[i] for i in range(len(TIME))]
+        # A3 = [A1[i] + A2[i] for i in range(len(TIME))]
+
+        # A4 = A3
+        # sat = 20
+        # # abs (A3[i]) > 0.1 ? A3[i] : 0.1 sign(A3[i])
+        # for i in range(len(TIME)):
+        #     if abs(A3[i]) > sat:
+        #         A4[i] = A3[i]
+        #     else:
+        #         A4[i] = sat * np.sign(A3[i])
+
+        
+        # #  y1 = A1**2*(1+tau*V1**2) + A2**2*(1+tau*V2**2) + 2*A1*A2*pow((1+tau*(V1**2+V2**2)+tau**2*V1**2*V2**2),0.5)-4*(a)**2
+        # TAUN = [FP_1_R[i]*FP_1_V_R[i]/V1[i]**2 - FP_2_R[i]*FP_2_V_R[i]/V2[i]**2 for i in range(len(TIME))]
+        # TAU = [(TAUN[i] / (A1[i] + A2[i]))**2 for i in range(len(TIME))]
+        # TAU2 = [(TAUN[i] / (A4[i]))**2 for i in range(len(TIME))]
+
+        # y1 = [0 for _ in TIME]
+        # for i in range(len(TIME)):
+        #     y1[i] = A1[i]**2*(1+TAU2[i]*V1[i]**2) + A2[i]**2*(1+TAU2[i]*V2[i]**2) + 2*A1[i]*A2[i]*pow((1+TAU2[i]*(V1[i]**2+V2[i]**2)+TAU2[i]**2*V1[i]**2*V2[i]**2),0.5) - 4*(45)**2
+
+
+        # f5 ,a5 = plt.subplots()
+        # a5.plot(TIME, V1)
+        # a5.plot(TIME, V2)
+        # f5.suptitle(f'V1 V2')
+        # # f5.savefig(f'{_PATH}/11_zc.pdf')
+        # f5.show()
+
+        # f6 ,a6 = plt.subplots()
+        # # a6.plot(TIME, A1)
+        # # a6.plot(TIME, A2)
+        # a6.plot(TIME, A3, alpha=0.7)
+        # a6.plot(TIME, TAU, alpha=0.7)
+        # a6.plot(TIME, TAU2, alpha=0.7)
+        # f6.suptitle(f'A1 A2')
+        # # f6.savefig(f'{_PATH}/11_zc.pdf')
+        # f6.show()
+
+        # f7 ,a7 = plt.subplots()
+        # a7.plot(TIME, TAU)
+        # f7.suptitle(f'TAU')
+        # # f7.savefig(f'{_PATH}/11_zc.pdf')
+        # f7.show()
+
+        # f8 ,a8 = plt.subplots()
+        # a8.plot(TIME, y1)
+        # f8.suptitle(f'new y1')
+        # # f8.savefig(f'{_PATH}/11_zc.pdf')
+        # f8.show()
 
         plt.show()
 
