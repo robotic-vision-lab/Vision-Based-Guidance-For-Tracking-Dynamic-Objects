@@ -208,11 +208,11 @@ class Controller:
 
         KP_s = 0.24 #0.03
         KP_c = 0.24#0.35#0.5#1#0.06
-        KP_z = 0.3#0.1
+        KP_z = 0.14#0.1
 
         KD_s = 0.16#0.2 #0.006
         KD_c = 0.16#0.28435#0.40625#0.8125#2/3#0.03
-        KD_z = 0.15#0.05
+        KD_z = 0.07#0.05
 
         # KI_s = 0.5
         # KI_c = 3
@@ -279,7 +279,7 @@ class Controller:
 
         # S is within bound, C is inside, Z is inbounds -> drive vz to 0
         if self.S_GOOD_FLAG and e_c==0.0 and e_Z_W==0.0:
-            az_z = KP_z*(self.current_alt - Z_W) + KD_z *(-vz)
+            az_z = 6*KP_z*(self.current_alt - Z_W) + 6*KD_z *(-vz)
 
     
 

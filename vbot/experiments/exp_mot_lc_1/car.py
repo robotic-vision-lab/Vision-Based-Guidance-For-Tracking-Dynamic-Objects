@@ -137,10 +137,10 @@ class Car(pygame.sprite.Sprite):
                 self.acceleration = pygame.Vector2(0, _FLAG* 0)
                 self.velocity = deepcopy(self.initial_velocity)
 
-            elif 55 <= t < 57:
+            elif 59 <= t < 61:
                 self.acceleration = pygame.Vector2(0, _FLAG* +1)
                 self.velocity += self.acceleration * self.simulator.dt
-            elif 57 <= t < 59:
+            elif 61 <= t < 63:
                 self.acceleration = pygame.Vector2(0, _FLAG* -1)
                 self.velocity += self.acceleration * self.simulator.dt
 
