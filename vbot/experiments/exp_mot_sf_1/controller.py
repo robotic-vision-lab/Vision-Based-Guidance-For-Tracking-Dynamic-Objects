@@ -20,6 +20,8 @@ class Controller:
         self.e_c_sum = 0.0
         self.e_z_sum = 0.0
 
+        self.C_DES = C_DES
+
         self.scz_ind_prev = 0
 
     @staticmethod
@@ -192,13 +194,13 @@ class Controller:
         self.manager.tracking_manager.bounding_area_EKF.add(S, C, Z_W)
         S, C, Z_W, S_dot, C_dot, Z_W_dot = self.manager.tracking_manager.bounding_area_EKF.get_estimated_state()
 
-        KP_s = 150*3
-        KP_c = 300*3
-        KP_z = 200*4
+        KP_s = 0.06
+        KP_c = 0.06
+        KP_z = 0.1
 
-        KD_s = 15
-        KD_c = 10
-        KD_z = 10
+        KD_s = 0.012
+        KD_c = 0.03
+        KD_z = 0.05
         
         KI_s = 0.5
         KI_c = 3
@@ -206,8 +208,9 @@ class Controller:
 
         # X_d = WIDTH*0.3
         # Y_d = WIDTH*0.3
+        self.C_DES = HEIGHT*((250+Z_W)/2000)
         S_d = S_DES
-        C_d = C_DES
+        C_d = self.C_DES
         Z_d = Z_DES
 
         e_s = S_d - S
@@ -221,9 +224,8 @@ class Controller:
         FS = ((FOCAL_LENGTH * S_W) / S**2)
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
-        az_s = -FS * KP_s * (e_s) + FS * KD_s * S_dot + 2 * FS * S_dot**2 / S 
-        # az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C #- FC * KI_c * self.e_c_sum 
-        az_c = -FC * KP_c * (e_c) + FC * KD_c * C_dot + 2 * FC * C_dot**2 / C if not e_c==0.0 else 0.0
+        az_s = -KP_s * (e_s) + KD_s * S_dot + 2 * FS * S_dot**2 / S 
+        az_c = -KP_c * (e_c) + KD_c * C_dot + 2 * FC * C_dot**2 / C if not e_c==0.0 else 0.0
         az_z = KP_z * e_Z_W - KD_z * Z_W_dot if not e_Z_W==0.0 else 0.0
 
         
@@ -256,10 +258,10 @@ class Controller:
 
         az = self.sat(az, 10)
 
-        # print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
-        # print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
-        # print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
-        # print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}, xmin,xmax=({x_min:0.2f},{x_max:0.2f}), ymin,ymax=({y_min:0.2f},{y_max:0.2f}),SCZ => {scz_dict[scz_ind]}')
+        print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", SCZ_dot_meas-")}{gb(f"[{S_dot:.2f}, {C_dot:.2f}, {Z_W_dot:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
+        print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
+        print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
+        print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}, xmin,xmax=({x_min:0.2f},{x_max:0.2f}), ymin,ymax=({y_min:0.2f},{y_max:0.2f}),SCZ => {scz_dict[scz_ind]}')
 
         if self.manager.write_plot:
             # store vairables if manager needs to write to file
@@ -312,21 +314,20 @@ class Controller:
 
 
 
-    @staticmethod
-    def compute_objective_functions(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, a):
+    def compute_objective_functions(self, r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, a):
         V1 = pow((Vtheta1**2 + Vr1**2),0.5)
         V2 = pow((Vtheta2**2 + Vr2**2),0.5)
         A1 = r1*Vtheta1/V1
         A2 = r2*Vtheta2/V2
         tau_num = r1*Vr1/V1**2 - r2*Vr2/V2**2
-        tau_den = A1+A2
+        tau_den = A1+A2     # saturate this guy
         tau = (tau_num/tau_den)**2
 
-        y1 = A1**2*(1+tau*V1**2) + A2**2*(1+tau*V2**2) + 2*A1*A2*pow((1+tau*(V1**2+V2**2)+tau**2*V1**2*V2**2),0.5)-4*(a)**2
+        y1 = A1**2*(1+tau*V1**2) + A2**2*(1+tau*V2**2) + 2*A1*A2*pow((1+tau*(V1**2+V2**2)+tau**2*V1**2*V2**2),0.5) - 4*(a)**2   # sat this also
 
         y2 = Vtheta1**2 + Vr1**2
 
-        return y1, y2
+        return self.sat(y1), y2
 
     @staticmethod
     def compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2):

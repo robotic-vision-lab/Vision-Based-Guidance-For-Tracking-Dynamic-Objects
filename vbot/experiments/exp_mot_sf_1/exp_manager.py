@@ -69,7 +69,7 @@ class ExperimentManager:
         self.multi_tracker = MultiTracker(self)
         self.tracking_manager = TrackingManager(self)
         self.controller = Controller(self)
-        # self.plot_manager = PlotManager(self)
+        self.plot_manager = PlotManager(self)
 
         # move tracker display next to simulator 
         cv.namedWindow(self.multi_tracker.win_name)
@@ -363,7 +363,7 @@ class ExperimentManager:
                 f'DRONE_ALPHA\n'
             )
             self.write_count = 0
-            self.write_skip = 5
+            self.write_skip = 12
 
         # run experiment
         while self.simulator.running:
@@ -746,13 +746,13 @@ class ExperimentManager:
 
 
     @staticmethod
-    def make_video(video_name, folder_path):
+    def make_video(video_name, folder_path, fps=FPS):
         """Helper function, looks for frames in given folder,
         writes them into a video file, with the given name.
         Also removes the folder after creating the video.
         """
         if os.path.isdir(folder_path):
-            create_video_from_images(folder_path, 'png', video_name, FPS)
+            create_video_from_images(folder_path, 'png', video_name, fps)
 
             # delete folder
             shutil.rmtree(folder_path)
