@@ -88,6 +88,8 @@ class Controller:
 
         # compute objective function
         y1, y2 = self.compute_objective_functions(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, ellipse_major_axis_len)
+        y1_ = y1
+        y1 = self.sat(y1, 10000)
 
         # compute objective function derivatives
         dy1dVr1, dy1dVtheta1, dy1dVr2, dy1dVtheta2, dy2dVr1, dy2dVtheta1 = self.compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2)
@@ -169,6 +171,7 @@ class Controller:
             +y1vt2dy2vt1*fp2_acc*sdalmf2dmt1t2
             ) / denom
 
+        y1 = y1_
         # clip acceleration commands
         a_long_bound = 10
         a_lat_bound = 10
@@ -206,15 +209,15 @@ class Controller:
 
         KP_s = 0.24#0.06
         KP_c = 0.24#0.06
-        KP_z = 0.3#0.1
+        KP_z = 0.14#0.1
 
-        KD_s = 0.012
-        KD_c = 0.03
-        KD_z = 0.05
+        KD_s = 0.16
+        KD_c = 0.16
+        KD_z = 0.07
         
-        KI_s = 0.16#0.5
-        KI_c = 0.16#3
-        KI_z = 0.15#0.5
+        # KI_s = 0.16#0.5
+        # KI_c = 0.16#3
+        # KI_z = 0.15#0.5
 
         # X_d = WIDTH*0.3
         # Y_d = WIDTH*0.3
@@ -251,7 +254,7 @@ class Controller:
         vz = self.manager.simulator.camera.vz
         vz_2 = vz**2 * np.sign(vz)
 
-        
+        FOCAL_LENGTH = (WIDTH / 2) / tan(radians(FOV/2))
         FS = ((FOCAL_LENGTH * S_W) / S**2)
         FC = ((FOCAL_LENGTH * C_W) / C**2)
 
@@ -261,7 +264,7 @@ class Controller:
 
         # S is within bound, C is inside, Z is inbounds -> drive vz to 0
         if self.S_GOOD_FLAG and e_c==0.0 and e_Z_W==0.0:
-            az_z = KP_z*(self.current_alt - Z_W) + KD_z *(-vz)
+            az_z = 6*KP_z*(self.current_alt - Z_W) + 6*KD_z *(-vz)
 
         
 
@@ -342,7 +345,9 @@ class Controller:
                 az_s,           # 38 commanded acceleration on acount of S
                 az_c,           # 39 commanded acceleration on acount of C
                 az_z,           # 40 commanded acceleration on acount of Z_W
-                az              # 41 aggregated commanded accleration az for altitude control
+                az,             # 41 aggregated commanded accleration az for altitude control
+                self.C_DES,     # 42 desired C
+                scz_ind,        # 43 SCZ index
             ])
 
         return ax, ay, az
@@ -362,7 +367,7 @@ class Controller:
 
         y2 = Vtheta1**2 + Vr1**2
 
-        return self.sat(y1, 1000), y2
+        return y1, y2
 
     @staticmethod
     def compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2):
