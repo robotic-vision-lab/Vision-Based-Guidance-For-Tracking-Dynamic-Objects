@@ -206,13 +206,13 @@ class Controller:
         C = C_
         Z_W = self.manager.simulator.camera.altitude
 
-        KP_s = 0.3 #0.03
-        KP_c = 0.5#1#0.06
-        KP_z = 0.14#0.1
+        KP_s = 0.24 #0.03
+        KP_c = 0.24#0.35#0.5#1#0.06
+        KP_z = 0.3#0.1
 
-        KD_s = 0.2#0.2 #0.006
-        KD_c = 0.40625#0.8125#2/3#0.03
-        KD_z = 0.07#0.05
+        KD_s = 0.16#0.2 #0.006
+        KD_c = 0.16#0.28435#0.40625#0.8125#2/3#0.03
+        KD_z = 0.15#0.05
 
         # KI_s = 0.5
         # KI_c = 3
@@ -240,7 +240,7 @@ class Controller:
                     e_s = 0.0
             else:
                 # flag turns good only when it is close to set point
-                if abs(S_d - S) < 0.05*S_DELTA and S_d > S:
+                if abs(S_d - S) < 3 and S_d > S:
                     self.S_GOOD_FLAG = True
                     self.current_alt = Z_W
                     print(f'\n\nStaying at {Z_W}\n')
