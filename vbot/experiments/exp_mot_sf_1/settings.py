@@ -30,7 +30,7 @@ SIMULATOR_TITLE = 'Simple'
 # camera image formation settings
 FOV = 50.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 350.0                                  # meters
+ALTITUDE = 300.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -108,7 +108,7 @@ K_D_Z = 10.0
 # altitude control 
 X_DES = WIDTH*(1.0857**0.5)/10
 Y_DES = WIDTH*(1.0857**0.5)/10
-S_DES = 217#(X_DES**2 + Y_DES**2)**0.5
+S_DES = 190#(X_DES**2 + Y_DES**2)**0.5
 C_DES = HEIGHT*0.25
 Z_DES = 350
 Z_DELTA = 50
