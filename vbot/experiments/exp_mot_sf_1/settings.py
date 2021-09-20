@@ -108,9 +108,9 @@ K_D_Z = 10.0
 # altitude control 
 X_DES = WIDTH*(1.0857**0.5)/10
 Y_DES = WIDTH*(1.0857**0.5)/10
-S_DES = 217#(X_DES**2 + Y_DES**2)**0.5
+S_DES = 190#(X_DES**2 + Y_DES**2)**0.5
 C_DES = HEIGHT*0.25
-Z_DES = 350
+Z_DES = 300
 Z_DELTA = 50
 S_DELTA = 20
 
