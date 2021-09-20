@@ -357,8 +357,8 @@ class Controller:
     def compute_objective_functions(self, r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, a):
         V1 = pow((Vtheta1**2 + Vr1**2),0.5)
         V2 = pow((Vtheta2**2 + Vr2**2),0.5)
-        A1 = r1*Vtheta1/V1
-        A2 = r2*Vtheta2/V2
+        A1 = r1*abs(Vtheta1)/V1
+        A2 = r2*abs(Vtheta2)/V2
         tau_num = r1*Vr1/V1**2 - r2*Vr2/V2**2
         tau_den = A1+A2     # saturate this guy
         tau = (tau_num/tau_den)**2
