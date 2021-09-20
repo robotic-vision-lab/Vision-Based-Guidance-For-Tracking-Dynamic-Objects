@@ -89,6 +89,8 @@ class Controller:
 
         # compute objective function
         y1, y2 = self.compute_objective_functions(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, ellipse_major_axis_len)
+        y1_ = y1
+        y1 = self.sat(y1, 1000)
 
         # compute objective function derivatives
         dy1dVr1, dy1dVtheta1, dy1dVr2, dy1dVtheta2, dy2dVr1, dy2dVtheta1 = self.compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2)
@@ -170,6 +172,7 @@ class Controller:
             +y1vt2dy2vt1*fp2_acc*sdalmf2dmt1t2
             ) / denom
 
+        y1 = y1_
         # clip acceleration commands
         a_long_bound = 10
         a_lat_bound = 10
@@ -385,7 +388,7 @@ class Controller:
 
         y2 = Vtheta1**2 + Vr1**2
 
-        return self.sat(y1, 1000), y2
+        return y1, y2
 
     @staticmethod
     def compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2):
