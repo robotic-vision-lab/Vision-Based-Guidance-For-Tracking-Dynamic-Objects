@@ -221,7 +221,7 @@ class Controller:
 
         # X_d = WIDTH*0.3
         # Y_d = WIDTH*0.3
-        self.C_DES = HEIGHT*((250+Z_W)/2000)
+        self.C_DES = HEIGHT*((400+Z_W)/2000)
         # self.C_DES = HEIGHT*0.23
         S_d = S_DES
         C_d = self.C_DES
