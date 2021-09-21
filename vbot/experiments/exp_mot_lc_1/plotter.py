@@ -334,27 +334,27 @@ class LOS2DataPlotter:
         self.fig.canvas.manager.set_window_title(self.window_title)
 
         # vr1, vr2, vr3
-        self.axs[0].plot(self.t, self.vr1_t, **self.vr1_t_params)
-        self.axs[0].plot(self.t, self.vr1_e, **self.vr1_e_params)
+        # self.axs[0].plot(self.t, self.vr1_t, **self.vr1_t_params)
+        # self.axs[0].plot(self.t, self.vr1_e, **self.vr1_e_params)
 
-        self.axs[0].plot(self.t, self.vr2_t, **self.vr2_t_params)
-        self.axs[0].plot(self.t, self.vr2_e, **self.vr2_e_params)
+        # self.axs[0].plot(self.t, self.vr2_t, **self.vr2_t_params)
+        # self.axs[0].plot(self.t, self.vr2_e, **self.vr2_e_params)
 
-        self.axs[0].plot(self.t, self.vr3_t, **self.vr3_t_params)
-        self.axs[0].plot(self.t, self.vr3_e, **self.vr3_e_params)
+        # self.axs[0].plot(self.t, self.vr3_t, **self.vr3_t_params)
+        # self.axs[0].plot(self.t, self.vr3_e, **self.vr3_e_params)
 
         # fp1_vr, fp2_vr
         self.axs[0].plot(self.t, self.f1_vr, **self.f1_vr_params)
         self.axs[0].plot(self.t, self.f2_vr, **self.f2_vr_params)
 
         # vth1, vth2, vth3
-        self.axs[1].plot(self.t, self.vth1_t, **self.vth1_t_params)
-        self.axs[1].plot(self.t, self.vth1_e, **self.vth1_e_params)
+        # self.axs[1].plot(self.t, self.vth1_t, **self.vth1_t_params)
+        # self.axs[1].plot(self.t, self.vth1_e, **self.vth1_e_params)
 
-        self.axs[1].plot(self.t, self.vth2_t, **self.vth2_t_params)
-        self.axs[1].plot(self.t, self.vth2_e, **self.vth2_e_params)
+        # self.axs[1].plot(self.t, self.vth2_t, **self.vth2_t_params)
+        # self.axs[1].plot(self.t, self.vth2_e, **self.vth2_e_params)
 
-        self.axs[1].plot(self.t, self.vth3_t, **self.vth3_t_params)
+        # self.axs[1].plot(self.t, self.vth3_t, **self.vth3_t_params)
         self.axs[1].plot(self.t, self.vth3_e, **self.vth3_e_params)
 
         # fp1_vtheta, fp2_vtheta
@@ -373,12 +373,10 @@ class LOS2DataPlotter:
 
     def add_axes_decor(self):
         # subplot 0
-        legend_handles_vr = self.make_handles([self.vr1_t_params, 
-                                               self.vr1_e_params,
-                                               self.f1_vr_params])
+        legend_handles_vr = self.make_handles([self.f1_vr_params])
         self.axs[0].set_title(r'$\mathbf{V_{r}}$')
         self.axs[0].legend(handles=legend_handles_vr,
-                           labels=[r'$V_{rB_{i}}$', r'$\hat{V}_{rB_{i}}$', r'$\hat{V}_{rfp_{i}}$'],
+                           labels=[r'$\hat{V}_{rfp_{i}}$'],
                            loc='upper right')
         self.axs[0].set(ylabel=r'$V_{r}\ (\frac{m}{s})$')
         self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
@@ -389,12 +387,10 @@ class LOS2DataPlotter:
         [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
         
         # subplot 1
-        legend_handles_vth = self.make_handles([self.vth1_t_params,
-                                                self.vth1_e_params,
-                                                self.f1_vth_params])
+        legend_handles_vth = self.make_handles([self.f1_vth_params])
         self.axs[1].set_title(r'$\mathbf{V_{\theta}}$')
         self.axs[1].legend(handles=legend_handles_vth,
-                           labels=[r'$V_{\theta B_{i}}$', r'$\hat{V}_{\theta B_{i}}$', r'$\hat{V}_{\theta fp_{i}}$'],
+                           labels=[r'$\hat{V}_{\theta fp_{i}}$'],
                            loc='upper right')
         self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_{\theta}\ (\frac{m}{s})$')
         self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
@@ -403,6 +399,38 @@ class LOS2DataPlotter:
         self.axs[1].grid(True, which='major', alpha=0.3)
         [tl.set_color('black') for tl in self.axs[1].get_xticklabels()]
         [tl.set_color('black') for tl in self.axs[1].get_yticklabels()]
+
+        # # subplot 0
+        # legend_handles_vr = self.make_handles([self.vr1_t_params, 
+        #                                        self.vr1_e_params,
+        #                                        self.f1_vr_params])
+        # self.axs[0].set_title(r'$\mathbf{V_{r}}$')
+        # self.axs[0].legend(handles=legend_handles_vr,
+        #                    labels=[r'$V_{rB_{i}}$', r'$\hat{V}_{rB_{i}}$', r'$\hat{V}_{rfp_{i}}$'],
+        #                    loc='upper right')
+        # self.axs[0].set(ylabel=r'$V_{r}\ (\frac{m}{s})$')
+        # self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
+        # self.axs[0].yaxis.set_minor_locator(AutoMinorLocator())
+        # self.axs[0].grid(True, which='minor', alpha=0.1)
+        # self.axs[0].grid(True, which='major', alpha=0.3)
+        # [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
+        # [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
+        
+        # # subplot 1
+        # legend_handles_vth = self.make_handles([self.vth1_t_params,
+        #                                         self.vth1_e_params,
+        #                                         self.f1_vth_params])
+        # self.axs[1].set_title(r'$\mathbf{V_{\theta}}$')
+        # self.axs[1].legend(handles=legend_handles_vth,
+        #                    labels=[r'$V_{\theta B_{i}}$', r'$\hat{V}_{\theta B_{i}}$', r'$\hat{V}_{\theta fp_{i}}$'],
+        #                    loc='upper right')
+        # self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_{\theta}\ (\frac{m}{s})$')
+        # self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
+        # self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
+        # self.axs[1].grid(True, which='minor', alpha=0.1)
+        # self.axs[1].grid(True, which='major', alpha=0.3)
+        # [tl.set_color('black') for tl in self.axs[1].get_xticklabels()]
+        # [tl.set_color('black') for tl in self.axs[1].get_yticklabels()]
 
 
     
@@ -1051,20 +1079,20 @@ class AltitudeControlDataPlotter:
 
     def set_params(self):
         # control variable S params
-        self.s_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$S$')
-        self.sd_params = dict(color='darkorange', alpha=0.8,  ls='-', lw=2,   label=r'$S_{d}$')
-        self.sd_del_params = dict(color='orangered', alpha=0.6,  ls='--', lw=1,   label=r'${}^{+}S_{d}^{des}$, ${}^{-}S_{d}^{des}$')
+        self.s_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$x_S$')
+        self.sd_params = dict(color='darkorange', alpha=0.8,  ls='-', lw=2,   label=r'$x_S^{des}$')
+        self.sd_del_params = dict(color='orangered', alpha=0.6,  ls='--', lw=1,   label=r'${}^{+}x_S^{des}$, ${}^{-}x_S^{des}$')
         self.sd_fill_params = dict(color='darkorange', alpha=0.05)
 
         # control variable C params
-        self.c_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$C$')
-        self.cd_params = dict(color='darkorange', alpha=0.8,  ls='-', lw=2,   label=r'$C_{d}$')
+        self.c_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$x_C$')
+        self.cd_params = dict(color='darkorange', alpha=0.8,  ls='-', lw=2,   label=r'$x_C^{des}$')
         self.cd_fill_params = dict(color='darkorange', alpha=0.05)
 
         # control variable Z_W params
-        self.zw_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\mathbf{z}_{A}$')
-        self.zwd_params = dict(color='darkorange', alpha=0.8,  ls='--', lw=2,   label=r'$\mathbf{z}_{A}^{des}$')
-        self.zwd_del_params = dict(color='orangered', alpha=0.6,  ls='--', lw=1,   label=r'${}^{+}\mathbf{z}_{A}^{des}$, ${}^{-}\mathbf{z}_{A}^{des}$')
+        self.zw_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$z_{A}$')
+        self.zwd_params = dict(color='darkorange', alpha=0.8,  ls='--', lw=2,   label=r'$z_{A}^{des}$')
+        self.zwd_del_params = dict(color='orangered', alpha=0.6,  ls='--', lw=1,   label=r'${}^{+}z_{A}^{des}$, ${}^{-}z_{A}^{des}$')
         self.zwd_fill_params = dict(color='darkorange', alpha=0.05)
         
 
@@ -1139,6 +1167,10 @@ class AltitudeControlDataPlotter:
         self.axs[0].grid(True, which='major', alpha=0.3)
         [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
         [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
+        legend_handles_s = self.make_handles([self.s_params, self.sd_params, self.sd_del_params])
+        self.axs[0].legend(handles=legend_handles_s,
+                        labels=[r'$x_S$', r'$x_S^{des}$', r'${}^{+}x_{S}^{des}$, ${}^{-}x_{S}^{des}$'],
+                        loc='upper right')
         
         self.axs[1].set_title(r'C')
         self.axs[1].legend(loc='upper right')
@@ -1153,7 +1185,7 @@ class AltitudeControlDataPlotter:
         legend_handles = self.make_handles([self.zw_params, self.zwd_params, self.zwd_del_params])
         self.axs[2].set_title(r'$z_{A}$')
         self.axs[2].legend(handles=legend_handles,
-                        labels=[r'$z_{A}$', r'$\mathbf{z}_{A}^{des}$', r'${}^{+}\mathbf{z}_{A}^{des}$, ${}^{-}\mathbf{z}_{A}^{des}$'],
+                        labels=[r'$z_{A}$', r'$z_{A}^{des}$', r'${}^{+}z_{A}^{des}$, ${}^{-}z_{A}^{des}$'],
                         loc='upper right')
         self.axs[2].set(xlabel=r'$time\ (s)$', ylabel=r'$z_{A}\ (m)$')
         self.axs[2].xaxis.set_minor_locator(AutoMinorLocator())
