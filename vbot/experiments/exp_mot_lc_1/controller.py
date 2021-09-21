@@ -24,6 +24,7 @@ class Controller:
         self.C_DES = C_DES
         self.S_GOOD_FLAG = False
         self.current_alt = ALTITUDE
+        self.C_BUFF = 10
 
         self.C_BUFF = 10
 
@@ -245,7 +246,7 @@ class Controller:
                     e_s = 0.0
             else:
                 # flag turns good only when it is close to set point
-                if abs(S_d - S) < 0.25*S_DELTA:
+                if abs(S_d - S) < 0.25*S_DELTA and S_d > S:
                     self.S_GOOD_FLAG = True
                     self.current_alt = Z_W
                     print(f'\n\nStaying at {Z_W}\n')
@@ -261,6 +262,7 @@ class Controller:
         vz_2 = vz**2 * np.sign(vz)
 
         FOCAL_LENGTH = (WIDTH / 2) / tan(radians(FOV/2))
+        # print(FOCAL_LENGTH)
         FS = ((FOCAL_LENGTH * S_W) / S**2)
         FC = ((FOCAL_LENGTH * C_W) / C**2)
         # print(FOCAL_LENGTH)
