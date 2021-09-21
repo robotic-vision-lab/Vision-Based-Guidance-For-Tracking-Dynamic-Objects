@@ -282,8 +282,8 @@ class LOS2DataPlotter:
         self.vr3_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{r_3}$')
         
         # fp1vr, fp2vr params
-        self.f1_vr_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V}_{r_{fp1}}$')
-        self.f2_vr_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V}_{r_{fp2}}$')
+        self.f1_vr_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2, label=r'$\hat{V}_{r_{fp1}}$')
+        self.f2_vr_params = dict(color='palevioletred',  alpha=0.85, ls='-', lw=2, label=r'$\hat{V}_{r_{fp2}}$')
 
         # vth1 params
         self.vth1_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{\theta_{1}}$')
@@ -298,8 +298,8 @@ class LOS2DataPlotter:
         self.vth3_e_params = dict(color='dodgerblue',  alpha=0.75, ls='-', lw=1, label=r'$\hat{V}_{\theta_3}$')
         
         # fp1vtheta, fp2vtheta params
-        self.f1_vth_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V}_{\theta_{fp1}}$')
-        self.f2_vth_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{V}_{\theta_{fp2}}$')
+        self.f1_vth_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2, label=r'$\hat{V}_{\theta_{fp1}}$')
+        self.f2_vth_params = dict(color='palevioletred',  alpha=0.85, ls='-', lw=2, label=r'$\hat{V}_{\theta_{fp2}}$')
 
         # rcParams
         params = {'xtick.direction'     : 'in',
@@ -355,7 +355,7 @@ class LOS2DataPlotter:
         # self.axs[1].plot(self.t, self.vth2_e, **self.vth2_e_params)
 
         # self.axs[1].plot(self.t, self.vth3_t, **self.vth3_t_params)
-        self.axs[1].plot(self.t, self.vth3_e, **self.vth3_e_params)
+        # self.axs[1].plot(self.t, self.vth3_e, **self.vth3_e_params)
 
         # fp1_vtheta, fp2_vtheta
         self.axs[1].plot(self.t, self.f1_vth, **self.f1_vth_params)
@@ -373,10 +373,10 @@ class LOS2DataPlotter:
 
     def add_axes_decor(self):
         # subplot 0
-        legend_handles_vr = self.make_handles([self.f1_vr_params])
+        legend_handles_vr = self.make_handles([self.f1_vr_params, self.f2_vr_params])
         self.axs[0].set_title(r'$\mathbf{V_{r}}$')
         self.axs[0].legend(handles=legend_handles_vr,
-                           labels=[r'$\hat{V}_{rfp_{i}}$'],
+                           labels=[r'$\hat{V}_{rfp_{1}}$', r'$\hat{V}_{rfp_{2}}$'],
                            loc='upper right')
         self.axs[0].set(ylabel=r'$V_{r}\ (\frac{m}{s})$')
         self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
@@ -387,10 +387,10 @@ class LOS2DataPlotter:
         [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
         
         # subplot 1
-        legend_handles_vth = self.make_handles([self.f1_vth_params])
+        legend_handles_vth = self.make_handles([self.f1_vth_params, self.f2_vth_params])
         self.axs[1].set_title(r'$\mathbf{V_{\theta}}$')
         self.axs[1].legend(handles=legend_handles_vth,
-                           labels=[r'$\hat{V}_{\theta fp_{i}}$'],
+                           labels=[r'$\hat{V}_{\theta fp_{1}}$', r'$\hat{V}_{\theta fp_{2}}$'],
                            loc='upper right')
         self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$V_{\theta}\ (\frac{m}{s})$')
         self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
@@ -459,9 +459,9 @@ class AccelerationCommandDataPlotter:
 
     def set_params(self):
         # params
-        self.a_lat_params = dict(color='forestgreen', alpha=0.7,  ls='-', lw=1,   label=r'$a_{lat}$')
-        self.a_lng_params = dict(color='deeppink', alpha=0.7,  ls='-', lw=1,   label=r'$a_{long}$')
-        self.a_z_params = dict(color='royalblue', alpha=0.7,  ls='-', lw=1,   label=r'$a_{z}$')
+        self.a_lat_params = dict(color='forestgreen', alpha=0.7,  ls='-', lw=2,   label=r'$a_{lat}$')
+        self.a_lng_params = dict(color='deeppink', alpha=0.7,  ls='-', lw=2,   label=r'$a_{long}$')
+        self.a_z_params = dict(color='royalblue', alpha=0.9,  ls='-', lw=2,   label=r'$a_{z}$')
 
         # rcParams
         params = {'xtick.direction'     : 'in',
@@ -489,14 +489,16 @@ class AccelerationCommandDataPlotter:
         return [Line2D([0], [0], **params) for params in params_list]
 
     def plot(self):
-        self.fig, self.axs = plt.subplots(dpi=100, figsize=(10,5))
+        self.fig, self.axs = plt.subplots(2, 1, dpi=100, figsize=(10,10))
         # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
         self.fig.canvas.manager.set_window_title(self.window_title)
 
-        # a_lat, a_long, a_z
-        self.axs.plot(self.t, self.a_lat, **self.a_lat_params)
-        self.axs.plot(self.t, self.a_lng, **self.a_lng_params)
-        self.axs.plot(self.t, self.a_z, **self.a_z_params)
+        # a_lat, a_long
+        self.axs[0].plot(self.t, self.a_lat, **self.a_lat_params)
+        self.axs[0].plot(self.t, self.a_lng, **self.a_lng_params)
+
+        # a_z
+        self.axs[1].plot(self.t, self.a_z, **self.a_z_params)
 
         # set axes decorations
         self.add_axes_decor()
@@ -509,15 +511,25 @@ class AccelerationCommandDataPlotter:
 
 
     def add_axes_decor(self):
-        self.axs.set_title(r'$a_{lat}, a_{long}, a_{z}$')
-        self.axs.legend()
-        self.axs.set(xlabel=r'$time\ (s)$', ylabel=r'$acceleration\ (\frac{m}{s_{2}})$')
-        self.axs.xaxis.set_minor_locator(AutoMinorLocator())
-        self.axs.yaxis.set_minor_locator(AutoMinorLocator())
-        self.axs.grid(True, which='minor', alpha=0.1)
-        self.axs.grid(True, which='major', alpha=0.3)
-        [tl.set_color('black') for tl in self.axs.get_xticklabels()]
-        [tl.set_color('black') for tl in self.axs.get_yticklabels()]
+        self.axs[0].set_title(r'$a_{lat}, a_{long}$')
+        self.axs[0].legend()
+        self.axs[0].set(xlabel=r'$time\ (s)$', ylabel=r'$acceleration\ (\frac{m}{s_{2}})$')
+        self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[0].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[0].grid(True, which='minor', alpha=0.1)
+        self.axs[0].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
+
+        self.axs[1].set_title(r'$a_{z}$')
+        self.axs[1].legend()
+        self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$acceleration\ (\frac{m}{s_{2}})$')
+        self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[1].grid(True, which='minor', alpha=0.1)
+        self.axs[1].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[1].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[1].get_yticklabels()]
         
 
 
