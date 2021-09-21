@@ -283,7 +283,7 @@ class LOS2DataPlotter:
         
         # fp1vr, fp2vr params
         self.f1_vr_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2, label=r'$\hat{V}_{r_{fp1}}$')
-        self.f2_vr_params = dict(color='palevioletred',  alpha=0.85, ls='-', lw=2, label=r'$\hat{V}_{r_{fp2}}$')
+        self.f2_vr_params = dict(color='palevioletred',  alpha=0.7, ls='-', lw=2, label=r'$\hat{V}_{r_{fp2}}$')
 
         # vth1 params
         self.vth1_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$V_{\theta_{1}}$')
@@ -299,7 +299,7 @@ class LOS2DataPlotter:
         
         # fp1vtheta, fp2vtheta params
         self.f1_vth_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2, label=r'$\hat{V}_{\theta_{fp1}}$')
-        self.f2_vth_params = dict(color='palevioletred',  alpha=0.85, ls='-', lw=2, label=r'$\hat{V}_{\theta_{fp2}}$')
+        self.f2_vth_params = dict(color='palevioletred',  alpha=0.7, ls='-', lw=2, label=r'$\hat{V}_{\theta_{fp2}}$')
 
         # rcParams
         params = {'xtick.direction'     : 'in',
