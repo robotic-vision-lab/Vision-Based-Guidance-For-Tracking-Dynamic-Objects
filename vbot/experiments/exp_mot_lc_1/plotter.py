@@ -84,7 +84,7 @@ class LOS1DataPlotter:
         
         # fp1r params
         self.f1_r_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{r}_{fp1}$')
-        self.f2_r_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{r}_{fp2}$')
+        self.f2_r_params = dict(color='palevioletred',  alpha=0.7, ls='-', lw=2.5, label=r'$\hat{r}_{fp2}$')
 
         # th1 params
         self.th1_t_params = dict(color='gray',       alpha=0.8,  ls=':', lw=2,   label=r'$\theta_{1}$')
@@ -103,7 +103,7 @@ class LOS1DataPlotter:
         
         # fp1r params
         self.f1_th_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{\theta}_{fp1}$')
-        self.f2_th_params = dict(color='crimson',  alpha=0.85, ls='-', lw=2.5, label=r'$\hat{\theta}_{fp2}$')
+        self.f2_th_params = dict(color='palevioletred',  alpha=0.7, ls='-', lw=2.5, label=r'$\hat{\theta}_{fp2}$')
 
         # rcParams
         params = {'xtick.direction'     : 'in',
@@ -680,8 +680,8 @@ class SpeedsHeadingsDataPlotter:
         self.t3_s_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\vert V_{B_{3}} \vert$')
 
         # fp speed params
-        self.fp1_s_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$\vert V_{B_{fp1}} \vert$')
-        self.fp2_s_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$\vert V_{B_{fp2}} \vert$')
+        self.fp1_s_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\vert V_{B_{fp1}} \vert$')
+        self.fp2_s_params = dict(color='dodgerblue', alpha=0.7,  ls='-', lw=2,   label=r'$\vert V_{B_{fp2}} \vert$')
 
         # drone speed params
         self.d_s_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2,   label=r'$\vert V_{A} \vert$')
@@ -693,8 +693,8 @@ class SpeedsHeadingsDataPlotter:
         self.t3_h_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{3}}$')
 
         # fp speed params
-        self.fp1_h_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$\angle V_{B_{fp1}}$')
-        self.fp2_h_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$\angle V_{B_{fp2}}$')
+        self.fp1_h_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\angle V_{B_{fp1}}$')
+        self.fp2_h_params = dict(color='dodgerblue', alpha=0.7,  ls='-', lw=2,   label=r'$\angle V_{B_{fp2}}$')
         
         # drone heading params
         self.d_h_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2,   label=r'$\angle V_{A}$')
@@ -841,8 +841,8 @@ class TrajectoryWorldDataPlotter:
         self.t3_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{3}$')
 
         # focal point traj params
-        self.fp1_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp1}$')
-        self.fp2_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp2}$')
+        self.fp1_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp1}$')
+        self.fp2_params = dict(color='dodgerblue', alpha=0.6,  ls='-', lw=2,   label=r'$B_{fp2}$')
 
         # drone params
         self.d_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2.5,   label=r'$A$')
@@ -978,8 +978,8 @@ class TrajectoryCameraDataPlotter:
         self.t3_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{3}$')
 
         # focal point traj params
-        self.fp1_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp1}$')
-        self.fp2_params = dict(color='dodgerblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp2}$')
+        self.fp1_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp1}$')
+        self.fp2_params = dict(color='dodgerblue', alpha=0.6,  ls='-', lw=2,   label=r'$B_{fp2}$')
 
         # drone params
         self.d_params = dict(color='orangered', alpha=0.8,  marker='*', markersize=15,   label=r'$A$')
