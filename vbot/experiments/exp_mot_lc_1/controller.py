@@ -24,6 +24,7 @@ class Controller:
         self.C_DES = C_DES
         self.S_GOOD_FLAG = False
         self.current_alt = ALTITUDE
+        self.C_BUFF = 10
 
         self.scz_ind_prev = 0
         plt.ion()
@@ -226,7 +227,7 @@ class Controller:
         self.C_DES = HEIGHT*((100+Z_W)/1000)
         # self.C_DES = HEIGHT*0.23
         S_d = S_DES
-        C_d = self.C_DES
+        C_d = self.C_DES if min(0, self.C_DES - C) >= 0 else self.C_DES - self.C_BUFF
         Z_d = Z_DES
 
         # e_s = S_d - S 
@@ -259,6 +260,7 @@ class Controller:
         vz_2 = vz**2 * np.sign(vz)
 
         FOCAL_LENGTH = (WIDTH / 2) / tan(radians(FOV/2))
+        print(FOCAL_LENGTH)
         FS = ((FOCAL_LENGTH * S_W) / S**2)
         FC = ((FOCAL_LENGTH * C_W) / C**2)
         # print(FOCAL_LENGTH)
