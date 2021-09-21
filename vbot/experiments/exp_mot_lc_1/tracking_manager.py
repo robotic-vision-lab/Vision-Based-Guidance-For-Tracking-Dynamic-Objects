@@ -383,7 +383,7 @@ class TrackingManager:
         ellipse_img = cv.circle(ellipse_img,
                                 tuple(map(int,ellipse_focal_point_1_est)),
                                 radius=ELLIPSE_ESTD_FP_RADIUS,
-                                color=ELLIPSE_ESTD_FP_COLOR,
+                                color=ELLIPSE_ESTD_FP_COLOR_1,
                                 thickness=cv.FILLED,
                                 lineType=cv.LINE_AA)
         ellipse_img = cv.circle(ellipse_img,
