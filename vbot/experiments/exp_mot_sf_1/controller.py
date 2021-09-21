@@ -25,6 +25,8 @@ class Controller:
         self.S_GOOD_FLAG = False
         self.current_alt = ALTITUDE
 
+        self.C_BUFF = 10
+
         self.scz_ind_prev = 0
         plt.ion()
 
@@ -208,11 +210,11 @@ class Controller:
         Z_W = self.manager.simulator.camera.altitude
 
         KP_s = 0.24#0.06
-        KP_c = 0.24#0.06
+        KP_c = 0.5#0.06
         KP_z = 0.14#0.1
 
         KD_s = 0.16
-        KD_c = 0.16
+        KD_c = 0.40625
         KD_z = 0.07
         
         # KI_s = 0.16#0.5
@@ -221,10 +223,10 @@ class Controller:
 
         # X_d = WIDTH*0.3
         # Y_d = WIDTH*0.3
-        self.C_DES = HEIGHT*((400+Z_W)/2000)
+        self.C_DES = HEIGHT*((250+Z_W)/2000)
         # self.C_DES = HEIGHT*0.23
         S_d = S_DES
-        C_d = self.C_DES
+        C_d = self.C_DES if min(0, self.C_DES - C) >= 0 else self.C_DES - self.C_BUFF
         Z_d = Z_DES
 
         # e_s = S_d - S 
@@ -296,10 +298,10 @@ class Controller:
 
         az = self.sat(az, 10)
 
-        # print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", SCZ_dot_meas-")}{gb(f"[{S_dot:.2f}, {C_dot:.2f}, {Z_W_dot:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
-        # print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
-        # print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
-        # print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}, xmin,xmax=({x_min:0.2f},{x_max:0.2f}), ymin,ymax=({y_min:0.2f},{y_max:0.2f}),SCZ => {scz_dict[scz_ind]}')
+        print(f'{g("            SCZ_des-")}{gb(f"[{S_d:.2f}, {C_d:.2f}, {Z_d:.2f}]")}{g(", SCZ_meas-")}{gb(f"[{S:.2f}, {C:.2f}, {Z_W:.2f}]")}{g(", SCZ_dot_meas-")}{gb(f"[{S_dot:.2f}, {C_dot:.2f}, {Z_W_dot:.2f}]")}{g(", vz=")}{gb(f"{vz:.2f}")}', end='')
+        print(f'{g(", az_s=")}{gb(f"{az_s:.4f}")}', end=' ')
+        print(f'{g("+ az_c=")}{gb(f"{az_c:.4f}")}', end=' ')
+        print(f'{g("+ az_z=")}{gb(f"{az_z:.4f} ")}{g("=> comm_az=")}{gb(f"{az:.4f}")}, xmin,xmax=({x_min:0.2f},{x_max:0.2f}), ymin,ymax=({y_min:0.2f},{y_max:0.2f}),SCZ => {scz_dict[scz_ind]}')
 
         if self.manager.write_plot:
             # store vairables if manager needs to write to file

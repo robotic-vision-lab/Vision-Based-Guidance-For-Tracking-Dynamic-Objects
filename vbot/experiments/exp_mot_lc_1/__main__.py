@@ -24,7 +24,7 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 1 # pylint: disable=bad-whitespace
     RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
@@ -557,58 +557,84 @@ if __name__ == '__main__':
         # V1 = [(FP_1_V_R[i]**2 + FP_1_V_THETA[i]**2)**0.5 for i in range(len(TIME))]
         # V2 = [(FP_2_V_R[i]**2 + FP_2_V_THETA[i]**2)**0.5 for i in range(len(TIME))]
 
-        # A1 = [FP_1_R[i]*FP_1_V_THETA[i]/V1[i] for i in range(len(TIME))]
-        # A2 = [FP_2_R[i]*FP_2_V_THETA[i]/V2[i] for i in range(len(TIME))]
-        # A3 = [A1[i] + A2[i] for i in range(len(TIME))]
+        # A1 = [FP_1_R[i]*abs(FP_1_V_THETA[i])*V2[i] for i in range(len(TIME))]
+        # A2 = [FP_2_R[i]*abs(FP_2_V_THETA[i])*V1[i] for i in range(len(TIME))]
+        # A1_ = [FP_1_R[i]*abs(FP_1_V_THETA[i])/V1[i] for i in range(len(TIME))]
+        # A2_ = [FP_2_R[i]*abs(FP_2_V_THETA[i])/V2[i] for i in range(len(TIME))]
+        # TAUD = [FP_1_R[i]*abs(FP_1_V_THETA[i])/V1[i] + FP_2_R[i]*abs(FP_2_V_THETA[i])/V2[i] for i in range(len(TIME))]
 
-        # A4 = A3
+        # A4 = [0 for _ in TIME]
         # sat = 20
-        # # abs (A3[i]) > 0.1 ? A3[i] : 0.1 sign(A3[i])
+        # # abs (TAUD[i]) > 0.1 ? TAUD[i] : 0.1 sign(TAUD[i])
         # for i in range(len(TIME)):
-        #     if abs(A3[i]) > sat:
-        #         A4[i] = A3[i]
+        #     if abs(TAUD[i]) > sat:
+        #         A4[i] = TAUD[i]
         #     else:
-        #         A4[i] = sat * np.sign(A3[i])
+        #         A4[i] = sat * np.sign(TAUD[i])
 
         
         # #  y1 = A1**2*(1+tau*V1**2) + A2**2*(1+tau*V2**2) + 2*A1*A2*pow((1+tau*(V1**2+V2**2)+tau**2*V1**2*V2**2),0.5)-4*(a)**2
         # TAUN = [FP_1_R[i]*FP_1_V_R[i]/V1[i]**2 - FP_2_R[i]*FP_2_V_R[i]/V2[i]**2 for i in range(len(TIME))]
-        # TAU = [(TAUN[i] / (A1[i] + A2[i]))**2 for i in range(len(TIME))]
-        # TAU2 = [(TAUN[i] / (A4[i]))**2 for i in range(len(TIME))]
+        # TAU = [(TAUN[i] / TAUD[i])**2 for i in range(len(TIME))]
+        # # TAU2 = [(TAUN[i] / (A4[i]))**2 for i in range(len(TIME))]
 
         # y1 = [0 for _ in TIME]
         # for i in range(len(TIME)):
-        #     y1[i] = A1[i]**2*(1+TAU2[i]*V1[i]**2) + A2[i]**2*(1+TAU2[i]*V2[i]**2) + 2*A1[i]*A2[i]*pow((1+TAU2[i]*(V1[i]**2+V2[i]**2)+TAU2[i]**2*V1[i]**2*V2[i]**2),0.5) - 4*(45)**2
+        #     y1[i] = A1[i]**2*(1+TAU[i]*V1[i]**2) + A2[i]**2*(1+TAU[i]*V2[i]**2) + 2*A1[i]*A2[i]*pow((1+TAU[i]*(V1[i]**2+V2[i]**2)+TAU[i]**2*V1[i]**2*V2[i]**2),0.5) - 4*(45)**2*V1[i]**2*V2[i]**2
+        # y1_ = [0 for _ in TIME]
+        # A1 = A1_
+        # A2 = A2_
+        # for i in range(len(TIME)):
+        #     y1_[i] = A1[i]**2*(1+TAU[i]*V1[i]**2) + A2[i]**2*(1+TAU[i]*V2[i]**2) + 2*A1[i]*A2[i]*pow((1+TAU[i]*(V1[i]**2+V2[i]**2)+TAU[i]**2*V1[i]**2*V2[i]**2),0.5) - 4*(45)**2
 
-
-        # f5 ,a5 = plt.subplots()
-        # a5.plot(TIME, V1)
-        # a5.plot(TIME, V2)
-        # f5.suptitle(f'V1 V2')
-        # # f5.savefig(f'{_PATH}/11_zc.pdf')
-        # f5.show()
-
-        # f6 ,a6 = plt.subplots()
-        # # a6.plot(TIME, A1)
-        # # a6.plot(TIME, A2)
-        # a6.plot(TIME, A3, alpha=0.7)
-        # a6.plot(TIME, TAU, alpha=0.7)
-        # a6.plot(TIME, TAU2, alpha=0.7)
-        # f6.suptitle(f'A1 A2')
-        # # f6.savefig(f'{_PATH}/11_zc.pdf')
-        # f6.show()
+        # signy1 = [np.sign(i) for i in y1]
+        # signy1_ = [np.sign(i) for i in y1_]
 
         # f7 ,a7 = plt.subplots()
-        # a7.plot(TIME, TAU)
-        # f7.suptitle(f'TAU')
+        # a7.plot(TIME, V1)
+        # a7.plot(TIME, V2)
+        # a7.grid(True, which='minor', alpha=0.1)
+        # a7.grid(True, which='major', alpha=0.3)
+        # f7.suptitle(f'V1 V2')
         # # f7.savefig(f'{_PATH}/11_zc.pdf')
         # f7.show()
 
         # f8 ,a8 = plt.subplots()
-        # a8.plot(TIME, y1)
-        # f8.suptitle(f'new y1')
+        # # a8.plot(TIME, A1)
+        # # a8.plot(TIME, A2)
+        # a8.plot(TIME, A1, alpha=0.7)
+        # a8.plot(TIME, A2, alpha=0.7)
+        # a8.grid(True, which='minor', alpha=0.1)
+        # a8.grid(True, which='major', alpha=0.3)
+        # f8.suptitle(f'A1 A2')
         # # f8.savefig(f'{_PATH}/11_zc.pdf')
         # f8.show()
+
+        # f9 ,a9 = plt.subplots()
+        # a9.plot(TIME, TAU)
+        # a9.grid(True, which='minor', alpha=0.1)
+        # a9.grid(True, which='major', alpha=0.3)
+        # f9.suptitle(f'TAU')
+        # # f9.savefig(f'{_PATH}/11_zc.pdf')
+        # f9.show()
+
+        # f10 ,a10 = plt.subplots()
+        # a10.plot(TIME, y1)
+        # a10.plot(TIME, y1_)
+        # a10.grid(True, which='minor', alpha=0.1)
+        # a10.grid(True, which='major', alpha=0.3)
+        # f10.suptitle(f'new y1')
+        # # f10.savefig(f'{_PATH}/11_zc.pdf')
+        # f10.show()
+
+        # f11 ,a11 = plt.subplots()
+        # a11.plot(TIME, signy1, alpha=0.7,lw=3)
+        # a11.plot(TIME, signy1_, alpha=0.9, lw=1.2)
+        # a11.grid(True, which='minor', alpha=0.1)
+        # a11.grid(True, which='major', alpha=0.3)
+        # f11.suptitle(f'new signy1')
+        # # f11.savefig(f'{_PATH}/11_zc.pdf')
+        # f11.show()
 
         plt.show()
 

@@ -26,6 +26,8 @@ class Controller:
         self.current_alt = ALTITUDE
         self.C_BUFF = 10
 
+        self.C_BUFF = 10
+
         self.scz_ind_prev = 0
         plt.ion()
 
@@ -94,7 +96,7 @@ class Controller:
         y1 = self.sat(y1, 1000)
 
         # compute objective function derivatives
-        dy1dVr1, dy1dVtheta1, dy1dVr2, dy1dVtheta2, dy2dVr1, dy2dVtheta1 = self.compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2)
+        dy1dVr1, dy1dVtheta1, dy1dVr2, dy1dVtheta2, dy2dVr1, dy2dVtheta1 = self.compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, ellipse_major_axis_len)
 
         # set gains
         K1 = K_1 * np.sign(-Vr1)
@@ -211,11 +213,11 @@ class Controller:
         Z_W = self.manager.simulator.camera.altitude
 
         KP_s = 0.24 #0.03
-        KP_c = 0.24#0.35#0.5#1#0.06
+        KP_c = 0.2#0.35#0.5#1#0.06
         KP_z = 0.14#0.1
 
         KD_s = 0.16#0.2 #0.006
-        KD_c = 0.16#0.28435#0.40625#0.8125#2/3#0.03
+        KD_c = 0.1625#0.28435#0.40625#0.8125#2/3#0.03
         KD_z = 0.07#0.05
 
         # KI_s = 0.5
@@ -244,7 +246,7 @@ class Controller:
                     e_s = 0.0
             else:
                 # flag turns good only when it is close to set point
-                if abs(S_d - S) < 3 and S_d > S:
+                if abs(S_d - S) < 0.25*S_DELTA:
                     self.S_GOOD_FLAG = True
                     self.current_alt = Z_W
                     print(f'\n\nStaying at {Z_W}\n')
@@ -389,52 +391,121 @@ class Controller:
         y1 = A1**2*(1+tau*V1**2) + A2**2*(1+tau*V2**2) + 2*A1*A2*pow((1+tau*(V1**2+V2**2)+tau**2*V1**2*V2**2),0.5) - 4*(a)**2*V1**2*V2**2   # sat this also
 
         y2 = Vtheta1**2 + Vr1**2
+        
 
         return y1, y2
 
     @staticmethod
-    def compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2):
+    def compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, a):
         def sqrt(x):
             return pow(x, 0.5)
 
+        # # Compute the variables needed for derivatives
+        # V1 = sqrt(Vtheta1**2+Vr1**2); V2 = sqrt(Vtheta2**2+Vr2**2)
+        # A1 = r1*Vtheta1/V1
+        # A2 = r2*Vtheta2/V2
+        # tau = (r1*Vr1/V1**2 - r2*Vr2/V2**2)**2/(A1+A2)**2
+
+        # # Compute the derivatives needed for chain rule
+        # dy1dA1 = 2*A1*(1+tau*V1**2)+2*A2*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(1/2)
+        # dA1dVr1 = (-1)*r1*Vr1*Vtheta1*(Vr1**2+Vtheta1**2)**(-3/2)
+        # dy1dtau = A1**2*V1**2+A2**2*V2**2+A1*A2*(V1**2+V2**2+2*tau*V1**2*V2**2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+        # dy1dV1 = 2*A1**2*tau*V1+A1*A2*(2*tau*V1+2*tau**2*V1*V2**2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+        # dV1dVr1 = Vr1*(Vr1**2+Vtheta1**2)**(-1/2)
+        # dy1dA2 = 2*A2*(1+tau*V2**2)+2*A1*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(1/2)
+        # dA2dVr2 = (-1)*r2*Vr2*Vtheta2*(Vr2**2+Vtheta2**2)**(-3/2)
+        # dy1dV2 = 2*A2**2*tau*V2+A1*A2*(2*tau*V2+2*tau**2*V1**2*V2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+        # dV2dVr2 = Vr2*(Vr2**2+Vtheta2**2)**(-1/2)
+        # dA2dVtheta2 = (-1)*r2*Vtheta2**2*(Vr2**2+Vtheta2**2)**(-3/2)+r2*(Vr2**2+Vtheta2**2)**(-1/2)
+        # dV2dVtheta2 = Vtheta2*(Vr2**2+Vtheta2**2)**(-1/2)
+        # dA1dVtheta1 = (-1)*r1*Vtheta1**2*(Vr1**2+Vtheta1**2)**(-3/2)+r1*(Vr1**2+Vtheta1**2)**(-1/2)
+        # dV1dVtheta1 = Vtheta1*(Vr1**2+Vtheta1**2)**(-1/2)
+        # dtaudV1 = (-4)*(A1+A2)**(-2)*r1*V1**(-3)*Vr1*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
+        # dtaudV2 = 4*(A1+A2)**(-2)*r2*V2**(-3)*Vr2*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
+        # dtaudA1 = (-2)*(A1+A2)**(-3)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)**2
+        # dtaudA2 = (-2)*(A1+A2)**(-3)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)**2
+        # dtaudVr1E = 2*(A1+A2)**(-2)*r1*V1**(-2)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
+        # dtaudVr2E = (-2)*(A1+A2)**(-2)*r2*V2**(-2)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
+
+        # # Apply chain rule to compute intermediate derivatives
+        # dtaudVr1 = dtaudV1*dV1dVr1 + dtaudA1*dA1dVr1  + dtaudVr1E
+        # dtaudVr2 = dtaudV2*dV2dVr2 + dtaudA2*dA2dVr2  + dtaudVr2E
+        # dtaudVtheta1 = dtaudV1*dV1dVtheta1 + dtaudA1*dA1dVtheta1
+        # dtaudVtheta2 = dtaudV2*dV2dVtheta2 + dtaudA2*dA2dVtheta2
+
+        # # Final Derivatives as per chain rule
+        # dy1dVr1 = dy1dA1*dA1dVr1 + dy1dtau*dtaudVr1 + dy1dV1*dV1dVr1
+        # dy1dVr2 = dy1dA2 * dA2dVr2 + dy1dtau * dtaudVr2 + dy1dV2 * dV2dVr2
+        # dy1dVtheta1 = dy1dA1 * dA1dVtheta1 + dy1dtau * dtaudVtheta1 + dy1dV1 * dV1dVtheta1
+        # dy1dVtheta2 = dy1dA2 * dA2dVtheta2 + dy1dtau * dtaudVtheta2 + dy1dV2 * dV2dVtheta2
+
+        # # Derivatives of y2 -- no chain rule needed
+        # dy2dVr1 = 2*Vr1
+        # dy2dVtheta1 = 2*Vtheta1
+
         # Compute the variables needed for derivatives
-        V1 = sqrt(Vtheta1**2+Vr1**2); V2 = sqrt(Vtheta2**2+Vr2**2)
-        A1 = r1*Vtheta1/V1
-        A2 = r2*Vtheta2/V2
-        tau = (r1*Vr1/V1**2 - r2*Vr2/V2**2)**2/(A1+A2)**2
+        V1 = sqrt(Vtheta1**2+Vr1**2) 
+        V2 = sqrt(Vtheta2**2+Vr2**2) 
+        A1 = r1*abs(Vtheta1)*V2
+        A2 = r2*abs(Vtheta2)*V1
+        tau_num = r1*Vr1/V1**2 - r2*Vr2/V2**2
+        tau_den = (r1*abs(Vtheta1)/V1 + r2*abs(Vtheta2)/V2)
+        tau =(tau_num/tau_den)**2
 
-        # Compute the derivatives needed for chain rule
+        # Compute the derivatives for dy1dVr1
         dy1dA1 = 2*A1*(1+tau*V1**2)+2*A2*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(1/2)
-        dA1dVr1 = (-1)*r1*Vr1*Vtheta1*(Vr1**2+Vtheta1**2)**(-3/2)
-        dy1dtau = A1**2*V1**2+A2**2*V2**2+A1*A2*(V1**2+V2**2+2*tau*V1**2*V2**2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
-        dy1dV1 = 2*A1**2*tau*V1+A1*A2*(2*tau*V1+2*tau**2*V1*V2**2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
-        dV1dVr1 = Vr1*(Vr1**2+Vtheta1**2)**(-1/2)
+        dA1dVr1 = 0
+
         dy1dA2 = 2*A2*(1+tau*V2**2)+2*A1*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(1/2)
-        dA2dVr2 = (-1)*r2*Vr2*Vtheta2*(Vr2**2+Vtheta2**2)**(-3/2)
-        dy1dV2 = 2*A2**2*tau*V2+A1*A2*(2*tau*V2+2*tau**2*V1**2*V2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+        dA2dVr1 =  r2*Vr1*Vtheta2**2*((Vr1**2+Vtheta1**2)*Vtheta2**2)**(-1/2)
+
+        dy1dtau = A1**2*V1**2+A2**2*V2**2+A1*A2*(V1**2+V2**2+2*tau*V1**2*V2**2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+        dtaudVr1 = 2*(r1*(Vtheta1**2*(Vr1**2+Vtheta1**2)**(-1))**(1/2)+r2*(Vtheta2**2*(Vr2**2+Vtheta2**2)**(-1))**(1/2))**(-3)*(r1*Vr1*(Vr1**2+Vtheta1**2)**(-1)+(-1)*r2*Vr2*(Vr2**2+Vtheta2**2)**(-1))*((-1)*r1*(Vr1**2+(-1)*Vtheta1**2)*(Vr1**2+Vtheta1**2)**(-2)*(r1*(Vtheta1**2*(Vr1**2+Vtheta1**2)**(-1))**(1/2)+r2*(Vtheta2**2*(Vr2**2+Vtheta2**2)**(-1))**(1/2))+r1*Vr1*Vtheta1**(-2)*(Vtheta1**2*(Vr1**2+Vtheta1**2)**(-1))**(3/2)*(r1*Vr1*(Vr1**2+Vtheta1**2)**(-1)+(-1)*r2*Vr2*(Vr2**2+Vtheta2**2)**(-1)))
+
+        dy1dV1 = 2*A1**2*tau*V1+(-8)*(a)**2*V1*V2**2+A1*A2*(2*tau*V1+2*tau**2*V1*V2**2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+        dV1dVr1 = Vr1*(Vr1**2+Vtheta1**2)**(-1/2)
+
+
+        dy1dVr1 = dy1dA1*dA1dVr1 + dy1dA2*dA2dVr1 + dy1dtau*dtaudVr1 + dy1dV1*dV1dVr1
+
+        # Compute the derivatives for dy1dVr2
+
+        dA1dVr2 = r1*Vr2*Vtheta1**2*(Vtheta1**2*(Vr2**2+Vtheta2**2))**(-1/2)
+
+        dA2dVr2 = 0
+
+        dtaudVr2 = 2*(r1*(Vtheta1**2*(Vr1**2+Vtheta1**2)**(-1))**(1/2)+r2*(Vtheta2**2*(Vr2**2+Vtheta2**2)**(-1))**(1/2))**(-3)*(r1*Vr1*(Vr1**2+Vtheta1**2)**(-1)+(-1)*r2*Vr2*(Vr2**2+Vtheta2**2)**(-1))*(r2*(Vr2**2+(-1)*Vtheta2**2)*(Vr2**2+Vtheta2**2)**(-2)*(r1*(Vtheta1**2*(Vr1**2+Vtheta1**2)**(-1))**(1/2)+r2*(Vtheta2**2*(Vr2**2+Vtheta2**2)**(-1))**(1/2))+r2*Vr2*Vtheta2**(-2)*(Vtheta2**2*(Vr2**2+Vtheta2**2)**(-1))**(3/2)*(r1*Vr1*(Vr1**2+Vtheta1**2)**(-1)+(-1)*r2*Vr2*(Vr2**2+Vtheta2**2)**(-1)))
+
+        dy1dV2 = 2*A2**2*tau*V2+(-8)*(a)**2*V1**2*V2+A1*A2*(2*tau*V2+2*tau**2*V1**2*V2)*(1+tau**2*V1**2*V2**2+tau*(V1**2+V2**2))**(-1/2)
+
         dV2dVr2 = Vr2*(Vr2**2+Vtheta2**2)**(-1/2)
-        dA2dVtheta2 = (-1)*r2*Vtheta2**2*(Vr2**2+Vtheta2**2)**(-3/2)+r2*(Vr2**2+Vtheta2**2)**(-1/2)
+
+        dy1dVr2 = dy1dA1*dA1dVr2 + dy1dA2*dA2dVr2 + dy1dtau*dtaudVr2 + dy1dV2*dV2dVr2
+
+        # Compute the derivatives for dy1dVtheta2
+
+        dA1dVtheta2 = r1*Vtheta1**2*Vtheta2*(Vtheta1**2*(Vr2**2+Vtheta2**2))**(-1/2)
+
+        dA2dVtheta2 = r2*(Vr1**2+Vtheta1**2)*Vtheta2*((Vr1**2+Vtheta1**2)*Vtheta2**2)**(-1/2)
+
+        dtaudVtheta2 = 2*r2*Vr2*Vtheta2*(Vr2**2+Vtheta2**2)**(-3)*(r1*(Vtheta1**2*(Vr1**2+Vtheta1**2)**(-1))**(1/2)+r2*(Vtheta2**2*(Vr2**2+Vtheta2**2)**(-1))**(1/2))**(-3)*(r1*Vr1*(Vr1**2+Vtheta1**2)**(-1)+(-1)*r2*Vr2*(Vr2**2+Vtheta2**2)**(-1))*(2*(Vr2**2+Vtheta2**2)*(r1*(Vtheta1**2*(Vr1**2+Vtheta1**2)**(-1))**(1/2)+r2*(Vtheta2**2*(Vr2**2+Vtheta2**2)**(-1))**(1/2))+Vr2*(Vr1**2+Vtheta1**2)**(-1)*(Vtheta2**2*(Vr2**2+Vtheta2**2)**(-1))**(-1/2)*(r2*Vr2*(Vr1**2+Vtheta1**2)+(-1)*r1*Vr1*(Vr2**2+Vtheta2**2)))
+
         dV2dVtheta2 = Vtheta2*(Vr2**2+Vtheta2**2)**(-1/2)
-        dA1dVtheta1 = (-1)*r1*Vtheta1**2*(Vr1**2+Vtheta1**2)**(-3/2)+r1*(Vr1**2+Vtheta1**2)**(-1/2)
+
+        dy1dVtheta2 = dy1dA1 * dA1dVtheta2 + dy1dA2 * dA2dVtheta2 + dy1dtau * dtaudVtheta2 + dy1dV2 * dV2dVtheta2
+
+        # Compute the derivatives for dy1dVtheta1
+
+        dA1dVtheta1 = r1*Vtheta1*(Vr2**2+Vtheta2**2)*(Vtheta1**2*(Vr2**2+Vtheta2**2))**(-1/2)
+
+        dA2dVtheta1 = r2*Vtheta1*Vtheta2**2*((Vr1**2+Vtheta1**2)*Vtheta2**2)**(-1/2)
+
+        dtaudVtheta1 = (-2)*r1*Vr1*Vtheta1*(Vtheta1**2*(Vr1**2+Vtheta1**2)**(-1))**(-1/2)*(Vr1**2+Vtheta1**2)**(-4)*(Vr2**2+Vtheta2**2)**(-2)*(r1*(Vtheta1**2*(Vr1**2+Vtheta1**2)**(-1))**(1/2)+r2*(Vtheta2**2*(Vr2**2+Vtheta2**2)**(-1))**(1/2))**(-3)*((-1)*r2*Vr2*(Vr1**2+Vtheta1**2)+r1*Vr1*(Vr2**2+Vtheta2**2))*(r1*(Vr1**2+2*Vtheta1**2)*(Vr2**2+Vtheta2**2)+(-1)*r2*(Vr1**2+Vtheta1**2)*(Vr1*Vr2+(-2)*(Vtheta1**2*(Vr1**2+Vtheta1**2)**(-1))**(1/2)*Vtheta2**2*(Vtheta2**2*(Vr2**2+Vtheta2**2)**(-1))**(-1/2)))
+
         dV1dVtheta1 = Vtheta1*(Vr1**2+Vtheta1**2)**(-1/2)
-        dtaudV1 = (-4)*(A1+A2)**(-2)*r1*V1**(-3)*Vr1*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
-        dtaudV2 = 4*(A1+A2)**(-2)*r2*V2**(-3)*Vr2*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
-        dtaudA1 = (-2)*(A1+A2)**(-3)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)**2
-        dtaudA2 = (-2)*(A1+A2)**(-3)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)**2
-        dtaudVr1E = 2*(A1+A2)**(-2)*r1*V1**(-2)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
-        dtaudVr2E = (-2)*(A1+A2)**(-2)*r2*V2**(-2)*(r1*V1**(-2)*Vr1+(-1)*r2*V2**(-2)*Vr2)
 
-        # Apply chain rule to compute intermediate derivatives
-        dtaudVr1 = dtaudV1*dV1dVr1 + dtaudA1*dA1dVr1  + dtaudVr1E
-        dtaudVr2 = dtaudV2*dV2dVr2 + dtaudA2*dA2dVr2  + dtaudVr2E
-        dtaudVtheta1 = dtaudV1*dV1dVtheta1 + dtaudA1*dA1dVtheta1
-        dtaudVtheta2 = dtaudV2*dV2dVtheta2 + dtaudA2*dA2dVtheta2
+        dy1dVtheta1 = dy1dA1 * dA1dVtheta1 + dy1dA2 * dA2dVtheta1 + dy1dtau * dtaudVtheta1 + dy1dV1 * dV1dVtheta1
 
-        # Final Derivatives as per chain rule
-        dy1dVr1 = dy1dA1*dA1dVr1 + dy1dtau*dtaudVr1 + dy1dV1*dV1dVr1
-        dy1dVr2 = dy1dA2 * dA2dVr2 + dy1dtau * dtaudVr2 + dy1dV2 * dV2dVr2
-        dy1dVtheta1 = dy1dA1 * dA1dVtheta1 + dy1dtau * dtaudVtheta1 + dy1dV1 * dV1dVtheta1
-        dy1dVtheta2 = dy1dA2 * dA2dVtheta2 + dy1dtau * dtaudVtheta2 + dy1dV2 * dV2dVtheta2
 
         # Derivatives of y2 -- no chain rule needed
         dy2dVr1 = 2*Vr1
