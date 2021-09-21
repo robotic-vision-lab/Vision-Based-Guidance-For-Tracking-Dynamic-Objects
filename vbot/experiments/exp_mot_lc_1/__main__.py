@@ -24,8 +24,8 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1 # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0  # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0 # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1  # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -1254,7 +1254,10 @@ if __name__ == '__main__':
         #     f10.savefig(f'{_PATH}/10_objectives.png', dpi=300)
 
         #     f10.show()
-        # plt.show()
+
+
+
+        plt.show()
 
     if RUN_VIDEO_WRITER:
         EXPERIMENT_MANAGER = ExperimentManager()
