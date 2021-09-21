@@ -92,13 +92,13 @@ class Controller:
         # compute objective function
         y1, y2 = self.compute_objective_functions(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, ellipse_major_axis_len)
         y1_ = y1
-        y1 = self.sat(y1, 1000)
+        # y1 = self.sat(y1, 1000)
 
         # compute objective function derivatives
         dy1dVr1, dy1dVtheta1, dy1dVr2, dy1dVtheta2, dy2dVr1, dy2dVtheta1 = self.compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, ellipse_major_axis_len)
 
         # set gains
-        K1 = K_1 * np.sign(-Vr1)
+        K1 = K_1 #* np.sign(-Vr1)
         K2 = K_2
         w = K_W
 
