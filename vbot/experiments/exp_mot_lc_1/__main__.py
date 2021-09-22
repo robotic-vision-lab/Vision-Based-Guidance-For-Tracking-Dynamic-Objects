@@ -24,8 +24,8 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 1 # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 0 # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -190,6 +190,10 @@ if __name__ == '__main__':
         DRONE_ALPHA = []
         C_DESIRED = []
         SCZ_IND = []
+        ELLIPSE_MAJOR = []
+        ELLIPSE_MINOR = []
+        ELLIPSE_ROT_ANG = []
+        A_LAT_LONG_DENOM = []
 
         # get all the data in memory
         for line in FILE.readlines():
@@ -321,6 +325,10 @@ if __name__ == '__main__':
             DRONE_ALPHA.append(data[121])
             C_DESIRED.append(data[122])
             SCZ_IND.append(data[123])
+            ELLIPSE_MAJOR.append(data[124])
+            ELLIPSE_MINOR.append(data[125])
+            ELLIPSE_ROT_ANG.append(data[126])
+            A_LAT_LONG_DENOM.append(data[127])
 
         FILE.close()
 
@@ -396,6 +404,15 @@ if __name__ == '__main__':
                                                            )
 
         accl_comm_plotter.plot()
+
+        ellipse_plotter = EllipseDataPlotter(_PATH,
+                                             TIME,
+                                             ELLIPSE_MAJOR,
+                                             ELLIPSE_MINOR,
+                                             ELLIPSE_ROT_ANG
+                                             )
+
+        ellipse_plotter.plot()
 
         obj_func_plotter = ObjectiveFunctionDataPlotter(_PATH,
                                                         TIME,
@@ -635,6 +652,24 @@ if __name__ == '__main__':
         # f11.suptitle(f'new signy1')
         # # f11.savefig(f'{_PATH}/11_zc.pdf')
         # f11.show()
+
+        f12 ,a12 = plt.subplots()
+        a12.plot(TIME, A_LAT_LONG_DENOM, alpha=0.7,lw=3)
+        a12.grid(True, which='minor', alpha=0.1)
+        a12.grid(True, which='major', alpha=0.3)
+        f12.suptitle(f'A_LAT_LONG_DENOM')
+        f12.savefig(f'{_PATH}/12_denom.pdf')
+        f12.show()
+
+        f13 ,a13 = plt.subplots()
+        a13.plot(C, S)
+        a13.grid(True, which='minor', alpha=0.1)
+        a13.grid(True, which='major', alpha=0.3)
+        a13.axis('equal')
+        f13.suptitle(f'z vs C')
+        f13.savefig(f'{_PATH}/13_cs.pdf')
+        f13.show()
+
 
         plt.show()
 

@@ -362,7 +362,11 @@ class ExperimentManager:
                 f'DRONE_SPEED,' +
                 f'DRONE_ALPHA,' +
                 f'C_DES,' + 
-                f'SCZ_IND\n'
+                f'SCZ_IND,' +
+                f'ELLIPSE_MAJOR,' +
+                f'ELLIPSE_MINOR,' +
+                f'ELLIPSE_ROT_ANG,' +
+                f'A_LAT_LONG_DENOM\n'
             )
             self.write_count = 0
             self.write_skip = 5
@@ -421,7 +425,9 @@ class ExperimentManager:
 
                         # generate acceleration command for dronecamera, apply
                         ax, ay, az = self.controller.generate_acceleration(self.tracking_manager.ellipse_params_est,
-                                                                           self.tracking_manager.ellipse_params_meas[0])
+                                                                           self.tracking_manager.ellipse_params_meas[0],
+                                                                           self.tracking_manager.ellipse_params_meas[1],
+                                                                           degrees(self.tracking_manager.ellipse_params_meas[3]))
 
                         self.simulator.camera.apply_accleration_command(ax, ay, az)
 
@@ -537,6 +543,10 @@ class ExperimentManager:
         AZ = controller_data[41]
         C_DES = controller_data[42]
         SCZ_IND = controller_data[43]
+        ELLIPSE_MAJOR = controller_data[44]
+        ELLIPSE_MINOR = controller_data[45]
+        ELLIPSE_ROT_ANG = controller_data[46]
+        A_LAT_LONG_DENOM = controller_data[47]
 
         T_1_OCCLUSION_CASE = tracker_data[0]
         T_1_X_MEAS = tracker_data[1] if tracker_data[1] is not None else NAN
@@ -619,6 +629,7 @@ class ExperimentManager:
 
         DRONE_SPEED = (DRONE_VEL_X**2 + DRONE_VEL_Y**2)**0.5
         DRONE_ALPHA = degrees(atan2(DRONE_VEL_Y, DRONE_VEL_X))
+
 
         self.data_file.write(
             f'{TIME},' +
@@ -744,7 +755,11 @@ class ExperimentManager:
             f'{DRONE_SPEED},' +
             f'{DRONE_ALPHA},' +
             f'{C_DES},' + 
-            f'{SCZ_IND}\n'
+            f'{SCZ_IND},' +
+            f'{ELLIPSE_MAJOR},' +
+            f'{ELLIPSE_MINOR},' +
+            f'{ELLIPSE_ROT_ANG},' +
+            f'{A_LAT_LONG_DENOM}\n'
         )
 
 

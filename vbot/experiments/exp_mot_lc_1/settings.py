@@ -30,7 +30,7 @@ SIMULATOR_TITLE = 'Simple'
 # camera image formation settings
 FOV = 50.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 230.0                                  # meters
+ALTITUDE = 450.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
@@ -243,9 +243,9 @@ CAR_RADIUS = 0.1
 # K_W                     = -1000
 
 # open
-CAR_INITIAL_POSITION    = (100.0, -50.0)
-CAR_INITIAL_POSITION_2  = (100.0, -20.0)
-CAR_INITIAL_POSITION_3  = (80.0, -35.0)
+CAR_INITIAL_POSITION    = (200.0, -60.0)
+CAR_INITIAL_POSITION_2  = (200.0, -30.0)
+CAR_INITIAL_POSITION_3  = (180.0, -45.0)
 CAR_INITIAL_VELOCITY    = (22.22, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_2  = (22.22, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_3  = (22.22, 0.0)#(5.32 , 0.0)

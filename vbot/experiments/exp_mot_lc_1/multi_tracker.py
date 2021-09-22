@@ -1137,7 +1137,7 @@ class MultiTracker:
                              pt1=tuple(map(int,drone_vel)),
                              pt2=tuple(map(int,drone_acc)),
                              color=(215,218,141),
-                             thickness=2,
+                             thickness=1,
                              line_type=cv.LINE_AA,
                              shift=None,
                              tipLength=0.2)
