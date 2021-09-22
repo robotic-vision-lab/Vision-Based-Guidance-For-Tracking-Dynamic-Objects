@@ -37,13 +37,15 @@ class Controller:
     def sat(x, bound):
         return min(max(x, -bound), bound)
 
-    def generate_acceleration(self, ellipse_focal_points_est_state, ellipse_major_axis_len):
+    def generate_acceleration(self, ellipse_focal_points_est_state, ellipse_major_axis_len, ellipse_minor_axis_len, ellipse_rotation_angle):
         """Uses esitmated state of ellipse focal points and major axis to generate lateral and logintudinal accleration commands for dronecamera.
         Returns ax, ay, az
 
         Args:
             ellipse_focal_points_est_state (tuple): State estimations for both focal points
-            ellipse_major_axis_len (float): Major axis of enclosing ellipse
+            ellipse_major_axis_len (float): Major axis of enclosing ellipse (world frame)
+            ellipse_minor_axis_len (float): Minor axis of enclosing ellipse (world frame)
+            ellipse_rotation_angle (float): Rotation angle of enclosing ellipse 
 
         Returns:
             tuple : ax, ay, az
@@ -183,8 +185,8 @@ class Controller:
 
         y1 = y1_
         # clip acceleration commands
-        a_long_bound = 3#10
-        a_lat_bound = 3#10
+        a_long_bound = 1#10
+        a_lat_bound = 1#10
 
         a_long = self.sat(a_long, a_long_bound)
         a_lat = self.sat(a_lat, a_lat_bound)
@@ -334,53 +336,57 @@ class Controller:
         if self.manager.write_plot:
             # store vairables if manager needs to write to file
             self.stored_data = np.array([
-                fp1_x,          #  0 focal point 1 position x component
-                fp1_y,          #  1 focal point 1 position y component
-                fp1_vx,         #  2 focal point 1 velocity x component
-                fp1_vy,         #  3 focal point 1 velocity y component
-                fp1_ax,         #  4 focal point 1 acceleration x component
-                fp1_ay,         #  5 focal point 1 acceleration y component
-                r1,             #  6 focal point 1 r (LOS)
-                theta1,         #  7 focal point 1 theta (LOS)
-                Vr1,            #  8 focal point 1 Vr (LOS)
-                Vtheta1,        #  9 focal point 1 Vtheta (LOS)
-                fp1_speed,      # 10 focal point 1 speed
-                fp1_heading,    # 11 focal point 1 heading
-                fp1_acc,        # 12 focal point 1 acceleration magnitude
-                fp1_delta,      # 13 focal point 1 acceleration angle (delta)
-                fp2_x,          # 14 focal point 2 position x component
-                fp2_y,          # 15 focal point 2 position y component
-                fp2_vx,         # 16 focal point 2 velocity x component
-                fp2_vy,         # 17 focal point 2 velocity y component
-                fp2_ax,         # 18 focal point 2 acceleration x component
-                fp2_ay,         # 19 focal point 2 acceleration y component
-                r2,             # 20 focal point 2 r (LOS)
-                theta2,         # 21 focal point 2 theta (LOS)
-                Vr2,            # 22 focal point 2 Vr (LOS)
-                Vtheta2,        # 23 focal point 2 Vtheta (LOS)
-                fp2_speed,      # 24 focal point 2 speed
-                fp2_heading,    # 25 focal point 2 heading
-                fp2_acc,        # 26 focal point 2 acceleration magnitude
-                fp2_delta,      # 27 focal point 2 acceleration angle (delta)
-                y1,             # 28 objective function y1
-                y2,             # 29 objective function y2
-                a_lat,          # 30 commanded acceleration a_lat
-                a_long,         # 31 commanded acceleration a_long
-                S,              # 32 size of control area
-                C,              # 33 distance of control area
-                Z_W,            # 34 drone altitude
-                S_dot,          # 35 rate of change of size of control area
-                C_dot,          # 36 rate of change of distance of control area
-                Z_W_dot,        # 37 rate of change of drone altitude
-                az_s,           # 38 commanded acceleration on acount of S
-                az_c,           # 39 commanded acceleration on acount of C
-                az_z,           # 40 commanded acceleration on acount of Z_W
-                az,             # 41 aggregated commanded accleration az for altitude control
-                self.C_DES,     # 42 desired C
-                scz_ind,        # 43 SCZ index
+                fp1_x,                          #  0 focal point 1 position x component
+                fp1_y,                          #  1 focal point 1 position y component
+                fp1_vx,                         #  2 focal point 1 velocity x component
+                fp1_vy,                         #  3 focal point 1 velocity y component
+                fp1_ax,                         #  4 focal point 1 acceleration x component
+                fp1_ay,                         #  5 focal point 1 acceleration y component
+                r1,                             #  6 focal point 1 r (LOS)
+                theta1,                         #  7 focal point 1 theta (LOS)
+                Vr1,                            #  8 focal point 1 Vr (LOS)
+                Vtheta1,                        #  9 focal point 1 Vtheta (LOS)
+                fp1_speed,                      # 10 focal point 1 speed
+                fp1_heading,                    # 11 focal point 1 heading
+                fp1_acc,                        # 12 focal point 1 acceleration magnitude
+                fp1_delta,                      # 13 focal point 1 acceleration angle (delta)
+                fp2_x,                          # 14 focal point 2 position x component
+                fp2_y,                          # 15 focal point 2 position y component
+                fp2_vx,                         # 16 focal point 2 velocity x component
+                fp2_vy,                         # 17 focal point 2 velocity y component
+                fp2_ax,                         # 18 focal point 2 acceleration x component
+                fp2_ay,                         # 19 focal point 2 acceleration y component
+                r2,                             # 20 focal point 2 r (LOS)
+                theta2,                         # 21 focal point 2 theta (LOS)
+                Vr2,                            # 22 focal point 2 Vr (LOS)
+                Vtheta2,                        # 23 focal point 2 Vtheta (LOS)
+                fp2_speed,                      # 24 focal point 2 speed
+                fp2_heading,                    # 25 focal point 2 heading
+                fp2_acc,                        # 26 focal point 2 acceleration magnitude
+                fp2_delta,                      # 27 focal point 2 acceleration angle (delta)
+                y1,                             # 28 objective function y1
+                y2,                             # 29 objective function y2
+                a_lat,                          # 30 commanded acceleration a_lat
+                a_long,                         # 31 commanded acceleration a_long
+                S,                              # 32 size of control area
+                C,                              # 33 distance of control area
+                Z_W,                            # 34 drone altitude
+                S_dot,                          # 35 rate of change of size of control area
+                C_dot,                          # 36 rate of change of distance of control area
+                Z_W_dot,                        # 37 rate of change of drone altitude
+                az_s,                           # 38 commanded acceleration on acount of S
+                az_c,                           # 39 commanded acceleration on acount of C
+                az_z,                           # 40 commanded acceleration on acount of Z_W
+                az,                             # 41 aggregated commanded accleration az for altitude control
+                self.C_DES,                     # 42 desired C
+                scz_ind,                        # 43 SCZ index
+                ellipse_major_axis_len,         # 44 ellipse major axis
+                ellipse_minor_axis_len,         # 45 ellipse minor axis
+                ellipse_rotation_angle,         # 46 ellipse rotation angle
+                denom,                          # 47 a_lat_long_denom
             ])
 
-        return ax, ay, az
+        return ax, ay, 0
 
 
 

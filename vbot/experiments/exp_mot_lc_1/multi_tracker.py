@@ -1105,7 +1105,7 @@ class MultiTracker:
 
         # collect drone true velocity
         drone_vel = list(map(int,3*self.manager.simulator.camera.velocity))
-        drone_acc = list(map(int,3.5*self.manager.simulator.camera.acceleration))
+        drone_acc = list(map(int,7*self.manager.simulator.camera.acceleration))
         drone_vel[1] *= -1
         drone_acc[1] *= -1
         drone_vel[0] += SCREEN_CENTER[0]
@@ -1137,7 +1137,7 @@ class MultiTracker:
                              pt1=tuple(map(int,drone_vel)),
                              pt2=tuple(map(int,drone_acc)),
                              color=(215,218,141),
-                             thickness=2,
+                             thickness=1,
                              line_type=cv.LINE_AA,
                              shift=None,
                              tipLength=0.2)

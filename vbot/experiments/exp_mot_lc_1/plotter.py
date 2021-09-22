@@ -489,16 +489,17 @@ class AccelerationCommandDataPlotter:
         return [Line2D([0], [0], **params) for params in params_list]
 
     def plot(self):
-        self.fig, self.axs = plt.subplots(2, 1, dpi=100, figsize=(10,10))
+        self.fig, self.axs = plt.subplots(3, 1, dpi=100, figsize=(10,10))
         # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
         self.fig.canvas.manager.set_window_title(self.window_title)
 
         # a_lat, a_long
         self.axs[0].plot(self.t, self.a_lat, **self.a_lat_params)
-        self.axs[0].plot(self.t, self.a_lng, **self.a_lng_params)
+
+        self.axs[1].plot(self.t, self.a_lng, **self.a_lng_params)
 
         # a_z
-        self.axs[1].plot(self.t, self.a_z, **self.a_z_params)
+        self.axs[2].plot(self.t, self.a_z, **self.a_z_params)
 
         # set axes decorations
         self.add_axes_decor()
@@ -511,7 +512,7 @@ class AccelerationCommandDataPlotter:
 
 
     def add_axes_decor(self):
-        self.axs[0].set_title(r'$a_{lat}, a_{long}$')
+        self.axs[0].set_title(r'$a_{lat}$')
         self.axs[0].legend()
         self.axs[0].set(xlabel=r'$time\ (s)$', ylabel=r'$acceleration\ (\frac{m}{s_{2}})$')
         self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
@@ -521,7 +522,7 @@ class AccelerationCommandDataPlotter:
         [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
         [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
 
-        self.axs[1].set_title(r'$a_{z}$')
+        self.axs[1].set_title(r'$a_{long}$')
         self.axs[1].legend()
         self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$acceleration\ (\frac{m}{s_{2}})$')
         self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
@@ -530,6 +531,126 @@ class AccelerationCommandDataPlotter:
         self.axs[1].grid(True, which='major', alpha=0.3)
         [tl.set_color('black') for tl in self.axs[1].get_xticklabels()]
         [tl.set_color('black') for tl in self.axs[1].get_yticklabels()]
+
+        self.axs[2].set_title(r'$a_{z}$')
+        self.axs[2].legend()
+        self.axs[2].set(xlabel=r'$time\ (s)$', ylabel=r'$acceleration\ (\frac{m}{s_{2}})$')
+        self.axs[2].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[2].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[2].grid(True, which='minor', alpha=0.1)
+        self.axs[2].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[2].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[2].get_yticklabels()]
+        
+    
+
+    
+class EllipseDataPlotter:
+    def __init__(self, 
+                 save_path, 
+                 t, 
+                 a,
+                 b,
+                 r):
+
+        self.save_path = save_path
+        self.t = t
+        self.a = a
+        self.b = b
+        self.r = r
+
+        self.window_title = 'Ellipse Axes and Rotation angle'
+        self.fig = None
+        self.axs = None
+
+        self.set_params()
+
+
+    def set_params(self):
+        # params
+        self.a_params = dict(color='dodgerblue', alpha=0.7,  ls='-', lw=2,   label=r'$a$')
+        self.b_params = dict(color='dodgerblue', alpha=0.7,  ls='-', lw=2,   label=r'$b$')
+        self.r_params = dict(color='dodgerblue', alpha=0.9,  ls='-', lw=2,   label=r'$\phi_{ellipse}$')
+
+        # rcParams
+        params = {'xtick.direction'     : 'in',
+                  'xtick.top'           : True,
+                  'xtick.minor.visible' : True,
+                  'xtick.color'         : 'gray',
+                  'ytick.direction'     : 'in',
+                  'ytick.right'         : True,
+                  'ytick.minor.visible' : True,
+                  'ytick.color'         : 'gray',
+                #   'text.usetex'         : True,           # slows rendering significantly
+                #   'toolbar'             : 'None',         # with this none, zoom keymap 'o' does not work
+                  'pdf.compression'     : 0,
+                  'legend.fontsize'     : 'xx-large',
+                  'axes.labelsize'      : 'xx-large',
+                  'axes.titlesize'      : 'xx-large',
+                  'xtick.labelsize'     : 'x-large',
+                  'ytick.labelsize'     : 'x-large',
+                  'axes.edgecolor'      : 'gray'} 
+
+        mpl.rcParams.update(params)
+        
+            
+    def make_handles(self, params_list):
+        return [Line2D([0], [0], **params) for params in params_list]
+
+    def plot(self):
+        self.fig, self.axs = plt.subplots(3, 1, dpi=100, figsize=(10,10))
+        # self.fig.suptitle(r'$\mathbf{Line\ of\ Sight\ Kinematics\ -\ I}$', fontsize=TITLE_FONT_SIZE)
+        self.fig.canvas.manager.set_window_title(self.window_title)
+
+        # a
+        self.axs[0].plot(self.t, self.a, **self.a_params)
+
+        # b
+        self.axs[1].plot(self.t, self.b, **self.b_params)
+
+        # r
+        self.axs[2].plot(self.t, self.r, **self.r_params)
+
+        # set axes decorations
+        self.add_axes_decor()
+
+        # save and show figure
+        self.fig.tight_layout()
+        self.fig.subplots_adjust(left=0.12, bottom=0.12, right=0.94, top=0.94)
+        self.fig.savefig(f'{self.save_path}/_2_elllipse.pdf')
+        self.fig.show()
+
+
+    def add_axes_decor(self):
+        self.axs[0].set_title(r'$major axis$')
+        self.axs[0].legend()
+        self.axs[0].set(xlabel=r'$time\ (s)$', ylabel=r'$a\ (m)$')
+        self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[0].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[0].grid(True, which='minor', alpha=0.1)
+        self.axs[0].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
+
+        self.axs[1].set_title(r'$minor axis$')
+        self.axs[1].legend()
+        self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$b\ (m)$')
+        self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[1].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[1].grid(True, which='minor', alpha=0.1)
+        self.axs[1].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[1].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[1].get_yticklabels()]
+
+        self.axs[2].set_title(r'$rotation angle$')
+        self.axs[2].legend()
+        self.axs[2].set(xlabel=r'$time\ (s)$', ylabel=r'$\phi_{ellipse}\ (^{\circ})$')
+        self.axs[2].xaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[2].yaxis.set_minor_locator(AutoMinorLocator())
+        self.axs[2].grid(True, which='minor', alpha=0.1)
+        self.axs[2].grid(True, which='major', alpha=0.3)
+        [tl.set_color('black') for tl in self.axs[2].get_xticklabels()]
+        [tl.set_color('black') for tl in self.axs[2].get_yticklabels()]
         
 
 
@@ -675,26 +796,26 @@ class SpeedsHeadingsDataPlotter:
 
     def set_params(self):
         # target speed params
-        self.t1_s_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\vert V_{B_{1}} \vert$')
-        self.t2_s_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\vert V_{B_{2}} \vert$')
-        self.t3_s_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\vert V_{B_{3}} \vert$')
+        self.t1_s_params = dict(color='gray', alpha=0.5,  ls='-', lw=1.5,   label=r'$\vert V_{B_{1}} \vert$')
+        self.t2_s_params = dict(color='gray', alpha=0.5,  ls='-', lw=1.5,   label=r'$\vert V_{B_{2}} \vert$')
+        self.t3_s_params = dict(color='gray', alpha=0.5,  ls='-', lw=1.5,   label=r'$\vert V_{B_{3}} \vert$')
 
         # fp speed params
         self.fp1_s_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\vert V_{B_{fp1}} \vert$')
-        self.fp2_s_params = dict(color='dodgerblue', alpha=0.7,  ls='-', lw=2,   label=r'$\vert V_{B_{fp2}} \vert$')
+        self.fp2_s_params = dict(color='dodgerblue', alpha=0.6,  ls='-', lw=2,   label=r'$\vert V_{B_{fp2}} \vert$')
 
         # drone speed params
         self.d_s_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2,   label=r'$\vert V_{A} \vert$')
 
 
         # target speed params
-        self.t1_h_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{1}}$')
-        self.t2_h_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{2}}$')
-        self.t3_h_params = dict(color='gray', alpha=0.8,  ls='-', lw=1.5,   label=r'$\angle V_{B_{3}}$')
+        self.t1_h_params = dict(color='gray', alpha=0.5,  ls='-', lw=1.5,   label=r'$\angle V_{B_{1}}$')
+        self.t2_h_params = dict(color='gray', alpha=0.5,  ls='-', lw=1.5,   label=r'$\angle V_{B_{2}}$')
+        self.t3_h_params = dict(color='gray', alpha=0.5,  ls='-', lw=1.5,   label=r'$\angle V_{B_{3}}$')
 
         # fp speed params
         self.fp1_h_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$\angle V_{B_{fp1}}$')
-        self.fp2_h_params = dict(color='dodgerblue', alpha=0.7,  ls='-', lw=2,   label=r'$\angle V_{B_{fp2}}$')
+        self.fp2_h_params = dict(color='dodgerblue', alpha=0.6,  ls='-', lw=2,   label=r'$\angle V_{B_{fp2}}$')
         
         # drone heading params
         self.d_h_params = dict(color='orangered', alpha=0.8,  ls='-', lw=2,   label=r'$\angle V_{A}$')
@@ -836,9 +957,9 @@ class TrajectoryWorldDataPlotter:
 
     def set_params(self):
         # target traj params
-        self.t1_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{1}$')
-        self.t2_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{2}$')
-        self.t3_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{3}$')
+        self.t1_params = dict(color='gray', alpha=0.5,  ls='-', lw=1,   label=r'$B_{1}$')
+        self.t2_params = dict(color='gray', alpha=0.5,  ls='-', lw=1,   label=r'$B_{2}$')
+        self.t3_params = dict(color='gray', alpha=0.5,  ls='-', lw=1,   label=r'$B_{3}$')
 
         # focal point traj params
         self.fp1_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp1}$')
@@ -973,9 +1094,9 @@ class TrajectoryCameraDataPlotter:
 
     def set_params(self):
         # target traj params
-        self.t1_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{1}$')
-        self.t2_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{2}$')
-        self.t3_params = dict(color='gray', alpha=0.7,  ls='-', lw=1,   label=r'$B_{3}$')
+        self.t1_params = dict(color='gray', alpha=0.5,  ls='-', lw=1,   label=r'$B_{1}$')
+        self.t2_params = dict(color='gray', alpha=0.5,  ls='-', lw=1,   label=r'$B_{2}$')
+        self.t3_params = dict(color='gray', alpha=0.5,  ls='-', lw=1,   label=r'$B_{3}$')
 
         # focal point traj params
         self.fp1_params = dict(color='royalblue', alpha=0.8,  ls='-', lw=2,   label=r'$B_{fp1}$')
