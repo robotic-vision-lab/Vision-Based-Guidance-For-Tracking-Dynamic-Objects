@@ -142,38 +142,44 @@ class Controller:
         y1vt2dy2vt1 = dy1dVtheta2*dy2dVtheta1
         denom = (denom_sub+(y1vt1dy2vr1-y1vr2dy2vt1)*ct1t2-(y1vr2dy2vr1+y1vt2dy2vt1)*st1t2)
 
-        a_lat = -(
-            (K2*y2+fp1_acc*dy2dVr1*cf1dt1+fp1_acc*dy2dVtheta1*sf1dt1)
-            *(dy1dVr1*cdalt1+dy1dVr2*cdalt2+dy1dVtheta1*sdalt1+dy1dVtheta2*sdalt2)
-            -(dy2dVr1*cdalt1+dy2dVtheta1*sdalt1)
-            *(-K1*w+K1*y1+fp1_acc*dy1dVr1*cf1dt1+fp2_acc*dy1dVr2*cf2dt2+fp1_acc*dy1dVtheta1*sf1dt1+fp2_acc*dy1dVtheta2*sf2dt2)
-            ) / denom
+        if abs(denom) < 1:
+            a_lat = 0
+            a_long = 0 
+        else:
+            a_lat = -(
+                (K2*y2+fp1_acc*dy2dVr1*cf1dt1+fp1_acc*dy2dVtheta1*sf1dt1)
+                *(dy1dVr1*cdalt1+dy1dVr2*cdalt2+dy1dVtheta1*sdalt1+dy1dVtheta2*sdalt2)
+                -(dy2dVr1*cdalt1+dy2dVtheta1*sdalt1)
+                *(-K1*w+K1*y1+fp1_acc*dy1dVr1*cf1dt1+fp2_acc*dy1dVr2*cf2dt2+fp1_acc*dy1dVtheta1*sf1dt1+fp2_acc*dy1dVtheta2*sf2dt2)
+                ) / denom
 
-        a_long = (1/2)*(
-            2*fp1_acc*(denom_sub)*cdalf1d
-            +2*(dy2dVtheta1*K1*(w-y1)+dy1dVtheta1*K2*y2)*cdalt1
-            +2*dy1dVtheta2*K2*y2*cdalt2
-            -2*dy2dVr1*K1*w*sdalt1
-            +2*dy2dVr1*K1*y1*sdalt1
-            -2*dy1dVr1*K2*y2*sdalt1
-            -2*dy1dVr2*K2*y2*sdalt2
-            +y1vt1dy2vr1*fp1_acc*cdalf1dmt1t2
-            +y1vr2dy2vt1*fp1_acc*cdalf1dmt1t2
-            +y1vt1dy2vr1*fp1_acc*cdalmf1dt1mt2
-            -y1vr2dy2vt1*fp1_acc*cdalmf1dt1mt2
-            -y1vr2dy2vr1*fp1_acc*sdalf1dmt1t2
-            +y1vt2dy2vt1*fp1_acc*sdalf1dmt1t2
-            -y1vr2dy2vr1*fp1_acc*sdalmf1dt1mt2
-            -y1vt2dy2vt1*fp1_acc*sdalmf1dt1mt2
-            -y1vt1dy2vr1*fp2_acc*cdalf2dmt1t2
-            -y1vr2dy2vt1*fp2_acc*cdalf2dmt1t2
-            +y1vt1dy2vr1*fp2_acc*cdalmf2dmt1t2
-            -y1vr2dy2vt1*fp2_acc*cdalmf2dmt1t2
-            +y1vr2dy2vr1*fp2_acc*sdalf2dmt1t2
-            -y1vt2dy2vt1*fp2_acc*sdalf2dmt1t2
-            +y1vr2dy2vr1*fp2_acc*sdalmf2dmt1t2
-            +y1vt2dy2vt1*fp2_acc*sdalmf2dmt1t2
-            ) / denom
+            a_long = (1/2)*(
+                2*fp1_acc*(denom_sub)*cdalf1d
+                +2*(dy2dVtheta1*K1*(w-y1)+dy1dVtheta1*K2*y2)*cdalt1
+                +2*dy1dVtheta2*K2*y2*cdalt2
+                -2*dy2dVr1*K1*w*sdalt1
+                +2*dy2dVr1*K1*y1*sdalt1
+                -2*dy1dVr1*K2*y2*sdalt1
+                -2*dy1dVr2*K2*y2*sdalt2
+                +y1vt1dy2vr1*fp1_acc*cdalf1dmt1t2
+                +y1vr2dy2vt1*fp1_acc*cdalf1dmt1t2
+                +y1vt1dy2vr1*fp1_acc*cdalmf1dt1mt2
+                -y1vr2dy2vt1*fp1_acc*cdalmf1dt1mt2
+                -y1vr2dy2vr1*fp1_acc*sdalf1dmt1t2
+                +y1vt2dy2vt1*fp1_acc*sdalf1dmt1t2
+                -y1vr2dy2vr1*fp1_acc*sdalmf1dt1mt2
+                -y1vt2dy2vt1*fp1_acc*sdalmf1dt1mt2
+                -y1vt1dy2vr1*fp2_acc*cdalf2dmt1t2
+                -y1vr2dy2vt1*fp2_acc*cdalf2dmt1t2
+                +y1vt1dy2vr1*fp2_acc*cdalmf2dmt1t2
+                -y1vr2dy2vt1*fp2_acc*cdalmf2dmt1t2
+                +y1vr2dy2vr1*fp2_acc*sdalf2dmt1t2
+                -y1vt2dy2vt1*fp2_acc*sdalf2dmt1t2
+                +y1vr2dy2vr1*fp2_acc*sdalmf2dmt1t2
+                +y1vt2dy2vt1*fp2_acc*sdalmf2dmt1t2
+                ) / denom
+
+
 
         y1 = y1_
         # clip acceleration commands
