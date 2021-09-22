@@ -24,8 +24,8 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0 # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1 # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -669,6 +669,21 @@ if __name__ == '__main__':
         f13.suptitle(f'z vs C')
         f13.savefig(f'{_PATH}/13_cs.pdf')
         f13.show()
+
+        DN = [0 for _ in TIME]
+        for i in range(len(A_LAT_LONG_DENOM)):
+            if abs(A_LAT_LONG_DENOM[i]) > 1:
+                DN[i] = abs(1/A_LAT_LONG_DENOM[i])
+            else:
+                DN[i] = -1
+
+        f14 ,a14 = plt.subplots()
+        a14.plot(TIME, DN, alpha=0.7,lw=3)
+        a14.grid(True, which='minor', alpha=0.1)
+        a14.grid(True, which='major', alpha=0.3)
+        f14.suptitle(f'1/A_LAT_LONG_DENOM')
+        f14.savefig(f'{_PATH}/14_denom_inv.pdf')
+        f14.show()
 
 
         plt.show()
