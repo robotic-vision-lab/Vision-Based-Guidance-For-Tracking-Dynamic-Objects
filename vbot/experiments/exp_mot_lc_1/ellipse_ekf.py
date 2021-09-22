@@ -20,6 +20,8 @@ class EllipseEKF:
         self.old_fp2_y = None
         self.fp2_x = None
         self.fp2_y = None
+        self.old_a = None
+        self.a = None
 
         self.H = np.array([[1.0, 0.0, 0.0]])
 
@@ -28,10 +30,14 @@ class EllipseEKF:
         self.P_fp2_x = np.diag([0.0, 0.0, 0.0])
         self.P_fp2_y = np.diag([0.0, 0.0, 0.0])
 
+        self.P_a = np.diag([0.0, 0.0, 0.0])
+
         self.cov_fp1_x = np.array([[self.P_fp1_x[0,0]], [self.P_fp1_x[1,1]], [self.P_fp1_x[2,2]]])
         self.cov_fp1_y = np.array([[self.P_fp1_y[0,0]], [self.P_fp1_y[1,1]], [self.P_fp1_y[2,2]]])
         self.cov_fp2_x = np.array([[self.P_fp2_x[0,0]], [self.P_fp2_x[1,1]], [self.P_fp2_x[2,2]]])
         self.cov_fp2_y = np.array([[self.P_fp2_y[0,0]], [self.P_fp2_y[1,1]], [self.P_fp2_y[2,2]]])
+
+        self.cov_a = np.array([[self.P_a[0,0]], [self.P_a[1,1]], [self.P_a[2,2]]])
         
         self.alpha_acc = 0.1    # reciprocal of maneuver(acceleration) time constant. 1/60-lazy turn, 1/20-evasive,  1-atmospheric turbulence
         self.sigma_square = 0.1
@@ -47,7 +53,7 @@ class EllipseEKF:
         """
         return self.filter_initialized_flag
 
-    def initialize_filter(self, fp1_x, fp1_vx, fp1_y, fp1_vy, fp2_x, fp2_vx, fp2_y, fp2_vy):
+    def initialize_filter(self, fp1_x, fp1_vx, fp1_y, fp1_vy, fp2_x, fp2_vx, fp2_y, fp2_vy, a, va):
         """Initializes ellipse EKF. Meant to run only once at first.
 
         Args:
@@ -74,9 +80,13 @@ class EllipseEKF:
         self.prev_fp2_ax = 0.0
         self.prev_fp2_ay = 0.0
         
+        self.prev_a = a
+        self.prev_va = va
+        self.prev_aa = 0.0
+
         self.filter_initialized_flag = True
 
-    def add(self, fp1_x, fp1_y, fp2_x, fp2_y):
+    def add(self, fp1_x, fp1_y, fp2_x, fp2_y, a):
         """Add measurements and auxiliary data for filtering
 
         Args:
@@ -91,7 +101,7 @@ class EllipseEKF:
             fp1_vy = CAR_INITIAL_VELOCITY[1]
             fp2_vx = CAR_INITIAL_VELOCITY[0]
             fp2_vy = CAR_INITIAL_VELOCITY[1]
-            self.initialize_filter(fp1_x, fp1_vx, fp1_y, fp1_vy, fp2_x, fp2_vx, fp2_y, fp2_vy)
+            self.initialize_filter(fp1_x, fp1_vx, fp1_y, fp1_vy, fp2_x, fp2_vx, fp2_y, fp2_vy, a, 0)
             return
 
         # filter is initialized; set ready to true
@@ -102,6 +112,7 @@ class EllipseEKF:
         self.fp1_y = fp1_y
         self.fp2_x = fp2_x
         self.fp2_y = fp2_y
+        self.a = a
 
         # perform predictor and filter step
         self.preprocess()
@@ -109,6 +120,7 @@ class EllipseEKF:
         self.estimate_fp1_y()
         self.estimate_fp2_x()
         self.estimate_fp2_y()
+        self.estimate_a()
 
         # remember state estimations
         self.old_fp1_x = self.prev_fp1_x
@@ -124,6 +136,9 @@ class EllipseEKF:
         self.prev_fp2_y = self.fp2_y
         self.prev_fp2_vx = self.fp2_vx
         self.prev_fp2_vy = self.fp2_vy
+
+        self.old_a = self.prev_a
+        self.prev_a = self.a
 
 
     def preprocess(self):
@@ -274,6 +289,38 @@ class EllipseEKF:
 
         
 
+
+    def estimate_a(self):
+        # set R and y appropriate to occlusion state
+        if self.a is None:
+            self.R = 10 #100
+            self.a_measured = self.prev_a
+        else:
+            self.R = 1 #1
+            self.a_measured = self.a
+
+        
+        # form state vector
+        state_est = np.array([[self.prev_a], [self.prev_va], [self.prev_aa]])
+
+        # predict
+        state_est_pre = self.A @ state_est
+        P_pre = self.A @ self.P_a @ self.A.T + self.Q
+        S = self.H @ P_pre @ self.H.T + self.R
+        K = P_pre @ self.H.T @ LA.pinv(S)
+
+        # correct
+        state_est = state_est_pre + K @ (self.a_measured - self.H @ state_est_pre)
+        self.P_a = (np.eye(3) - K @ self.H) @ P_pre
+        self.cov_a = np.array([[self.P_a[0,0]], [self.P_a[1,1]], [self.P_a[1,1]]])
+
+        # extract estimations from state vector
+        self.a = state_est.flatten()[0]
+        self.va = state_est.flatten()[1]
+        self.aa = state_est.flatten()[2]
+
+        
+
     def get_estimated_state(self):
         """return estimated state information.
 
@@ -292,7 +339,10 @@ class EllipseEKF:
                     self.fp2_ax,
                     self.fp2_y,
                     self.fp2_vy,
-                    self.fp2_ay)
+                    self.fp2_ay,
+                    self.a,
+                    self.va,
+                    self.aa)
         else:
             return (self.prev_fp1_x,
                     self.prev_fp1_vx,
@@ -305,4 +355,7 @@ class EllipseEKF:
                     self.prev_fp2_ax,
                     self.prev_fp2_y,
                     self.prev_fp2_vy,
-                    self.prev_fp2_ay)
+                    self.prev_fp2_ay,
+                    self.prev_a,
+                    self.prev_va,
+                    self.prev_aa)

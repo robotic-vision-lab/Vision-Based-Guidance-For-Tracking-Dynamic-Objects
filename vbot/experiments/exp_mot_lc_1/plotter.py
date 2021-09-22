@@ -622,7 +622,7 @@ class EllipseDataPlotter:
 
 
     def add_axes_decor(self):
-        self.axs[0].set_title(r'$major axis$')
+        self.axs[0].set_title(r'$major\ axis$')
         self.axs[0].legend()
         self.axs[0].set(xlabel=r'$time\ (s)$', ylabel=r'$a\ (m)$')
         self.axs[0].xaxis.set_minor_locator(AutoMinorLocator())
@@ -632,7 +632,7 @@ class EllipseDataPlotter:
         [tl.set_color('black') for tl in self.axs[0].get_xticklabels()]
         [tl.set_color('black') for tl in self.axs[0].get_yticklabels()]
 
-        self.axs[1].set_title(r'$minor axis$')
+        self.axs[1].set_title(r'$minor\ axis$')
         self.axs[1].legend()
         self.axs[1].set(xlabel=r'$time\ (s)$', ylabel=r'$b\ (m)$')
         self.axs[1].xaxis.set_minor_locator(AutoMinorLocator())
@@ -642,7 +642,7 @@ class EllipseDataPlotter:
         [tl.set_color('black') for tl in self.axs[1].get_xticklabels()]
         [tl.set_color('black') for tl in self.axs[1].get_yticklabels()]
 
-        self.axs[2].set_title(r'$rotation angle$')
+        self.axs[2].set_title(r'$rotation\ angle$')
         self.axs[2].legend()
         self.axs[2].set(xlabel=r'$time\ (s)$', ylabel=r'$\phi_{ellipse}\ (^{\circ})$')
         self.axs[2].xaxis.set_minor_locator(AutoMinorLocator())

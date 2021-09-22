@@ -28,13 +28,13 @@ class Ellipse2D:
 		Returns:
 			tuple: tuple of ellipse params including focal points
 		"""
-		return (self.semi_major_axis,
-				self.semi_minor_axis,
-				self.center_coords,
-				self.rotation_angle,
-				self.focal_length,
-				self.focal_point_1,
-				self.focal_point_2)
+		return (self.semi_major_axis,		#0
+				self.semi_minor_axis,		#1
+				self.center_coords,			#2
+				self.rotation_angle,		#3
+				self.focal_length,			#4
+				self.focal_point_1,			#5
+				self.focal_point_2)			#6
 
 	def update_focal_length(self):
 		""" helper function updates focal length

@@ -24,8 +24,8 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 1 # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 0 # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -684,6 +684,22 @@ if __name__ == '__main__':
         f14.suptitle(f'1/A_LAT_LONG_DENOM')
         f14.savefig(f'{_PATH}/14_denom_inv.pdf')
         f14.show()
+
+        X = [0 for _ in TIME]
+        Y = [0 for _ in TIME]
+
+        for i in range(len(TIME)):
+            X[i] = T_1_X_MEAS[i] - T_2_X_MEAS[i]
+            Y[i] = T_1_Y_MEAS[i] - T_2_Y_MEAS[i]
+
+        f15 ,a15 = plt.subplots()
+        a15.plot(TIME, X, alpha=0.7,lw=3)
+        a15.plot(TIME, Y, alpha=0.7,lw=3)
+        a15.grid(True, which='minor', alpha=0.1)
+        a15.grid(True, which='major', alpha=0.3)
+        f15.suptitle(f'T1 - T2 xy pos')
+        f15.savefig(f'{_PATH}/15_t1_pos_meas.pdf')
+        f15.show()
 
 
         plt.show()
