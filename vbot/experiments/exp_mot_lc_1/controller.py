@@ -183,8 +183,8 @@ class Controller:
 
         y1 = y1_
         # clip acceleration commands
-        a_long_bound = 3#10
-        a_lat_bound = 3#10
+        a_long_bound = 2#10
+        a_lat_bound = 2#10
 
         a_long = self.sat(a_long, a_long_bound)
         a_lat = self.sat(a_lat, a_lat_bound)

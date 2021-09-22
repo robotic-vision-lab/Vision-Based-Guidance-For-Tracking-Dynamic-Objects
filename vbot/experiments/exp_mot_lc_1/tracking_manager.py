@@ -315,7 +315,8 @@ class TrackingManager:
         C_DES = self.exp_manager.controller.C_DES
         c1 = (SCREEN_CENTER[0]-C_DES, SCREEN_CENTER[1]-C_DES)
         c2 = (SCREEN_CENTER[0]+C_DES, SCREEN_CENTER[1]+C_DES)
-        colr = (204, 204, 204) if self.exp_manager.controller.e_c_prev >= 0 else TOMATO_BGR
+        colr = EMERALD_BGR if self.exp_manager.controller.e_c_prev >= 0 else TOMATO_BGR
+        colr2 = (204, 204, 204) if self.exp_manager.controller.e_c_prev >= 0 else TOMATO_BGR
         
         # draw over color edited frame and show it
         ellipse_img = np.zeros_like(self.exp_manager.multi_tracker.frame_color_edited, np.uint8)
@@ -356,7 +357,7 @@ class TrackingManager:
         ellipse_img = cv.rectangle(ellipse_img,
                                    tuple(map(int,c1)),
                                    tuple(map(int,c2)),
-                                   colr,
+                                   colr2,
                                    2,
                                    cv.LINE_4)
         ellipse_img = cv.circle(ellipse_img,
