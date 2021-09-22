@@ -133,7 +133,7 @@ ELLIPSE_TOLERANCE = 0.01
 ELLIPSE_COLOR = (222, 222, 222)#(66, 61, 78)
 ELLIPSE_MEAS_FP_COLOR = (1, 1, 1)#(51, 51, 51)
 ELLIPSE_ESTD_FP_COLOR = (205, 62, 50)#(51, 51, 255)
-ELLIPSE_ESTD_FP_COLOR_1 = (255, 112, 100)#(51, 51, 255)
+ELLIPSE_ESTD_FP_COLOR_1 = (100, 112, 255)#(51, 51, 255)
 ELLIPSE_OPACITY = 0.36
 ELLIPSE_MEAS_FP_RADIUS = 6
 ELLIPSE_ESTD_FP_RADIUS = 5
@@ -243,14 +243,14 @@ CAR_RADIUS = 0.1
 # K_W                     = -1000
 
 # open
-CAR_INITIAL_POSITION    = (100.0, 50.0)
-CAR_INITIAL_POSITION_2  = (100.0, 20.0)
-CAR_INITIAL_POSITION_3  = (80.0, 35.0)
+CAR_INITIAL_POSITION    = (100.0, -50.0)
+CAR_INITIAL_POSITION_2  = (100.0, -20.0)
+CAR_INITIAL_POSITION_3  = (80.0, -35.0)
 CAR_INITIAL_VELOCITY    = (22.22, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_2  = (22.22, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_3  = (22.22, 0.0)#(5.32 , 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (31.11, 0.0)#(5.31, 0.0)
 K_1                     = 1 #2	# affects a_lat more
-K_2                     = 0.07 #0.08	# affects a_long more
+K_2                     = 0.05#0.2 #0.08	# affects a_long more
 K_W                     = -100
