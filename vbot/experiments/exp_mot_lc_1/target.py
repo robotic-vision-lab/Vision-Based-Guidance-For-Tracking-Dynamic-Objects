@@ -177,8 +177,10 @@ class Target:
 
     def get_4_enclosing_points(self):
         # return inertial frame points (m)
-        x = self.measured_pos_x if self.measured_pos_x is not None else self.x_est
-        y = self.measured_pos_y if self.measured_pos_y is not None else self.y_est
+        # x = self.measured_pos_x if self.measured_pos_x is not None else self.x_est
+        # y = self.measured_pos_y if self.measured_pos_y is not None else self.y_est
+        x = self.x_est
+        y = self.y_est
 
 
         d = 4

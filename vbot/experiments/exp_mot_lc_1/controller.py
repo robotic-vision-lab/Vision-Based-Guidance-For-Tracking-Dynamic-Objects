@@ -62,7 +62,7 @@ class Controller:
         drone_alpha = atan2(drone_vel_y, drone_vel_x)
 
         # collect estimated focal point state
-        fp1_x, fp1_vx, fp1_ax, fp1_y, fp1_vy, fp1_ay, fp2_x, fp2_vx, fp2_ax, fp2_y, fp2_vy, fp2_ay = ellipse_focal_points_est_state
+        fp1_x, fp1_vx, fp1_ax, fp1_y, fp1_vy, fp1_ay, fp2_x, fp2_vx, fp2_ax, fp2_y, fp2_vy, fp2_ay, ellipse_major_axis_len, v_maj, a_maj  = ellipse_focal_points_est_state
 
         # compute r and θ for both focal points
         r1 = ((fp1_x - drone_pos_x)**2 + (fp1_y - drone_pos_y)**2)**0.5
@@ -185,8 +185,8 @@ class Controller:
 
         y1 = y1_
         # clip acceleration commands
-        a_long_bound = 1#10
-        a_lat_bound = 1#10
+        a_long_bound = 10#10
+        a_lat_bound = 10#10
 
         a_long = self.sat(a_long, a_long_bound)
         a_lat = self.sat(a_lat, a_lat_bound)
