@@ -65,38 +65,49 @@ class Controller:
         drone_alpha = atan2(drone_vel_y, drone_vel_x)
 
         # collect estimated focal point state
-        fp1_x, fp1_vx, fp1_ax, fp1_y, fp1_vy, fp1_ay, fp2_x, fp2_vx, fp2_ax, fp2_y, fp2_vy, fp2_ay, ellipse_major_axis_len, v_maj, a_maj  = ellipse_focal_points_est_state
+        fp1_x, fp1_vx, fp1_ax, fp1_y, fp1_vy, fp1_ay, fp2_x, fp2_vx, fp2_ax, fp2_y, fp2_vy, fp2_ay, ellipse_major_axis_len, v_maj, a_maj, fpm_x, fpm_vx, fpm_ax, fpm_y, fpm_vy, fpm_ay  = ellipse_focal_points_est_state
+
+        fpm_x = (fp1_x + fp2_x)/2
+        fpm_y = (fp1_y + fp2_y)/2
 
         # compute r and θ for both focal points
         r1 = ((fp1_x - drone_pos_x)**2 + (fp1_y - drone_pos_y)**2)**0.5
         r2 = ((fp2_x - drone_pos_x)**2 + (fp2_y - drone_pos_y)**2)**0.5
+        rm = ((fpm_x - drone_pos_x)**2 + (fpm_y - drone_pos_y)**2)**0.5
 
         theta1 = atan2(fp1_y - drone_pos_y, fp1_x - drone_pos_x)
         theta2 = atan2(fp2_y - drone_pos_y, fp2_x - drone_pos_x)
+        thetam = atan2(fpm_y - drone_pos_y, fpm_x - drone_pos_x)
 
         # compute focal points speed and heading for both focal points
         fp1_speed = (fp1_vx**2 + fp1_vy**2)**0.5
         fp2_speed = (fp2_vx**2 + fp2_vy**2)**0.5
+        fpm_speed = (fpm_vx**2 + fpm_vy**2)**0.5
 
         fp1_heading = atan2(fp1_vy, fp1_vx)
         fp2_heading = atan2(fp2_vy, fp2_vx)
+        fpm_heading = atan2(fpm_vy, fpm_vx)
 
         # compute acceleration magnitude and direction for both focal points
         fp1_acc = (fp1_ax**2 + fp1_ay**2)**0.5
         fp2_acc = (fp2_ax**2 + fp2_ay**2)**0.5
+        fpm_acc = (fpm_ax**2 + fpm_ay**2)**0.5
 
         fp1_delta = atan2(fp1_ay, fp1_ax)
         fp2_delta = atan2(fp2_ay, fp2_ax)
+        fpm_delta = atan2(fpm_ay, fpm_ax)
 
         # compute Vr and Vθ for both focal points
         Vr1 = fp1_speed*cos(fp1_heading - theta1) - drone_speed*cos(drone_alpha - theta1)
         Vr2 = fp2_speed*cos(fp2_heading - theta2) - drone_speed*cos(drone_alpha - theta2)
+        Vrm = fpm_speed*cos(fpm_heading - thetam) - drone_speed*cos(drone_alpha - thetam)
 
         Vtheta1 = fp1_speed*sin(fp1_heading - theta1) - drone_speed*sin(drone_alpha - theta1)
         Vtheta2 = fp2_speed*sin(fp2_heading - theta2) - drone_speed*sin(drone_alpha - theta2)
+        Vthetam = fpm_speed*sin(fpm_heading - thetam) - drone_speed*sin(drone_alpha - thetam)
 
         # compute objective function
-        y1, y2 = self.compute_objective_functions(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, ellipse_major_axis_len)
+        y1, y2 = self.compute_objective_functions(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, ellipse_major_axis_len, rm, Vrm, Vthetam)
         y1_ = y1
         # y1 = self.sat(y1, 1000)
 
@@ -419,7 +430,7 @@ class Controller:
 
 
 
-    def compute_objective_functions(self, r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, a):
+    def compute_objective_functions(self, r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, a, rm, Vrm, Vthetam):
         V1 = pow((Vtheta1**2 + Vr1**2),0.5)
         V2 = pow((Vtheta2**2 + Vr2**2),0.5)
         A1 = r1*abs(Vtheta1)*V2
@@ -430,7 +441,8 @@ class Controller:
 
         y1 = A1**2*(1+tau*V1**2) + A2**2*(1+tau*V2**2) + 2*A1*A2*pow((1+tau*(V1**2+V2**2)+tau**2*V1**2*V2**2),0.5) - 4*(a)**2*V1**2*V2**2   # sat this also
 
-        y2 = Vtheta1**2 + Vr1**2
+        # y2 = Vtheta1**2 + Vr1**2
+        y2 = Vthetam**2 + Vrm**2
         
 
         return y1, y2
