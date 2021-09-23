@@ -29,6 +29,9 @@ class Controller:
         self.C_BUFF = 10
 
         self.scz_ind_prev = 0
+
+        self.p_controller_end_time = DELTA_TIME
+        self.P_CONTROLLER_FLAG = False
         plt.ion()
 
 
@@ -100,6 +103,16 @@ class Controller:
         # compute objective function derivatives
         dy1dVr1, dy1dVtheta1, dy1dVr2, dy1dVtheta2, dy2dVr1, dy2dVtheta1 = self.compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, ellipse_major_axis_len)
 
+        # check args
+        # if self.manager.args.k1 is not None:
+        #     K_1 = self.manager.args.k1
+        # else:
+        #     K_1 = K_1
+        # if self.manager.args.k2 is not None:
+        #     K_2 = self.manager.args.k2
+        # if self.manager.args.kw is not None:
+        #     K_W = self.manager.args.kw
+
         # set gains
         K1 = K_1 if y1 >=0 else 0 #* np.sign(-Vr1)
         K2 = K_2
@@ -144,12 +157,25 @@ class Controller:
         y1vt2dy2vt1 = dy1dVtheta2*dy2dVtheta1
         denom = (denom_sub+(y1vt1dy2vr1-y1vr2dy2vt1)*ct1t2-(y1vr2dy2vr1+y1vt2dy2vt1)*st1t2)
 
+        # if not self.P_CONTROLLER_FLAG and abs(denom) < 10:
+        #     self.P_CONTROLLER_FLAG = True
+        #     self.p_controller_end_time = self.manager.simulator.time + 2.0
+        #     e_speed = fp1_speed - drone_speed
+        #     e_heading = fp1_heading - drone_alpha
+        #     a_lat = 10*e_heading
+        #     a_long = 0.2*e_speed
+        # elif self.P_CONTROLLER_FLAG and self.manager.simulator.time < self.p_controller_end_time:
+        #     e_speed = fp1_speed - drone_speed
+        #     e_heading = fp1_heading - drone_alpha
+        #     a_lat = 10*e_heading
+        #     a_long = 0.2*e_speed
         if abs(denom) < 10:
             e_speed = fp1_speed - drone_speed
             e_heading = fp1_heading - drone_alpha
-            a_lat = 1*e_speed
-            a_long = 10*e_heading
+            a_lat = 10*e_heading
+            a_long = 0.2*e_speed
         else:
+            self.P_CONTROLLER_FLAG = False
             a_lat = -(
                 (K2*y2+fp1_acc*dy2dVr1*cf1dt1+fp1_acc*dy2dVtheta1*sf1dt1)
                 *(dy1dVr1*cdalt1+dy1dVr2*cdalt2+dy1dVtheta1*sdalt1+dy1dVtheta2*sdalt2)
