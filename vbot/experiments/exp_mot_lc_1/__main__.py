@@ -672,7 +672,7 @@ if __name__ == '__main__':
 
         DN = [0 for _ in TIME]
         for i in range(len(A_LAT_LONG_DENOM)):
-            if abs(A_LAT_LONG_DENOM[i]) > 1:
+            if abs(A_LAT_LONG_DENOM[i]) > 10:
                 DN[i] = abs(1/A_LAT_LONG_DENOM[i])
             else:
                 DN[i] = -1

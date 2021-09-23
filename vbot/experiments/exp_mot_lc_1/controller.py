@@ -144,9 +144,11 @@ class Controller:
         y1vt2dy2vt1 = dy1dVtheta2*dy2dVtheta1
         denom = (denom_sub+(y1vt1dy2vr1-y1vr2dy2vt1)*ct1t2-(y1vr2dy2vr1+y1vt2dy2vt1)*st1t2)
 
-        if abs(denom) < 1:
-            a_lat = 0
-            a_long = 0 
+        if abs(denom) < 10:
+            e_speed = fp1_speed - drone_speed
+            e_heading = fp1_heading - drone_alpha
+            a_lat = 1*e_speed
+            a_long = 10*e_heading
         else:
             a_lat = -(
                 (K2*y2+fp1_acc*dy2dVr1*cf1dt1+fp1_acc*dy2dVtheta1*sf1dt1)
