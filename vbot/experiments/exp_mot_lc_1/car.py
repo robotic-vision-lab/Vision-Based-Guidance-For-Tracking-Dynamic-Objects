@@ -103,39 +103,45 @@ class Car(pygame.sprite.Sprite):
             self.angle = atan2(cos(2*OMEGA*t*DIRECTION+OFFSET), - sin(OMEGA*t*DIRECTION+OFFSET))
         
         elif self.traj == LANE_CHANGE_TRAJECTORY_1 or self.traj == LANE_CHANGE_TRAJECTORY_2:
-            _FLAG = 1 if self.traj == LANE_CHANGE_TRAJECTORY_1 else -1.5
+            _FLAG = 1.125 if self.traj == LANE_CHANGE_TRAJECTORY_1 else -0.75
             t = self.simulator.time
-            if 5 <= t < 7:
+            if 35 <= t < 37:
                 self.acceleration = pygame.Vector2(0, _FLAG* -1)
                 self.velocity += self.acceleration * self.simulator.dt
-            elif 7 <= t < 9:
+            elif 37 <= t < 39:
                 self.acceleration = pygame.Vector2(0, _FLAG* +1)
                 self.velocity += self.acceleration * self.simulator.dt
 
-            elif 15 <= t < 17:
+            # elif 15 <= t < 17:
+            #     self.acceleration = pygame.Vector2(0, _FLAG* +1)
+            #     self.velocity += self.acceleration * self.simulator.dt
+            # elif 17 <= t < 19:
+            #     self.acceleration = pygame.Vector2(0, _FLAG* -1)
+            #     self.velocity += self.acceleration * self.simulator.dt
+            elif 45 <= t < 47:
                 self.acceleration = pygame.Vector2(0, _FLAG* +1)
                 self.velocity += self.acceleration * self.simulator.dt
-            elif 17 <= t < 19:
+            elif 47 <= t < 49:
                 self.acceleration = pygame.Vector2(0, _FLAG* -1)
                 self.velocity += self.acceleration * self.simulator.dt
 
-            elif 25 <= t < 27:
-                self.acceleration = pygame.Vector2(0, _FLAG* -1)
-                self.velocity += self.acceleration * self.simulator.dt
-            elif 27 <= t < 29:
-                self.acceleration = pygame.Vector2(0, _FLAG* +1)
-                self.velocity += self.acceleration * self.simulator.dt
+            # elif 25 <= t < 27:
+            #     self.acceleration = pygame.Vector2(0, _FLAG* -1)
+            #     self.velocity += self.acceleration * self.simulator.dt
+            # elif 27 <= t < 29:
+            #     self.acceleration = pygame.Vector2(0, _FLAG* +1)
+            #     self.velocity += self.acceleration * self.simulator.dt
 
-            elif 31 <= t < 33:
-                self.acceleration = pygame.Vector2(0, _FLAG* -1)
-                self.velocity += self.acceleration * self.simulator.dt
-            elif 33 <= t < 35:
-                self.acceleration = pygame.Vector2(0, _FLAG* +1)
-                self.velocity += self.acceleration * self.simulator.dt
+            # elif 31 <= t < 33:
+            #     self.acceleration = pygame.Vector2(0, _FLAG* -1)
+            #     self.velocity += self.acceleration * self.simulator.dt
+            # elif 33 <= t < 35:
+            #     self.acceleration = pygame.Vector2(0, _FLAG* +1)
+            #     self.velocity += self.acceleration * self.simulator.dt
 
-            elif 39 <= t < 55:
-                self.acceleration = pygame.Vector2(0, _FLAG* 0)
-                self.velocity = deepcopy(self.initial_velocity)
+            # elif 39 <= t < 55:
+            #     self.acceleration = pygame.Vector2(0, _FLAG* 0)
+            #     self.velocity = deepcopy(self.initial_velocity)
 
             elif 59 <= t < 61:
                 self.acceleration = pygame.Vector2(0, _FLAG* +1)
@@ -151,12 +157,12 @@ class Car(pygame.sprite.Sprite):
                 self.acceleration = pygame.Vector2(0, _FLAG* +1)
                 self.velocity += self.acceleration * self.simulator.dt
 
-            elif 115 <= t < 117:
-                self.acceleration = pygame.Vector2(0, _FLAG* +1)
-                self.velocity += self.acceleration * self.simulator.dt
-            elif 117 <= t < 119:
-                self.acceleration = pygame.Vector2(0, _FLAG* -1)
-                self.velocity += self.acceleration * self.simulator.dt
+            # elif 115 <= t < 117:
+            #     self.acceleration = pygame.Vector2(0, _FLAG* +1)
+            #     self.velocity += self.acceleration * self.simulator.dt
+            # elif 117 <= t < 119:
+            #     self.acceleration = pygame.Vector2(0, _FLAG* -1)
+            #     self.velocity += self.acceleration * self.simulator.dt
 
             else:
                 self.acceleration = pygame.Vector2(0, 0)
