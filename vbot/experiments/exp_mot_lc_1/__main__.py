@@ -24,8 +24,8 @@ if __name__ == '__main__':
     USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
     DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0 # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0  # pylint: disable=bad-whitespace
+    RUN_TRACK_PLOT = 1 # pylint: disable=bad-whitespace
 
     RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
 
@@ -672,7 +672,7 @@ if __name__ == '__main__':
 
         DN = [0 for _ in TIME]
         for i in range(len(A_LAT_LONG_DENOM)):
-            if abs(A_LAT_LONG_DENOM[i]) > 1:
+            if abs(A_LAT_LONG_DENOM[i]) > 10:
                 DN[i] = abs(1/A_LAT_LONG_DENOM[i])
             else:
                 DN[i] = -1
@@ -700,6 +700,32 @@ if __name__ == '__main__':
         f15.suptitle(f'T1 - T2 xy pos')
         f15.savefig(f'{_PATH}/15_t1_pos_meas.pdf')
         f15.show()
+
+        f16 ,a16 = plt.subplots()
+        # a16.plot(TIME, FP_1_X, alpha=0.7,lw=3)
+        a16.plot(TIME, FP_1_Y, alpha=0.7,lw=3)
+        a16.plot(TIME, FP_2_Y, alpha=0.7,lw=3)
+        a16.grid(True, which='minor', alpha=0.1)
+        a16.grid(True, which='major', alpha=0.3)
+        f16.suptitle(f'FP_1')
+        f16.savefig(f'{_PATH}/16_fp_1.pdf')
+        f16.show()
+
+        MID_X = [0 for _ in TIME]
+        MID_Y = [0 for _ in TIME]
+
+        for i in range(len(TIME)):
+            MID_X[i] = (FP_1_X[i] + FP_2_X[i])/2
+            MID_Y[i] = (FP_1_Y[i] + FP_2_Y[i])/2
+
+        f17 ,a17 = plt.subplots()
+        # a17.plot(TIME, MID_X, alpha=0.7,lw=3)
+        a17.plot(TIME, MID_Y, alpha=0.7,lw=3)
+        a17.grid(True, which='minor', alpha=0.1)
+        a17.grid(True, which='major', alpha=0.3)
+        f17.suptitle(f'FP_MID')
+        f17.savefig(f'{_PATH}/17_fp_mid.pdf')
+        f17.show()
 
 
         plt.show()
