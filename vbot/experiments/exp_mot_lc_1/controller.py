@@ -101,7 +101,7 @@ class Controller:
         dy1dVr1, dy1dVtheta1, dy1dVr2, dy1dVtheta2, dy2dVr1, dy2dVtheta1 = self.compute_y1_y2_derivative(r1, r2, Vr1, Vr2, Vtheta1, Vtheta2, ellipse_major_axis_len)
 
         # set gains
-        K1 = K_1 #* np.sign(-Vr1)
+        K1 = K_1 if y1 >=0 else 0 #* np.sign(-Vr1)
         K2 = K_2
         w = K_W
 

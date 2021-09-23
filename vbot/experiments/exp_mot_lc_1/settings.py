@@ -252,5 +252,5 @@ CAR_INITIAL_VELOCITY_3  = (50*1.6*1000/3600, 0.0)#(5.32 , 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (70*1.6*1000/3600, 0.0)#(5.31, 0.0)
 K_1                     = 1 #2	# affects a_lat more
-K_2                     = 0.1#0.2 #0.08	# affects a_long more
-K_W                     = -100
+K_2                     = 0.11#0.2 #0.08	# affects a_long more
+K_W                     = 0
