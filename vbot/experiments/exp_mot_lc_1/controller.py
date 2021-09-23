@@ -89,12 +89,12 @@ class Controller:
         fpm_heading = atan2(fpm_vy, fpm_vx)
 
         # compute acceleration magnitude and direction for both focal points
-        fp1_acc = (fp1_ax**2 + fp1_ay**2)**0.5
-        fp2_acc = (fp2_ax**2 + fp2_ay**2)**0.5
+        fp1_acc = 0#(fp1_ax**2 + fp1_ay**2)**0.5
+        fp2_acc = 0#(fp2_ax**2 + fp2_ay**2)**0.5
         fpm_acc = (fpm_ax**2 + fpm_ay**2)**0.5
 
-        fp1_delta = atan2(fp1_ay, fp1_ax)
-        fp2_delta = atan2(fp2_ay, fp2_ax)
+        fp1_delta = 0#atan2(fp1_ay, fp1_ax)
+        fp2_delta = 0#atan2(fp2_ay, fp2_ax)
         fpm_delta = atan2(fpm_ay, fpm_ax)
 
         # compute Vr and Vθ for both focal points
@@ -441,8 +441,9 @@ class Controller:
 
         y1 = A1**2*(1+tau*V1**2) + A2**2*(1+tau*V2**2) + 2*A1*A2*pow((1+tau*(V1**2+V2**2)+tau**2*V1**2*V2**2),0.5) - 4*(a)**2*V1**2*V2**2   # sat this also
 
-        # y2 = Vtheta1**2 + Vr1**2
-        y2 = Vthetam**2 + Vrm**2
+        y2 = Vtheta1**2 + Vr1**2
+        # y2 = Vthetam**2 + Vrm**2
+
         
 
         return y1, y2
