@@ -11,23 +11,27 @@ from .settings import *
 
 from .my_imports import _prep_temp_folder, bf
 from .plotter import *
-
+from .arg_parser import VBOTParser
 
 if __name__ == '__main__':
+    ARG_PARSER = VBOTParser()
+    ARGS = ARG_PARSER.args
+    print(ARGS)
 
-    EXPERIMENT_SAVE_MODE_ON = 0 # pylint: disable=bad-whitespace
-    WRITE_PLOT = 1  # pylint: disable=bad-whitespace
-    CONTROL_ON = 1  # pylint: disable=bad-whitespace
-    TRACKER_ON = 1  # pylint: disable=bad-whitespace
-    TRACKER_DISPLAY_ON = 1  # pylint: disable=bad-whitespace
-    USE_TRUE_KINEMATICS = 0  # pylint: disable=bad-whitespace
-    USE_REAL_CLOCK = 0  # pylint: disable=bad-whitespace
-    DRAW_OCCLUSION_BARS = 0  # pylint: disable=bad-whitespace
+    EXPERIMENT_SAVE_MODE_ON = 0
+    WRITE_PLOT = 1 
+    CONTROL_ON = 1 
+    TRACKER_ON = 1 
+    TRACKER_DISPLAY_ON = 1 
+    USE_TRUE_KINEMATICS = 0 
+    USE_REAL_CLOCK = 0 
+    DRAW_OCCLUSION_BARS = 0 
 
-    RUN_EXPERIMENT = 1  # pylint: disable=bad-whitespace
-    RUN_TRACK_PLOT = 0 # pylint: disable=bad-whitespace
+    RUN_EXPERIMENT = 0 if ARGS.norun else 1
+    RUN_TRACK_PLOT = 1 if ARGS.plot else 0
 
-    RUN_VIDEO_WRITER = 0  # pylint: disable=bad-whitespace
+    RUN_VIDEO_WRITER = 0 
+
 
     if RUN_EXPERIMENT:
         EXPERIMENT_MANAGER = ExperimentManager(save_on=EXPERIMENT_SAVE_MODE_ON,
@@ -37,7 +41,8 @@ if __name__ == '__main__':
                                                tracker_display_on=TRACKER_DISPLAY_ON,
                                                use_true_kin=USE_TRUE_KINEMATICS,
                                                use_real_clock=USE_REAL_CLOCK,
-                                               draw_occlusion_bars=DRAW_OCCLUSION_BARS)
+                                               draw_occlusion_bars=DRAW_OCCLUSION_BARS,
+                                               args=ARGS)
         print(bf(f'\nExperiment started. [{time.strftime("%H:%M:%S")}]\n'))
         EXPERIMENT_MANAGER.run()
 
@@ -1348,8 +1353,8 @@ if __name__ == '__main__':
         #     f10.show()
 
 
-
-        plt.show()
+        if not ARGS.batch:
+            plt.show()
 
     if RUN_VIDEO_WRITER:
         EXPERIMENT_MANAGER = ExperimentManager()
