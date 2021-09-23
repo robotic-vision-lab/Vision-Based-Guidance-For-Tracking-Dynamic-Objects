@@ -49,7 +49,8 @@ class ExperimentManager:
             tracker_display_on=False,
             use_true_kin=True,
             use_real_clock=True,
-            draw_occlusion_bars=False):
+            draw_occlusion_bars=False,
+            args=None):
 
         # save experiment options
         self.save_on = save_on
@@ -60,6 +61,8 @@ class ExperimentManager:
         self.use_true_kin = use_true_kin
         self.use_real_clock = use_real_clock
         self.draw_occlusion_bars = draw_occlusion_bars
+        self.args = args
+        self.final_time = FINAL_TIME
 
         # initialize target ID
         self.current_id = 0
@@ -382,7 +385,9 @@ class ExperimentManager:
             self.simulator.time += self.simulator.dt
 
             # check for final time
-            if self.simulator.time > FINAL_TIME:
+            if self.args.tf is not None:
+                self.final_time = self.args.tf
+            if self.simulator.time > self.final_time:
                 self.simulator.running = False
 
             # handle events on simulator
