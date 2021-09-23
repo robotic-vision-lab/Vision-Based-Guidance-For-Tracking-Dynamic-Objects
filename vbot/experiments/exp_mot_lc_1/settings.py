@@ -244,8 +244,8 @@ CAR_RADIUS = 0.1
 
 # open
 CAR_INITIAL_POSITION    = (100.0, -160.0)
-CAR_INITIAL_POSITION_2  = (100.0, -140.0)
-CAR_INITIAL_POSITION_3  = (100.0, -140.0)
+CAR_INITIAL_POSITION_2  = (100.0, -130.0)
+CAR_INITIAL_POSITION_3  = (80.0, -145.0)
 CAR_INITIAL_VELOCITY    = (50*1.6*1000/3600, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_2  = (50*1.6*1000/3600, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_3  = (50*1.6*1000/3600, 0.0)#(5.32 , 0.0)
@@ -254,3 +254,5 @@ DRONE_INITIAL_VELOCITY  = (70*1.6*1000/3600, 0.0)#(5.31, 0.0)
 K_1                     = 1 #2	# affects a_lat more
 K_2                     = 0.11#0.2 #0.08	# affects a_long more
 K_W                     = 0
+
+
