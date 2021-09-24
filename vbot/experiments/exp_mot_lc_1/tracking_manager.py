@@ -421,10 +421,11 @@ class TrackingManager:
         # collect ellipse focal points computed from measured target points 
         fp1_x, fp1_y = self.ellipse_params_meas[5]
         fp2_x, fp2_y = self.ellipse_params_meas[6]
+        fpmid_x, fpmid_y = self.ellipse_params_meas[2]
         major_axis = self.ellipse_params_meas[0]
 
         # filter focal points
-        self.ellipse.EKF.add(fp1_x, fp1_y, fp2_x, fp2_y, major_axis)
+        self.ellipse.EKF.add(fp1_x, fp1_y, fp2_x, fp2_y, major_axis, fpmid_x, fpmid_y)
 
         # collect estimated state of focal points
         self.ellipse_params_est = self.ellipse.EKF.get_estimated_state()
