@@ -16,7 +16,6 @@ from .arg_parser import VBOTParser
 if __name__ == '__main__':
     ARG_PARSER = VBOTParser()
     ARGS = ARG_PARSER.args
-    print(ARGS)
 
     EXPERIMENT_SAVE_MODE_ON = 0
     WRITE_PLOT = 1 
@@ -671,23 +670,23 @@ if __name__ == '__main__':
         a13.grid(True, which='minor', alpha=0.1)
         a13.grid(True, which='major', alpha=0.3)
         a13.axis('equal')
-        f13.suptitle(f'z vs C')
+        f13.suptitle(f'C vs S')
         f13.savefig(f'{_PATH}/13_cs.pdf')
         f13.show()
 
         DN = [0 for _ in TIME]
         for i in range(len(A_LAT_LONG_DENOM)):
-            if abs(A_LAT_LONG_DENOM[i]) > 10:
-                DN[i] = abs(1/A_LAT_LONG_DENOM[i])
+            if abs(A_LAT_LONG_DENOM[i]) >= 10:
+                DN[i] = 0#abs(1/A_LAT_LONG_DENOM[i])
             else:
-                DN[i] = -1
+                DN[i] = 1
 
         f14 ,a14 = plt.subplots()
         a14.plot(TIME, DN, alpha=0.7,lw=3)
         a14.grid(True, which='minor', alpha=0.1)
         a14.grid(True, which='major', alpha=0.3)
-        f14.suptitle(f'1/A_LAT_LONG_DENOM')
-        f14.savefig(f'{_PATH}/14_denom_inv.pdf')
+        f14.suptitle(f'A_LAT_LONG_DENOM < 10')
+        f14.savefig(f'{_PATH}/14_denom_10.pdf')
         f14.show()
 
         X = [0 for _ in TIME]
