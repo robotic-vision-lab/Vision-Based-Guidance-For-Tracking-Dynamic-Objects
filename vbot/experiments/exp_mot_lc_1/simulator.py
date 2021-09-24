@@ -237,12 +237,13 @@ class Simulator:
 
         # draw drone altitude info
         if not CLEAR_TOP:
-            alt_str = f'car loc - {self.car.rect.center}, Alt - {self.camera.altitude:0.2f}m, fac - {self.alt_change_fac:0.4f}, pxm - {self.pxm_fac:0.4f}'
+            # alt_str = f'car loc - {self.car.rect.center}, Alt - {self.camera.altitude:0.2f}m, fac - {self.alt_change_fac:0.4f}, pxm - {self.pxm_fac:0.4f}'
+            alt_str = f'Alt - {self.camera.altitude:0.2f}m, pxm - {self.pxm_fac:0.4f}'
             alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
             self.SCREEN_SURFACE.blit(alt_surf, (15, 15))
-            alt_str = f'drone loc - {self.camera.rect.center}, FOV - {WIDTH * self.pxm_fac:0.2f}m x {HEIGHT * self.pxm_fac:0.2f}m'
-            alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
-            self.SCREEN_SURFACE.blit(alt_surf, (15, 35))
+            # alt_str = f'drone loc - {self.camera.rect.center}, FOV - {WIDTH * self.pxm_fac:0.2f}m x {HEIGHT * self.pxm_fac:0.2f}m'
+            # alt_surf = self.time_font.render(alt_str, True, TIME_COLOR)
+            # self.SCREEN_SURFACE.blit(alt_surf, (15, 35))
         
         # draw drone cross hair
         self.drone_sprites.draw(self.SCREEN_SURFACE)
