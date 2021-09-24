@@ -915,7 +915,7 @@ class MultiTracker:
 
 
         # display information 
-        # self.update_display()
+        self.update_display()
 
         # handle posterity - frame
         self.frame_old_gray = self.frame_new_gray
