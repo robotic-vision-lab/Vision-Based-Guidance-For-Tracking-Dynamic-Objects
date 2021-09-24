@@ -168,23 +168,29 @@ class Controller:
         y1vt2dy2vt1 = dy1dVtheta2*dy2dVtheta1
         denom = (denom_sub+(y1vt1dy2vr1-y1vr2dy2vt1)*ct1t2-(y1vr2dy2vr1+y1vt2dy2vt1)*st1t2)
 
-        # if not self.P_CONTROLLER_FLAG and abs(denom) < 10:
-        #     self.P_CONTROLLER_FLAG = True
-        #     self.p_controller_end_time = self.manager.simulator.time + 2.0
-        #     e_speed = fp1_speed - drone_speed
-        #     e_heading = fp1_heading - drone_alpha
-        #     a_lat = 10*e_heading
-        #     a_long = 0.2*e_speed
-        # elif self.P_CONTROLLER_FLAG and self.manager.simulator.time < self.p_controller_end_time:
-        #     e_speed = fp1_speed - drone_speed
-        #     e_heading = fp1_heading - drone_alpha
-        #     a_lat = 10*e_heading
-        #     a_long = 0.2*e_speed
-        if abs(denom) < 10:
+        if not self.P_CONTROLLER_FLAG and abs(denom) < 10:
+            self.P_CONTROLLER_FLAG = True
+            self.p_controller_end_time = self.manager.simulator.time + 2.0
             e_speed = fp1_speed - drone_speed
             e_heading = fp1_heading - drone_alpha
             a_lat = 10*e_heading
             a_long = 0.2*e_speed
+        elif self.P_CONTROLLER_FLAG and self.manager.simulator.time < self.p_controller_end_time:
+            e_speed = fp1_speed - drone_speed
+            e_heading = fp1_heading - drone_alpha
+            a_lat = 10*e_heading
+            a_long = 0.2*e_speed
+        elif Vr1 > 0:
+            e_speed = fp1_speed - drone_speed
+            e_heading = fp1_heading - drone_alpha
+            a_lat = 10*e_heading
+            a_long = 0.2*e_speed
+
+        # if abs(denom) < 10:
+        #     e_speed = fp1_speed - drone_speed
+        #     e_heading = fp1_heading - drone_alpha
+        #     a_lat = 10*e_heading
+        #     a_long = 0.2*e_speed
         else:
             self.P_CONTROLLER_FLAG = False
             a_lat = -(
@@ -259,13 +265,13 @@ class Controller:
         C = C_
         Z_W = self.manager.simulator.camera.altitude
 
-        KP_s = 0.24 #0.03
+        KP_s = 0.027#0.24 #0.03
         KP_c = 0.2#0.35#0.5#1#0.06
-        KP_z = 0.14#0.1
+        KP_z = 0.007#0.14#0.1
 
-        KD_s = 0.16#0.2 #0.006
+        KD_s = 0.018#0.16#0.2 #0.006
         KD_c = 0.1625#0.28435#0.40625#0.8125#2/3#0.03
-        KD_z = 0.07#0.05
+        KD_z = 0.0035#0.07#0.05
 
         # KI_s = 0.5
         # KI_c = 3
@@ -273,14 +279,14 @@ class Controller:
 
         # X_d = WIDTH*0.3
         # Y_d = WIDTH*0.3
-        self.C_DES = HEIGHT*((100+Z_W)/1000)
+        self.C_DES = HEIGHT*((250+Z_W)/2000)
         # self.C_DES = HEIGHT*0.23
         S_d = S_DES
         C_d = self.C_DES if min(0, self.C_DES - C) >= 0 else self.C_DES - self.C_BUFF
         Z_d = Z_DES
 
         # e_s = S_d - S 
-        e_c = min(0, C_d - C)
+        e_c = 0#min(0, C_d - C)
         e_Z_W = Z_d - Z_W if abs(Z_d - Z_W) > Z_DELTA else 0.0
 
         if e_c==0.0 and e_Z_W==0.0:
@@ -333,7 +339,8 @@ class Controller:
 
         # S is within bound, C is inside, Z is inbounds -> drive vz to 0
         if self.S_GOOD_FLAG and e_c==0.0 and e_Z_W==0.0:
-            az_z = 6*KP_z*(self.current_alt - Z_W) + 6*KD_z *(-vz)
+            # az_z = 75*KP_z*(self.current_alt - Z_W) + 75*KD_z *(-vz)
+            az_z = 0.84*(self.current_alt - Z_W) + 0.42 *(-vz)
 
     
 
@@ -425,7 +432,7 @@ class Controller:
                 denom,                          # 47 a_lat_long_denom
             ])
 
-        return ax, ay, 0
+        return ax, ay, az
 
 
 
