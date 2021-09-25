@@ -676,7 +676,7 @@ if __name__ == '__main__':
 
         DN = [0 for _ in TIME]
         for i in range(len(A_LAT_LONG_DENOM)):
-            if abs(A_LAT_LONG_DENOM[i]) >= 10:
+            if abs(A_LAT_LONG_DENOM[i]) >= 1000:
                 DN[i] = 0#abs(1/A_LAT_LONG_DENOM[i])
             else:
                 DN[i] = 1
@@ -730,6 +730,70 @@ if __name__ == '__main__':
         f17.suptitle(f'FP_MID')
         f17.savefig(f'{_PATH}/17_fp_mid.pdf')
         f17.show()
+
+        from math import sin, cos, degrees
+        DIFF_ = [0 for _ in TIME]
+        DIFF_A = [0 for _ in TIME]
+        DIFF_C = [0 for _ in TIME]
+        DIFF_S = [0 for _ in TIME]
+        for i in range(len(TIME)):
+            DIFF_[i] = (degrees(atan2(sin(radians(DRONE_ALPHA[i]-FP_1_THETA[i])), cos(radians(DRONE_ALPHA[i]-FP_1_THETA[i])))))
+            DIFF_A[i] = abs(degrees(atan2(sin(radians(DRONE_ALPHA[i]-FP_1_THETA[i])), cos(radians(DRONE_ALPHA[i]-FP_1_THETA[i])))))
+            DIFF_C[i] = (cos(atan2(sin(radians(DRONE_ALPHA[i]-FP_1_THETA[i])), cos(radians(DRONE_ALPHA[i]-FP_1_THETA[i])))))
+            DIFF_S[i] = (sin(atan2(sin(radians(DRONE_ALPHA[i]-FP_1_THETA[i])), cos(radians(DRONE_ALPHA[i]-FP_1_THETA[i])))))
+        f18 ,a18 = plt.subplots()
+        # a18.plot(TIME, MID_X, alpha=0.7,lw=3)
+        a18.plot(TIME, DRONE_ALPHA, alpha=0.7,lw=2, label=r'$\alpha$')
+        a18.plot(TIME, FP_1_THETA, alpha=0.7,lw=2, label=r'$\theta_1$')
+        a18.plot(TIME, DIFF_, alpha=0.7,lw=3, label=r'$\alpha - \theta_1$', ls='--')
+        a18.plot(TIME, DIFF_A, alpha=0.7,lw=3, label=r'$\vert \alpha - \theta_1 \vert$')
+        a18.plot(TIME, DIFF_C, alpha=0.7,lw=3, label=r'$cos(\alpha - \theta_1)$')
+        a18.plot(TIME, DIFF_S, alpha=0.7,lw=3, label=r'$sin(\alpha - \theta_1)$')
+        a18.legend()
+        a18.grid(True, which='minor', alpha=0.1)
+        a18.grid(True, which='major', alpha=0.3)
+        f18.suptitle(r'$\alpha - \theta_1$')
+        f18.savefig(f'{_PATH}/18_alpha_theta.pdf')
+        f18.show()
+
+        DIFF_ = [0 for _ in TIME]
+        DIFF_A = [0 for _ in TIME]
+        DIFF_C = [0 for _ in TIME]
+        DIFF_S = [0 for _ in TIME]
+        for i in range(len(TIME)):
+            DIFF_[i] = (degrees(atan2(sin(radians(-DRONE_ALPHA[i]+FP_1_THETA[i])), cos(radians(-DRONE_ALPHA[i]+FP_1_THETA[i])))))
+            DIFF_A[i] = abs(degrees(atan2(sin(radians(-DRONE_ALPHA[i]+FP_1_THETA[i])), cos(radians(-DRONE_ALPHA[i]+FP_1_THETA[i])))))
+            DIFF_C[i] = (cos(atan2(sin(radians(-DRONE_ALPHA[i]+FP_1_THETA[i])), cos(radians(-DRONE_ALPHA[i]+FP_1_THETA[i])))))
+            DIFF_S[i] = (sin(atan2(sin(radians(-DRONE_ALPHA[i]+FP_1_THETA[i])), cos(radians(-DRONE_ALPHA[i]+FP_1_THETA[i])))))
+        f19 ,a19 = plt.subplots()
+        # a19.plot(TIME, MID_X, alpha=0.7,lw=3)
+        a19.plot(TIME, DRONE_ALPHA, alpha=0.7,lw=2, label=r'$\alpha$')
+        a19.plot(TIME, FP_1_THETA, alpha=0.7,lw=2, label=r'$\theta_1$')
+        a19.plot(TIME, DIFF_, alpha=0.7,lw=3, label=r'$\theta_1 - \alpha$', ls='--')
+        a19.plot(TIME, DIFF_A, alpha=0.7,lw=3, label=r'$\vert \theta_1 - \alpha \vert$')
+        a19.plot(TIME, DIFF_C, alpha=0.7,lw=3, label=r'$cos(\theta_1 - \alpha)$')
+        a19.plot(TIME, DIFF_S, alpha=0.7,lw=3, label=r'$sin(\theta_1 - \alpha)$')
+        a19.legend()
+        a19.grid(True, which='minor', alpha=0.1)
+        a19.grid(True, which='major', alpha=0.3)
+        f19.suptitle(r'$\theta_1 - \alpha$')
+        f19.savefig(f'{_PATH}/19_theta_alpha.pdf')
+        f19.show()
+
+        DIFF_ = [0 for _ in TIME]
+        for i in range(len(TIME)):
+            DIFF_[i] = (degrees(atan2(sin(radians(-DRONE_ALPHA[i]+FP_1_HEADING[i])), cos(radians(-DRONE_ALPHA[i]+FP_1_HEADING[i])))))
+        f20 ,a20 = plt.subplots()
+        # a20.plot(TIME, MID_X, alpha=0.7,lw=3)
+        a20.plot(TIME, DRONE_ALPHA, alpha=0.7,lw=2, label=r'$\alpha$')
+        a20.plot(TIME, FP_1_HEADING, alpha=0.7,lw=2, label=r'$\beta_{fp_1}$')
+        a20.plot(TIME, DIFF_, alpha=0.7,lw=3, label=r'$\beta_{fp_1} - \alpha$')
+        a20.legend()
+        a20.grid(True, which='minor', alpha=0.1)
+        a20.grid(True, which='major', alpha=0.3)
+        f20.suptitle(r'$\beta_{fp_1} - \alpha$')
+        f20.savefig(f'{_PATH}/20_beta_alpha.pdf')
+        f20.show()
 
 
         plt.show()
