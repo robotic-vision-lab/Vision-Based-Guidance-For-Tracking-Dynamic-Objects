@@ -1446,7 +1446,7 @@ class Traj3DDataPlotter:
         # save and show figure
         self.fig.tight_layout()
         # self.fig.subplots_adjust(left=0.1, bottom=0.12, right=0.94, top=0.94)
-        # self.fig.savefig(f'{self.save_path}/6_traj_3Dworld.pdf')
+        self.fig.savefig(f'{self.save_path}/5_traj_3Dworld.pdf')
         self.fig.show()
 
 
