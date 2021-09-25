@@ -318,96 +318,96 @@ class TrackingManager:
         colr = EMERALD_BGR if self.exp_manager.controller.e_c_prev >= 0 else TOMATO_BGR
         colr2 = (204,204,204) if self.exp_manager.controller.e_c_prev >= 0 else TOMATO_BGR
         
-        # draw over color edited frame and show it
-        ellipse_img = np.zeros_like(self.exp_manager.multi_tracker.frame_color_edited, np.uint8)
+        # # draw over color edited frame and show it
+        # ellipse_img = np.zeros_like(self.exp_manager.multi_tracker.frame_color_edited, np.uint8)
 
         
-        # draw axis aligned bounding box
-        ellipse_img = cv.rectangle(ellipse_img,
-                                   tuple(map(int,self.p1)),
-                                   tuple(map(int,self.p2)),
-                                   (217, 232, 212),
-                                   2,
-                                   cv.LINE_4)
-        # draw axis aligned bounding box min max points
-        ellipse_img = cv.circle(ellipse_img,
-                                tuple(map(int,self.p1)),
-                                radius=3,
-                                color=(255, 51, 51),
-                                thickness=cv.FILLED,
-                                lineType=cv.LINE_8)
-        ellipse_img = cv.circle(ellipse_img,
-                                tuple(map(int,self.p2)),
-                                radius=3,
-                                color=(51, 51, 255),
-                                thickness=cv.FILLED,
-                                lineType=cv.LINE_8)
+        # # draw axis aligned bounding box
+        # ellipse_img = cv.rectangle(ellipse_img,
+        #                            tuple(map(int,self.p1)),
+        #                            tuple(map(int,self.p2)),
+        #                            (217, 232, 212),
+        #                            2,
+        #                            cv.LINE_4)
+        # # draw axis aligned bounding box min max points
+        # ellipse_img = cv.circle(ellipse_img,
+        #                         tuple(map(int,self.p1)),
+        #                         radius=3,
+        #                         color=(255, 51, 51),
+        #                         thickness=cv.FILLED,
+        #                         lineType=cv.LINE_8)
+        # ellipse_img = cv.circle(ellipse_img,
+        #                         tuple(map(int,self.p2)),
+        #                         radius=3,
+        #                         color=(51, 51, 255),
+        #                         thickness=cv.FILLED,
+        #                         lineType=cv.LINE_8)
 
-        # draw filled ellipse
-        ellipse_img = cv.ellipse(img=ellipse_img,
-                                 center=tuple(map(int,ellipse_center)),
-                                 axes=ellipse_semi_axes,
-                                 angle=-degrees(ellipse_rotation_angle),
-                                 startAngle=0,
-                                 endAngle=360,
-                                 color=ELLIPSE_COLOR,
-                                 thickness=cv.FILLED,
-                                 lineType=cv.LINE_8)
-        # draw C boundary
-        ellipse_img = cv.rectangle(ellipse_img,
-                                   tuple(map(int,c1)),
-                                   tuple(map(int,c2)),
-                                   colr2,
-                                   2,
-                                   cv.LINE_4)
-        ellipse_img = cv.circle(ellipse_img,
-                                tuple(map(int,self.pmid)),
-                                radius=4,
-                                color=colr,
-                                thickness=cv.FILLED,
-                                lineType=cv.LINE_AA)    
-        # draw measured focal points
-        ellipse_img = cv.circle(ellipse_img,
-                                tuple(map(int,ellipse_focal_point_1)),
-                                radius=ELLIPSE_MEAS_FP_RADIUS,
-                                color=ELLIPSE_MEAS_FP_COLOR,
-                                thickness=cv.FILLED,
-                                lineType=cv.LINE_AA)
-        ellipse_img = cv.circle(ellipse_img,
-                                tuple(map(int,ellipse_focal_point_2)),
-                                radius=ELLIPSE_MEAS_FP_RADIUS,
-                                color=ELLIPSE_MEAS_FP_COLOR,
-                                thickness=cv.FILLED,
-                                lineType=cv.LINE_AA)
+        # # draw filled ellipse
+        # ellipse_img = cv.ellipse(img=ellipse_img,
+        #                          center=tuple(map(int,ellipse_center)),
+        #                          axes=ellipse_semi_axes,
+        #                          angle=-degrees(ellipse_rotation_angle),
+        #                          startAngle=0,
+        #                          endAngle=360,
+        #                          color=ELLIPSE_COLOR,
+        #                          thickness=cv.FILLED,
+        #                          lineType=cv.LINE_8)
+        # # draw C boundary
+        # ellipse_img = cv.rectangle(ellipse_img,
+        #                            tuple(map(int,c1)),
+        #                            tuple(map(int,c2)),
+        #                            colr2,
+        #                            2,
+        #                            cv.LINE_4)
+        # ellipse_img = cv.circle(ellipse_img,
+        #                         tuple(map(int,self.pmid)),
+        #                         radius=4,
+        #                         color=colr,
+        #                         thickness=cv.FILLED,
+        #                         lineType=cv.LINE_AA)    
+        # # draw measured focal points
+        # ellipse_img = cv.circle(ellipse_img,
+        #                         tuple(map(int,ellipse_focal_point_1)),
+        #                         radius=ELLIPSE_MEAS_FP_RADIUS,
+        #                         color=ELLIPSE_MEAS_FP_COLOR,
+        #                         thickness=cv.FILLED,
+        #                         lineType=cv.LINE_AA)
+        # ellipse_img = cv.circle(ellipse_img,
+        #                         tuple(map(int,ellipse_focal_point_2)),
+        #                         radius=ELLIPSE_MEAS_FP_RADIUS,
+        #                         color=ELLIPSE_MEAS_FP_COLOR,
+        #                         thickness=cv.FILLED,
+        #                         lineType=cv.LINE_AA)
         
-        # draw estimated focal points
-        ellipse_img = cv.circle(ellipse_img,
-                                tuple(map(int,ellipse_focal_point_1_est)),
-                                radius=ELLIPSE_ESTD_FP_RADIUS,
-                                color=ELLIPSE_ESTD_FP_COLOR_1,
-                                thickness=cv.FILLED,
-                                lineType=cv.LINE_AA)
-        ellipse_img = cv.circle(ellipse_img,
-                                tuple(map(int,ellipse_focal_point_2_est)),
-                                radius=ELLIPSE_ESTD_FP_RADIUS,
-                                color=ELLIPSE_ESTD_FP_COLOR,
-                                thickness=cv.FILLED,
-                                lineType=cv.LINE_AA)
+        # # draw estimated focal points
+        # ellipse_img = cv.circle(ellipse_img,
+        #                         tuple(map(int,ellipse_focal_point_1_est)),
+        #                         radius=ELLIPSE_ESTD_FP_RADIUS,
+        #                         color=ELLIPSE_ESTD_FP_COLOR_1,
+        #                         thickness=cv.FILLED,
+        #                         lineType=cv.LINE_AA)
+        # ellipse_img = cv.circle(ellipse_img,
+        #                         tuple(map(int,ellipse_focal_point_2_est)),
+        #                         radius=ELLIPSE_ESTD_FP_RADIUS,
+        #                         color=ELLIPSE_ESTD_FP_COLOR,
+        #                         thickness=cv.FILLED,
+        #                         lineType=cv.LINE_AA)
 
-        # blend this with color edited frame
-        blended_img = self.exp_manager.multi_tracker.frame_color_edited.copy()
-        mask = ellipse_img.astype(bool)
-        blended_img[mask] = cv.addWeighted(self.exp_manager.multi_tracker.frame_color_edited, 
-                                           1 - ELLIPSE_OPACITY,
-                                           ellipse_img,
-                                           ELLIPSE_OPACITY,
-                                           0)[mask]
+        # # blend this with color edited frame
+        # blended_img = self.exp_manager.multi_tracker.frame_color_edited.copy()
+        # mask = ellipse_img.astype(bool)
+        # blended_img[mask] = cv.addWeighted(self.exp_manager.multi_tracker.frame_color_edited, 
+        #                                    1 - ELLIPSE_OPACITY,
+        #                                    ellipse_img,
+        #                                    ELLIPSE_OPACITY,
+        #                                    0)[mask]
 
-        # save it for screensaver
-        self.exp_manager.multi_tracker.cur_img = blended_img
+        # # save it for screensaver
+        # self.exp_manager.multi_tracker.cur_img = blended_img
 
-        # show blended image
-        cv.imshow(self.exp_manager.multi_tracker.win_name, blended_img);cv.waitKey(1)
+        # # show blended image
+        # cv.imshow(self.exp_manager.multi_tracker.win_name, blended_img);cv.waitKey(1)
 
 
     def compute_focal_point_estimations(self):
