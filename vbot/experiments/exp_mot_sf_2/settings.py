@@ -123,7 +123,7 @@ TIME_FONT = 'consolas'
 TIME_FONT_SIZE = 16
 TIME_COLOR = LIGHT_GRAY_2   # used for all simulator texts
 DELTA_TIME = 0.01           # used in full blocking mode
-FINAL_TIME = 150
+FINAL_TIME = 390
 
 # Bounding box settings
 BB_COLOR = SAFETY_YELLOW_RGB#BLUE     # pygame color
@@ -137,6 +137,9 @@ ELLIPSE_ESTD_FP_COLOR_1 = (255, 1, 1)#(51, 51, 255)
 ELLIPSE_OPACITY = 0.36
 ELLIPSE_MEAS_FP_RADIUS = 6
 ELLIPSE_ESTD_FP_RADIUS = 5
+
+FRONT = 0
+BEHIND = 1
 
 # reference frame
 IMAGE_REF_FRAME = 0
@@ -251,8 +254,8 @@ CAR_INITIAL_VELOCITY_2  = (50*1.6*1000/3600, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_3  = (50*1.6*1000/3600, 0.0)#(5.32 , 0.0)
 DRONE_POSITION          = (0.0, 0.0)
 DRONE_INITIAL_VELOCITY  = (70*1.6*1000/3600, 0.0)#(5.31, 0.0)
-K_1                     = 1 #2	# affects a_lat more
-K_2                     = 0.11#0.2 #0.08	# affects a_long more
+K_1                     = 1.4#1 #2	# affects a_lat more
+K_2                     = 0.1#0.11#0.2 #0.08	# affects a_long more
 K_W                     = 0
 
 
