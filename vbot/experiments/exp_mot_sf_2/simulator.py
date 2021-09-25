@@ -120,12 +120,12 @@ class Simulator:
             self.blocks.append(Block(self))
 
         # spawn car
-        self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect, img=CAR_IMG,traj=LANE_CHANGE_TRAJECTORY_2)
-        self.car_2 = Car(self, *CAR_INITIAL_POSITION_2, *CAR_INITIAL_VELOCITY_2, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_2, img=CAR_IMG_2,traj=DEFAULT_TRAJECTORY)
-        self.car_3 = Car(self, *CAR_INITIAL_POSITION_3, *CAR_INITIAL_VELOCITY_3, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_3,img=CAR_IMG_3,traj=LANE_CHANGE_TRAJECTORY_1)
-        # self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect, img=CAR_IMG,traj=DEFAULT_TRAJECTORY)
+        # self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect, img=CAR_IMG,traj=LANE_CHANGE_TRAJECTORY_2)
         # self.car_2 = Car(self, *CAR_INITIAL_POSITION_2, *CAR_INITIAL_VELOCITY_2, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_2, img=CAR_IMG_2,traj=DEFAULT_TRAJECTORY)
-        # self.car_3 = Car(self, *CAR_INITIAL_POSITION_3, *CAR_INITIAL_VELOCITY_3, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_3,img=CAR_IMG_3,traj=DEFAULT_TRAJECTORY)
+        # self.car_3 = Car(self, *CAR_INITIAL_POSITION_3, *CAR_INITIAL_VELOCITY_3, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_3,img=CAR_IMG_3,traj=LANE_CHANGE_TRAJECTORY_1)
+        self.car = Car(self, *CAR_INITIAL_POSITION, *CAR_INITIAL_VELOCITY, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect, img=CAR_IMG,traj=SQUIRCLE_TRAJECTORY)
+        self.car_2 = Car(self, *CAR_INITIAL_POSITION_2, *CAR_INITIAL_VELOCITY_2, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_2, img=CAR_IMG_2,traj=SQUIRCLE_TRAJECTORY)
+        self.car_3 = Car(self, *CAR_INITIAL_POSITION_3, *CAR_INITIAL_VELOCITY_3, *CAR_ACCELERATION, loaded_image_rect=self.car_img_rect_3,img=CAR_IMG_3,traj=SQUIRCLE_TRAJECTORY)
 
         #spawn bar
         self.bars = []
