@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from datetime import timedelta
-from math import atan2, degrees, cos, sin, pi, pow
+from math import atan2, degrees, cos, sin, pi, pow, tau
 from .settings import *
 from .my_imports import bf, rb, mb, gb, yb, bb, cb,  r, m, g, y, b, c, colored, cprint
 import matplotlib.pyplot as plt
@@ -89,13 +89,45 @@ class Controller:
         fpm_heading = atan2(fpm_vy, fpm_vx)
 
         # compute acceleration magnitude and direction for both focal points
-        fp1_acc = 0#(fp1_ax**2 + fp1_ay**2)**0.5
-        fp2_acc = 0#(fp2_ax**2 + fp2_ay**2)**0.5
-        fpm_acc = (fpm_ax**2 + fpm_ay**2)**0.5
+        t1_beta_est = self.manager.targets[0].beta_est
+        # print(degrees(t1_beta_est))
 
-        fp1_delta = 0#atan2(fp1_ay, fp1_ax)
-        fp2_delta = 0#atan2(fp2_ay, fp2_ax)
-        fpm_delta = atan2(fpm_ay, fpm_ax)
+        # fp1_acc = 0#(fp1_ax**2 + fp1_ay**2)**0.5
+        # fp2_acc = 0#(fp2_ax**2 + fp2_ay**2)**0.5
+        # fpm_acc = (fpm_ax**2 + fpm_ay**2)**0.5
+
+        # fp1_delta = 0#atan2(fp1_ay, fp1_ax)
+        # fp2_delta = 0#atan2(fp2_ay, fp2_ax)
+        # fpm_delta = atan2(fpm_ay, fpm_ax)
+
+        if np.isclose(abs(degrees(t1_beta_est)), 0, atol=5):
+            fp1_acc = abs(fp1_ax)
+            fp2_acc = abs(fp2_ax)
+            fp1_delta = radians(0)
+            fp2_delta = radians(0)
+        elif np.isclose(degrees(t1_beta_est), 90, atol=5):
+            fp1_acc = abs(fp1_ay)
+            fp2_acc = abs(fp2_ay)
+            fp1_delta = radians(90)
+            fp2_delta = radians(90)
+        elif np.isclose(abs(degrees(t1_beta_est)), 180, atol=5):
+            fp1_acc = abs(fp1_ax)
+            fp2_acc = abs(fp2_ax)
+            fp1_delta = radians(180)
+            fp2_delta = radians(180)
+        elif np.isclose(degrees(t1_beta_est), -90, atol=5):
+            fp1_acc = abs(fp1_ay)
+            fp2_acc = abs(fp2_ay)
+            fp1_delta = radians(270)
+            fp2_delta = radians(270)
+        else:
+            fp1_acc = (fp1_ax**2 + fp1_ay**2)**0.5
+            fp2_acc = (fp2_ax**2 + fp2_ay**2)**0.5
+            fp1_delta = atan2(fp1_ay, fp1_ax)
+            fp2_delta = atan2(fp2_ay, fp2_ax)
+
+        
+
 
         # compute Vr and Vθ for both focal points
         Vr1 = fp1_speed*cos(fp1_heading - theta1) - drone_speed*cos(drone_alpha - theta1)
@@ -168,29 +200,32 @@ class Controller:
         y1vt2dy2vt1 = dy1dVtheta2*dy2dVtheta1
         denom = (denom_sub+(y1vt1dy2vr1-y1vr2dy2vt1)*ct1t2-(y1vr2dy2vr1+y1vt2dy2vt1)*st1t2)
 
-        if not self.P_CONTROLLER_FLAG and abs(denom) < 10:
+
+        where_is_target = FRONT if abs(atan2(sin(drone_alpha - theta1), cos(drone_alpha - theta1))) < pi/2 else BEHIND
+
+        theta_from_alpha = (atan2(sin(theta1 - drone_alpha), cos(theta1 - drone_alpha))) 
+        PDr1 = 0.03
+        if not self.P_CONTROLLER_FLAG and abs(denom) < 1000:
             self.P_CONTROLLER_FLAG = True
             self.p_controller_end_time = self.manager.simulator.time + 2.0
             e_speed = fp1_speed - drone_speed
-            e_heading = fp1_heading - drone_alpha
-            a_lat = 10*e_heading
-            a_long = 0.2*e_speed
+            e_heading = atan2(sin(fp1_heading - drone_alpha), cos(fp1_heading - drone_alpha))  
+            lat_term = 0.3*theta_from_alpha if r1-5 > 0 else 0
+            a_lat = 10*e_heading + lat_term
+            a_long = 0.2*e_speed + PDr1*(r1-5) if where_is_target == FRONT else 0.2*e_speed - PDr1*(r1-5)
         elif self.P_CONTROLLER_FLAG and self.manager.simulator.time < self.p_controller_end_time:
             e_speed = fp1_speed - drone_speed
-            e_heading = fp1_heading - drone_alpha
-            a_lat = 10*e_heading
-            a_long = 0.2*e_speed
+            e_heading = atan2(sin(fp1_heading - drone_alpha), cos(fp1_heading - drone_alpha)) 
+            lat_term = 0.3*theta_from_alpha if r1-5 > 0 else 0
+            a_lat = 10*e_heading + lat_term
+            a_long = 0.2*e_speed + PDr1*(r1-5) if where_is_target == FRONT else 0.2*e_speed - PDr1*(r1-5)
         elif Vr1 > 0:
             e_speed = fp1_speed - drone_speed
-            e_heading = fp1_heading - drone_alpha
-            a_lat = 10*e_heading
-            a_long = 0.2*e_speed
+            e_heading = atan2(sin(fp1_heading - drone_alpha), cos(fp1_heading - drone_alpha)) 
+            lat_term = 0.3*theta_from_alpha if r1-5 > 0 else 0
+            a_lat = 10*e_heading + lat_term
+            a_long = 0.2*e_speed + PDr1*(r1-5) if where_is_target == FRONT else 0.2*e_speed - PDr1*(r1-5)
 
-        # if abs(denom) < 10:
-        #     e_speed = fp1_speed - drone_speed
-        #     e_heading = fp1_heading - drone_alpha
-        #     a_lat = 10*e_heading
-        #     a_long = 0.2*e_speed
         else:
             self.P_CONTROLLER_FLAG = False
             a_lat = -(
