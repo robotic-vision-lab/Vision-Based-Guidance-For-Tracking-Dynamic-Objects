@@ -17,14 +17,14 @@ if __name__ == '__main__':
     ARG_PARSER = VBOTParser()
     ARGS = ARG_PARSER.args
 
-    EXPERIMENT_SAVE_MODE_ON = 0
+    EXPERIMENT_SAVE_MODE_ON = 1
     WRITE_PLOT = 1 
     CONTROL_ON = 1 
     TRACKER_ON = 1 
     TRACKER_DISPLAY_ON = 1 
     USE_TRUE_KINEMATICS = 0 
     USE_REAL_CLOCK = 0 
-    DRAW_OCCLUSION_BARS = 0 
+    DRAW_OCCLUSION_BARS = 1 
 
     RUN_EXPERIMENT = 0 if ARGS.norun else 1
     RUN_TRACK_PLOT = 1 if ARGS.plot else 0
