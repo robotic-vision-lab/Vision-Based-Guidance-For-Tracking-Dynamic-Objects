@@ -30,14 +30,14 @@ SIMULATOR_TITLE = 'Simple'
 # camera image formation settings
 FOV = 50.0                                      # degrees
 PIXEL_SIZE = 6.25 * 10**-6                      # meters
-ALTITUDE = 450.0                                  # meters
+ALTITUDE = 425.0                                  # meters
 SENSOR_WIDTH = PIXEL_SIZE * WIDTH
 FOCAL_LENGTH = (SENSOR_WIDTH / 2) / tan(radians(FOV/2))
 HORIZONTAL_SPAN = (ALTITUDE * SENSOR_WIDTH) / FOCAL_LENGTH
 PIXEL_TO_METERS_FACTOR = HORIZONTAL_SPAN / WIDTH
 
 # car settings
-CAR_IMG = 'cars_7.png'
+CAR_IMG = 'cars_11.png'
 CAR_IMG_2 = 'cars_11.png'
 CAR_IMG_3 = 'cars_11.png'
 CAR_LENGTH = 6          # meters
@@ -82,8 +82,8 @@ NUM_BLOCKS = 0
 BAR_COLOR = DARK_GRAY_3
 BAR_COLOR_DELTA = (8, 8, 8)
 # BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 15.0, (HEIGHT-1) * PIXEL_TO_METERS_FACTOR
-BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 10.0, 15.0 #(HEIGHT-1) * PIXEL_TO_METERS_FACTOR
-NUM_BARS = 5
+BAR_SIZE = BAR_WIDTH, BAR_HEIGHT = 40.0, 125.0 #(HEIGHT-1) * PIXEL_TO_METERS_FACTOR
+NUM_BARS = 2
 
 # drone camera settings
 DRONE_IMG = 'cross_hair.png'
@@ -109,7 +109,7 @@ K_D_Z = 10.0
 # altitude control 
 X_DES = WIDTH*0.2
 Y_DES = WIDTH*0.2
-S_DES = 230#300#(X_DES**2 + Y_DES**2)**0.5
+S_DES = 240#300#(X_DES**2 + Y_DES**2)**0.5
 C_DES = HEIGHT*0.23
 Z_DES = 200
 Z_DELTA = 100
@@ -243,9 +243,9 @@ CAR_RADIUS = 0.1
 # K_W                     = -1000
 
 # open
-CAR_INITIAL_POSITION    = (100.0, -160.0)
-CAR_INITIAL_POSITION_2  = (100.0, -130.0)
-CAR_INITIAL_POSITION_3  = (90.0, -145.0)
+CAR_INITIAL_POSITION    = (100.0, -150.0)
+CAR_INITIAL_POSITION_2  = (100.0, -120.0)
+CAR_INITIAL_POSITION_3  = (90.0, -135.0)
 CAR_INITIAL_VELOCITY    = (50*1.6*1000/3600, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_2  = (50*1.6*1000/3600, 0.0)#(5.22, 0.0)
 CAR_INITIAL_VELOCITY_3  = (50*1.6*1000/3600, 0.0)#(5.32 , 0.0)
