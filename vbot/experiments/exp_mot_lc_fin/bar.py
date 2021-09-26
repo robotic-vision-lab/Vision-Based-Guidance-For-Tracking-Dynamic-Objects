@@ -44,8 +44,11 @@ class Bar(pygame.sprite.Sprite):
         fov = self.simulator.get_camera_fov()
         drone_pos = self.simulator.get_drone_position()
 
-        _x = drone_pos[0] + fov[0] * uniform(0.5, 1.0)
-        _y = uniform(drone_pos[1] - fov[1] / 2, drone_pos[1] + fov[1])
+        if self.simulator.time < 25:
+            _x = -fov[0] #drone_pos[0] + fov[0] * uniform(0.5, 1.0)
+        else:
+            _x = drone_pos[0] + fov[0] * uniform(0.5, 1.0)
+        _y = uniform(drone_pos[1] - fov[1] / 3, drone_pos[1] + fov[1]/4)
         self.position = pygame.Vector2(_x, _y)
         self.velocity = pygame.Vector2(0.0, 0.0)
         self.acceleration = pygame.Vector2(0.0, 0.0)
