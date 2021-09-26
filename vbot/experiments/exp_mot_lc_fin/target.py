@@ -103,7 +103,7 @@ class Target:
         if self.occlusion_case_old == TOTAL_OCC:
             size = int(5 + self.EKF.cov_x.flatten()[0] / 0.13)
         else:
-            size = 5
+            size = 6
         # size = 12 if self.occlusion_case_old == TOTAL_OCC else 6
         d = ceil(size / self.manager.simulator.pxm_fac)
         x = int(self.centroid_new.flatten()[0]) - d
