@@ -533,7 +533,7 @@ class MultiTracker:
 
                 target.distances = np.array([m.distance for m in target.matches]).reshape(-1, 1)
                 target.good_distances = target.distances[target.distances < self.DES_MATCH_DISTANCE_THRESH]
-
+            print(f't{target.ID}: template_scores [{target.template_scores}]   good_distances [{target.good_distances}]')
             # ---------------------------------------------------------------------
             # |PARTIAL_OCC, TOTAL_OCC>
             if ((not target.feature_found_statuses.all() or 
@@ -548,8 +548,8 @@ class MultiTracker:
             # ---------------------------------------------------------------------
             # |PARTIAL_OCC, NO_OCC>
             elif ((target.keypoints_new_good.shape[0] > 0) and
-                    (len(target.good_distances) == MAX_NUM_CORNERS or target.keypoints_new_good.shape[0]>=MAX_NUM_CORNERS) and
-                    (target.template_scores > self.TEMP_MATCH_THRESH).sum() == MAX_NUM_CORNERS):
+                    (target.template_scores > self.TEMP_MATCH_THRESH).sum() == MAX_NUM_CORNERS and 
+                    (len(target.good_distances) == MAX_NUM_CORNERS or target.keypoints_new_good.shape[0]>=MAX_NUM_CORNERS)):
                 target.occlusion_case_new = NO_OCC
 
                 # compute centroid 
