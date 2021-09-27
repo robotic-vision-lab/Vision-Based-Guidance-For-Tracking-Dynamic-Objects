@@ -372,7 +372,7 @@ class ExperimentManager:
                 f'A_LAT_LONG_DENOM\n'
             )
             self.write_count = 0
-            self.write_skip = 5
+            self.write_skip = 12
 
         # run experiment
         while self.simulator.running:
