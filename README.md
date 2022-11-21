@@ -1,4 +1,4 @@
-## Vision-Based Object Tracking for Unmanned Aircraft Systems
+## Vision-Based Guidance for Tracking Dynamic Objects 
 
 ### Overview
 
