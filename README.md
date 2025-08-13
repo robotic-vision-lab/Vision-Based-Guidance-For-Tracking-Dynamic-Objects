@@ -30,7 +30,8 @@ If you find this project useful, then please consider citing our work.
   author={Karmokar, Pritam and Dhal, Kashish and Beksi, William J and Chakravarthy, Animesh},
   booktitle={Proceedings of the International Conference on Unmanned Aircraft Systems (ICUAS)},
   pages={1106--1115},
-  year={2021}
+  year={2021},
+  doi={10.1109/ICUAS51884.2021.9476712}
 }
 ```
 
